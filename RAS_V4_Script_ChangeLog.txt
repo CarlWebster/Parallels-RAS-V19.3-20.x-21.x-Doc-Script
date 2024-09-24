@@ -1,0 +1,13 @@
+#webster@carlwebster.com
+#@carlwebster on Twitter
+#http://www.CarlWebster.com
+#Created on February 9, 2018
+
+#Version 1.0 was released to the community on 5-August-2020
+#Work on 2.0 started on 20-Sep-2020
+#Work on 3.0 started on 15-Nov-2022
+#Work on 4.0 started on September 24, 2024
+
+#Version 4.00 
+#
+#	Updated for the PowerShell module changes in RAS 19.3 and 19.4
