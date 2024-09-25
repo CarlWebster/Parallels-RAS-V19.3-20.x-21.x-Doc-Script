@@ -450,7 +450,7 @@
 	NAME: RAS_Inventory_V4_0.ps1
 	VERSION: 4.00
 	AUTHOR: Carl Webster
-	LASTEDIT: September 24, 2024
+	LASTEDIT: September 25, 2024
 #>
 
 
@@ -636,7 +636,7 @@ $Error.Clear()
 $Script:emailCredentials  = $Null
 $script:MyVersion         = '4.00'
 $Script:ScriptName        = "RAS_Inventory_V4_0.ps1"
-$tmpdate                  = [datetime] "09/24/2024"
+$tmpdate                  = [datetime] "09/25/2024"
 $Script:ReleaseDate       = $tmpdate.ToUniversalTime().ToShortDateString()
 
 If($MSWord -eq $False -and $PDF -eq $False -and $Text -eq $False -and $HTML -eq $False)
@@ -4501,7 +4501,7 @@ Function OutputSite
 	Param([object]$Site)
 	
 	Write-Verbose "$(Get-Date -Format G): Output Site $($Site.Name)"
-	$RDSHosts = Get-RASRDS -Siteid $Site.Id -EA 0 4> $Null
+	$RDSHosts = Get-RASRDSHost -Siteid $Site.Id -EA 0 4> $Null
 	
 	If(!$?)
 	{
@@ -4562,7 +4562,7 @@ Function OutputSite
 		Write-Verbose "$(Get-Date -Format G): `tOutput RD Session Hosts"
 		ForEach($RDSHost in $RDSHosts)
 		{
-			$RDSStatus = Get-RASRDSStatus -Id $RDSHost.Id -EA 0 4>$Null
+			$RDSStatus = Get-RASRDSHostStatus -Id $RDSHost.Id -EA 0 4>$Null
 			
 			If(!$?)
 			{
@@ -5301,7 +5301,7 @@ Function OutputSite
 		WriteHTMLLine 2 0 "RD Session Hosts"
 	}
 
-	$RDSHosts = Get-RASRDS -Siteid $Site.Id -EA 0 4>$Null
+	$RDSHosts = Get-RASRDSHost -Siteid $Site.Id -EA 0 4>$Null
 	
 	If(!$?)
 	{
@@ -5344,7 +5344,7 @@ Function OutputSite
 	{
 		ForEach($RDSHost in $RDSHosts)
 		{
-			$RDSStatus = Get-RASRDSStatus -Id $RDSHost.Id -EA 0 4>$Null
+			$RDSStatus = Get-RASRDSHostStatus -Id $RDSHost.Id -EA 0 4>$Null
 			
 			If(!$?)
 			{
@@ -5437,7 +5437,7 @@ Function OutputSite
 				
 				$RDSGroup = @()
 				
-				$Results = Get-RASRDSGroup -SiteId $Site.Id -EA 0 4>$Null
+				$Results = Get-RASRDSHostPool -SiteId $Site.Id -EA 0 4>$Null
 				
 				If($? -and $Null -ne $Results)
 				{
@@ -5616,7 +5616,7 @@ Function OutputSite
 			{
 				#do we inherit group or site defaults?
 				#is this RDS host in a group?
-				$Results = Get-RASRDSGroup -SiteId $Site.Id -EA 0 4>$Null
+				$Results = Get-RASRDSHostPool -SiteId $Site.Id -EA 0 4>$Null
 				
 				If($? -and $Null -ne $Results)
 				{
@@ -5632,17 +5632,17 @@ Function OutputSite
 							$RDSPort        = $GroupDefaults.Port.ToString()
 							$RDSMaxSessions = $GroupDefaults.MaxSessions.ToString()
 							
-							Switch ($GroupDefaults.SessionTimeout)
+							Switch ($GroupDefaults.DisconnectActiveSessionAfter)
 							{
 								0		{$RDSPublishingSessionDisconnectTimeout = "Never"; Break}
 								25		{$RDSPublishingSessionDisconnectTimeout = "25 seconds"; Break}
 								60		{$RDSPublishingSessionDisconnectTimeout = "1 minute"; Break}
 								300		{$RDSPublishingSessionDisconnectTimeout = "5 minutes"; Break}
 								3600	{$RDSPublishingSessionDisconnectTimeout = "1 hour"; Break}
-								Default	{$RDSPublishingSessionDisconnectTimeout = "Unable to determine Publishing Session Disconnect Timeout: $($GroupDefaults.SessionTimeout)"; Break}
+								Default	{$RDSPublishingSessionDisconnectTimeout = "Unable to determine Publishing Session Disconnect Timeout: $($GroupDefaults.DisconnectActiveSessionAfter)"; Break}
 							}
 							
-							Switch ($GroupDefaults.SessionLogoffTimeout)
+							Switch ($GroupDefaults.LogoffDisconnectedSessionAfter)
 							{
 								0		{$RDSPublishingSessionResetTime = "Never"; Break}
 								1		{$RDSPublishingSessionResetTime = "Immediate"; Break}
@@ -5650,7 +5650,7 @@ Function OutputSite
 								60		{$RDSPublishingSessionResetTime = "1 minute"; Break}
 								300		{$RDSPublishingSessionResetTime = "5 minutes"; Break}
 								3600	{$RDSPublishingSessionResetTime = "1 hour"; Break}
-								Default	{$RDSPublishingSessionResetTime = "Unable to determine Publishing Session Reset Timeout: $($GroupDefaults.SessionLogoffTimeout)"; Break}
+								Default	{$RDSPublishingSessionResetTime = "Unable to determine Publishing Session Reset Timeout: $($GroupDefaults.LogoffDisconnectedSessionAfter)"; Break}
 							}
 							
 							Switch($GroupDefaults.AllowURLAndMailRedirection)
@@ -5736,17 +5736,17 @@ Function OutputSite
 								$RDSPort        = $RDSDefaults.Port.ToString()
 								$RDSMaxSessions = $RDSDefaults.MaxSessions.ToString()
 								
-								Switch ($RDSDefaults.SessionTimeout)
+								Switch ($RDSDefaults.DisconnectActiveSessionAfter)
 								{
 									0		{$RDSPublishingSessionDisconnectTimeout = "Never"; Break}
 									25		{$RDSPublishingSessionDisconnectTimeout = "25 seconds"; Break}
 									60		{$RDSPublishingSessionDisconnectTimeout = "1 minute"; Break}
 									300		{$RDSPublishingSessionDisconnectTimeout = "5 minutes"; Break}
 									3600	{$RDSPublishingSessionDisconnectTimeout = "1 hour"; Break}
-									Default	{$RDSPublishingSessionDisconnectTimeout = "Unable to determine Publishing Session Disconnect Timeout: $($RDSDefaults.SessionTimeout)"; Break}
+									Default	{$RDSPublishingSessionDisconnectTimeout = "Unable to determine Publishing Session Disconnect Timeout: $($RDSDefaults.DisconnectActiveSessionAfter)"; Break}
 								}
 								
-								Switch ($RDSDefaults.SessionLogoffTimeout)
+								Switch ($RDSDefaults.LogoffDisconnectedSessionAfter)
 								{
 									0		{$RDSPublishingSessionResetTime = "Never"; Break}
 									1		{$RDSPublishingSessionResetTime = "Immediate"; Break}
@@ -5754,7 +5754,7 @@ Function OutputSite
 									60		{$RDSPublishingSessionResetTime = "1 minute"; Break}
 									300		{$RDSPublishingSessionResetTime = "5 minutes"; Break}
 									3600	{$RDSPublishingSessionResetTime = "1 hour"; Break}
-									Default	{$RDSPublishingSessionResetTime = "Unable to determine Publishing Session Reset Timeout: $($RDSDefaults.SessionLogoffTimeout)"; Break}
+									Default	{$RDSPublishingSessionResetTime = "Unable to determine Publishing Session Reset Timeout: $($RDSDefaults.LogoffDisconnectedSessionAfter)"; Break}
 								}
 								
 								Switch($RDSDefaults.AllowURLAndMailRedirection)
@@ -5858,17 +5858,17 @@ Function OutputSite
 					$RDSPort        = $RDSHost.Port.ToString()
 					$RDSMaxSessions = $RDSHost.MaxSessions.ToString()
 					
-					Switch ($RDSHost.SessionTimeout)
+					Switch ($RDSHost.DisconnectActiveSessionAfter)
 					{
 						0		{$RDSPublishingSessionDisconnectTimeout = "Never"; Break}
 						25		{$RDSPublishingSessionDisconnectTimeout = "25 seconds"; Break}
 						60		{$RDSPublishingSessionDisconnectTimeout = "1 minute"; Break}
 						300		{$RDSPublishingSessionDisconnectTimeout = "5 minutes"; Break}
 						3600	{$RDSPublishingSessionDisconnectTimeout = "1 hour"; Break}
-						Default	{$RDSPublishingSessionDisconnectTimeout = "Unable to determine Publishing Session Disconnect Timeout: $($RDSHost.SessionTimeout)"; Break}
+						Default	{$RDSPublishingSessionDisconnectTimeout = "Unable to determine Publishing Session Disconnect Timeout: $($RDSHost.DisconnectActiveSessionAfter)"; Break}
 					}
 					
-					Switch ($RDSHost.SessionLogoffTimeout)
+					Switch ($RDSHost.LogoffDisconnectedSessionAfter)
 					{
 						0		{$RDSPublishingSessionResetTime = "Never"; Break}
 						1		{$RDSPublishingSessionResetTime = "Immediate"; Break}
@@ -5876,7 +5876,7 @@ Function OutputSite
 						60		{$RDSPublishingSessionResetTime = "1 minute"; Break}
 						300		{$RDSPublishingSessionResetTime = "5 minutes"; Break}
 						3600	{$RDSPublishingSessionResetTime = "1 hour"; Break}
-						Default	{$RDSPublishingSessionResetTime = "Unable to determine Publishing Session Reset Timeout: $($RDSHost.SessionLogoffTimeout)"; Break}
+						Default	{$RDSPublishingSessionResetTime = "Unable to determine Publishing Session Reset Timeout: $($RDSHost.LogoffDisconnectedSessionAfter)"; Break}
 					}
 					
 					Switch($RDSHost.AllowURLAndMailRedirection)
@@ -5956,17 +5956,17 @@ Function OutputSite
 				$RDSPort        = $RDSHost.Port.ToString()
 				$RDSMaxSessions = $RDSHost.MaxSessions.ToString()
 				
-				Switch ($RDSHost.SessionTimeout)
+				Switch ($RDSHost.DisconnectActiveSessionAfter)
 				{
 					0		{$RDSPublishingSessionDisconnectTimeout = "Never"; Break}
 					25		{$RDSPublishingSessionDisconnectTimeout = "25 seconds"; Break}
 					60		{$RDSPublishingSessionDisconnectTimeout = "1 minute"; Break}
 					300		{$RDSPublishingSessionDisconnectTimeout = "5 minutes"; Break}
 					3600	{$RDSPublishingSessionDisconnectTimeout = "1 hour"; Break}
-					Default	{$RDSPublishingSessionDisconnectTimeout = "Unable to determine Publishing Session Disconnect Timeout: $($RDSHost.SessionTimeout)"; Break}
+					Default	{$RDSPublishingSessionDisconnectTimeout = "Unable to determine Publishing Session Disconnect Timeout: $($RDSHost.DisconnectActiveSessionAfter)"; Break}
 				}
 				
-				Switch ($RDSHost.SessionLogoffTimeout)
+				Switch ($RDSHost.LogoffDisconnectedSessionAfter)
 				{
 					0		{$RDSPublishingSessionResetTime = "Never"; Break}
 					1		{$RDSPublishingSessionResetTime = "Immediate"; Break}
@@ -5974,7 +5974,7 @@ Function OutputSite
 					60		{$RDSPublishingSessionResetTime = "1 minute"; Break}
 					300		{$RDSPublishingSessionResetTime = "5 minutes"; Break}
 					3600	{$RDSPublishingSessionResetTime = "1 hour"; Break}
-					Default	{$RDSPublishingSessionResetTime = "Unable to determine Publishing Session Reset Timeout: $($RDSHost.SessionLogoffTimeout)"; Break}
+					Default	{$RDSPublishingSessionResetTime = "Unable to determine Publishing Session Reset Timeout: $($RDSHost.LogoffDisconnectedSessionAfter)"; Break}
 				}
 				
 				Switch($RDSHost.AllowURLAndMailRedirection)
@@ -6168,7 +6168,7 @@ Function OutputSite
 			{
 				#do we inherit group or site defaults?
 				#is this RDS host in a group?
-				$Results = Get-RASRDSGroup -SiteId $Site.Id -EA 0 4>$Null
+				$Results = Get-RASRDSHostPool -SiteId $Site.Id -EA 0 4>$Null
 				
 				If($? -and $Null -ne $Results)
 				{
@@ -8197,90 +8197,41 @@ Function OutputSite
 
 			If($RDSHost.InheritDefaultOptimizationSettings)
 			{
-				#do we inherit group or site defaults?
-				#is this RDS host in a group?
 				#http://woshub.com/hot-to-convert-sid-to-username-and-vice-versa/
 				#for translating the User SID to the AD user name
-				$RDSGroup = Get-RASRDSGroup -SiteId $Site.Id -EA 0 4>$Null
+				#get the RDS default settings
 				
-				If($? -and $Null -ne $RDSGroup)
+				$RDSHostDefaults = Get-RASRDSDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
+				
+				If($? -and $Null -ne $RDSHostDefaults)
 				{
-					If($RDSGroup.RDSIds -Contains $RDSHost.Id )
-					{
-						#does this group inherit default settings?
-						If($RDSGroup.InheritDefaultOptimizationSettings -eq $False)
-						{
-							#no we don't, so get the default settings for the group
-							$OPTEnableOptimization            = $RDSGroup.Optimization.EnableOptimization.ToString()
-							$OPTOptimizationType              = $RDSGroup.Optimization.OptimizationType.ToString()
-							$OPTWindowsDefenderATPEnabled     = $RDSGroup.Optimization.WindowsDefenderATPEnabled.ToString()    
-							$OPTWindowsComponentsEnabled      = $RDSGroup.Optimization.WindowsComponentsEnabled.ToString()
-							$OPTWindowsServicesEnabled        = $RDSGroup.Optimization.WindowsServicesEnabled.ToString()
-							$OPTWinodwsScheduledTasksEnabled  = $RDSGroup.Optimization.WindowsScheduledTasksEnabled.ToString()
-							$OPTWindowsAdvancedOptionsEnabled = $RDSGroup.Optimization.WindowsAdvancedOptionsEnabled.ToString()
-							$OPTNetworkPerformanceEnabled     = $RDSGroup.Optimization.NetworkPerformanceEnabled.ToString()
-							$OPTRegistryEnabled               = $RDSGroup.Optimization.RegistryEnabled.ToString()
-							$OPTVisualEffectsEnabled          = $RDSGroup.Optimization.VisualEffectsEnabled.ToString()   
-							$OPTDiskCleanupEnabled            = $RDSGroup.Optimization.DiskCleanupEnabled.ToString()
-							$OPTCustomScriptEnabled           = $RDSGroup.Optimization.CustomScriptEnabled.ToString()
-						}
-						Else
-						{
-							#yes we do, get the default settings for the Site
-							#use the Site default settings
-							$RDSDefaults = Get-RASRDSDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
-							
-							If($? -and $Null -ne $RDSDefaults)
-							{
-								$OPTEnableOptimization            = $RDSDefaults.Optimization.EnableOptimization.ToString()
-								$OPTOptimizationType              = $RDSDefaults.Optimization.OptimizationType.ToString()
-								$OPTWindowsDefenderATPEnabled     = $RDSDefaults.Optimization.WindowsDefenderATPEnabled.ToString()    
-								$OPTWindowsComponentsEnabled      = $RDSDefaults.Optimization.WindowsComponentsEnabled.ToString()
-								$OPTWindowsServicesEnabled        = $RDSDefaults.Optimization.WindowsServicesEnabled.ToString()
-								$OPTWinodwsScheduledTasksEnabled  = $RDSDefaults.Optimization.WindowsScheduledTasksEnabled.ToString()
-								$OPTWindowsAdvancedOptionsEnabled = $RDSDefaults.Optimization.WindowsAdvancedOptionsEnabled.ToString()
-								$OPTNetworkPerformanceEnabled     = $RDSDefaults.Optimization.NetworkPerformanceEnabled.ToString()
-								$OPTRegistryEnabled               = $RDSDefaults.Optimization.RegistryEnabled.ToString()
-								$OPTVisualEffectsEnabled          = $RDSDefaults.Optimization.VisualEffectsEnabled.ToString()   
-								$OPTDiskCleanupEnabled            = $RDSDefaults.Optimization.DiskCleanupEnabled.ToString()
-								$OPTCustomScriptEnabled           = $RDSDefaults.Optimization.CustomScriptEnabled.ToString()
-							}
-							Else
-							{
-								#unable to retrieve default, use built-in default values
-								$OPTEnableOptimization            = "False"
-								$OPTOptimizationType              = ""
-								$OPTWindowsDefenderATPEnabled     = "False"
-								$OPTWindowsComponentsEnabled      = "False"
-								$OPTWindowsServicesEnabled        = "False"
-								$OPTWinodwsScheduledTasksEnabled  = "False"
-								$OPTWindowsAdvancedOptionsEnabled = "False"
-								$OPTNetworkPerformanceEnabled     = "False"
-								$OPTRegistryEnabled               = "False"
-								$OPTVisualEffectsEnabled          = "False"
-								$OPTDiskCleanupEnabled            = "False"
-								$OPTCustomScriptEnabled           = "False"
-							}
-						}
-					}
+					$OPTEnableOptimization            = $RDSHostDefaults.Optimization.EnableOptimization.ToString()
+					$OPTOptimizationType              = $RDSHostDefaults.Optimization.OptimizationType.ToString()
+					$OPTWindowsDefenderATPEnabled     = $RDSHostDefaults.Optimization.WindowsDefenderATPEnabled.ToString()    
+					$OPTWindowsComponentsEnabled      = $RDSHostDefaults.Optimization.WindowsComponentsEnabled.ToString()
+					$OPTWindowsServicesEnabled        = $RDSHostDefaults.Optimization.WindowsServicesEnabled.ToString()
+					$OPTWinodwsScheduledTasksEnabled  = $RDSHostDefaults.Optimization.WindowsScheduledTasksEnabled.ToString()
+					$OPTWindowsAdvancedOptionsEnabled = $RDSHostDefaults.Optimization.WindowsAdvancedOptionsEnabled.ToString()
+					$OPTNetworkPerformanceEnabled     = $RDSHostDefaults.Optimization.NetworkPerformanceEnabled.ToString()
+					$OPTRegistryEnabled               = $RDSHostDefaults.Optimization.RegistryEnabled.ToString()
+					$OPTVisualEffectsEnabled          = $RDSHostDefaults.Optimization.VisualEffectsEnabled.ToString()   
+					$OPTDiskCleanupEnabled            = $RDSHostDefaults.Optimization.DiskCleanupEnabled.ToString()
+					$OPTCustomScriptEnabled           = $RDSHostDefaults.Optimization.CustomScriptEnabled.ToString()
 				}
 				Else
 				{
-					#RDS Host is not in a group
-					#get the settings for the host
-					
-					$OPTEnableOptimization            = $RDSHost.Optimization.EnableOptimization.ToString()
-					$OPTOptimizationType              = $RDSHost.Optimization.OptimizationType.ToString()
-					$OPTWindowsDefenderATPEnabled     = $RDSHost.Optimization.WindowsDefenderATPEnabled.ToString()    
-					$OPTWindowsComponentsEnabled      = $RDSHost.Optimization.WindowsComponentsEnabled.ToString()
-					$OPTWindowsServicesEnabled        = $RDSHost.Optimization.WindowsServicesEnabled.ToString()
-					$OPTWinodwsScheduledTasksEnabled  = $RDSHost.Optimization.WindowsScheduledTasksEnabled.ToString()
-					$OPTWindowsAdvancedOptionsEnabled = $RDSHost.Optimization.WindowsAdvancedOptionsEnabled.ToString()
-					$OPTNetworkPerformanceEnabled     = $RDSHost.Optimization.NetworkPerformanceEnabled.ToString()
-					$OPTRegistryEnabled               = $RDSHost.Optimization.RegistryEnabled.ToString()
-					$OPTVisualEffectsEnabled          = $RDSHost.Optimization.VisualEffectsEnabled.ToString()   
-					$OPTDiskCleanupEnabled            = $RDSHost.Optimization.DiskCleanupEnabled.ToString()
-					$OPTCustomScriptEnabled           = $RDSHost.Optimization.CustomScriptEnabled.ToString()
+					$OPTEnableOptimization            = "False"
+					$OPTOptimizationType              = "Automatic"
+					$OPTWindowsDefenderATPEnabled     = "False"
+					$OPTWindowsComponentsEnabled      = "False"
+					$OPTWindowsServicesEnabled        = "False"
+					$OPTWinodwsScheduledTasksEnabled  = "False"
+					$OPTWindowsAdvancedOptionsEnabled = "False"
+					$OPTNetworkPerformanceEnabled     = "False"
+					$OPTRegistryEnabled               = "False"
+					$OPTVisualEffectsEnabled          = "False"
+					$OPTDiskCleanupEnabled            = "False"
+					$OPTCustomScriptEnabled           = "False"
 				}
 			}
 			Else
@@ -10262,7 +10213,7 @@ Function OutputSite
 				#is this RDS host in a group?
 				#http://woshub.com/hot-to-convert-sid-to-username-and-vice-versa/
 				#for translating the User SID to the AD user name
-				$Results = Get-RASRDSGroup -SiteId $Site.Id -EA 0 4>$Null
+				$Results = Get-RASRDSHostPool -SiteId $Site.Id -EA 0 4>$Null
 				
 				If($? -and $Null -ne $Results)
 				{
@@ -10447,7 +10398,7 @@ Function OutputSite
 			{
 				#do we inherit group or site defaults?
 				#is this RDS host in a group?
-				$Results = Get-RASRDSGroup -SiteId $Site.Id -EA 0 4>$Null
+				$Results = Get-RASRDSHostPool -SiteId $Site.Id -EA 0 4>$Null
 				
 				If($? -and $Null -ne $Results)
 				{
@@ -10604,7 +10555,7 @@ Function OutputSite
 		WriteHTMLLine 2 0 "Groups"
 	}
 
-	$RDSGroups = Get-RASRDSGroup -Siteid $Site.Id -EA 0 4> $Null
+	$RDSGroups = Get-RASRDSHostPool -Siteid $Site.Id -EA 0 4> $Null
 	
 	If(!$?)
 	{
@@ -10648,7 +10599,7 @@ Function OutputSite
 		ForEach($RDSGroup in $RDSGroups)
 		{
 			#Get the agent state for the group
-			$RDSGroupStatus = Get-RASRDSGroupStatus -Name $RDSGroup.Name -EA 0 4>$Null
+			$RDSGroupStatus = Get-RASRDSHostPoolStatus -Name $RDSGroup.Name -EA 0 4>$Null
 			
 			If(!$? -or $Null -eq $RDSGroupStatus)
 			{
@@ -10740,7 +10691,7 @@ Function OutputSite
 			}
 			
 			#get any group members
-			$RDSGroupMembers = @(Get-RASRDSGroupMember -GroupId $RDSGroup.Id -EA 0 4>$Null)
+			$RDSGroupMembers = @(Get-RASRDSHostPoolMember -HostPoolId $RDSGroup.Id -EA 0 4>$Null)
 			
 			If($MSWord -or $PDF)
 			{
@@ -10819,7 +10770,7 @@ Function OutputSite
 							$RDSGroupMemberLogonStatus = "Disabled"
 						}
 						
-						$Status = Get-RASRDSStatus -Server $RDSGroupMember.Server  -EA 0 4>$Null
+						$Status = Get-RASRDSHostStatus -Server $RDSGroupMember.Server  -EA 0 4>$Null
 						
 						If($? -and $Null -ne $Status)
 						{
@@ -10880,7 +10831,7 @@ Function OutputSite
 							$RDSGroupMemberLogonStatus = "Disabled"
 						}
 							
-						$Status = Get-RASRDSStatus -Server $RDSGroupMember.Server  -EA 0 4>$Null
+						$Status = Get-RASRDSHostStatus -Server $RDSGroupMember.Server  -EA 0 4>$Null
 							
 						If($? -and $Null -ne $Status)
 						{
@@ -10925,7 +10876,7 @@ Function OutputSite
 							$RDSGroupMemberLogonStatus = "Disabled"
 						}
 							
-						$Status = Get-RASRDSStatus -Server $RDSGroupMember.Server  -EA 0 4>$Null
+						$Status = Get-RASRDSHostStatus -Server $RDSGroupMember.Server  -EA 0 4>$Null
 						
 						If($? -and $Null -ne $Status)
 						{
@@ -10993,17 +10944,17 @@ Function OutputSite
 					$RDSPort        = $RDSDefaults.Port.ToString()
 					$RDSMaxSessions = $RDSDefaults.MaxSessions.ToString()
 					
-					Switch ($RDSDefaults.SessionTimeout)
+					Switch ($RDSDefaults.DisconnectActiveSessionAfter)
 					{
 						0		{$RDSPublishingSessionDisconnectTimeout = "Never"; Break}
 						25		{$RDSPublishingSessionDisconnectTimeout = "25 seconds"; Break}
 						60		{$RDSPublishingSessionDisconnectTimeout = "1 minute"; Break}
 						300		{$RDSPublishingSessionDisconnectTimeout = "5 minutes"; Break}
 						3600	{$RDSPublishingSessionDisconnectTimeout = "1 hour"; Break}
-						Default	{$RDSPublishingSessionDisconnectTimeout = "Unable to determine Publishing Session Disconnect Timeout: $($RDSDefaults.SessionTimeout)"; Break}
+						Default	{$RDSPublishingSessionDisconnectTimeout = "Unable to determine Publishing Session Disconnect Timeout: $($RDSDefaults.DisconnectActiveSessionAfter)"; Break}
 					}
 					
-					Switch ($RDSDefaults.SessionLogoffTimeout)
+					Switch ($RDSDefaults.LogoffDisconnectedSessionAfter)
 					{
 						0		{$RDSPublishingSessionResetTime = "Never"; Break}
 						1		{$RDSPublishingSessionResetTime = "Immediate"; Break}
@@ -11011,7 +10962,7 @@ Function OutputSite
 						60		{$RDSPublishingSessionResetTime = "1 minute"; Break}
 						300		{$RDSPublishingSessionResetTime = "5 minutes"; Break}
 						3600	{$RDSPublishingSessionResetTime = "1 hour"; Break}
-						Default	{$RDSPublishingSessionResetTime = "Unable to determine Publishing Session Reset Timeout: $($RDSDefaults.SessionLogoffTimeout)"; Break}
+						Default	{$RDSPublishingSessionResetTime = "Unable to determine Publishing Session Reset Timeout: $($RDSDefaults.LogoffDisconnectedSessionAfter)"; Break}
 					}
 					
 					Switch($RDSDefaults.AllowURLAndMailRedirection)
@@ -11112,17 +11063,17 @@ Function OutputSite
 				$RDSPort          = $RDSGroupDefaults.Port.ToString()
 				$RDSMaxSessions   = $RDSGroupDefaults.MaxSessions.ToString()
 				
-				Switch ($RDSGroupDefaults.SessionTimeout)
+				Switch ($RDSGroupDefaults.DisconnectActiveSessionAfter)
 				{
 					0		{$RDSPublishingSessionDisconnectTimeout = "Never"; Break}
 					25		{$RDSPublishingSessionDisconnectTimeout = "25 seconds"; Break}
 					60		{$RDSPublishingSessionDisconnectTimeout = "1 minute"; Break}
 					300		{$RDSPublishingSessionDisconnectTimeout = "5 minutes"; Break}
 					3600	{$RDSPublishingSessionDisconnectTimeout = "1 hour"; Break}
-					Default	{$RDSPublishingSessionDisconnectTimeout = "Unable to determine Publishing Session Disconnect Timeout: $($RDSGroup.SessionTimeout)"; Break}
+					Default	{$RDSPublishingSessionDisconnectTimeout = "Unable to determine Publishing Session Disconnect Timeout: $($RDSGroupDefaults.DisconnectActiveSessionAfter)"; Break}
 				}
 				
-				Switch ($RDSGroupDefaults.SessionLogoffTimeout)
+				Switch ($RDSGroupDefaults.LogoffDisconnectedSessionAfter)
 				{
 					0		{$RDSPublishingSessionResetTime = "Never"; Break}
 					1		{$RDSPublishingSessionResetTime = "Immediate"; Break}
@@ -11130,7 +11081,7 @@ Function OutputSite
 					60		{$RDSPublishingSessionResetTime = "1 minute"; Break}
 					300		{$RDSPublishingSessionResetTime = "5 minutes"; Break}
 					3600	{$RDSPublishingSessionResetTime = "1 hour"; Break}
-					Default	{$RDSPublishingSessionResetTime = "Unable to determine Publishing Session Reset Timeout: $($RDSGroup.SessionLogoffTimeout)"; Break}
+					Default	{$RDSPublishingSessionResetTime = "Unable to determine Publishing Session Reset Timeout: $($RDSGroup.LogoffDisconnectedSessionAfter)"; Break}
 				}
 				
 				Switch($RDSGroupDefaults.AllowURLAndMailRedirection)
@@ -12988,7 +12939,7 @@ Function OutputSite
 		WriteHTMLLine 2 0 "Templates"
 	}
 		
-	$RDSTemplates = Get-RASVDITemplate -Siteid $Site.Id -EA 0 4>$Null | Where-Object {$_.TemplateType -eq "RDSH"}
+	$RDSTemplates = Get-RASTemplate -Siteid $Site.Id -ObjType "RDSTemplate" -EA 0 4>$Null
 
 	If(!$?)
 	{
@@ -15354,7 +15305,7 @@ Function OutputSite
 		WriteHTMLLine 2 0 "Scheduler"
 	}
 
-	$RDSSchedules = Get-RASRDSSchedule -Siteid $Site.Id -EA 0 4> $Null
+	$RDSSchedules = Get-RASSchedule -Siteid $Site.Id -ObjType "RDS" -EA 0 4> $Null
 	
 	If(!$?)
 	{
@@ -15470,7 +15421,7 @@ Function OutputSite
 			{
 				ForEach($Item in $RDSSchedule.TargetIds)
 				{
-					$Result = Get-RASRDS -Id $Item -EA 0 4>$Null
+					$Result = Get-RASRDSHost -Id $Item -EA 0 4>$Null
 					
 					If($? -and $Null -ne $Result)
 					{
@@ -15486,7 +15437,7 @@ Function OutputSite
 			{
 				ForEach($Item in $RDSSchedule.TargetIds)
 				{
-					$Result = Get-RASRDSGroup -Id $Item -EA 0 4>$Null
+					$Result = Get-RASRDSHostPool -Id $Item -EA 0 4>$Null
 					
 					If($? -and $Null -ne $Result)
 					{
@@ -16040,14 +15991,14 @@ Function OutputSite
 		
 		If($MSWord -or $PDF)
 		{
-			$VDIPools = Get-RASVDIPool -SiteId $Site.Id -EA 0 4>$Null
+			$VDIPools = Get-RASVDIHostPool -SiteId $Site.Id -EA 0 4>$Null
 			If($? -and $Null -ne $VDIPools)
 			{
 				ForEach($VDIPool in $VDIPools)
 				{
 					WriteWordLine 3 0 "Pool $($VDIPool.Name)"
 
-					$VDIPoolMembers = Get-RASVDIPoolMember -SiteId $Site.Id -VDIPoolName $VDIPool.Name -EA 0 4>$Null 
+					$VDIPoolMembers = Get-RASVDIHostPoolMember -SiteId $Site.Id -VDIPoolName $VDIPool.Name -EA 0 4>$Null 
 					
 					If($? -and $Null -ne $VDIPoolMembers)
 					{
@@ -16129,15 +16080,15 @@ Function OutputSite
 					WriteWordLine 4 0 "Members"
 
 					$ScriptInformation = New-Object System.Collections.ArrayList
-					If($VDIPool.Members.Count -eq 0)
+					If($VDIPool.Members.Members.Count -eq 0)
 					{
 						$ScriptInformation.Add(@{Data = "Members"; Value = "There are no pool members"; }) > $Null
 					}
 					Else
 					{
-						ForEach($Item in $VDIPool.Members)
+						ForEach($Item in $VDIPool.Members.Members)
 						{
-							$VDIPoolMembers = Get-RASVDIPoolMember -SiteId $Site.Id -VDIPoolName $VDIPool.Name -EA 0 4>$Null
+							$VDIPoolMembers = Get-RASVDIHostPoolMember -SiteId $Site.Id -VDIPoolName $VDIPool.Name -EA 0 4>$Null
 							
 							If($? -and $Null -ne $VDIPoolMembers)
 							{
@@ -16157,6 +16108,9 @@ Function OutputSite
 									}
 									$ScriptInformation.Add(@{Data = "Name: $($VDIPoolMember.Name)"; Value = "Type: $MemberType"; }) > $Null
 								}
+
+								$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+								$ScriptInformation.Add(@{Data = "WildCard"; Value = $VDIPool.Members.WildCard; }) > $Null
 							}
 							ElseIf($? -and $Null -eq $VDIPoolMembers)
 							{
@@ -16168,9 +16122,6 @@ Function OutputSite
 							}
 						}
 					}
-
-					$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
-					$ScriptInformation.Add(@{Data = "WildCard"; Value = $VDIPool.WildCard; }) > $Null
 
 					$Table = AddWordTable -Hashtable $ScriptInformation `
 					-Columns Data,Value `
@@ -16203,14 +16154,14 @@ Function OutputSite
 		}
 		If($Text)
 		{
-			$VDIPools = Get-RASVDIPool -SiteId $Site.Id -EA 0 4>$Null
+			$VDIPools = Get-RASVDIHostPool -SiteId $Site.Id -EA 0 4>$Null
 			If($? -and $Null -ne $VDIPools)
 			{
 				ForEach($VDIPool in $VDIPools)
 				{
 					Line 2 "Pool $($VDIPool.Name)"
 					
-					$VDIPoolMembers = Get-RASVDIPoolMember -SiteId $Site.Id -VDIPoolName $VDIPool.Name -EA 0 4>$Null 
+					$VDIPoolMembers = Get-RASVDIHostPoolMember -SiteId $Site.Id -VDIPoolName $VDIPool.Name -EA 0 4>$Null 
 					
 					If($? -and $Null -ne $VDIPoolMembers)
 					{
@@ -16253,15 +16204,15 @@ Function OutputSite
 					#Members
 					
 					Line 3 "Members"
-					If($VDIPool.Members.Count -eq 0)
+					If($VDIPool.Members.Members.Count -eq 0)
 					{
 						Line 4 "Members: " "There are no pool members"
 					}
 					Else
 					{
-						ForEach($Item in $VDIPool.Members)
+						ForEach($Item in $VDIPool.Members.Members)
 						{
-							$VDIPoolMembers = Get-RASVDIPoolMember -SiteId $Site.Id -VDIPoolName $VDIPool.Name -EA 0 4>$Null
+							$VDIPoolMembers = Get-RASVDIHostPoolMember -SiteId $Site.Id -VDIPoolName $VDIPool.Name -EA 0 4>$Null
 							
 							If($? -and $Null -ne $VDIPoolMembers)
 							{
@@ -16281,6 +16232,9 @@ Function OutputSite
 									}
 									Line 4 "Name: $($VDIPoolMember.Name) " "Type: $MemberType"
 								}
+								Line 0 ""
+								Line 4 "WildCard: " $VDIPool.Members.WildCard
+								Line 0 ""
 							}
 							ElseIf($? -and $Null -eq $VDIPoolMembers)
 							{
@@ -16292,9 +16246,6 @@ Function OutputSite
 							}
 						}
 					}
-					Line 0 ""
-					Line 4 "WildCard: " $VDIPool.WildCard
-					Line 0 ""
 				}
 				Line 0 ""
 			}
@@ -16310,14 +16261,14 @@ Function OutputSite
 		}
 		If($HTML)
 		{
-			$VDIPools = Get-RASVDIPool -SiteId $Site.Id -EA 0 4>$Null
+			$VDIPools = Get-RASVDIHostPool -SiteId $Site.Id -EA 0 4>$Null
 			If($? -and $Null -ne $VDIPools)
 			{
 				ForEach($VDIPool in $VDIPools)
 				{
 					WriteHTMLLine 3 0 "Pool $($VDIPool.Name)"
 		
-					$VDIPoolMembers = Get-RASVDIPoolMember -SiteId $Site.Id -VDIPoolName $VDIPool.Name -EA 0 4>$Null 
+					$VDIPoolMembers = Get-RASVDIHostPoolMember -SiteId $Site.Id -VDIHostPoolName $VDIPool.Name -EA 0 4>$Null 
 					
 					If($? -and $Null -ne $VDIPoolMembers)
 					{
@@ -16350,9 +16301,9 @@ Function OutputSite
 					$rowdata += @(,("Created by",($Script:htmlsb), $VDIPool.AdminCreate,$htmlwhite))
 					$rowdata += @(,("Created on",($Script:htmlsb), (Get-Date -UFormat "%c" $VDIPool.TimeCreate),$htmlwhite))
 					
-					ForEach($Item in $VDIPool.Members)
+					ForEach($Item in $VDIPool.Members.Members)
 					{
-						$VDIPoolMembers = Get-RASVDIPoolMember -SiteId $Site.Id -VDIPoolName $VDIPool.Name -EA 0 4>$Null
+						$VDIPoolMembers = Get-RASVDIHostPoolMember -SiteId $Site.Id -VDIHostPoolName $VDIPool.Name -EA 0 4>$Null
 						
 						If($? -and $Null -ne $VDIPoolMembers)
 						{
@@ -16412,15 +16363,15 @@ Function OutputSite
 					#Members
 			
 					$rowdata = @()
-					If($VDIPool.Members.Count -eq 0)
+					If($VDIPool.Members.Members.Count -eq 0)
 					{
 						$columnHeaders = @("Members",($Script:htmlsb),"There are no pool members",$htmlwhite)
 					}
 					Else
 					{
-						ForEach($Item in $VDIPool.Members)
+						ForEach($Item in $VDIPool.Members.Members)
 						{
-							$VDIPoolMembers = Get-RASVDIPoolMember -SiteId $Site.Id -VDIPoolName $VDIPool.Name -EA 0 4>$Null
+							$VDIPoolMembers = Get-RASVDIHostPoolMember -SiteId $Site.Id -VDIPoolName $VDIPool.Name -EA 0 4>$Null
 							
 							If($? -and $Null -ne $VDIPoolMembers)
 							{
@@ -16449,6 +16400,10 @@ Function OutputSite
 										$rowdata += @(,("Name: $($VDIPoolMember.Name)",($Script:htmlsb),"Type: $MemberType",$htmlwhite))
 									}
 								}
+
+								$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+								$rowdata += @(,("WildCard",($Script:htmlsb),$VDIPool.Members.WildCard,$htmlwhite))
+
 							}
 							ElseIf($? -and $Null -eq $VDIPoolMembers)
 							{
@@ -16461,9 +16416,6 @@ Function OutputSite
 						}
 					}
 					
-					$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
-					$rowdata += @(,("WildCard",($Script:htmlsb),$VDIPool.WildCard,$htmlwhite))
-
 					$msg = "Members"
 					$columnWidths = @("200","275")
 					FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
@@ -16484,7 +16436,8 @@ Function OutputSite
 		Write-Verbose "$(Get-Date -Format G): `tOutput VDI Templates"
 		#Templates
 		
-		$VDITemplates = Get-RASVDITemplate -SiteId $Site.Id -EA 0 4>$Null | Where-Object {$_.TemplateType -eq "VDIDesktop"}
+		$VDITemplates = Get-RASTemplate -Siteid $Site.Id -ObjType "VDITemplate" -EA 0 4>$Null
+
 		If(!$?)
 		{
 			Write-Warning "
@@ -20453,6 +20406,8 @@ Function OutputSite
 					Default		{$HAMode = "Unable to determine High Availability mode: $($ProviderStatus.HighAvailabilityState)"; Break}
 				}
 				
+				$ProviderUsername = $Provider.ProviderUsername
+				
 				If($MSWord -or $PDF)
 				{
 					$ScriptInformation = New-Object System.Collections.ArrayList
@@ -20473,7 +20428,7 @@ Function OutputSite
 						$ScriptInformation.Add(@{Data = "Tenant ID"; Value = ""; }) > $Null
 						$ScriptInformation.Add(@{Data = "Subscription ID"; Value = ""; }) > $Null
 					}
-					$ScriptInformation.Add(@{Data = "Application ID"; Value = $Provider.VDIUsername; }) > $Null
+					$ScriptInformation.Add(@{Data = "Application ID"; Value = $ProviderUsername; }) > $Null
 					$ScriptInformation.Add(@{Data = "Log level"; Value = $ProviderStatus.LogLevel; }) > $Null
 					$ScriptInformation.Add(@{Data = "Last modification by"; Value = $Provider.AdminLastMod; }) > $Null
 					$ScriptInformation.Add(@{Data = "Modified on"; Value = (Get-Date -UFormat "%c" $Provider.TimeLastMod); }) > $Null
@@ -20518,7 +20473,7 @@ Function OutputSite
 						Line 3 "Tenant ID`t`t: "
 						Line 3 "Subscription ID`t`t: "
 					}
-					Line 3 "Application ID`t`t: " $Provider.VDIUsername
+					Line 3 "Application ID`t`t: " $ProviderUsername
 					Line 3 "Log level`t`t: " $ProviderStatus.LogLevel
 					Line 3 "Last modification by`t: " $Provider.AdminLastMod
 					Line 3 "Modified on`t`t: " (Get-Date -UFormat "%c" $Provider.TimeLastMod)
@@ -20546,7 +20501,7 @@ Function OutputSite
 						$rowdata += @(,("Tenant ID",($Script:htmlsb),"",$htmlwhite))
 						$rowdata += @(,("Subscription ID",($Script:htmlsb),"",$htmlwhite))
 					}
-					$rowdata += @(,("Application ID",($Script:htmlsb),$Provider.VDIUsername,$htmlwhite))
+					$rowdata += @(,("Application ID",($Script:htmlsb),$ProviderUsername,$htmlwhite))
 					$rowdata += @(,("Log level",($Script:htmlsb),$ProviderStatus.LogLevel,$htmlwhite))
 					$rowdata += @(,("Last modification by",($Script:htmlsb), $Provider.AdminLastMod,$htmlwhite))
 					$rowdata += @(,("Modified on",($Script:htmlsb), (Get-Date -UFormat "%c" $Provider.TimeLastMod),$htmlwhite))
@@ -20636,7 +20591,7 @@ Function OutputSite
 					$ScriptInformation.Add(@{Data = "Type"; Value = $VDIType; }) > $Null
 					$ScriptInformation.Add(@{Data = "Host"; Value = $Provider.Server; }) > $Null
 					$ScriptInformation.Add(@{Data = "Port"; Value = $Provider.VDIPort.ToString(); }) > $Null
-					$ScriptInformation.Add(@{Data = "Resource pool"; Value = $Provider.ResourcePool; }) > $Null
+					#$ScriptInformation.Add(@{Data = "Resource pool"; Value = $Provider.ResourcePool; }) > $Null
 				}
 				$ScriptInformation.Add(@{Data = "Dedicated Provider Agent"; Value = $DedicatedVDIAgent.ToString(); }) > $Null
 				If($DedicatedVDIAgent)
@@ -20685,7 +20640,7 @@ Function OutputSite
 					Line 4 "Host`t`t`t`t: " $Provider.Server
 					Line 4 "Port`t`t`t`t: " $Provider.VDIPort.ToString()
 					Line 4 "Description`t`t`t: " $Provider.Description
-					Line 4 "Resource pool`t`t`t: " $Provider.ResourcePool
+					#Line 4 "Resource pool`t`t`t: " $Provider.ResourcePool
 				}
 				Line 4 "Dedicated Provider Agent`t: " $DedicatedVDIAgent.ToString()
 				If($DedicatedVDIAgent)
@@ -20718,7 +20673,7 @@ Function OutputSite
 					$rowdata += @(,("Host",($Script:htmlsb),$Provider.Server,$htmlwhite))
 					$rowdata += @(,("Port",($Script:htmlsb),$Provider.VDIPort.ToString(),$htmlwhite))
 					$rowdata += @(,("Description",($Script:htmlsb),$Provider.Description,$htmlwhite))
-					$rowdata += @(,("Resource pool",($Script:htmlsb),$Provider.ResourcePool,$htmlwhite))
+					#$rowdata += @(,("Resource pool",($Script:htmlsb),$Provider.ResourcePool,$htmlwhite))
 				}
 				$rowdata += @(,("Dedicated Provider Agent",($Script:htmlsb),$DedicatedVDIAgent.ToString(),$htmlwhite))
 				If($DedicatedVDIAgent)
@@ -20746,17 +20701,19 @@ Function OutputSite
 			{
 				#Nothing
 			}
+
+			$ProviderUsername = $Provider.ProviderUsername
 			
 			If($MSWord -or $PDF)
 			{
 				$ScriptInformation = New-Object System.Collections.ArrayList
 				If($VDIType -eq "Azure")
 				{
-					$ScriptInformation.Add(@{Data = "Application ID"; Value = $Provider.VDIUsername; }) > $Null
+					$ScriptInformation.Add(@{Data = "Application ID"; Value = $ProviderUsername; }) > $Null
 				}
 				Else
 				{
-					$ScriptInformation.Add(@{Data = "Username"; Value = $Provider.VDIUsername; }) > $Null
+					$ScriptInformation.Add(@{Data = "Username"; Value = $ProviderUsername; }) > $Null
 				}
 
 				$Table = AddWordTable -Hashtable $ScriptInformation `
@@ -20781,11 +20738,11 @@ Function OutputSite
 			{
 				If($VDIType -eq "Azure")
 				{
-					Line 4 "Application ID: " $Provider.VDIUsername
+					Line 4 "Application ID: " $ProviderUsername
 				}
 				Else
 				{
-					Line 4 "Username`t`t`t: " $Provider.VDIUsername
+					Line 4 "Username`t`t`t: " $ProviderUsername
 				}
 				Line 0 ""
 			}
@@ -20794,11 +20751,11 @@ Function OutputSite
 				$rowdata = @()
 				If($VDIType -eq "Azure")
 				{
-					$columnHeaders = @("Application ID",($Script:htmlsb),$Provider.VDIUsername,$htmlwhite)
+					$columnHeaders = @("Application ID",($Script:htmlsb),$ProviderUsername,$htmlwhite)
 				}
 				Else
 				{
-					$columnHeaders = @("Username",($Script:htmlsb),$Provider.VDIUsername,$htmlwhite)
+					$columnHeaders = @("Username",($Script:htmlsb),$ProviderUsername,$htmlwhite)
 				}
 
 				$msg = "Credentials"
@@ -21068,10 +21025,7 @@ Function OutputSite
 				$ScriptInformation = New-Object System.Collections.ArrayList
 				$ScriptInformation.Add(@{Data = "RDP Printer Name Format"; Value = $ProviderPrinterNameFormat; }) > $Null
 				$ScriptInformation.Add(@{Data = "Remove session number from printer name"; Value = $ProviderRemoveSessionNumberFromPrinter; }) > $Null
-				If($Provider.RemoveSessionNumberFromPrinterName)
-				{
-					$ScriptInformation.Add(@{Data = "Remove client name from printer name"; Value = $ProviderRemoveClientNameFromPrinter; }) > $Null
-				}
+				$ScriptInformation.Add(@{Data = "Remove client name from printer name"; Value = $ProviderRemoveClientNameFromPrinter; }) > $Null
 
 				$Table = AddWordTable -Hashtable $ScriptInformation `
 				-Columns Data,Value `
@@ -21095,10 +21049,7 @@ Function OutputSite
 			{
 				Line 4 "RDP Printer Name Format`t`t`t`t: " $ProviderPrinterNameFormat
 				Line 4 "Remove session number from printer name`t`t: " $ProviderRemoveSessionNumberFromPrinter
-				If($Provider.RemoveSessionNumberFromPrinterName)
-				{
-					Line 4 "Remove client name from printer name`t`t`t: " $ProviderRemoveClientNameFromPrinter
-				}
+				Line 4 "Remove client name from printer name`t`t`t: " $ProviderRemoveClientNameFromPrinter
 				Line 0 ""
 			}
 			If($HTML)
@@ -21106,10 +21057,7 @@ Function OutputSite
 				$rowdata = @()
 				$columnHeaders = @("RDP Printer Name Format",($Script:htmlsb),$ProviderPrinterNameFormat,$htmlwhite)
 				$rowdata += @(,("Remove session number from printer name",($Script:htmlsb),$ProviderRemoveSessionNumberFromPrinter,$htmlwhite))
-				If($Provider.RemoveSessionNumberFromPrinterName)
-				{
-					$rowdata += @(,("Remove client name from printer name",($Script:htmlsb),$ProviderRemoveClientNameFromPrinter,$htmlwhite))
-				}
+				$rowdata += @(,("Remove client name from printer name",($Script:htmlsb),$ProviderRemoveClientNameFromPrinter,$htmlwhite))
 
 				$msg = "RDP printer"
 				$columnWidths = @("200","275")
@@ -26708,7 +26656,7 @@ Function OutputSite
 	ElseIf($? -and $null -eq $RASNotificationHandlers)
 	{
 		Write-Host "
-		No notification handlers information was found
+	No notification handlers information was found
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
@@ -26752,7 +26700,7 @@ Function OutputSite
 	ElseIf($? -and $null -eq $RASNotificationScripts)
 	{
 		Write-Host "
-		No notification scripts information was found
+	No notification scripts information was found
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
@@ -28870,7 +28818,7 @@ Function OutputPublishingSettings
 					ForEach($Item in $PubItem.PublishFromServer)
 					{
 						$cnt++
-						$ItemName = @(Get-RASRDS -Id $Item -EA 0 4>$Null).Server
+						$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
 						
 						If($cnt -eq 0)
 						{
@@ -28888,7 +28836,7 @@ Function OutputPublishingSettings
 					ForEach($Item in $PubItem.PublishFromGroup)
 					{
 						$cnt++
-						$ItemName = @(Get-RASRDSGroup -Id $Item -EA 0 4>$Null).Name
+						$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
 						If($cnt -eq 0)
 						{
 							$ScriptInformation.Add(@{Data = "Published from"; Value = $ItemName; }) > $Null
@@ -29017,7 +28965,7 @@ Function OutputPublishingSettings
 					{
 						$cnt++
 						
-						$ItemName = @(Get-RASRDS -Id $Item -EA 0 4>$Null).Server
+						$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
 						
 						If($cnt -eq 0)
 						{
@@ -29036,7 +28984,7 @@ Function OutputPublishingSettings
 					{
 						$cnt++
 						
-						$ItemName = @(Get-RASRDSGroup -Id $Item -EA 0 4>$Null).Name
+						$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
 						
 						If($cnt -eq 0)
 						{
@@ -29327,7 +29275,7 @@ Function OutputPublishingSettings
 					ForEach($Item in $PubItem.PublishFromServer)
 					{
 						$cnt++
-						$ItemName = @(Get-RASRDS -Id $Item -EA 0 4>$Null).Server
+						$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
 						If($cnt -eq 0)
 						{
 							Line 3 "Published from`t`t`t`t`t`t: " ItemName
@@ -29344,7 +29292,7 @@ Function OutputPublishingSettings
 					ForEach($Item in $PubItem.PublishFromGroup)
 					{
 						$cnt++
-						$ItemName = @(Get-RASRDSGroup -Id $Item -EA 0 4>$Null).Name
+						$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
 						If($cnt -eq 0)
 						{
 							Line 3 "Published from`t`t`t`t`t`t: " ItemName
@@ -29428,7 +29376,7 @@ Function OutputPublishingSettings
 				{
 					ForEach($Item in $PubItem.PublishFromServer)
 					{
-						$ItemName = @(Get-RASRDS -Id $Item -EA 0 4>$Null).Server
+						$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
 						Line 6 $ItemName
 					}
 				}
@@ -29436,7 +29384,7 @@ Function OutputPublishingSettings
 				{
 					ForEach($Item in $PubItem.PublishFromGroup)
 					{
-						$ItemName = @(Get-RASRDSGroup -Id $Item -EA 0 4>$Null).Name
+						$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
 						Line 5 $ItemName
 					}
 				}
@@ -29607,7 +29555,7 @@ Function OutputPublishingSettings
 					ForEach($Item in $PubItem.PublishFromServer)
 					{
 						$cnt++
-						$ItemName = @(Get-RASRDS -Id $Item -EA 0 4>$Null).Server
+						$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
 						If($cnt -eq 0)
 						{
 							$rowdata += @(,("Published from",($Script:htmlsb),$ItemName,$htmlwhite))
@@ -29624,7 +29572,7 @@ Function OutputPublishingSettings
 					ForEach($Item in $PubItem.PublishFromGroup)
 					{
 						$cnt++
-						$ItemName = @(Get-RASRDSGroup -Id $Item -EA 0 4>$Null).Name
+						$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
 						If($cnt -eq 0)
 						{
 							$rowdata += @(,("Published from",($Script:htmlsb),$ItemName,$htmlwhite))
@@ -29727,7 +29675,7 @@ Function OutputPublishingSettings
 					ForEach($Item in $PubItem.PublishFromServer)
 					{
 						$cnt++
-						$ItemName = @(Get-RASRDS -Id $Item -EA 0 4>$Null).Server
+						$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
 						
 						If($cnt -eq 0)
 						{
@@ -29745,7 +29693,7 @@ Function OutputPublishingSettings
 					ForEach($Item in $PubItem.PublishFromGroup)
 					{
 						$cnt++
-						$ItemName = @(Get-RASRDSGroup -Id $Item -EA 0 4>$Null).Name
+						$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
 						
 						If($cnt -eq 0)
 						{
@@ -29954,7 +29902,7 @@ Function OutputPublishingSettings
 					ForEach($Item in $PubItem.PublishFromServer)
 					{
 						$cnt++
-						$ItemName = @(Get-RASRDS -Id $Item -EA 0 4>$Null).Server
+						$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
 						
 						If($cnt -eq 0)
 						{
@@ -29972,7 +29920,7 @@ Function OutputPublishingSettings
 					ForEach($Item in $PubItem.PublishFromGroup)
 					{
 						$cnt++
-						$ItemName = @(Get-RASRDSGroup -Id $Item -EA 0 4>$Null).Name
+						$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
 						If($cnt -eq 0)
 						{
 							$ScriptInformation.Add(@{Data = "Published from"; Value = $ItemName; }) > $Null
@@ -30101,7 +30049,7 @@ Function OutputPublishingSettings
 					{
 						$cnt++
 						
-						$ItemName = @(Get-RASRDS -Id $Item -EA 0 4>$Null).Server
+						$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
 						
 						If($cnt -eq 0)
 						{
@@ -30120,7 +30068,7 @@ Function OutputPublishingSettings
 					{
 						$cnt++
 						
-						$ItemName = @(Get-RASRDSGroup -Id $Item -EA 0 4>$Null).Name
+						$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
 						
 						If($cnt -eq 0)
 						{
@@ -30231,7 +30179,7 @@ Function OutputPublishingSettings
 					ForEach($Item in $PubItem.PublishFromServer)
 					{
 						$cnt++
-						$ItemName = @(Get-RASRDS -Id $Item -EA 0 4>$Null).Server
+						$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
 						If($cnt -eq 0)
 						{
 							Line 3 "Published from`t`t`t`t`t`t: " ItemName
@@ -30248,7 +30196,7 @@ Function OutputPublishingSettings
 					ForEach($Item in $PubItem.PublishFromGroup)
 					{
 						$cnt++
-						$ItemName = @(Get-RASRDSGroup -Id $Item -EA 0 4>$Null).Name
+						$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
 						If($cnt -eq 0)
 						{
 							Line 3 "Published from`t`t`t`t`t`t: " ItemName
@@ -30332,7 +30280,7 @@ Function OutputPublishingSettings
 				{
 					ForEach($Item in $PubItem.PublishFromServer)
 					{
-						$ItemName = @(Get-RASRDS -Id $Item -EA 0 4>$Null).Server
+						$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
 						Line 6 $ItemName
 					}
 				}
@@ -30340,7 +30288,7 @@ Function OutputPublishingSettings
 				{
 					ForEach($Item in $PubItem.PublishFromGroup)
 					{
-						$ItemName = @(Get-RASRDSGroup -Id $Item -EA 0 4>$Null).Name
+						$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
 						Line 5 $ItemName
 					}
 				}
@@ -30387,7 +30335,7 @@ Function OutputPublishingSettings
 					ForEach($Item in $PubItem.PublishFromServer)
 					{
 						$cnt++
-						$ItemName = @(Get-RASRDS -Id $Item -EA 0 4>$Null).Server
+						$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
 						If($cnt -eq 0)
 						{
 							$rowdata += @(,("Published from",($Script:htmlsb),$ItemName,$htmlwhite))
@@ -30404,7 +30352,7 @@ Function OutputPublishingSettings
 					ForEach($Item in $PubItem.PublishFromGroup)
 					{
 						$cnt++
-						$ItemName = @(Get-RASRDSGroup -Id $Item -EA 0 4>$Null).Name
+						$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
 						If($cnt -eq 0)
 						{
 							$rowdata += @(,("Published from",($Script:htmlsb),$ItemName,$htmlwhite))
@@ -30507,7 +30455,7 @@ Function OutputPublishingSettings
 					ForEach($Item in $PubItem.PublishFromServer)
 					{
 						$cnt++
-						$ItemName = @(Get-RASRDS -Id $Item -EA 0 4>$Null).Server
+						$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
 						
 						If($cnt -eq 0)
 						{
@@ -30525,7 +30473,7 @@ Function OutputPublishingSettings
 					ForEach($Item in $PubItem.PublishFromGroup)
 					{
 						$cnt++
-						$ItemName = @(Get-RASRDSGroup -Id $Item -EA 0 4>$Null).Name
+						$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
 						
 						If($cnt -eq 0)
 						{
@@ -30589,7 +30537,7 @@ Function OutputPublishingSettings
 				Default					{$ConnectTo = "Unable to determine Connect To: $($PubItem.ConnectTo)"; Break}
 			}
 			
-			$results = Get-RASVDIPool -Id $PubItem.VDIPoolId -EA 0 4>$Null
+			$results = Get-RASVDIHostPool -Id $PubItem.VDIPoolId -EA 0 4>$Null
 			
 			If($? -and $Null -ne $results)
 			{
@@ -31933,7 +31881,7 @@ Function OutputPublishingSettings
 					ForEach($Item in $PubItem.PublishFromServer)
 					{
 						$cnt++
-						$ItemName = @(Get-RASRDS -Id $Item -EA 0 4>$Null).Server
+						$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
 						
 						If($cnt -eq 0)
 						{
@@ -31951,7 +31899,7 @@ Function OutputPublishingSettings
 					ForEach($Item in $PubItem.PublishFromGroup)
 					{
 						$cnt++
-						$ItemName = @(Get-RASRDSGroup -Id $Item -EA 0 4>$Null).Name
+						$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
 						If($cnt -eq 0)
 						{
 							$ScriptInformation.Add(@{Data = "Published from"; Value = $ItemName; }) > $Null
@@ -32080,7 +32028,7 @@ Function OutputPublishingSettings
 					{
 						$cnt++
 						
-						$ItemName = @(Get-RASRDS -Id $Item -EA 0 4>$Null).Server
+						$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
 						
 						If($cnt -eq 0)
 						{
@@ -32099,7 +32047,7 @@ Function OutputPublishingSettings
 					{
 						$cnt++
 						
-						$ItemName = @(Get-RASRDSGroup -Id $Item -EA 0 4>$Null).Name
+						$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
 						
 						If($cnt -eq 0)
 						{
@@ -32426,7 +32374,7 @@ Function OutputPublishingSettings
 					ForEach($Item in $PubItem.PublishFromServer)
 					{
 						$cnt++
-						$ItemName = @(Get-RASRDS -Id $Item -EA 0 4>$Null).Server
+						$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
 						If($cnt -eq 0)
 						{
 							Line 3 "Published from`t`t`t`t`t`t: " ItemName
@@ -32443,7 +32391,7 @@ Function OutputPublishingSettings
 					ForEach($Item in $PubItem.PublishFromGroup)
 					{
 						$cnt++
-						$ItemName = @(Get-RASRDSGroup -Id $Item -EA 0 4>$Null).Name
+						$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
 						If($cnt -eq 0)
 						{
 							Line 3 "Published from`t`t`t`t`t`t: " ItemName
@@ -32527,7 +32475,7 @@ Function OutputPublishingSettings
 				{
 					ForEach($Item in $PubItem.PublishFromServer)
 					{
-						$ItemName = @(Get-RASRDS -Id $Item -EA 0 4>$Null).Server
+						$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
 						Line 6 $ItemName
 					}
 				}
@@ -32535,7 +32483,7 @@ Function OutputPublishingSettings
 				{
 					ForEach($Item in $PubItem.PublishFromGroup)
 					{
-						$ItemName = @(Get-RASRDSGroup -Id $Item -EA 0 4>$Null).Name
+						$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
 						Line 5 $ItemName
 					}
 				}
@@ -32703,7 +32651,7 @@ Function OutputPublishingSettings
 					ForEach($Item in $PubItem.PublishFromServer)
 					{
 						$cnt++
-						$ItemName = @(Get-RASRDS -Id $Item -EA 0 4>$Null).Server
+						$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
 						If($cnt -eq 0)
 						{
 							$rowdata += @(,("Published from",($Script:htmlsb),$ItemName,$htmlwhite))
@@ -32720,7 +32668,7 @@ Function OutputPublishingSettings
 					ForEach($Item in $PubItem.PublishFromGroup)
 					{
 						$cnt++
-						$ItemName = @(Get-RASRDSGroup -Id $Item -EA 0 4>$Null).Name
+						$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
 						If($cnt -eq 0)
 						{
 							$rowdata += @(,("Published from",($Script:htmlsb),$ItemName,$htmlwhite))
@@ -32823,7 +32771,7 @@ Function OutputPublishingSettings
 					ForEach($Item in $PubItem.PublishFromServer)
 					{
 						$cnt++
-						$ItemName = @(Get-RASRDS -Id $Item -EA 0 4>$Null).Server
+						$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
 						
 						If($cnt -eq 0)
 						{
@@ -32841,7 +32789,7 @@ Function OutputPublishingSettings
 					ForEach($Item in $PubItem.PublishFromGroup)
 					{
 						$cnt++
-						$ItemName = @(Get-RASRDSGroup -Id $Item -EA 0 4>$Null).Name
+						$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
 						
 						If($cnt -eq 0)
 						{
@@ -33061,7 +33009,7 @@ Function OutputPublishingSettings
 					ForEach($Item in $PubItem.PublishFromServer)
 					{
 						$cnt++
-						$ItemName = @(Get-RASRDS -Id $Item -EA 0 4>$Null).Server
+						$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
 						
 						If($cnt -eq 0)
 						{
@@ -33079,7 +33027,7 @@ Function OutputPublishingSettings
 					ForEach($Item in $PubItem.PublishFromGroup)
 					{
 						$cnt++
-						$ItemName = @(Get-RASRDSGroup -Id $Item -EA 0 4>$Null).Name
+						$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
 						If($cnt -eq 0)
 						{
 							$ScriptInformation.Add(@{Data = "Published from"; Value = $ItemName; }) > $Null
@@ -33208,7 +33156,7 @@ Function OutputPublishingSettings
 					{
 						$cnt++
 						
-						$ItemName = @(Get-RASRDS -Id $Item -EA 0 4>$Null).Server
+						$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
 						
 						If($cnt -eq 0)
 						{
@@ -33227,7 +33175,7 @@ Function OutputPublishingSettings
 					{
 						$cnt++
 						
-						$ItemName = @(Get-RASRDSGroup -Id $Item -EA 0 4>$Null).Name
+						$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
 						
 						If($cnt -eq 0)
 						{
@@ -33338,7 +33286,7 @@ Function OutputPublishingSettings
 					ForEach($Item in $PubItem.PublishFromServer)
 					{
 						$cnt++
-						$ItemName = @(Get-RASRDS -Id $Item -EA 0 4>$Null).Server
+						$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
 						If($cnt -eq 0)
 						{
 							Line 3 "Published from`t`t`t`t`t`t: " ItemName
@@ -33355,7 +33303,7 @@ Function OutputPublishingSettings
 					ForEach($Item in $PubItem.PublishFromGroup)
 					{
 						$cnt++
-						$ItemName = @(Get-RASRDSGroup -Id $Item -EA 0 4>$Null).Name
+						$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
 						If($cnt -eq 0)
 						{
 							Line 3 "Published from`t`t`t`t`t`t: " ItemName
@@ -33422,7 +33370,7 @@ Function OutputPublishingSettings
 				{
 					ForEach($Item in $PubItem.PublishFromServer)
 					{
-						$ItemName = @(Get-RASRDS -Id $Item -EA 0 4>$Null).Server
+						$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
 						Line 6 $ItemName
 					}
 				}
@@ -33430,7 +33378,7 @@ Function OutputPublishingSettings
 				{
 					ForEach($Item in $PubItem.PublishFromGroup)
 					{
-						$ItemName = @(Get-RASRDSGroup -Id $Item -EA 0 4>$Null).Name
+						$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
 						Line 5 $ItemName
 					}
 				}
@@ -33477,7 +33425,7 @@ Function OutputPublishingSettings
 					ForEach($Item in $PubItem.PublishFromServer)
 					{
 						$cnt++
-						$ItemName = @(Get-RASRDS -Id $Item -EA 0 4>$Null).Server
+						$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
 						If($cnt -eq 0)
 						{
 							$rowdata += @(,("Published from",($Script:htmlsb),$ItemName,$htmlwhite))
@@ -33494,7 +33442,7 @@ Function OutputPublishingSettings
 					ForEach($Item in $PubItem.PublishFromGroup)
 					{
 						$cnt++
-						$ItemName = @(Get-RASRDSGroup -Id $Item -EA 0 4>$Null).Name
+						$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
 						If($cnt -eq 0)
 						{
 							$rowdata += @(,("Published from",($Script:htmlsb),$ItemName,$htmlwhite))
@@ -33597,7 +33545,7 @@ Function OutputPublishingSettings
 					ForEach($Item in $PubItem.PublishFromServer)
 					{
 						$cnt++
-						$ItemName = @(Get-RASRDS -Id $Item -EA 0 4>$Null).Server
+						$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
 						
 						If($cnt -eq 0)
 						{
@@ -33615,7 +33563,7 @@ Function OutputPublishingSettings
 					ForEach($Item in $PubItem.PublishFromGroup)
 					{
 						$cnt++
-						$ItemName = @(Get-RASRDSGroup -Id $Item -EA 0 4>$Null).Name
+						$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
 						
 						If($cnt -eq 0)
 						{
@@ -35887,7 +35835,7 @@ Function ProcessUniversalPrinting
 			PrinterRetention   = $RASPrinterSettings.PrinterRetention
 		}
 		
-		$results = Get-RASRDS -SiteId $Site.Id -EA 0 4>$Null
+		$results = Get-RASRDSHost -SiteId $Site.Id -EA 0 4>$Null
 		
 		If(!($?))
 		{
@@ -36714,7 +36662,7 @@ Function ProcessUniversalScanning
 			ReplicateSettings = $Results.ReplicateTWAINPattern
 		}
 		
-		$results = Get-RASRDS -SiteId $Site.Id -EA 0 4>$Null
+		$results = Get-RASRDSHost -SiteId $Site.Id -EA 0 4>$Null
 		
 		If(!($?))
 		{
