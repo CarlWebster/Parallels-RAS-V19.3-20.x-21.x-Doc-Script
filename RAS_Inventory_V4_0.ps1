@@ -570,6 +570,10 @@ Param(
 
 #Version 4.00 
 #
+#	In Function OutputSite, when processing Themes, Properties, Access:
+#		If the Theme's MFA ID is not 0 and is found, use the MFA name
+#		If the Theme's MFA ID is 0, use "No MFA provider selected for this Theme"
+#		If the Theme's MFA ID is not found, use "Unable to determine MFA provider"
 #	Updated for the PowerShell module changes in RAS 19.3 and 19.4
 #
 
@@ -24640,6 +24644,10 @@ Function OutputSite
 			If($? -and $Null -ne $Results)
 			{
 				$MFAProvider = $Results.Name
+			}
+			ElseIf($? -and $Null -eq $Results -and $Theme.MFAId -eq 0)
+			{
+				$MFAProvider = "No MFA provider selected for this Theme"
 			}
 			Else
 			{
