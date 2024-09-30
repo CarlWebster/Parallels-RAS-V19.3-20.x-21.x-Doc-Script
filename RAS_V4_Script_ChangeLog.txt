@@ -10,8 +10,12 @@
 
 #Version 4.00 
 #
+#	In Function OutputMFASetting, add TOTP and MicrosoftTOTP
+#		https://download.parallels.com/ras/v19/docs/en_US/Parallels-RAS-v19-PowerShell-Guide/RASAdmin/types/MFAType.html
+#	In Function OutputSAMLSetting, handle multiple SAML items
 #	In Function OutputSite, when processing Themes, Properties, Access:
 #		If the Theme's MFA ID is not 0 and is found, use the MFA name
 #		If the Theme's MFA ID is 0, use "No MFA provider selected for this Theme"
 #		If the Theme's MFA ID is not found, use "Unable to determine MFA provider"
 #	Updated for the PowerShell module changes in RAS 19.3 and 19.4
+#	Updated numerous ENUMS throughout the script
