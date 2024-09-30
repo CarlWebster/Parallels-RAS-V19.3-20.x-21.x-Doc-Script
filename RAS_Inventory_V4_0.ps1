@@ -4619,6 +4619,9 @@ Function OutputSite
 	Param([object]$Site)
 	
 	Write-Verbose "$(Get-Date -Format G): Output Site $($Site.Name)"
+	
+	#Tenant broker goes here
+	
 	$RDSHosts = Get-RASRDSHost -Siteid $Site.Id -EA 0 4> $Null
 	
 	If(!$?)
@@ -4680,6 +4683,7 @@ Function OutputSite
 		Write-Verbose "$(Get-Date -Format G): `tOutput RD Session Hosts"
 		ForEach($RDSHost in $RDSHosts)
 		{
+			Write-Verbose "$(Get-Date -Format G): `t`t$($RDSHost.Server)"
 			$RDSStatus = Get-RASRDSHostStatus -Id $RDSHost.Id -EA 0 4>$Null
 			
 			If(!$?)
@@ -4723,6 +4727,17 @@ Function OutputSite
 			{
 				$Sessions = "$($RDSStatus.ActiveSessions)/$($RDSHost.MaxSessions)"
 				$RDSStatusAgentState = GetRASStatus $RDSStatus.AgentState
+				If($Null -ne $RDSStatus.ServerOS)
+				{
+					$RDSHostOS = $RDSStatus.ServerOS -Replace '\s*-.*$'
+					$TmpArray = $RDSStatus.ServerOS.Split(":")
+					$RDSHostHypervisor = $TmpArray[$TmpArray.Count -1]
+				}
+				Else
+				{
+					$RDSHostOS = "Unable to determine because $RDSStatusAgentState"
+					$RDSHostHypervisor = "Unable to determine because $RDSStatusAgentState"
+				}
 				
 				If($MSWord -or $PDF)
 				{
@@ -4735,8 +4750,9 @@ Function OutputSite
 					$ScriptInformation.Add(@{Data = "Disk write time"; Value = "$($RDSStatus.DiskWrite)%"; }) > $Null
 					$ScriptInformation.Add(@{Data = "Sessions"; Value = $Sessions; }) > $Null
 					$ScriptInformation.Add(@{Data = "Preferred Connection Broker"; Value = $RDSStatus.PreferredBroker; }) > $Null
-					$ScriptInformation.Add(@{Data = "Operating system"; Value = $RDSStatus.ServerOS; }) > $Null
+					$ScriptInformation.Add(@{Data = "Operating system"; Value = $RDSHostOS; }) > $Null
 					$ScriptInformation.Add(@{Data = "Agent version"; Value = $RDSStatus.AgentVer; }) > $Null
+					$ScriptInformation.Add(@{Data = "Hypervisor"; Value = $RDSHostHypervisor; }) > $Null
 
 					$Table = AddWordTable -Hashtable $ScriptInformation `
 					-Columns Data,Value `
@@ -4766,8 +4782,9 @@ Function OutputSite
 					Line 2 "Disk write time`t`t`t: " "$($RDSStatus.DiskWrite)%"
 					Line 2 "Sessions`t`t`t: " $Sessions
 					Line 2 "Preferred Connection Broker`t: " $RDSStatus.PreferredBroker
-					Line 2 "Operating system`t`t: " $RDSStatus.ServerOS
+					Line 2 "Operating system`t`t: " $RDSHostOS
 					Line 2 "Agent version`t`t`t: " $RDSStatus.AgentVer
+					Line 2 "Hypervisor`t: " $RDSHostHypervisor
 					Line 0 ""
 				}
 				If($HTML)
@@ -4781,8 +4798,9 @@ Function OutputSite
 					$rowdata += @(,("Disk write time",($Script:htmlsb),"$($RDSStatus.DiskWrite)%",$htmlwhite))
 					$rowdata += @(,("Sessions",($Script:htmlsb),$Sessions,$htmlwhite))
 					$rowdata += @(,("Preferred Connection Broker",($Script:htmlsb),$RDSStatus.PreferredBroker,$htmlwhite))
-					$rowdata += @(,("Operating system",($Script:htmlsb),$RDSStatus.ServerOS,$htmlwhite))
+					$rowdata += @(,("Operating system",($Script:htmlsb),$RDSHostOS,$htmlwhite))
 					$rowdata += @(,("Agent version",($Script:htmlsb),$RDSStatus.AgentVer,$htmlwhite))
+					$rowdata += @(,("Hypervisor",($Script:htmlsb),$RDSHostHypervisor,$htmlwhite))
 
 					$msg = ""
 					$columnWidths = @("200","350")
@@ -4850,6 +4868,7 @@ Function OutputSite
 	{
 		ForEach($Provider in $Providers)
 		{
+			Write-Verbose "$(Get-Date -Format G): `t`t$($Provider.Server)"
 			$Providerstatus = Get-RASProviderStatus -Id $Provider.Id -EA 0 4>$Null
 			
 			If(!$?)
@@ -5016,6 +5035,7 @@ Function OutputSite
 	{
 		ForEach($SecureGateway in $SecureGateways)
 		{
+			Write-Verbose "$(Get-Date -Format G): `t`t$($SecureGateway.Server)"
 			$SecureGatewayStatus = Get-RASGatewayStatus -Id $SecureGateway.Id -EA 0 4>$Null
 			
 			If(!$?)
@@ -5186,6 +5206,7 @@ Function OutputSite
 	{
 		ForEach($ConnectionBroker in $ConnectionBrokers)
 		{
+			Write-Verbose "$(Get-Date -Format G): `t`t$($ConnectionBroker.Server)"
 			$ConnectionBrokerStatus = Get-RASBrokerStatus -Id $ConnectionBroker.Id -EA 0 4>$Null
 			
 			If(!$?)
@@ -5237,6 +5258,17 @@ Function OutputSite
 				}
 				
 				$ConnectionBrokerStatusAgentState = GetRASStatus $ConnectionBrokerStatus.AgentState
+				If($Null -ne $ConnectionBrokerStatus.ServerOS)
+				{
+					$ConnectionBrokerOS = $ConnectionBrokerStatus.ServerOS -Replace '\s*-.*$'
+					$TmpArray = $ConnectionBrokerStatus.ServerOS.Split(":")
+					$CBHypervisor = $TmpArray[$TmpArray.Count -1]
+				}
+				Else
+				{
+					$ConnectionBrokerOS = "Unable to determine because $ConnectionBrokerStatusAgentState"
+					$CBHypervisor = "Unable to determine because $ConnectionBrokerStatusAgentState"
+				}
 				
 				If($MSWord -or $PDF)
 				{
@@ -5248,8 +5280,9 @@ Function OutputSite
 					$ScriptInformation.Add(@{Data = "RAM"; Value = "$($ConnectionBrokerStatus.MemLoad)%"; }) > $Null
 					$ScriptInformation.Add(@{Data = "Disk read time"; Value = "$($ConnectionBrokerStatus.DiskRead)%"; }) > $Null
 					$ScriptInformation.Add(@{Data = "Disk write time"; Value = "$($ConnectionBrokerStatus.DiskWrite)%"; }) > $Null
-					$ScriptInformation.Add(@{Data = "Operating system"; Value = $ConnectionBrokerStatus.ServerOS; }) > $Null
+					$ScriptInformation.Add(@{Data = "Operating system"; Value = $ConnectionBrokerOS; }) > $Null
 					$ScriptInformation.Add(@{Data = "Agent version"; Value = $ConnectionBrokerStatus.AgentVer; }) > $Null
+					$ScriptInformation.Add(@{Data = "Hypervisor"; Value = $CBHypervisor; }) > $Null
 
 					$Table = AddWordTable -Hashtable $ScriptInformation `
 					-Columns Data,Value `
@@ -5278,8 +5311,9 @@ Function OutputSite
 					Line 2 "RAM`t`t: " "$($ConnectionBrokerStatus.MemLoad)%"
 					Line 2 "Disk read time`t: " "$($ConnectionBrokerStatus.DiskRead)%"
 					Line 2 "Disk write time`t: " "$($ConnectionBrokerStatus.DiskWrite)%"
-					Line 2 "Operating system: " $ConnectionBrokerStatus.ServerOS
+					Line 2 "Operating system: " $ConnectionBrokerOS
 					Line 2 "Agent version`t: " $ConnectionBrokerStatus.AgentVer
+					Line 2 "Hypervisor`t: " $CBHypervisor
 					Line 0 ""
 				}
 				If($HTML)
@@ -5292,8 +5326,9 @@ Function OutputSite
 					$rowdata += @(,("RAM",($Script:htmlsb),"$($ConnectionBrokerStatus.MemLoad)%",$htmlwhite))
 					$rowdata += @(,("Disk read time",($Script:htmlsb),"$($ConnectionBrokerStatus.DiskRead)%",$htmlwhite))
 					$rowdata += @(,("Disk write time",($Script:htmlsb),"$($ConnectionBrokerStatus.DiskWrite)%",$htmlwhite))
-					$rowdata += @(,("Operating system",($Script:htmlsb),$ConnectionBrokerStatus.ServerOS,$htmlwhite))
+					$rowdata += @(,("Operating system",($Script:htmlsb),$ConnectionBrokerOS,$htmlwhite))
 					$rowdata += @(,("Agent version",($Script:htmlsb),$ConnectionBrokerStatus.AgentVer,$htmlwhite))
+					$rowdata += @(,("Hypervisor",($Script:htmlsb),$CBHypervisor,$htmlwhite))
 
 					$msg = ""
 					$columnWidths = @("200","350")
@@ -5361,11 +5396,76 @@ Function OutputSite
 	{
 		ForEach($EnrollmentServer in $EnrollmentServers)
 		{
+			Write-Verbose "$(Get-Date -Format G): `t`t$($EnrollmentServer.Server)"
+			
+			$ESStatus = Get-RASEnrollmentServerStatus -Server $EnrollmentServer.Server -EA 0 4>$Null
+			
+			If(!$?)
+			{
+				Write-Warning "
+				`n
+				Unable to retrieve Status for Enrollment Server $($EnrollmentServer.Server)`
+				"
+				If($MSWord -or $PDF)
+				{
+					WriteWordLine 0 0 "Unable to retrieve Status for Enrollment Server $($EnrollmentServer.Server)"
+				}
+				If($Text)
+				{
+					Line 0 "Unable to retrieve Status for Enrollment Server $($EnrollmentServer.Server)"
+				}
+				If($HTML)
+				{
+					WriteHTMLLine 0 0 "Unable to retrieve Status for Enrollment Server $($EnrollmentServer.Server)"
+				}
+			}
+			ElseIf($? -and $Null -eq $ESStatus)
+			{
+				Write-Host "
+				No Status retrieved for Enrollment Server $($EnrollmentServer.Server)`
+				" -ForegroundColor White
+				If($MSWord -or $PDF)
+				{
+					WriteWordLine 0 0 "No Status retrieved for Enrollment Server $($EnrollmentServer.Server)"
+				}
+				If($Text)
+				{
+					Line 0 "No Status retrieved for Enrollment Server $($EnrollmentServer.Server)"
+				}
+				If($HTML)
+				{
+					WriteHTMLLine 0 0 "No Status retrieved for Enrollment Server $($EnrollmentServer.Server)"
+				}
+			}
+			Else
+			{
+				$EnrollmentServerStatus = GetRASStatus $ESStatus.AgentState
+			}
+			
+			If($Null -ne $ESStatus.ServerOS)
+			{
+				$EnrollmentServerOS = $ESStatus.ServerOS -Replace '\s*-.*$'
+				$TmpArray = $ESStatus.ServerOS.Split(":")
+				$ESHypervisor = $TmpArray[$TmpArray.Count -1]
+			}
+			Else
+			{
+				$EnrollmentServerOS = "Unable to determine because $EnrollmentServerStatus"
+				$ESHypervisor = "Unable to determine because $EnrollmentServerStatus"
+			}
+
 			If($MSWord -or $PDF)
 			{
 				$ScriptInformation = New-Object System.Collections.ArrayList
 				$ScriptInformation.Add(@{Data = "Name"; Value = $EnrollmentServer.Server; }) > $Null
-				$ScriptInformation.Add(@{Data = "Status"; Value = "Can't find"; }) > $Null
+				$ScriptInformation.Add(@{Data = "Status"; Value = $EnrollmentServerStatus; }) > $Null
+				$ScriptInformation.Add(@{Data = "CPU"; Value = "$($ESSTatus.CPULoad)%"; }) > $Null
+				$ScriptInformation.Add(@{Data = "RAM"; Value = "$($ESSTatus.MemLoad)%"; }) > $Null
+				$ScriptInformation.Add(@{Data = "Disk read time"; Value = "$($ESSTatus.DiskRead)%"; }) > $Null
+				$ScriptInformation.Add(@{Data = "Disk write time"; Value = "$($ESSTatus.DiskWrite)%"; }) > $Null
+				$ScriptInformation.Add(@{Data = "Operating system"; Value = $EnrollmentServerOS; }) > $Null
+				$ScriptInformation.Add(@{Data = "Agent version"; Value = $ESSTatus.AgentVer; }) > $Null
+				$ScriptInformation.Add(@{Data = "Hypervisor"; Value = $ESHypervisor; }) > $Null
 
 				$Table = AddWordTable -Hashtable $ScriptInformation `
 				-Columns Data,Value `
@@ -5387,15 +5487,29 @@ Function OutputSite
 			}
 			If($Text)
 			{
-				Line 3 "Name`t`t`t: " $EnrollmentServer.Server
-				Line 3 "Status`t`t`t: " "Can't find"
+				Line 2 "Name`t`t`t: " $EnrollmentServer.Server
+				Line 2 "Status`t`t`t: " $EnrollmentServerStatus
+				Line 2 "CPU`t`t: " "$($ESSTatus.CPULoad)%"
+				Line 2 "RAM`t`t: " "$($ESSTatus.MemLoad)%"
+				Line 2 "Disk read time`t: " "$($ESSTatus.DiskRead)%"
+				Line 2 "Disk write time`t: " "$($ESSTatus.DiskWrite)%"
+				Line 2 "Operating system: " $ESSTatus.ServerOS
+				Line 2 "Agent version`t: " $ESSTatus.AgentVer
+				Line 2 "Hypervisor`t: " $ESHypervisor
 				Line 0 ""
 			}
 			If($HTML)
 			{
 				$rowdata = @()
 				$columnHeaders = @("Name",($Script:htmlsb),$EnrollmentServer.Server,$htmlwhite)
-				$rowdata += @(,("Status",($Script:htmlsb),"Can't find",$htmlwhite))
+				$rowdata += @(,("Status",($Script:htmlsb),$EnrollmentServerStatus,$htmlwhite))
+				$rowdata += @(,("CPU",($Script:htmlsb),"$($ESSTatus.CPULoad)%",$htmlwhite))
+				$rowdata += @(,("RAM",($Script:htmlsb),"$($ESSTatus.MemLoad)%",$htmlwhite))
+				$rowdata += @(,("Disk read time",($Script:htmlsb),"$($ESSTatus.DiskRead)%",$htmlwhite))
+				$rowdata += @(,("Disk write time",($Script:htmlsb),"$($ESSTatus.DiskWrite)%",$htmlwhite))
+				$rowdata += @(,("Operating system",($Script:htmlsb),$ESSTatus.ServerOS,$htmlwhite))
+				$rowdata += @(,("Agent version",($Script:htmlsb),$ESSTatus.AgentVer,$htmlwhite))
+				$rowdata += @(,("Hypervisor",($Script:htmlsb),$ESHypervisor,$htmlwhite))
 
 				$msg = ""
 				$columnWidths = @("200","275")
@@ -5462,6 +5576,7 @@ Function OutputSite
 	{
 		ForEach($RDSHost in $RDSHosts)
 		{
+			Write-Verbose "$(Get-Date -Format G): `t$($RDSHost.Server)"
 			$RDSStatus = Get-RASRDSHostStatus -Id $RDSHost.Id -EA 0 4>$Null
 			
 			If(!$?)
@@ -15487,7 +15602,7 @@ Function OutputSite
 			$Action = $RDSSchedule.Action
 			If($RDSSChedule.Action -eq "Reboot")
 			{
-				If($RDSSchedule.DrainMode)
+				If($RDSSchedule.Options.EnableDrainMode)
 				{
 					$Action = "Reboot - Drain Mode"
 				}
@@ -15499,28 +15614,9 @@ Function OutputSite
 
 			If($Action -eq "Reboot - Drain Mode")
 			{
-				If(validObject $RDSSchedule CompleteRebootInSecs)
+				If(validObject $RDSSchedule.Options ForceRebootAfterSecs)
 				{
-					Switch ($RDSSchedule.CompleteRebootInSecs)
-					{
-						600		{$TimeDuration = "10 minutes"; Break}
-						900		{$TimeDuration = "15 minutes"; Break}
-						1800	{$TimeDuration = "30 minutes"; Break}
-						2700	{$TimeDuration = "45 minutes"; Break}
-						3600	{$TimeDuration = "1 hour"; Break}
-						7200	{$TimeDuration = "2 hours"; Break}
-						10800	{$TimeDuration = "3 hours"; Break}
-						Default	{$TimeDuration = "Unable to determine Complete in seconds: $($RDSSchedule.CompleteRebootInSecs)"; Break}
-					}
-				}
-				Else
-				{
-					$TimeDuration = ""
-				}
-				
-				If(validObject $RDSSchedule ForceRebootAfterSecs)
-				{
-					Switch ($RDSSchedule.ForceRebootAfterSecs)
+					Switch ($RDSSchedule.Options.ForceRebootAfterSecs)
 					{
 						900		{$ForceRebootTime = "15 minutes"; Break}
 						1800	{$ForceRebootTime = "30 minutes"; Break}
@@ -15531,7 +15627,7 @@ Function OutputSite
 						21600	{$ForceRebootTime = "6 hours"; Break}
 						43200	{$ForceRebootTime = "12 hours"; Break}
 						86400	{$ForceRebootTime = "1 day"; Break}
-						Default	{$ForceRebootTime = "Unable to determine Force reboot after seconds: $($RDSSchedule.ForceRebootAfterSecs)"; Break}
+						Default	{$ForceRebootTime = "Unable to determine Force reboot after seconds: $($RDSSchedule.Options.ForceRebootAfterSecs)"; Break}
 					}
 				}
 				Else
@@ -15540,7 +15636,7 @@ Function OutputSite
 				}
 			}
 			
-			Switch ($RDSSchedule.Repeat)
+			Switch ($RDSSchedule.Trigger.Repeat)
 			{
 				Never			{$Repeat = "Never "; Break}
 				EveryDay		{$Repeat = "Every day"; Break}
@@ -15548,12 +15644,12 @@ Function OutputSite
 				Every2Weeks		{$Repeat = "Every 2 weeks"; Break}
 				EveryMonth		{$Repeat = "Every month"; Break}
 				EveryYear		{$Repeat = "Every year"; Break}
-				SpecificDays	{$Repeat = "Every $($RDSSchedule.SpecificDays)"; Break}
-				Default			{$Repeat = "Unable to determine the Repeat: $($RDSSchedule.Repeat)"; Break}
+				SpecificDays	{$Repeat = "Every $($RDSSchedule.Trigger.SpecificDays)"; Break}
+				Default			{$Repeat = "Unable to determine the Repeat: $($RDSSchedule.Trigger.Repeat)"; Break}
 			}
 			
 			$Target = @()
-			If($RDSSchedule.TargetType -eq "Server")
+			If($RDSSchedule.TargetType -eq "Host")
 			{
 				ForEach($Item in $RDSSchedule.TargetIds)
 				{
@@ -15565,11 +15661,11 @@ Function OutputSite
 					}
 					Else
 					{
-						Target += "Unable to find RDS Server for ID $($Item)"
+						$Target += "Unable to find RDS Host for ID $($Item)"
 					}
 				}
 			}
-			ElseIf($RDSSchedule.TargetType -eq "ServerGroup")
+			ElseIf($RDSSchedule.TargetType -eq "HostPool")
 			{
 				ForEach($Item in $RDSSchedule.TargetIds)
 				{
@@ -15581,13 +15677,13 @@ Function OutputSite
 					}
 					Else
 					{
-						Target += "Unable to find RDS Server Group for ID $($Item)"
+						$Target += "Unable to find RDS Host Pool for ID $($Item)"
 					}
 				}
 			}
 			Else
 			{
-				Target += "Unable to determine Target for TargetType: $($RDSSchedule.TargetType)"
+				$Target += "Unable to determine Target for TargetType: $($RDSSchedule.TargetType)"
 			}
 			
 			If($MSWord -or $PDF)
@@ -15611,7 +15707,7 @@ Function OutputSite
 					}
 				}
 				
-				$ScriptInformation.Add(@{Data = "Start"; Value = $RDSSchedule.StartDateTime; }) > $Null
+				$ScriptInformation.Add(@{Data = "Start"; Value = $RDSSchedule.Trigger.StartDateTime; }) > $Null
 				$ScriptInformation.Add(@{Data = "Repeat"; Value = $Repeat; }) > $Null
 				$ScriptInformation.Add(@{Data = "Description"; Value = $RDSSchedule.Description; }) > $Null
 				$ScriptInformation.Add(@{Data = "Last modification by"; Value = $RDSSchedule.AdminLastMod; }) > $Null
@@ -15657,7 +15753,7 @@ Function OutputSite
 					}
 				}
 				
-				Line 2 "Start`t`t`t: " $RDSSchedule.StartDateTime
+				Line 2 "Start`t`t`t: " $RDSSchedule.Trigger.StartDateTime
 				Line 2 "Repeat`t`t`t: " $Repeat
 				Line 2 "Description`t`t: " $RDSSchedule.Description
 				Line 2 "Last modification by`t: " $RDSSchedule.AdminLastMod
@@ -15688,7 +15784,7 @@ Function OutputSite
 					}
 				}
 				
-				$rowdata += @(,("Start",($Script:htmlsb),$RDSSchedule.StartDateTime,$htmlwhite))
+				$rowdata += @(,("Start",($Script:htmlsb),$RDSSchedule.Trigger.StartDateTime,$htmlwhite))
 				$rowdata += @(,("Repeat",($Script:htmlsb),$Repeat,$htmlwhite))
 				$rowdata += @(,("Description",($Script:htmlsb),$RDSSchedule.Description,$htmlwhite))
 				$rowdata += @(,("Last modification by",($Script:htmlsb),$RDSSchedule.AdminLastMod,$htmlwhite))
@@ -15826,16 +15922,8 @@ Function OutputSite
 			If($MSWord -or $PDF)
 			{
 				$ScriptInformation = New-Object System.Collections.ArrayList
-				$ScriptInformation.Add(@{Data = "Date"; Value = $RDSSchedule.StartDateTime.ToShortDateString(); }) > $Null
-				$ScriptInformation.Add(@{Data = "Start"; Value = $RDSSchedule.StartDateTime.ToShortTimeString(); }) > $Null
-				If($Action -eq "Reboot - Drain Mode")
-				{
-					$ScriptInformation.Add(@{Data = "Complete in"; Value = $TimeDuration  ; }) > $Null
-				}
-				ElseIf($Action -eq "Disable")
-				{
-					$ScriptInformation.Add(@{Data = "Duration"; Value = $TimeDuration; }) > $Null
-				}
+				$ScriptInformation.Add(@{Data = "Date"; Value = $RDSSchedule.Trigger.StartDateTime.ToShortDateString(); }) > $Null
+				$ScriptInformation.Add(@{Data = "Start"; Value = $RDSSchedule.Trigger.StartDateTime.ToShortTimeString(); }) > $Null
 				$ScriptInformation.Add(@{Data = "Recur"; Value = $Repeat; }) > $Null
 
 				$Table = AddWordTable -Hashtable $ScriptInformation `
@@ -15858,32 +15946,16 @@ Function OutputSite
 			}
 			If($Text)
 			{
-				Line 3 "Date`t`t`t`t: " $RDSSchedule.StartDateTime.ToShortDateString()
-				Line 3 "Start`t`t`t`t: " $RDSSchedule.StartDateTime.ToShortTimeString()
-				If($Action -eq "Reboot - Drain Mode")
-				{
-					Line 3 "Complete in`t`t`t: " $TimeDuration
-				}
-				ElseIf($Action -eq "Disable")
-				{
-					Line 3 "Duration`t`t`t: " $TimeDuration
-				}
+				Line 3 "Date`t`t`t`t: " $RDSSchedule.Trigger.StartDateTime.ToShortDateString()
+				Line 3 "Start`t`t`t`t: " $RDSSchedule.Trigger.StartDateTime.ToShortTimeString()
 				Line 3 "Recur`t`t`t`t: " $Repeat
 				Line 0 ""
 			}
 			If($HTML)
 			{
 				$rowdata = @()
-				$columnHeaders = @("Date",($Script:htmlsb),$RDSSchedule.StartDateTime.ToShortDateString(),$htmlwhite)
-				$rowdata += @(,("Start",($Script:htmlsb),$RDSSchedule.StartDateTime.ToShortTimeString(),$htmlwhite))
-				If($Action -eq "Reboot - Drain Mode")
-				{
-					$rowdata += @(,("Complete in",($Script:htmlsb),$TimeDuration,$htmlwhite))
-				}
-				ElseIf($Action -eq "Disable")
-				{
-					$rowdata += @(,("Duration",($Script:htmlsb),$TimeDuration,$htmlwhite))
-				}
+				$columnHeaders = @("Date",($Script:htmlsb),$RDSSchedule.Trigger.StartDateTime.ToShortDateString(),$htmlwhite)
+				$rowdata += @(,("Start",($Script:htmlsb),$RDSSchedule.Trigger.StartDateTime.ToShortTimeString(),$htmlwhite))
 				$rowdata += @(,("Recur",($Script:htmlsb),$Repeat,$htmlwhite))
 
 				$msg = "Trigger"
@@ -15912,9 +15984,9 @@ Function OutputSite
 				$ScriptInformation = New-Object System.Collections.ArrayList
 				$ScriptInformation.Add(@{Data = "Send message before schedule is triggered"; Value = ""; }) > $Null
 
-				If($RDSSChedule.Messages.Count -gt 0)
+				If($RDSSchedule.Options.Messages.Count -gt 0)
 				{
-					ForEach($Item in $RDSSChedule.Messages)
+					ForEach($Item in $RDSSchedule.Options.Messages)
 					{
 						Switch ($Item.SendMsgSecs)
 						{
@@ -15936,7 +16008,7 @@ Function OutputSite
 
 				If($Action -ne "Disable")
 				{
-					$ScriptInformation.Add(@{Data = "Enable Drain Mode"; Value = $RDSSchedule.DrainMode.ToString(); }) > $Null
+					$ScriptInformation.Add(@{Data = "Enable Drain Mode"; Value = $RDSSchedule.Options.EnableDrainMode.ToString(); }) > $Null
 				}
 				If($Action -eq "Reboot - Drain Mode")
 				{
@@ -15944,7 +16016,7 @@ Function OutputSite
 				}
 				If($Action -like "Reboot*")
 				{
-					$ScriptInformation.Add(@{Data = "Enforce schedule for currently inactive RD Session Host"; Value = $RDSSchedule.EnforceOnInactive.ToString(); }) > $Null
+					$ScriptInformation.Add(@{Data = "Enforce schedule for currently inactive RD Session Host"; Value = $RDSSchedule.Options.EnforceScheduleInactiveHost.ToString(); }) > $Null
 				}
 				If($Action -eq "Disable")
 				{
@@ -15973,9 +16045,9 @@ Function OutputSite
 			{
 				Line 3 "Send message before schedule is triggered"
 				
-				If($RDSSChedule.Messages.Count -gt 0)
+				If($RDSSchedule.Options.Messages.Count -gt 0)
 				{
-					ForEach($Item in $RDSSChedule.Messages)
+					ForEach($Item in $RDSSchedule.Options.Messages)
 					{
 						Switch ($Item.SendMsgSecs)
 						{
@@ -15997,7 +16069,7 @@ Function OutputSite
 
 				If($Action -ne "Disable")
 				{
-					Line 3 "Enable Drain Mode`t`t: " $RDSSchedule.DrainMode.ToString()
+					Line 3 "Enable Drain Mode`t`t: " $RDSSchedule.Options.EnableDrainMode.ToString()
 				}
 				If($Action -eq "Reboot - Drain Mode")
 				{
@@ -16006,7 +16078,7 @@ Function OutputSite
 				If($Action -like "Reboot*")
 				{
 					Line 3 "Enforce schedule for currently"
-					Line 3 "inactive RD Session Host`t: " $RDSSchedule.EnforceOnInactive.ToString()
+					Line 3 "inactive RD Session Host`t: " $RDSSchedule.Options.EnforceScheduleInactiveHost.ToString()
 				}
 				If($Action -eq "Disable")
 				{
@@ -16019,9 +16091,9 @@ Function OutputSite
 				$rowdata = @()
 				$columnHeaders = @("Send message before schedule is triggered",($Script:htmlsb),"",$htmlwhite)
 				
-				If($RDSSChedule.Messages.Count -gt 0)
+				If($RDSSchedule.Options.Messages.Count -gt 0)
 				{
-					ForEach($Item in $RDSSChedule.Messages)
+					ForEach($Item in $RDSSchedule.Options.Messages)
 					{
 						Switch ($Item.SendMsgSecs)
 						{
@@ -16043,7 +16115,7 @@ Function OutputSite
 
 				If($Action -ne "Disable")
 				{
-					$rowdata += @(,("Enable Drain Mode",($Script:htmlsb),$RDSSchedule.DrainMode.ToString(),$htmlwhite))
+					$rowdata += @(,("Enable Drain Mode",($Script:htmlsb),$RDSSchedule.Options.EnableDrainMode.ToString(),$htmlwhite))
 				}
 				If($Action -eq "Reboot - Drain Mode")
 				{
@@ -16051,7 +16123,7 @@ Function OutputSite
 				}
 				If($Action -like "Reboot*")
 				{
-					$rowdata += @(,("Enforce schedule for currently inactive RD Session Host",($Script:htmlsb),$RDSSchedule.EnforceOnInactive.ToString(),$htmlwhite))
+					$rowdata += @(,("Enforce schedule for currently inactive RD Session Host",($Script:htmlsb),$RDSSchedule.Options.EnforceScheduleInactiveHost.ToString(),$htmlwhite))
 				}
 				If($Action -eq "Disable")
 				{
@@ -23349,15 +23421,61 @@ Function OutputSite
 	{
 		ForEach($EnrollmentServer in $EnrollmentServers)
 		{
+			Write-Verbose "$(Get-Date -Format G): `t`t$($EnrollmentServer.Server)"
+			
+			$ESStatus = Get-RASEnrollmentServerStatus -Server $EnrollmentServer.Server -EA 0 4>$Null
+			
+			If(!$?)
+			{
+				Write-Warning "
+				`n
+				Unable to retrieve Status for Enrollment Server $($EnrollmentServer.Server)`
+				"
+				If($MSWord -or $PDF)
+				{
+					WriteWordLine 0 0 "Unable to retrieve Status for Enrollment Server $($EnrollmentServer.Server)"
+				}
+				If($Text)
+				{
+					Line 0 "Unable to retrieve Status for Enrollment Server $($EnrollmentServer.Server)"
+				}
+				If($HTML)
+				{
+					WriteHTMLLine 0 0 "Unable to retrieve Status for Enrollment Server $($EnrollmentServer.Server)"
+				}
+			}
+			ElseIf($? -and $Null -eq $ESStatus)
+			{
+				Write-Host "
+				No Status retrieved for Enrollment Server $($EnrollmentServer.Server)`
+				" -ForegroundColor White
+				If($MSWord -or $PDF)
+				{
+					WriteWordLine 0 0 "No Status retrieved for Enrollment Server $($EnrollmentServer.Server)"
+				}
+				If($Text)
+				{
+					Line 0 "No Status retrieved for Enrollment Server $($EnrollmentServer.Server)"
+				}
+				If($HTML)
+				{
+					WriteHTMLLine 0 0 "No Status retrieved for Enrollment Server $($EnrollmentServer.Server)"
+				}
+			}
+			Else
+			{
+				$EnrollmentServerStatus = GetRASStatus $ESStatus.AgentState
+			}
+
 			If($MSWord -or $PDF)
 			{
 				WriteWordLine 3 0 "Enrollment Server $($EnrollmentServer.Server)"
 				$ScriptInformation = New-Object System.Collections.ArrayList
 				$ScriptInformation.Add(@{Data = "Name"; Value = $EnrollmentServer.Server; }) > $Null
 				$ScriptInformation.Add(@{Data = "Enabled"; Value = $EnrollmentServer.Enabled.ToString(); }) > $Null
-				$ScriptInformation.Add(@{Data = "Status"; Value = "Can't find"; }) > $Null
+				$ScriptInformation.Add(@{Data = "Status"; Value = $EnrollmentServerStatus; }) > $Null
 				$ScriptInformation.Add(@{Data = "Description"; Value = $EnrollmentServer.Description; }) > $Null
-				$ScriptInformation.Add(@{Data = "Log level"; Value = "Can't find"; }) > $Null
+				$ScriptInformation.Add(@{Data = "Log level"; Value = $ESStatus.LogLevel; }) > $Null
 				$ScriptInformation.Add(@{Data = "Last modification by"; Value = $EnrollmentServer.AdminLastMod; }) > $Null
 				$ScriptInformation.Add(@{Data = "Modified on"; Value = (Get-Date -UFormat "%c" $EnrollmentServer.TimeLastMod); }) > $Null
 				$ScriptInformation.Add(@{Data = "Created by"; Value = $EnrollmentServer.AdminCreate; }) > $Null
@@ -23387,9 +23505,9 @@ Function OutputSite
 				Line 2 "Enrollment Server $($EnrollmentServer.Server)"
 				Line 3 "Name`t`t`t: " $EnrollmentServer.Server
 				Line 3 "Enabled`t`t`t: " $EnrollmentServer.Enabled.ToString()
-				Line 3 "Status`t`t`t: " "Can't find"
+				Line 3 "Status`t`t`t: " $EnrollmentServerStatus
 				Line 3 "Description`t`t: " $EnrollmentServer.Description
-				Line 3 "Log level`t`t: " "Can't find"
+				Line 3 "Log level`t`t: " $ESStatus.LogLevel
 				Line 3 "Last modification by`t: " $EnrollmentServer.AdminLastMod
 				Line 3 "Modified on`t`t: " (Get-Date -UFormat "%c" $EnrollmentServer.TimeLastMod)
 				Line 3 "Created by`t`t: " $EnrollmentServer.AdminCreate
@@ -23403,9 +23521,9 @@ Function OutputSite
 				$rowdata = @()
 				$columnHeaders = @("Name",($Script:htmlsb),$EnrollmentServer.Server,$htmlwhite)
 				$rowdata += @(,("Enabled",($Script:htmlsb),$EnrollmentServer.Enabled.ToString(),$htmlwhite))
-				$rowdata += @(,("Status",($Script:htmlsb),"Can't find",$htmlwhite))
+				$rowdata += @(,("Status",($Script:htmlsb),$EnrollmentServerStatus,$htmlwhite))
 				$rowdata += @(,("Description",($Script:htmlsb),$EnrollmentServer.Description,$htmlwhite))
-				$rowdata += @(,("Log level",($Script:htmlsb),"Can't find",$htmlwhite))
+				$rowdata += @(,("Log level",($Script:htmlsb),$ESStatus.LogLevel,$htmlwhite))
 				$rowdata += @(,("Last modification by",($Script:htmlsb), $EnrollmentServer.AdminLastMod,$htmlwhite))
 				$rowdata += @(,("Modified on",($Script:htmlsb), (Get-Date -UFormat "%c" $EnrollmentServer.TimeLastMod),$htmlwhite))
 				$rowdata += @(,("Created by",($Script:htmlsb), $EnrollmentServer.AdminCreate,$htmlwhite))
@@ -46330,21 +46448,60 @@ Function OutputRASLicense
 		$ScriptInformation.Add(@{Data = "License Type"; Value = $RASLicense.LicenseType; }) > $Null
 		$ScriptInformation.Add(@{Data = "License Key"; Value = $RASLicense.LicenseKey; }) > $Null
 		$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
-		$ScriptInformation.Add(@{Data = "Support Expiration Date"; Value = $RASLicense.SupportExpireDate; }) > $Null
-		$ScriptInformation.Add(@{Data = "Upgrade Insurance"; Value = $RASLicense.UpgradeInsurance; }) > $Null
-		$ScriptInformation.Add(@{Data = "Expiration Date"; Value = $RASLicense.ExpiryDate; }) > $Null
-		$ScriptInformation.Add(@{Data = "First Activation"; Value = $RASLicense.LicenseFirstActive; }) > $Null
+		If(validObject $RASLicense SupportExpireDate)
+		{
+			$ScriptInformation.Add(@{Data = "Support Expiration Date"; Value = $RASLicense.SupportExpireDate; }) > $Null
+		}
+		If(validObject $RASLicense UpgradeInsurance)
+		{
+			$ScriptInformation.Add(@{Data = "Upgrade Insurance"; Value = $RASLicense.UpgradeInsurance; }) > $Null
+		}
+		If(validObject $RASLicense ExpiryDate)
+		{
+			$ScriptInformation.Add(@{Data = "Expiration Date"; Value = $RASLicense.ExpiryDate; }) > $Null
+		}
+		If(validObject $RASLicense LicenseFirstActive)
+		{
+			$ScriptInformation.Add(@{Data = "First Activation"; Value = $RASLicense.LicenseFirstActive; }) > $Null
+		}
 		$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
-		$ScriptInformation.Add(@{Data = "Peak Users"; Value = $RASLicense.UsersPeak; }) > $Null
-		$ScriptInformation.Add(@{Data = "Usage Today"; Value = $RASLicense.UsageToday; }) > $Null
-		$ScriptInformation.Add(@{Data = "Current Period Usage"; Value = $RASLicense.CurrPeriodUsage; }) > $Null
-		$ScriptInformation.Add(@{Data = "Billing period started"; Value = $RASLicense.BillingPeriodStart; }) > $Null
-		$ScriptInformation.Add(@{Data = "Billing period ends"; Value = $RASLicense.BillingPeriodEnd; }) > $Null
-		$ScriptInformation.Add(@{Data = "Current Users"; Value = $RASLicense.UsersLicenseInfo; }) > $Null
+		If(validObject $RASLicense UsersPeak)
+		{
+			$ScriptInformation.Add(@{Data = "Peak Users"; Value = $RASLicense.UsersPeak; }) > $Null
+		}
+		If(validObject $RASLicense UsageToday)
+		{
+			$ScriptInformation.Add(@{Data = "Usage Today"; Value = $RASLicense.UsageToday; }) > $Null
+		}
+		If(validObject $RASLicense CurrPeriodUsage)
+		{
+			$ScriptInformation.Add(@{Data = "Current Period Usage"; Value = $RASLicense.CurrPeriodUsage; }) > $Null
+		}
+		If(validObject $RASLicense BillingPeriodStart)
+		{
+			$ScriptInformation.Add(@{Data = "Billing period started"; Value = $RASLicense.BillingPeriodStart; }) > $Null
+		}
+		If(validObject $RASLicense BillingPeriodEnd)
+		{
+			$ScriptInformation.Add(@{Data = "Billing period ends"; Value = $RASLicense.BillingPeriodEnd; }) > $Null
+		}
+		If(validObject $RASLicense UsersLicenseInfo)
+		{
+			$ScriptInformation.Add(@{Data = "Current Users"; Value = $RASLicense.UsersLicenseInfo; }) > $Null
+		}
 		$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
-		$ScriptInformation.Add(@{Data = "Parallels Account user email"; Value = $RASLicense.BrokerUserEmail; }) > $Null
-		$ScriptInformation.Add(@{Data = "Parallels Account user name"; Value = $RASLicense.BrokerUserName; }) > $Null
-		$ScriptInformation.Add(@{Data = "Parallels Account company"; Value = $RASLicense.BrokerCompanyName; }) > $Null
+		If(validObject $RASLicense BrokerUserEmail)
+		{
+			$ScriptInformation.Add(@{Data = "Parallels Account user email"; Value = $RASLicense.BrokerUserEmail; }) > $Null
+		}
+		If(validObject $RASLicense BrokerUserName)
+		{
+			$ScriptInformation.Add(@{Data = "Parallels Account user name"; Value = $RASLicense.BrokerUserName; }) > $Null
+		}
+		If(validObject $RASLicense BrokerCompanyName)
+		{
+			$ScriptInformation.Add(@{Data = "Parallels Account company"; Value = $RASLicense.BrokerCompanyName; }) > $Null
+		}
 
 		$Table = AddWordTable -Hashtable $ScriptInformation `
 		-Columns Data,Value `
@@ -46369,21 +46526,60 @@ Function OutputRASLicense
 		Line 1 "License Type`t`t: " $RASLicense.LicenseType
 		Line 1 "License Key`t`t: " $RASLicense.LicenseKey
 		Line 0 ""
-		Line 1 "Support Expiration Date`t: " $RASLicense.SupportExpireDate
-		Line 1 "Upgrade Insurance`t: " $RASLicense.UpgradeInsurance
-		Line 1 "Expiration Date`t`t: " $RASLicense.ExpiryDate
-		Line 1 "First Activation`t: " $RASLicense.LicenseFirstActive
+		If(validObject $RASLicense SupportExpireDate)
+		{
+			Line 1 "Support Expiration Date`t: " $RASLicense.SupportExpireDate
+		}
+		If(validObject $RASLicense UpgradeInsurance)
+		{
+			Line 1 "Upgrade Insurance`t: " $RASLicense.UpgradeInsurance
+		}
+		If(validObject $RASLicense ExpiryDate)
+		{
+			Line 1 "Expiration Date`t`t: " $RASLicense.ExpiryDate
+		}
+		If(validObject $RASLicense LicenseFirstActive)
+		{
+			Line 1 "First Activation`t: " $RASLicense.LicenseFirstActive
+		}
 		Line 0 ""
-		Line 1 "Peak Users`t`t: " $RASLicense.UsersPeak
-		Line 1 "Usage Today`t`t: " $RASLicense.UsageToday
-		Line 1 "Current Period Usage`t: " $RASLicense.CurrPeriodUsage
-		Line 1 "Billing period started`t: " $RASLicense.BillingPeriodStart
-		Line 1 "Billing period ends`t: " $RASLicense.BillingPeriodEnd
-		Line 1 "Current Users`t`t: " $RASLicense.UsersLicenseInfo
+		If(validObject $RASLicense UsersPeak)
+		{
+			Line 1 "Peak Users`t`t: " $RASLicense.UsersPeak
+		}
+		If(validObject $RASLicense UsageToday)
+		{
+			Line 1 "Usage Today`t`t: " $RASLicense.UsageToday
+		}
+		If(validObject $RASLicense CurrPeriodUsage)
+		{
+			Line 1 "Current Period Usage`t: " $RASLicense.CurrPeriodUsage
+		}
+		If(validObject $RASLicense BillingPeriodStart)
+		{
+			Line 1 "Billing period started`t: " $RASLicense.BillingPeriodStart
+		}
+		If(validObject $RASLicense BillingPeriodEnd)
+		{
+			Line 1 "Billing period ends`t: " $RASLicense.BillingPeriodEnd
+		}
+		If(validObject $RASLicense UsersLicenseInfo)
+		{
+			Line 1 "Current Users`t`t: " $RASLicense.UsersLicenseInfo
+		}
 		Line 0 ""
-		Line 1 "Parallels Account user email`t: " $RASLicense.BrokerUserEmail
-		Line 1 "Parallels Account user name`t: " $RASLicense.BrokerUserName
-		Line 1 "Parallels Account company`t: " $RASLicense.BrokerCompanyName
+		If(validObject $RASLicense BrokerUserEmail)
+		{
+			Line 1 "Parallels Account user email`t: " $RASLicense.BrokerUserEmail
+		}
+		If(validObject $RASLicense BrokerUserName)
+		{
+			Line 1 "Parallels Account user name`t: " $RASLicense.BrokerUserName
+		}
+		If(validObject $RASLicense BrokerCompanyName)
+		{
+			Line 1 "Parallels Account company`t: " $RASLicense.BrokerCompanyName
+		}
 		Line 0 ""
 	}
 	If($HTML)
@@ -46391,21 +46587,60 @@ Function OutputRASLicense
 		$columnHeaders = @("License Type",($Script:htmlsb),$RASLicense.LicenseType,$htmlwhite)
 		$rowdata += @(,("License Key",($Script:htmlsb),$RASLicense.LicenseKey,$htmlwhite))
 		$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
-		$rowdata += @(,("Support Expiration Date",($Script:htmlsb),$RASLicense.SupportExpireDate,$htmlwhite))
-		$rowdata += @(,("Upgrade Insurance",($Script:htmlsb),$RASLicense.UpgradeInsurance,$htmlwhite))
-		$rowdata += @(,("Expiration Date",($Script:htmlsb),$RASLicense.ExpiryDate,$htmlwhite))
-		$rowdata += @(,("First Activation",($Script:htmlsb),$RASLicense.LicenseFirstActive,$htmlwhite))
+		If(validObject $RASLicense SupportExpireDate)
+		{
+			$rowdata += @(,("Support Expiration Date",($Script:htmlsb),$RASLicense.SupportExpireDate,$htmlwhite))
+		}
+		If(validObject $RASLicense UpgradeInsurance)
+		{
+			$rowdata += @(,("Upgrade Insurance",($Script:htmlsb),$RASLicense.UpgradeInsurance,$htmlwhite))
+		}
+		If(validObject $RASLicense ExpiryDate)
+		{
+			$rowdata += @(,("Expiration Date",($Script:htmlsb),$RASLicense.ExpiryDate,$htmlwhite))
+		}
+		If(validObject $RASLicense LicenseFirstActive)
+		{
+			$rowdata += @(,("First Activation",($Script:htmlsb),$RASLicense.LicenseFirstActive,$htmlwhite))
+		}
 		$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
-		$rowdata += @(,("Peak Users",($Script:htmlsb),$RASLicense.UsersPeak,$htmlwhite))
-		$rowdata += @(,("Usage Today",($Script:htmlsb),$RASLicense.UsageToday,$htmlwhite))
-		$rowdata += @(,("Current Period Usage",($Script:htmlsb),$RASLicense.CurrPeriodUsage,$htmlwhite))
-		$rowdata += @(,("Billing period started",($Script:htmlsb),$RASLicense.BillingPeriodStart,$htmlwhite))
-		$rowdata += @(,("Billing period ends",($Script:htmlsb),$RASLicense.BillingPeriodEnd,$htmlwhite))
-		$rowdata += @(,("Current Users",($Script:htmlsb),$RASLicense.UsersLicenseInfo,$htmlwhite))
+		If(validObject $RASLicense UsersPeak)
+		{
+			$rowdata += @(,("Peak Users",($Script:htmlsb),$RASLicense.UsersPeak,$htmlwhite))
+		}
+		If(validObject $RASLicense UsageToday)
+		{
+			$rowdata += @(,("Usage Today",($Script:htmlsb),$RASLicense.UsageToday,$htmlwhite))
+		}
+		If(validObject $RASLicense CurrPeriodUsage)
+		{
+			$rowdata += @(,("Current Period Usage",($Script:htmlsb),$RASLicense.CurrPeriodUsage,$htmlwhite))
+		}
+		If(validObject $RASLicense BillingPeriodStart)
+		{
+			$rowdata += @(,("Billing period started",($Script:htmlsb),$RASLicense.BillingPeriodStart,$htmlwhite))
+		}
+		If(validObject $RASLicense BillingPeriodEnd)
+		{
+			$rowdata += @(,("Billing period ends",($Script:htmlsb),$RASLicense.BillingPeriodEnd,$htmlwhite))
+		}
+		If(validObject $RASLicense UsersLicenseInfo)
+		{
+			$rowdata += @(,("Current Users",($Script:htmlsb),$RASLicense.UsersLicenseInfo,$htmlwhite))
+		}
 		$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
-		$rowdata += @(,("Parallels Account user email",($Script:htmlsb),$RASLicense.BrokerUserEmail,$htmlwhite))
-		$rowdata += @(,("Parallels Account user name",($Script:htmlsb),$RASLicense.BrokerUserName,$htmlwhite))
-		$rowdata += @(,("Parallels Account company",($Script:htmlsb),$RASLicense.BrokerCompanyName,$htmlwhite))
+		If(validObject $RASLicense BrokerUserEmail)
+		{
+			$rowdata += @(,("Parallels Account user email",($Script:htmlsb),$RASLicense.BrokerUserEmail,$htmlwhite))
+		}
+		If(validObject $RASLicense BrokerUserName)
+		{
+			$rowdata += @(,("Parallels Account user name",($Script:htmlsb),$RASLicense.BrokerUserName,$htmlwhite))
+		}
+		If(validObject $RASLicense BrokerCompanyName)
+		{
+			$rowdata += @(,("Parallels Account company",($Script:htmlsb),$RASLicense.BrokerCompanyName,$htmlwhite))
+		}
 
 		$msg = ""
 		$columnWidths = @("200","250")
