@@ -450,7 +450,7 @@
 	NAME: RAS_Inventory_V4_0.ps1
 	VERSION: 4.00
 	AUTHOR: Carl Webster
-	LASTEDIT: September 29, 2024
+	LASTEDIT: September 30, 2024
 #>
 
 
@@ -570,8 +570,8 @@ Param(
 
 #Version 4.00 
 #
-#	In Function OutputMFASetting, add TOTP and MicrosoftTOTP
-#		https://download.parallels.com/ras/v19/docs/en_US/Parallels-RAS-v19-PowerShell-Guide/RASAdmin/types/MFAType.html
+#	Fixed HTML, Text, and MSWord output
+#	In Function OutputRASLicense, update output to match the 19.4 console
 #	In Function OutputSAMLSetting, handle multiple SAML items
 #	In Function OutputSite, when processing Themes, Properties, Access:
 #		If the Theme's MFA ID is not 0 and is found, use the MFA name
@@ -644,7 +644,7 @@ $Error.Clear()
 $Script:emailCredentials  = $Null
 $script:MyVersion         = '4.00'
 $Script:ScriptName        = "RAS_Inventory_V4_0.ps1"
-$tmpdate                  = [datetime] "09/29/2024"
+$tmpdate                  = [datetime] "09/30/2024"
 $Script:ReleaseDate       = $tmpdate.ToUniversalTime().ToShortDateString()
 
 If($MSWord -eq $False -and $PDF -eq $False -and $Text -eq $False -and $HTML -eq $False)
@@ -4259,11 +4259,11 @@ Function OutputFarmSite
 		$ScriptInformation.Add(@{Data = "Type"; Value = $Type; }) > $Null
 		$ScriptInformation.Add(@{Data = "State"; Value = $State; }) > $Null
 		$ScriptInformation.Add(@{Data = "Description"; Value = $Description; }) > $Null
-		$ScriptInformation.Add(@{Data = "ID"; Value = $ID; }) > $Null
 		$ScriptInformation.Add(@{Data = "Last modification by"; Value = $Site.AdminLastMod; }) > $Null
 		$ScriptInformation.Add(@{Data = "Modified on"; Value = (Get-Date -UFormat "%c" $Site.TimeLastMod); }) > $Null
 		$ScriptInformation.Add(@{Data = "Created by"; Value = $Site.AdminCreate; }) > $Null
 		$ScriptInformation.Add(@{Data = "Created on"; Value = (Get-Date -UFormat "%c" $Site.TimeCreate); }) > $Null
+		$ScriptInformation.Add(@{Data = "ID"; Value = $ID; }) > $Null
 
 		$Table = AddWordTable -Hashtable $ScriptInformation `
 		-Columns Data,Value `
@@ -4290,11 +4290,11 @@ Function OutputFarmSite
 		Line 1 "Type`t`t`t : " $Type
 		Line 1 "State`t`t`t : " $State
 		Line 1 "Description`t`t : " $Description
-		Line 1 "ID`t`t`t : " $ID
 		Line 1 "Last modification by`t : " $Site.AdminLastMod
 		Line 1 "Modified on`t`t : " (Get-Date -UFormat "%c" $Site.TimeLastMod)
 		Line 1 "Created by`t`t : " $Site.AdminCreate
 		Line 1 "Created on`t`t : " (Get-Date -UFormat "%c" $Site.TimeCreate)
+		Line 1 "ID`t`t`t : " $ID
 		Line 0 ""
 	}
 	If($HTML)
@@ -4305,14 +4305,115 @@ Function OutputFarmSite
 		$rowdata += @(,("Type",($Script:htmlsb),$Type,$htmlwhite))
 		$rowdata += @(,("State",($Script:htmlsb),$State.ToString(),$htmlwhite))
 		$rowdata += @(,("Description",($Script:htmlsb),$Description,$htmlwhite))
-		$rowdata += @(,("ID",($Script:htmlsb),$ID,$htmlwhite))
 		$rowdata += @(,("Last modification by",($Script:htmlsb), $Site.AdminLastMod,$htmlwhite))
 		$rowdata += @(,("Modified on",($Script:htmlsb), (Get-Date -UFormat "%c" $Site.TimeLastMod),$htmlwhite))
 		$rowdata += @(,("Created by",($Script:htmlsb), $Site.AdminCreate,$htmlwhite))
 		$rowdata += @(,("Created on",($Script:htmlsb), (Get-Date -UFormat "%c" $Site.TimeCreate),$htmlwhite))
+		$rowdata += @(,("ID",($Script:htmlsb),$ID,$htmlwhite))
 
 		$msg = ""
 		$columnWidths = @("200","275")
+		FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+		WriteHTMLLine 0 0 ""
+	}
+
+	#added Properties in V4
+	If($MSWord -or $PDF)
+	{
+		WriteWordLine 2 0 "$Script:RASFarmName Properties"
+		$ScriptInformation = New-Object System.Collections.ArrayList
+		$ScriptInformation.Add(@{Data = "Site"; Value = $Site.Name; }) > $Null
+		$ScriptInformation.Add(@{Data = "Server"; Value = $PrimaryPublishingAgent; }) > $Null
+		$ScriptInformation.Add(@{Data = "Description"; Value = $Description; }) > $Null
+
+		$Table = AddWordTable -Hashtable $ScriptInformation `
+		-Columns Data,Value `
+		-List `
+		-Format $wdTableGrid `
+		-AutoFit $wdAutoFitFixed;
+
+		SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+		SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+		$Table.Columns.Item(1).Width = 200;
+		$Table.Columns.Item(2).Width = 250;
+
+		$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+		FindWordDocumentEnd
+		$Table = $Null
+		WriteWordLine 0 0 ""
+
+		WriteWordLine 3 0 "Access addresses"
+		$ScriptInformation = New-Object System.Collections.ArrayList
+		$ScriptInformation.Add(@{Data = "Name"; Value = ""; }) > $Null
+		$ScriptInformation.Add(@{Data = "Description"; Value = ""; }) > $Null
+		$ScriptInformation.Add(@{Data = "Public Address"; Value = ""; }) > $Null
+		$ScriptInformation.Add(@{Data = "IPs"; Value = ""; }) > $Null
+		$ScriptInformation.Add(@{Data = "Type"; Value = ""; }) > $Null
+		$ScriptInformation.Add(@{Data = "Port"; Value = ""; }) > $Null
+		$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+
+		$Table = AddWordTable -Hashtable $ScriptInformation `
+		-Columns Data,Value `
+		-List `
+		-Format $wdTableGrid `
+		-AutoFit $wdAutoFitFixed;
+
+		SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+		SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+		$Table.Columns.Item(1).Width = 200;
+		$Table.Columns.Item(2).Width = 250;
+
+		$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+		FindWordDocumentEnd
+		$Table = $Null
+		WriteWordLine 0 0 ""
+	}
+	If($Text)
+	{
+		Line 1 "$Script:RASFarmName Properties"
+		Line 2 "Site`t`t : " $Site.Name
+		Line 2 "Server`t`t: " $PrimaryPublishingAgent
+		Line 2 "Description`t : " $Description
+		Line 0 ""
+		Line 2 "Access addresses"
+		Line 3 "Name`t`t: "
+		Line 3 "Description`t: "
+		Line 3 "Public Address`t: "
+		Line 3 "IPs`t`t: "
+		Line 3 "Type`t`t: "
+		Line 3 "Port`t`t: "
+		Line 0 ""
+	}
+	If($HTML)
+	{
+		WriteHTMLLine 2 0 "$Script:RASFarmName Properties"
+
+		$rowdata = @()
+		$columnHeaders = @("Site",($Script:htmlsb),$Site.Name,$htmlwhite)
+		$rowdata += @(,("Server",($Script:htmlsb),$PrimaryPublishingAgent,$htmlwhite))
+		$rowdata += @(,("Description",($Script:htmlsb),$Description,$htmlwhite))
+
+		$msg = ""
+		$columnWidths = @("200","275")
+		FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+		WriteHTMLLine 0 0 ""
+
+		WriteHTMLLine 3 0 "Access addresses"
+
+		$rowdata = @()
+		$columnHeaders = @("Name",($Script:htmlsb),"",$htmlwhite)
+		$rowdata += @(,("Description",($Script:htmlsb),"",$htmlwhite))
+		$rowdata += @(,("Public Address",($Script:htmlsb),"",$htmlwhite))
+		$rowdata += @(,("IPs",($Script:htmlsb),"",$htmlwhite))
+		$rowdata += @(,("Type",($Script:htmlsb),"",$htmlwhite))
+		$rowdata += @(,("Port",($Script:htmlsb),"",$htmlwhite))
+
+		$msg = ""
+		$columnWidths = @("150","275")
 		FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 		WriteHTMLLine 0 0 ""
 	}
@@ -4324,16 +4425,16 @@ Function GetVDIType
 	
 	Switch ($VDIHostType)
 	{
-		"HyperVWin2008Std"					{$VDIType = "HyperV on Windows Server 2008 Standard Edition"; Break}
-		"HyperVWin2008Ent"					{$VDIType = "HyperV on Windows Server 2008 Enterprise Edition"; Break}
-		"HyperVWin2008Dtc"					{$VDIType = "HyperV on Windows Server 2008 Datacenter Edition"; Break}
-		"HyperV"							{$VDIType = "HyperV"; Break}
-		"HyperVWin2012Std"					{$VDIType = "HyperV on Windows Server 2012 Datacenter Edition"; Break}
-		"HyperVWin2012Dtc"					{$VDIType = "HyperV on Windows Server 2012 Datacenter Edition"; Break}
-		"HyperVWin2012Srv"					{$VDIType = "HyperV on Windows Server 2012"; Break}
-		"HyperVWin2008R2Std"				{$VDIType = "HyperV on Windows Server 2008 R2 Standard Edition"; Break}
-		"HyperVWin2008R2Ent"				{$VDIType = "HyperV on Windows Server 2008 R2 Enterprise Edition"; Break}
-		"HyperVWin2008R2Dtc"				{$VDIType = "HyperV on Windows Server 2008 R2 Datacenter Edition"; Break}
+		"HyperVWin2008Std"					{$VDIType = "Microsoft Hyper-V on Windows Server 2008 Standard Edition"; Break}
+		"HyperVWin2008Ent"					{$VDIType = "Microsoft Hyper-V on Windows Server 2008 Enterprise Edition"; Break}
+		"HyperVWin2008Dtc"					{$VDIType = "Microsoft Hyper-V on Windows Server 2008 Datacenter Edition"; Break}
+		"HyperV"							{$VDIType = "Microsoft Hyper-V"; Break}
+		"HyperVWin2012Std"					{$VDIType = "Microsoft Hyper-V on Windows Server 2012 Datacenter Edition"; Break}
+		"HyperVWin2012Dtc"					{$VDIType = "Microsoft Hyper-V on Windows Server 2012 Datacenter Edition"; Break}
+		"HyperVWin2012Srv"					{$VDIType = "Microsoft Hyper-V on Windows Server 2012"; Break}
+		"HyperVWin2008R2Std"				{$VDIType = "Microsoft Hyper-V on Windows Server 2008 R2 Standard Edition"; Break}
+		"HyperVWin2008R2Ent"				{$VDIType = "Microsoft Hyper-V on Windows Server 2008 R2 Enterprise Edition"; Break}
+		"HyperVWin2008R2Dtc"				{$VDIType = "Microsoft Hyper-V on Windows Server 2008 R2 Datacenter Edition"; Break}
 		"CitrixXenUnknown"					{$VDIType = "Citrix XenServer"; Break}
 		"CitrixXen5_0"						{$VDIType = "Citrix XenServer 5.0"; Break}
 		"CitrixXen5_5"						{$VDIType = "Citrix XenServer 5.5"; Break}
@@ -4348,26 +4449,28 @@ Function GetVDIType
 		"CitrixXen7_2"						{$VDIType = "Citrix XenServer 7.2"; Break}
 		"QemuKvmUnknown"					{$VDIType = "QEMU KVM unknown"; Break}
 		"QemuKvm1_2_14"						{$VDIType = "QEMU KVM 1.2.14"; Break}
-		"HyperVUnknown"						{$VDIType = "HyperV on Unknown Server"; Break}
-		"HyperVWin2012R2Std"				{$VDIType = "HyperV on Windows Server 2012 Standard Edition"; Break}
-		"HyperVWin2012R2Dtc"				{$VDIType = "HyperV on Windows Server 2012 R2 Datacenter Edition"; Break}
-		"HyperVWin2012R2Srv"				{$VDIType = "HyperV on Windows Server 2012 R2"; Break}
-		"HyperVWin2016Std"					{$VDIType = "HyperV on Windows Server 2016 Standard Edition"; Break}
-		"HyperVWin2016Dtc"					{$VDIType = "HyperV on Windows Server 2016 Datacenter Edition"; Break}
-		"HyperVWin2016Srv"					{$VDIType = "HyperV on Windows Server 2016"; Break}
-		"HyperVWin2019Std"					{$VDIType = "HyperV on Windows Server 2019 Standard Edition"; Break}
-		"HyperVWin2019Dtc"					{$VDIType = "HyperV on Windows Server 2019 Datacenter Edition"; Break}
-		"HyperVWin2019Srv"					{$VDIType = "HyperV on Windows Server 2019"; Break}
-		"HyperVWin2022Std"					{$VDIType = "HyperV on Windows Server 2022 Standard Edition"; Break}
-		"HyperVWin2022Dtc"					{$VDIType = "HyperV on Windows Server 2022 Datacenter Edition"; Break}
-		"HyperVFailoverClusterUnknown"		{$VDIType = "HyperV Failover Cluster on Unknown Server"; Break}
-		"HyperVFailoverClusterEnt"			{$VDIType = "HyperV Failover Cluster Enterprise Edition"; Break}
-		"HyperVFailoverClusterDtc"			{$VDIType = "HyperV Failover Cluster Datacenter Edition"; Break}
-		"HyperVFailoverClusterWin2012"		{$VDIType = "HyperV Failover Cluster on Windows Server 2012"; Break}
-		"HyperVFailoverClusterWin2012R2"	{$VDIType = "HyperV Failover Cluster on Windows Server 2012 R2"; Break}
-		"HyperVFailoverClusterWin2016"		{$VDIType = "HyperV Failover Cluster on Windows Server 2016"; Break}
-		"HyperVFailoverClusterWin2019"		{$VDIType = "HyperV Failover Cluster on Windows Server 2019"; Break}
-		"HyperVFailoverClusterWin2022"		{$VDIType = "HyperV Failover Cluster on Windows Server 2022"; Break}
+		"HyperVUnknown"						{$VDIType = "Microsoft Hyper-V on Unknown Server"; Break}
+		"HyperVWin2012R2Std"				{$VDIType = "Microsoft Hyper-V on Windows Server 2012 Standard Edition"; Break}
+		"HyperVWin2012R2Dtc"				{$VDIType = "Microsoft Hyper-V on Windows Server 2012 R2 Datacenter Edition"; Break}
+		"HyperVWin2012R2Srv"				{$VDIType = "Microsoft Hyper-V on Windows Server 2012 R2"; Break}
+		"HyperVWin2016Std"					{$VDIType = "Microsoft Hyper-V on Windows Server 2016 Standard Edition"; Break}
+		"HyperVWin2016Dtc"					{$VDIType = "Microsoft Hyper-V on Windows Server 2016 Datacenter Edition"; Break}
+		"HyperVWin2016Srv"					{$VDIType = "Microsoft Hyper-V on Windows Server 2016"; Break}
+		"HyperVWin2019Std"					{$VDIType = "Microsoft Hyper-V on Windows Server 2019 Standard Edition"; Break}
+		"HyperVWin2019Dtc"					{$VDIType = "Microsoft Hyper-V on Windows Server 2019 Datacenter Edition"; Break}
+		"HyperVWin2019Srv"					{$VDIType = "Microsoft Hyper-V on Windows Server 2019"; Break}
+		"HyperVWin2022Std"					{$VDIType = "Microsoft Hyper-V on Windows Server 2022 Standard Edition"; Break}
+		"HyperVWin2022Dtc"					{$VDIType = "Microsoft Hyper-V on Windows Server 2022 Datacenter Edition"; Break}
+		"HyperVFailover"					{$VDIType = "Microsoft Hyper-V Failover Cluster"; Break}
+		"HyperVFailoverClusterUnknown"		{$VDIType = "Microsoft Hyper-V Failover Cluster on Unknown Server"; Break}
+		"HyperVFailoverClusterEnt"			{$VDIType = "Microsoft Hyper-V Failover Cluster Enterprise Edition"; Break}
+		"HyperVFailoverClusterDtc"			{$VDIType = "Microsoft Hyper-V Failover Cluster Datacenter Edition"; Break}
+		"HyperVFailoverClusterWin2012"		{$VDIType = "Microsoft Hyper-V Failover Cluster on Windows Server 2012"; Break}
+		"HyperVFailoverClusterWin2012R2"	{$VDIType = "Microsoft Hyper-V Failover Cluster on Windows Server 2012 R2"; Break}
+		"HyperVFailoverClusterWin2016"		{$VDIType = "Microsoft Hyper-V Failover Cluster on Windows Server 2016"; Break}
+		"HyperVFailoverClusterWin2019"		{$VDIType = "Microsoft Hyper-V Failover Cluster on Windows Server 2019"; Break}
+		"HyperVFailoverClusterWin2022"		{$VDIType = "Microsoft Hyper-V Failover Cluster on Windows Server 2022"; Break}
+		"VmwareESXi"						{$VDIType = "Vmware ESXi"; Break}
 		"VmwareESXUnknown"					{$VDIType = "Vmware ESXi"; Break}
 		"VmwareESXi4_0"						{$VDIType = "Vmware ESXi 4.0"; Break}
 		"VmwareESX4_0"						{$VDIType = "Vmware ESX 4.0"; Break}
@@ -4380,6 +4483,7 @@ Function GetVDIType
 		"VmwareESXi6_5"						{$VDIType = "Vmware ESXi 6.5"; Break}
 		"VmwareESXi6_7"						{$VDIType = "Vmware ESXi 6.7"; Break}
 		"VmwareESXi7_0"						{$VDIType = "Vmware ESXi 7.0"; Break}
+		"VmwareVCenter"						{$VDIType = "Vmware VCenter"; Break}
 		"VmwareVCenterUnknown"				{$VDIType = "Vmware VCenter Server"; Break}
 		"VmwareVCenter4_0"					{$VDIType = "Vmware VCenter Server 4.0"; Break}
 		"VmwareVCenter4_1"					{$VDIType = "Vmware VCenter Server 4.1"; Break}
@@ -4391,6 +4495,7 @@ Function GetVDIType
 		"VmwareVCenter6_7"					{$VDIType = "Vmware VCenter Server 6.7"; Break}
 		"VmwareVCenter7_0"					{$VDIType = "Vmware VCenter Server 7.0"; Break}
 		15									{$VDIType = "Vmware VCenter Server 7.0"; Break}
+		"Nutanix"							{$VDIType = "Nutanix AHV (AOS)"; Break}
 		"NutanixUnknown"					{$VDIType = "Nutanix unknown"; Break}
 		"Nutanix5_0"						{$VDIType = "Nutanix 5.0"; Break}
 		"Nutanix5_5"						{$VDIType = "Nutanix 5.5"; Break}
@@ -4398,10 +4503,11 @@ Function GetVDIType
 		"Nutanix5_15"						{$VDIType = "Nutanix 5.15"; Break}
 		"Nutanix5_20"						{$VDIType = "Nutanix 5.20"; Break}
 		"Nutanix6_5"						{$VDIType = "Nutanix 6.5"; Break}
-		"RemotePCStaticUnknown"				{$VDIType = "Remote PC static unknown"; Break}
-		"RemotePCStatic"					{$VDIType = "Remote PC static"; Break}
-		"RemotePCDynamicUnknown"			{$VDIType = "Remote PC dynamic unknown"; Break}
-		"RemotePCDynamic"					{$VDIType = "Remote PC dynamic"; Break}
+		"RemotePCStaticUnknown"				{$VDIType = "Remote PC (static) unknown"; Break}
+		"RemotePCStatic"					{$VDIType = "Remote PC (static)"; Break}
+		"RemotePCDynamicUnknown"			{$VDIType = "Remote PC (dynamic) unknown"; Break}
+		"RemotePCDynamic"					{$VDIType = "Remote PC (dynamic)"; Break}
+		"ScaleComputing"					{$VDIType = "SC//HyperCore"; Break}
 		"Scale"								{$VDIType = "Scale unknown"; Break}
 		"ScaleUnknown"						{$VDIType = "Scale unknown"; Break}
 		"Scale7_4"							{$VDIType = "Scale 7.4"; Break}
@@ -4409,11 +4515,11 @@ Function GetVDIType
 		"Scale8_8"							{$VDIType = "Scale 8.8"; Break}
 		"Scale8_9"							{$VDIType = "Scale 8.9"; Break}
 		"Scale9_1"							{$VDIType = "Scale 9.1"; Break}
-		"Azure"								{$VDIType = "Azure"; Break}
-		21									{$VDIType = "Azure"; Break}
-		"AzureUnknown"						{$VDIType = "Azure"; Break}					
-		"AVD"								{$VDIType = "AVD"; Break}					
-		"AWSEC2"							{$VDIType = "AWSEC2"; Break}					
+		"Azure"								{$VDIType = "Microsoft Azure"; Break}
+		21									{$VDIType = "Microsoft Azure"; Break}
+		"AzureUnknown"						{$VDIType = "Microsoft Azure"; Break}					
+		"AVD"								{$VDIType = "Azure Virtual Desktop"; Break}					
+		"AWSEC2"							{$VDIType = "Amazon EC2"; Break}					
 		Default								{$VDIType = "Unable to determine VDI Host Type: $($VDIHostType)"; Break}
 	}
 	
@@ -4426,8 +4532,11 @@ Function GetRASStatus
 	
 	Switch ($RASStatus)
 	{
-		#""						{$FullRASStatus = ""; Break}
+		#""	{$FullRASStatus = ""; Break}
 		"AddingMembers"					{$FullRASStatus = "Guest being added to the group"; Break}
+		"AutoUpdateFailed"				{$FullRASStatus = "A host has failed to update the agent service automatically"; Break}
+		"AutoUpdateInProgress"			{$FullRASStatus = "A host is currently performing an agent service update automatically"; Break}
+		"AutoUpdateLimitReached"		{$FullRASStatus = "A host has reached the attempt limit for automatically updating. Host will need to be updated manually"; Break}
 		"Broken"						{$FullRASStatus = "Agent broken state"; Break}
 		"BrokerNoAvailableGWs"			{$FullRASStatus = "There are no gateways that the Tenant Broker can use to process connections"; Break}
 		"CloningCanceled"				{$FullRASStatus = "Cloning is being cancelled"; Break}
@@ -4458,6 +4567,7 @@ Function GetRASStatus
 		"InvalidHostVersion"			{$FullRASStatus = "Invalid Provider version"; Break}
 		"JoinBroken"					{$FullRASStatus = "The tenant failed to connect to Tenant Broker"; Break}
 		"JoiningToGroup"				{$FullRASStatus = "A host is current being joined to a group or hostpool"; Break}
+		"JoiningToHostPool"				{$FullRASStatus = "A host is current being joined to a hostpool"; Break}
 		"LicenseExpired"				{$FullRASStatus = "The tenant License has expired"; Break}
 		"LogonDisabled"					{$FullRASStatus = "Disable user login from sessions"; Break}
 		"LogonDrain"					{$FullRASStatus = "New logons disabled (drain mode)"; Break}
@@ -13152,8 +13262,8 @@ Function OutputSite
 			
 			Switch($RDSTemplate.CloneMethod)
 			{
-				"LinkedClone"	{$CloneMethod = "Create a linked clone"; Break}
-				"FullClone"		{$CloneMethod = "Create a full clone"; Break}
+				"LinkedClone"	{$CloneMethod = "Method: Linked clone"; Break}
+				"FullClone"		{$CloneMethod = "Method: Full clone"; Break}
 				Default			{$CloneMethod = "Unable to determine Clone method: $($RDSTemplate.CloneMethod)"; Break}
 			}
 
@@ -16024,7 +16134,7 @@ Function OutputSite
 				{
 					WriteWordLine 3 0 "Pool $($VDIPool.Name)"
 
-					$VDIPoolMembers = Get-RASVDIHostPoolMember -SiteId $Site.Id -VDIPoolName $VDIPool.Name -EA 0 4>$Null 
+					$VDIPoolMembers = Get-RASVDIHostPoolMember -SiteId $Site.Id -VDIHostPoolName $VDIPool.Name -EA 0 4>$Null 
 					
 					If($? -and $Null -ne $VDIPoolMembers)
 					{
@@ -16187,7 +16297,7 @@ Function OutputSite
 				{
 					Line 2 "Pool $($VDIPool.Name)"
 					
-					$VDIPoolMembers = Get-RASVDIHostPoolMember -SiteId $Site.Id -VDIPoolName $VDIPool.Name -EA 0 4>$Null 
+					$VDIPoolMembers = Get-RASVDIHostPoolMember -SiteId $Site.Id -VDIHostPoolName $VDIPool.Name -EA 0 4>$Null 
 					
 					If($? -and $Null -ne $VDIPoolMembers)
 					{
@@ -16661,8 +16771,8 @@ Function OutputSite
 				
 				Switch($VDITemplate.CloneMethod)
 				{
-					"LinkedClone"	{$CloneMethod = "Create a linked clone"; Break}
-					"FullClone"		{$CloneMethod = "Create a full clone"; Break}
+					"LinkedClone"	{$CloneMethod = "Method: Linked clone"; Break}
+					"FullClone"		{$CloneMethod = "Method: Full clone"; Break}
 					Default			{$CloneMethod = "Unable to determine Clone method: $($VDITemplate.CloneMethod)"; Break}
 				}
 
@@ -16717,7 +16827,7 @@ Function OutputSite
 					$rowdata += @(,("Delete unused guest VMs after",($Script:htmlsb),$DeleteVMTime,$htmlwhite))
 					$rowdata += @(,("Clone method",($Script:htmlsb),$CloneMethod,$htmlwhite))
 
-					$msg = "Properties"
+					$msg = "General"
 					$columnWidths = @("200","275")
 					FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 					WriteHTMLLine 0 0 ""
@@ -21245,13 +21355,21 @@ Function OutputSite
 						{
 							"SSLv2"		{$SecureGatewayAcceptedSSLVersions = "SSL v2 - TLS v1.2 (Weak)"; Break}
 							"SSLv3"		{$SecureGatewayAcceptedSSLVersions = "SSL v3 - TLS v1.2"; Break}
-							"TLSv1"		{$SecureGatewayAcceptedSSLVersions = "TLS v1 - TLS v1.2"; Break}
-							"TLSv1_1"	{$SecureGatewayAcceptedSSLVersions = "TLS v1.1 - TLS v1.2"; Break}
-							"TLSv1_2"	{$SecureGatewayAcceptedSSLVersions = "TLS v1.2 only (Strong)"; Break}
+							"TLSv1"		{$SecureGatewayAcceptedSSLVersions = "TLS v1 - TLS v1.3"; Break}
+							"TLSv1_1"	{$SecureGatewayAcceptedSSLVersions = "TLS v1.1 - TLS v1.3"; Break}
+							"TLSv1_2"	{$SecureGatewayAcceptedSSLVersions = "TLS v1.2 - TLS v1.3"; Break}
+							"TLSv1_3"	{$SecureGatewayAcceptedSSLVersions = "TLS v1.3 only (strong)"; Break}
 							Default		{$SecureGatewayAcceptedSSLVersions = "Unable to determine Minimum SSL Version: $($SecureGatewayDefaults.MinSSLVersion)"; Break}
 						}
 						
-						$SecureGatewayCipherStrength = $SecureGatewayDefaults.CipherStrength.ToString()
+						Switch ($SecureGatewayDefaults.CipherStrength)
+						{
+							"High"		{$SecureGatewayCipherStrength = "High Strength"; Break}
+							"Custom"	{$SecureGatewayCipherStrength = "Custom Strength"; Break}
+							Default		{$SecureGatewayCipherStrength = "Unable to determine Cipher strength: $($SecureGatewayDefaults.CipherStrength)"; Break}
+						}
+						
+						#$SecureGatewayCipherStrength = $SecureGatewayDefaults.CipherStrength.ToString()
 						$SecureGatewayCipher         = $SecureGatewayDefaults.Cipher
 						
 						If($SecureGatewayDefaults.CertificateId -eq 0)
@@ -21278,8 +21396,8 @@ Function OutputSite
 						$SecureGatewayEnableHSTS          = "False"
 						$SecureGatewayEnableSSL           = "True"
 						$SecureGatewayEnableSSLOnPort     = "443"
-						$SecureGatewayAcceptedSSLVersions = "TLS v1 - TLS v1.2"
-						$SecureGatewayCipherStrength      = "High"
+						$SecureGatewayAcceptedSSLVersions = "TLS v1 - TLS v1.3"
+						$SecureGatewayCipherStrength      = "High Strength"
 						$SecureGatewayCipher              = "EECDH:!SSLv2:!SSLv3:!aNULL:!RC4:!ADH:!eNULL:!LOW:!MEDIUM:!EXP:+HIGH"
 						$SecureGatewayCertificates        = "All matching usage"
 					}
@@ -21306,13 +21424,21 @@ Function OutputSite
 					{
 						"SSLv2"		{$SecureGatewayAcceptedSSLVersions = "SSL v2 - TLS v1.2 (Weak)"; Break}
 						"SSLv3"		{$SecureGatewayAcceptedSSLVersions = "SSL v3 - TLS v1.2"; Break}
-						"TLSv1"		{$SecureGatewayAcceptedSSLVersions = "TLS v1 - TLS v1.2"; Break}
-						"TLSv1_1"	{$SecureGatewayAcceptedSSLVersions = "TLS v1.1 - TLS v1.2"; Break}
-						"TLSv1_2"	{$SecureGatewayAcceptedSSLVersions = "TLS v1.2 only (Strong)"; Break}
+						"TLSv1"		{$SecureGatewayAcceptedSSLVersions = "TLS v1 - TLS v1.3"; Break}
+						"TLSv1_1"	{$SecureGatewayAcceptedSSLVersions = "TLS v1.1 - TLS v1.3"; Break}
+						"TLSv1_2"	{$SecureGatewayAcceptedSSLVersions = "TLS v1.2 - TLS v1.3"; Break}
+						"TLSv1_3"	{$SecureGatewayAcceptedSSLVersions = "TLS v1.3 only (strong)"; Break}
 						Default		{$SecureGatewayAcceptedSSLVersions = "Unable to determine Minimum SSL Version: $($SecureGateway.MinSSLVersion)"; Break}
 					}
 					
-					$SecureGatewayCipherStrength = $SecureGateway.CipherStrength.ToString()
+					Switch ($SecureGatewayDefaults.CipherStrength)
+					{
+						"High"		{$SecureGatewayCipherStrength = "High Strength"; Break}
+						"Custom"	{$SecureGatewayCipherStrength = "Custom Strength"; Break}
+						Default		{$SecureGatewayCipherStrength = "Unable to determine Cipher strength: $($SecureGatewayDefaults.CipherStrength)"; Break}
+					}
+						
+					#$SecureGatewayCipherStrength = $SecureGateway.CipherStrength.ToString()
 					$SecureGatewayCipher         = $SecureGateway.Cipher
 					
 					If($SecureGateway.CertificateId -eq 0)
@@ -23886,22 +24012,23 @@ Function OutputSite
 			{
 				Switch($HALB.SSLConfig.MinSSLVersion)
 				{
-					#"SSLv2"		{$HALBSSLAcceptedSSLVersions = "SSL v2 - TLS v1.2 (Weak)"; Break}
+					"SSLv2"		{$HALBSSLAcceptedSSLVersions = "SSL v2 - TLS v1.2 (Weak)"; Break}
 					"SSLv3"		{$HALBSSLAcceptedSSLVersions = "SSL v3 - TLS v1.2"; Break}
-					"TLSv1"		{$HALBSSLAcceptedSSLVersions = "TLS v1.0 - TLS v1.2"; Break}
-					"TLSv1_1"	{$HALBSSLAcceptedSSLVersions = "TLS v1.1 - TLS v1.2"; Break}
-					"TLSv1_2"	{$HALBSSLAcceptedSSLVersions = "TLS v1.2 only (Strong)"; Break}
+					"TLSv1"		{$HALBSSLAcceptedSSLVersions = "TLS v1 - TLS v1.3"; Break}
+					"TLSv1_1"	{$HALBSSLAcceptedSSLVersions = "TLS v1.1 - TLS v1.3"; Break}
+					"TLSv1_2"	{$HALBSSLAcceptedSSLVersions = "TLS v1.2 - TLS v1.3"; Break}
+					"TLSv1_3"	{$HALBSSLAcceptedSSLVersions = "TLS v1.3 only (Strong)"; Break}
 					Default		{$HALBSSLAcceptedSSLVersions = "Unable to determine Minimum SSL version: $($HALB.SSLConfig.MinSSLVersion)"; Break}
 				}
 				
 				If($HALB.SSLConfig.SSLCipherStrength -eq "Custom")
 				{
-					$HALBSSLCipherStrength = "Custom"
+					$HALBSSLCipherStrength = "Custom Strength"
 					$HALBSSLCipher         = $HALB.SSLConfig.SSLCustomCipher
 				}
 				Else
 				{
-					$HALBSSLCipherStrength = $HALB.SSLConfig.SSLCipherStrength
+					$HALBSSLCipherStrength = "High Strength"
 					Switch($HALB.SSLConfig.SSLCipherStrength)
 					{
 						"Low"		{$HALBSSLCipher	= "All:!aNULL:!eNULL"; Break}
@@ -32668,7 +32795,7 @@ Function OutputPublishingSettings
 				Line 4 "Start in`t`t`t`t`t: " $PubItem.StartIn
 				Line 4 "Parameters`t`t`t`t`t: " $PubItem.Parameters
 				Line 4 "Start automatically when user logs on`t`t: " $PubItem.StartOnLogon.ToString()
-				Line 4 "Exclude from session prelaunch`t`t`t: "; Value = $PubItem.ExcludePrelaunch.ToString()
+				Line 4 "Exclude from session prelaunch`t`t`t: " $PubItem.ExcludePrelaunch.ToString()
 				Line 0 ""
 				
 				OutputPubItemFilters $PubItem "Text"
@@ -37217,13 +37344,13 @@ Function OutputUniversalScanningSettings
 	}
 	If($Text)
 	{
-		Line 3 "Server                         Type                 State   "
-		Line 3 "============================================================"
-		#       123456789012345678901234567890S12345678901234567890S12345678
+		Line 3 "Server                          Type                 State   "
+		Line 3 "============================================================="
+		#       1234567890123456789012345678901S12345678901234567890S12345678
 
 		ForEach($obj in $RDSobj)
 		{
-			Line 3 ( "{0,-30} {1,-20} {2,-8}" -f 
+			Line 3 ( "{0,-31} {1,-20} {2,-8}" -f 
 				$obj.Server, 
 				$obj.Type, 
 				$obj.WIAState
@@ -37232,7 +37359,7 @@ Function OutputUniversalScanningSettings
 		
 		ForEach($obj in $VDIHostsobj)
 		{
-			Line 3 ( "{0,-30} {1,-20} {2,-8}" -f 
+			Line 3 ( "{0,-31} {1,-20} {2,-8}" -f 
 				$obj.Server, 
 				$obj.Type, 
 				$obj.WIAState
@@ -37411,13 +37538,13 @@ Function OutputUniversalScanningSettings
 	}
 	If($Text)
 	{
-		Line 3 "Server                         Type                 State   "
-		Line 3 "============================================================"
-		#       123456789012345678901234567890S12345678901234567890S12345678
+		Line 3 "Server                          Type                 State   "
+		Line 3 "============================================================="
+		#       1234567890123456789012345678901S12345678901234567890S12345678
 
 		ForEach($obj in $RDSobj)
 		{
-			Line 3 ( "{0,-30} {1,-20} {2,-8}" -f 
+			Line 3 ( "{0,-31} {1,-20} {2,-8}" -f 
 				$obj.Server, 
 				$obj.Type, 
 				$obj.TwainState
@@ -37426,7 +37553,7 @@ Function OutputUniversalScanningSettings
 		
 		ForEach($obj in $VDIHostsobj)
 		{
-			Line 3 ( "{0,-30} {1,-20} {2,-8}" -f 
+			Line 3 ( "{0,-31} {1,-20} {2,-8}" -f 
 				$obj.Server, 
 				$obj.Type, 
 				$obj.TwainState
@@ -38241,6 +38368,7 @@ Function OutputMFASetting
 						"MandatoryForAllUsers"						{$DeepNetAuthMode = "Mandatory for all users"; Break}
 						"CreateTokenForDomainAuthenticatedUsers"	{$DeepNetAuthMode = "Create token for Domain Authenticated users"; Break}
 						"UsersWithSafeNetAcc"						{$DeepNetAuthMode = "Use only for users with a safe account"; Break}
+						"UsersWithDeepnetAcc"						{$DeepNetAuthMode = "Users With Deepnet Account"; Break}
 						Default										{$DeepNetAuthMode = "Deepnet mode not found: $($RASMFASetting.AuthMode)"; Break}
 					}
 					
@@ -38265,7 +38393,7 @@ Function OutputMFASetting
 					{
 						"MandatoryForAllUsers"						{$SafeNetAuthMode = "Mandatory for all users"; Break}
 						"CreateTokenForDomainAuthenticatedUsers"	{$SafeNetAuthMode = "Create token for Domain Authenticated users"; Break}
-						"UsersWithSafeNetAcc"						{$SafeNetAuthMode = "Use only for users with a safe account"; Break}
+						"UsersWithSafeNetAcc"						{$SafeNetAuthMode = "Users With SafeNet Account"; Break}
 						Default										{$SafeNetAuthMode = "Safenet mode not found: $($RASMFASetting.AuthMode)"; Break}
 					}
 
@@ -39711,7 +39839,7 @@ Function OutputSAMLSetting
 
 			$Table.Columns.Item(1).Width = 50;
 			$Table.Columns.Item(2).Width = 100;
-			$Table.Columns.Item(3).Width = 100;
+			$Table.Columns.Item(3).Width = 250;
 			$Table.Columns.Item(4).Width = 100;
 			
 			$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
@@ -39723,35 +39851,35 @@ Function OutputSAMLSetting
 		If($Text)
 		{
 			Line 0 ""
-			Line 4 "Enabled Name               SAML attribute  AD attribute"
-			Line 4 "========================================================="
-			#		1234567S12345678901234567SS12345678901234SS12345678901234
-			#       False   UserPrincipalName  sAMAccountName  sAMAccountName
-			Line 4 ( "{0,-7} {1,-17}  {2,-14}  {3,-14}" -f `
+			Line 4 "Enabled Name               SAML attribute                                                AD attribute        "
+			Line 4 "============================================================================================================="
+			#		1234567S12345678901234567SS123456789012345678901234567890123456789012345678901234567890SS12345678901234567890
+			#       False   UserPrincipalName  http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name    userPrincipalName
+			Line 4 ( "{0,-7} {1,-17}  {2,-60}  {3,-20}" -f `
 			$SAMLSetting.Attributes.UserPrincipalName.Enabled.ToString(),
 			"UserPrincipalName",
 			$SAMLSetting.Attributes.UserPrincipalName.SAMLAttribute,
 			$SAMLSetting.Attributes.UserPrincipalName.ADAttribute)
 			
-			Line 4 ( "{0,-7} {1,-17}  {2,-14}  {3,-14}" -f `
+			Line 4 ( "{0,-7} {1,-17}  {2,-60}  {3,-20}" -f `
 			$SAMLSetting.Attributes.ImmutableID.Enabled.ToString(),
 			"Immutable ID",
 			$SAMLSetting.Attributes.ImmutableID.SAMLAttribute,
 			$SAMLSetting.Attributes.ImmutableID.ADAttribute)
 			
-			Line 4 ( "{0,-7} {1,-17}  {2,-14}  {3,-14}" -f `
+			Line 4 ( "{0,-7} {1,-17}  {2,-60}  {3,-20}" -f `
 			$SAMLSetting.Attributes.SID.Enabled.ToString(),
 			"SID",
 			$SAMLSetting.Attributes.SID.SAMLAttribute,
 			$SAMLSetting.Attributes.SID.ADAttribute)
 			
-			Line 4 ( "{0,-7} {1,-17}  {2,-14}  {3,-14}" -f `
+			Line 4 ( "{0,-7} {1,-17}  {2,-60}  {3,-20}" -f `
 			$SAMLSetting.Attributes.sAMAccountName.Enabled.ToString(),
 			"sAMAccountName",
 			$SAMLSetting.Attributes.sAMAccountName.SAMLAttribute,
 			$SAMLSetting.Attributes.sAMAccountName.ADAttribute)
 			
-			Line 4 ( "{0,-7} {1,-17}  {2,-14}  {3,-14}" -f `
+			Line 4 ( "{0,-7} {1,-17}  {2,-60}  {3,-20}" -f `
 			$SAMLSetting.Attributes.Custom.Enabled.ToString(),
 			"Custom",
 			$SAMLSetting.Attributes.Custom.SAMLAttribute,
@@ -39800,7 +39928,7 @@ Function OutputSAMLSetting
 			"AD attribute",($Script:htmlsb))
 
 			$msg = "Attributes"
-			$columnWidths = @("55","100","100", "100")
+			$columnWidths = @("55","100","250", "100")
 			FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 			WriteHTMLLine 0 0 ""
 		}
@@ -40513,7 +40641,7 @@ Function OutputPoliciesDetails
 				SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 				$Table.Columns.Item(1).Width = 200;
-				$Table.Columns.Item(2).Width = 50;
+				$Table.Columns.Item(2).Width = 150;
 				$Table.Columns.Item(3).Width = 250;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
@@ -40799,13 +40927,14 @@ Function OutputPoliciesDetails
 				Line 2 "is not one of the following"
 			}
 			Line 0 ""
-			Line 3 "Name                                      Type      SID                                               "
-			Line 3 "======================================================================================================"
-			#       1234567890123456789012345678901234567890SS12345678SS12345678901234567890123456789012345678901234567890
+			Line 3 "Name                                      Type                            SID                                               "
+			Line 3 "============================================================================================================================"
+			#       1234567890123456789012345678901234567890SS123456789012345678901234567890SS12345678901234567890123456789012345678901234567890
+			#		SID://Everyone                            ForeignSecurityPrincipal        S-1-1-0                           
 			
 			ForEach($Item in $Policy.Assignment.Rules.criteria.SecurityPrincipals.Members)
 			{
-				Line 3 ( "{0,-40}  {1,-8}  {2,-40}" -f `
+				Line 3 ( "{0,-40}  {1,-30}  {2,-50}" -f `
 				$Item.Account, $Item.Type, $Item.Sid)
 			}
 			Line 0 ""
@@ -43824,7 +43953,7 @@ Function OutputPoliciesDetails
 			}
 			If($Text)
 			{
-				OutputPolicySetting $txt $Policy.ClientPolicy.ClientOptions.Global.GraphicsAccel.ToString()
+				OutputPolicySetting $txt $Policy.ClientPolicy.ClientOptions.Advanced.Global.GraphicsAccel.ToString()
 			}
 
 			$txt = "Client options/Advanced/Global/Enable work area background (Chrome client)"
@@ -44361,6 +44490,8 @@ Function OutputPoliciesDetails
 				"DirectSSLMode"		{$ConnMode = "Direct SSL Mode"; Break}
 				"GatewayMode"		{$ConnMode = "Gateway Mode"; Break}
 				"GatewaySSLMode"	{$ConnMode = "Gateway SSL Mode"; Break}
+				"DirectRDPMode"		{$ConnMode = "Direct RDP"; Break}
+				"Unknown"			{$ConnMode = "Unknown Mode"; Break}
 				Default				{$ConnMode = "New gateway/Connection mode not found: $($Policy.ClientPolicy.Redirection.Mode)"; Break}
 			}
 
@@ -45652,8 +45783,8 @@ Function OutputRASPerformanceMonitorSettings
 		Line 3 "Enable RAS Performance Monitor`t`t`t: " $RASPerformanceMonitorSettings.Enabled.ToString()
 		If($RASPerformanceMonitorSettings.Enabled)
 		{
-			Line 3 "Server`t`t`t`t`t``t: " $RASPerformanceMonitorSettings.Server
-			Line 3 "Port`t`t`t`t`t``t: " $RASPerformanceMonitorSettings.Port.ToString()
+			Line 3 "Server`t`t`t`t`t`t: " $RASPerformanceMonitorSettings.Server
+			Line 3 "Port`t`t`t`t`t`t: " $RASPerformanceMonitorSettings.Port.ToString()
 		}
 		Line 0 ""
 	}
@@ -46197,39 +46328,23 @@ Function OutputRASLicense
 	If($MSWord -or $PDF)
 	{
 		$ScriptInformation.Add(@{Data = "License Type"; Value = $RASLicense.LicenseType; }) > $Null
-		If(ValidObject $RASLicense LicenseKey)
-		{
-			$ScriptInformation.Add(@{Data = "License Key"; Value = $RASLicense.LicenseKey; }) > $Null
-		}
+		$ScriptInformation.Add(@{Data = "License Key"; Value = $RASLicense.LicenseKey; }) > $Null
 		$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
-		If(ValidObject $RASLicense SupportExpireDate)
-		{
-			$ScriptInformation.Add(@{Data = "Support Expiration Date"; Value = $RASLicense.SupportExpireDate; }) > $Null
-		}
-		If(ValidObject $RASLicense ExpiryDate)
-		{
-			$ScriptInformation.Add(@{Data = "Expiration Date"; Value = $RASLicense.ExpiryDate; }) > $Null
-		}
-		If(ValidObject $RASLicense LicenseFirstActive)
-		{
-			$ScriptInformation.Add(@{Data = "First Activation"; Value = $RASLicense.LicenseFirstActive; }) > $Null
-		}
-		$ScriptInformation.Add(@{Data = 'Maximum allowed concurrent users'; Value = $RASLicense.InstalledUsers; }) > $Null
-		$ScriptInformation.Add(@{Data = 'Peak Users'; Value = $RASLicense.UsersPeak; }) > $Null
-		$ScriptInformation.Add(@{Data = 'Concurrent Users'; Value = $RASLicense.UsersLicenseInfo; }) > $Null
+		$ScriptInformation.Add(@{Data = "Support Expiration Date"; Value = $RASLicense.SupportExpireDate; }) > $Null
+		$ScriptInformation.Add(@{Data = "Upgrade Insurance"; Value = $RASLicense.UpgradeInsurance; }) > $Null
+		$ScriptInformation.Add(@{Data = "Expiration Date"; Value = $RASLicense.ExpiryDate; }) > $Null
+		$ScriptInformation.Add(@{Data = "First Activation"; Value = $RASLicense.LicenseFirstActive; }) > $Null
 		$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
-		If(ValidObject $RASLicense PAUserEmail)
-		{
-			$ScriptInformation.Add(@{Data = 'Parallels Account user email'; Value = $RASLicense.PAUserEmail; }) > $Null
-		}
-		If(ValidObject $RASLicense PAUserName)
-		{
-			$ScriptInformation.Add(@{Data = 'Parallels Account user name'; Value = $RASLicense.PAUserName; }) > $Null
-		}
-		If(ValidObject $RASLicense PACompanyName)
-		{
-			$ScriptInformation.Add(@{Data = 'Parallels Account company'; Value = $RASLicense.PACompanyName; }) > $Null
-		}
+		$ScriptInformation.Add(@{Data = "Peak Users"; Value = $RASLicense.UsersPeak; }) > $Null
+		$ScriptInformation.Add(@{Data = "Usage Today"; Value = $RASLicense.UsageToday; }) > $Null
+		$ScriptInformation.Add(@{Data = "Current Period Usage"; Value = $RASLicense.CurrPeriodUsage; }) > $Null
+		$ScriptInformation.Add(@{Data = "Billing period started"; Value = $RASLicense.BillingPeriodStart; }) > $Null
+		$ScriptInformation.Add(@{Data = "Billing period ends"; Value = $RASLicense.BillingPeriodEnd; }) > $Null
+		$ScriptInformation.Add(@{Data = "Current Users"; Value = $RASLicense.UsersLicenseInfo; }) > $Null
+		$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+		$ScriptInformation.Add(@{Data = "Parallels Account user email"; Value = $RASLicense.BrokerUserEmail; }) > $Null
+		$ScriptInformation.Add(@{Data = "Parallels Account user name"; Value = $RASLicense.BrokerUserName; }) > $Null
+		$ScriptInformation.Add(@{Data = "Parallels Account company"; Value = $RASLicense.BrokerCompanyName; }) > $Null
 
 		$Table = AddWordTable -Hashtable $ScriptInformation `
 		-Columns Data,Value `
@@ -46240,8 +46355,8 @@ Function OutputRASLicense
 		SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 		SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-		$Table.Columns.Item(1).Width = 250;
-		$Table.Columns.Item(2).Width = 250;
+		$Table.Columns.Item(1).Width = 200;
+		$Table.Columns.Item(2).Width = 200;
 
 		$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -46251,79 +46366,46 @@ Function OutputRASLicense
 	}
 	If($Text)
 	{
-		Line 1 "License Type`t`t`t: " $RASLicense.LicenseType
-		If(ValidObject $RASLicense LicenseKey)
-		{
-			Line 1 "License Key`t`t`t: " $RASLicense.LicenseKey
-		}
+		Line 1 "License Type`t`t: " $RASLicense.LicenseType
+		Line 1 "License Key`t`t: " $RASLicense.LicenseKey
 		Line 0 ""
-		If(ValidObject $RASLicense SupportExpireDate)
-		{
-			Line 1 "Support Expiration Date`t`t: " $RASLicense.SupportExpireDate
-		}
-		If(ValidObject $RASLicense ExpiryDate)
-		{
-			Line 1 "Expiration Date`t`t`t: " $RASLicense.ExpiryDate
-		}
-		If(ValidObject $RASLicense LicenseFirstActive)
-		{
-			Line 1 "First Activation`t`t: " $RASLicense.LicenseFirstActive
-		}
-		Line 1 "Maximum allowed concurrent users: " $RASLicense.InstalledUsers
-		Line 1 "Peak Users`t`t`t: " $RASLicense.UsersPeak
-		Line 1 "Concurrent Users`t`t: " $RASLicense.UsersLicenseInfo
+		Line 1 "Support Expiration Date`t: " $RASLicense.SupportExpireDate
+		Line 1 "Upgrade Insurance`t: " $RASLicense.UpgradeInsurance
+		Line 1 "Expiration Date`t`t: " $RASLicense.ExpiryDate
+		Line 1 "First Activation`t: " $RASLicense.LicenseFirstActive
 		Line 0 ""
-		If(ValidObject $RASLicense PAUserEmail)
-		{
-			Line 1 "Parallels Account user email`t: " $RASLicense.PAUserEmail
-		}
-		If(ValidObject $RASLicense PAUserName)
-		{
-			Line 1 "Parallels Account user name`t: " $RASLicense.PAUserName
-		}
-		If(ValidObject $RASLicense PACompanyName)
-		{
-			Line 1 "Parallels Account company`t: " $RASLicense.PACompanyName
-		}
+		Line 1 "Peak Users`t`t: " $RASLicense.UsersPeak
+		Line 1 "Usage Today`t`t: " $RASLicense.UsageToday
+		Line 1 "Current Period Usage`t: " $RASLicense.CurrPeriodUsage
+		Line 1 "Billing period started`t: " $RASLicense.BillingPeriodStart
+		Line 1 "Billing period ends`t: " $RASLicense.BillingPeriodEnd
+		Line 1 "Current Users`t`t: " $RASLicense.UsersLicenseInfo
+		Line 0 ""
+		Line 1 "Parallels Account user email`t: " $RASLicense.BrokerUserEmail
+		Line 1 "Parallels Account user name`t: " $RASLicense.BrokerUserName
+		Line 1 "Parallels Account company`t: " $RASLicense.BrokerCompanyName
 		Line 0 ""
 	}
 	If($HTML)
 	{
 		$columnHeaders = @("License Type",($Script:htmlsb),$RASLicense.LicenseType,$htmlwhite)
-		If(ValidObject $RASLicense LicenseKey)
-		{
-			$rowdata += @(,("License Key",($Script:htmlsb),$RASLicense.LicenseKey,$htmlwhite))
-		}
+		$rowdata += @(,("License Key",($Script:htmlsb),$RASLicense.LicenseKey,$htmlwhite))
 		$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
-		If(ValidObject $RASLicense SupportExpireDate)
-		{
-			$rowdata += @(,("Support Expiration Date",($Script:htmlsb),$RASLicense.SupportExpireDate,$htmlwhite))
-		}
+		$rowdata += @(,("Support Expiration Date",($Script:htmlsb),$RASLicense.SupportExpireDate,$htmlwhite))
+		$rowdata += @(,("Upgrade Insurance",($Script:htmlsb),$RASLicense.UpgradeInsurance,$htmlwhite))
 		$rowdata += @(,("Expiration Date",($Script:htmlsb),$RASLicense.ExpiryDate,$htmlwhite))
-		If(ValidObject $RASLicense ExpiryDate)
-		{
-			$rowdata += @(,("Expiration Date",($Script:htmlsb),$RASLicense.ExpiryDate,$htmlwhite))
-		}
-		If(ValidObject $RASLicense LicenseFirstActive)
-		{
-			$rowdata += @(,("First Activation",($Script:htmlsb),$RASLicense.LicenseFirstActive,$htmlwhite))
-		}
-		$rowdata += @(,("Maximum allowed concurrent users",($Script:htmlsb),$RASLicense.InstalledUsers,$htmlwhite))
-		$rowdata += @(,("Peak Users",($Script:htmlsb),$RASLicense.UsersPeak,$htmlwhite))
-		$rowdata += @(,("Concurrent Users",($Script:htmlsb),$RASLicense.UsersLicenseInfo,$htmlwhite))
+		$rowdata += @(,("First Activation",($Script:htmlsb),$RASLicense.LicenseFirstActive,$htmlwhite))
 		$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
-		If(ValidObject $RASLicense PAUserEmail)
-		{
-			$rowdata += @(,("Parallels Account user email",($Script:htmlsb),$RASLicense.PAUserEmail,$htmlwhite))
-		}
-		If(ValidObject $RASLicense PAUserName)
-		{
-			$rowdata += @(,("Parallels Account user name",($Script:htmlsb),$RASLicense.PAUserName,$htmlwhite))
-		}
-		If(ValidObject $RASLicense PACompanyName)
-		{
-			$rowdata += @(,("Parallels Account company",($Script:htmlsb),$RASLicense.PACompanyName,$htmlwhite))
-		}
+		$rowdata += @(,("Peak Users",($Script:htmlsb),$RASLicense.UsersPeak,$htmlwhite))
+		$rowdata += @(,("Usage Today",($Script:htmlsb),$RASLicense.UsageToday,$htmlwhite))
+		$rowdata += @(,("Current Period Usage",($Script:htmlsb),$RASLicense.CurrPeriodUsage,$htmlwhite))
+		$rowdata += @(,("Billing period started",($Script:htmlsb),$RASLicense.BillingPeriodStart,$htmlwhite))
+		$rowdata += @(,("Billing period ends",($Script:htmlsb),$RASLicense.BillingPeriodEnd,$htmlwhite))
+		$rowdata += @(,("Current Users",($Script:htmlsb),$RASLicense.UsersLicenseInfo,$htmlwhite))
+		$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+		$rowdata += @(,("Parallels Account user email",($Script:htmlsb),$RASLicense.BrokerUserEmail,$htmlwhite))
+		$rowdata += @(,("Parallels Account user name",($Script:htmlsb),$RASLicense.BrokerUserName,$htmlwhite))
+		$rowdata += @(,("Parallels Account company",($Script:htmlsb),$RASLicense.BrokerCompanyName,$htmlwhite))
 
 		$msg = ""
 		$columnWidths = @("200","250")
@@ -46346,10 +46428,10 @@ OutputFarm
 
 GetFarmSites
 
-$OnlyOneTIme = $True
+$OnlyOneTime = $True
 ForEach($Site in $Script:Sites)
 {
-	If($OnlyOneTIme)
+	If($OnlyOneTime)
 	{
 		OutputFarmSite $Site
 		
@@ -46424,4 +46506,3 @@ ProcessDocumentOutput "Regular"
 
 ProcessScriptEnd
 #endregion
-
