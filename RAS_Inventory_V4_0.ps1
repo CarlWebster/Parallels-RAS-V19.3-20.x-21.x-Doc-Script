@@ -448,9 +448,9 @@
 	text document.
 .NOTES
 	NAME: RAS_Inventory_V4_0.ps1
-	VERSION: 4.00
+	VERSION: 4.00 Beta 6
 	AUTHOR: Carl Webster
-	LASTEDIT: September 30, 2024
+	LASTEDIT: October 1, 2024
 #>
 
 
@@ -571,6 +571,8 @@ Param(
 #Version 4.00 
 #
 #	Fixed HTML, Text, and MSWord output
+#	In Function OutputFarmSite, add Farm Properties
+#	In Function OutputPoliciesDetails, update for the Policy changes in 19.3 and 19.4
 #	In Function OutputRASLicense, update output to match the 19.4 console
 #	In Function OutputSAMLSetting, handle multiple SAML items
 #	In Function OutputSite, when processing Themes, Properties, Access:
@@ -642,9 +644,9 @@ $ErrorActionPreference    = 'SilentlyContinue'
 $Error.Clear()
 
 $Script:emailCredentials  = $Null
-$script:MyVersion         = '4.00'
+$script:MyVersion         = '4.00 Beta 6'
 $Script:ScriptName        = "RAS_Inventory_V4_0.ps1"
-$tmpdate                  = [datetime] "09/30/2024"
+$tmpdate                  = [datetime] "10/01/2024"
 $Script:ReleaseDate       = $tmpdate.ToUniversalTime().ToShortDateString()
 
 If($MSWord -eq $False -and $PDF -eq $False -and $Text -eq $False -and $HTML -eq $False)
@@ -4344,6 +4346,8 @@ Function OutputFarmSite
 		$Table = $Null
 		WriteWordLine 0 0 ""
 
+		#Access addresses in not availble in PowerShell yet
+		<#
 		WriteWordLine 3 0 "Access addresses"
 		$ScriptInformation = New-Object System.Collections.ArrayList
 		$ScriptInformation.Add(@{Data = "Name"; Value = ""; }) > $Null
@@ -4371,6 +4375,9 @@ Function OutputFarmSite
 		FindWordDocumentEnd
 		$Table = $Null
 		WriteWordLine 0 0 ""
+		#>
+		
+		WriteWordLine 0 0 "Enable HTTP host header attacks protection: " $Site.EnableHttpHostAttackProtection.ToString()
 	}
 	If($Text)
 	{
@@ -4379,6 +4386,9 @@ Function OutputFarmSite
 		Line 2 "Server`t`t: " $PrimaryPublishingAgent
 		Line 2 "Description`t : " $Description
 		Line 0 ""
+
+		#Access addresses in not availble in PowerShell yet
+		<#
 		Line 2 "Access addresses"
 		Line 3 "Name`t`t: "
 		Line 3 "Description`t: "
@@ -4386,6 +4396,10 @@ Function OutputFarmSite
 		Line 3 "IPs`t`t: "
 		Line 3 "Type`t`t: "
 		Line 3 "Port`t`t: "
+		Line 0 ""
+		#>
+
+		Line 2 "Enable HTTP host header attacks protection: " $Site.EnableHttpHostAttackProtection.ToString()
 		Line 0 ""
 	}
 	If($HTML)
@@ -4402,6 +4416,8 @@ Function OutputFarmSite
 		FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 		WriteHTMLLine 0 0 ""
 
+		#Access addresses in not availble in PowerShell yet
+		<#
 		WriteHTMLLine 3 0 "Access addresses"
 
 		$rowdata = @()
@@ -4416,6 +4432,10 @@ Function OutputFarmSite
 		$columnWidths = @("150","275")
 		FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 		WriteHTMLLine 0 0 ""
+		#>
+
+		WriteHTMLLine 0 0 "Enable HTTP host header attacks protection: " $Site.EnableHttpHostAttackProtection.ToString()
+		WriteHTMLLIne 0 0 ""
 	}
 }
 
@@ -40700,320 +40720,343 @@ Function OutputPoliciesDetails
 
 			WriteWordLine 4 0 "Apply policy to:"
 			WriteWordLine 5 0 "$($Policy.Assignment.Rules.Name) Properties"
-			$ScriptInformation = New-Object System.Collections.ArrayList
-			$ScriptInformation.Add(@{Data = "Enable rule"; Value = $Policy.Assignment.Rules.Enabled.ToString(); }) > $Null
-			$ScriptInformation.Add(@{Data = "General"; Value = ""; }) > $Null
-			$ScriptInformation.Add(@{Data = "     Name"; Value = $Policy.Assignment.Rules.Name; }) > $Null
-			$ScriptInformation.Add(@{Data = "     Description"; Value = $Policy.Assignment.Rules.Description; }) > $Null
-
-			$Table = AddWordTable -Hashtable $ScriptInformation `
-			-Columns Data,Value `
-			-List `
-			-Format $wdTableGrid `
-			-AutoFit $wdAutoFitFixed;
-
-			SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
-			SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
-			$Table.Columns.Item(1).Width = 125;
-			$Table.Columns.Item(2).Width = 175;
-
-			$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-			FindWordDocumentEnd
-			$Table = $Null
-			
-			WriteWordLine 4 0 "Criteria"
-			WriteWordLine 5 0 "Apply policy if User, group, or computer"
-			WriteWordLine 0 0 "Enable criteria: " $Policy.Assignment.Rules.criteria.SecurityPrincipals.Enabled.ToString()
-			If($Policy.Assignment.Rules.criteria.SecurityPrincipals.MatchingMode -eq "IsOneOfTheFollowing")
+			ForEach($PolicyRule in $Policy.Assignment.Rules)
 			{
-				WriteWordLine 0 0 "is one of the following"
-			}
-			Else
-			{
-				WriteWordLine 0 0 "is not one of the following"
-			}
-			
-			[System.Collections.Hashtable[]] $NameWordTable = @();
-			
-			ForEach($Item in $Policy.Assignment.Rules.criteria.SecurityPrincipals.Members)
-			{
-				$NameTableRowHash = @{
-				Name = $Item.Account;
-				Type = $Item.Type;
-				SID  = $Item.Sid;
-				}
-				$NameWordTable += $NameTableRowHash;
-			}
+				$ScriptInformation = New-Object System.Collections.ArrayList
+				$ScriptInformation.Add(@{Data = "Enable rule"; Value = $PolicyRule.Enabled.ToString(); }) > $Null
+				$ScriptInformation.Add(@{Data = "General"; Value = ""; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Name"; Value = $PolicyRule.Name; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Description"; Value = $PolicyRule.Description; }) > $Null
 
-			If($NameWordTable.Count -gt 0)
-			{
-				$Table = AddWordTable -Hashtable $NameWordTable `
-				-Columns Name,Type,SID `
-				-Headers "Name","Type","SID"`
+				$Table = AddWordTable -Hashtable $ScriptInformation `
+				-Columns Data,Value `
+				-List `
 				-Format $wdTableGrid `
 				-AutoFit $wdAutoFitFixed;
 
-				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
-				SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 200;
-				$Table.Columns.Item(2).Width = 150;
-				$Table.Columns.Item(3).Width = 250;
+				$Table.Columns.Item(1).Width = 125;
+				$Table.Columns.Item(2).Width = 175;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
 				FindWordDocumentEnd
 				$Table = $Null
-				WriteWordLine 0 0 ""
-			}
+				
+				WriteWordLine 4 0 "Criteria"
+				WriteWordLine 5 0 "Apply policy if User, group, or computer"
+				WriteWordLine 0 0 "Enable criteria: " $PolicyRule.criteria.SecurityPrincipals.Enabled.ToString()
+				If($PolicyRule.criteria.SecurityPrincipals.Enabled)
+				{
+					If($PolicyRule.criteria.SecurityPrincipals.MatchingMode -eq "IsOneOfTheFollowing")
+					{
+						WriteWordLine 0 0 "is one of the following"
+					}
+					Else
+					{
+						WriteWordLine 0 0 "is not one of the following"
+					}
+					
+					[System.Collections.Hashtable[]] $NameWordTable = @();
+					
+					ForEach($Item in $PolicyRule.criteria.SecurityPrincipals.Members)
+					{
+						$NameTableRowHash = @{
+						Name = $Item.Account;
+						Type = $Item.Type;
+						SID  = $Item.Sid;
+						}
+						$NameWordTable += $NameTableRowHash;
+					}
 
-			WriteWordLine 5 0 "Apply policy if Gateway"
-			WriteWordLine 0 0 "Enable criteria: " $Policy.Assignment.Rules.criteria.Gateways.Enabled.ToString()
-			If($Policy.Assignment.Rules.criteria.Gateways.MatchingMode -eq "IsOneOfTheFollowing")
-			{
-				WriteWordLine 0 0 "is one of the following"
-			}
-			Else
-			{
-				WriteWordLine 0 0 "is not one of the following"
-			}
-			
-			[System.Collections.Hashtable[]] $NameWordTable = @();
-			
-			ForEach($Item in $Policy.Assignment.Rules.criteria.Gateways.Members)
-			{
-				$NameTableRowHash = @{
-				GatewayIP = $Item.GatewayIP;
+					If($NameWordTable.Count -gt 0)
+					{
+						$Table = AddWordTable -Hashtable $NameWordTable `
+						-Columns Name,Type,SID `
+						-Headers "Name","Type","SID"`
+						-Format $wdTableGrid `
+						-AutoFit $wdAutoFitFixed;
+
+						SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
+						SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+						$Table.Columns.Item(1).Width = 200;
+						$Table.Columns.Item(2).Width = 150;
+						$Table.Columns.Item(3).Width = 250;
+
+						$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+						FindWordDocumentEnd
+						$Table = $Null
+						WriteWordLine 0 0 ""
+					}
 				}
-				$NameWordTable += $NameTableRowHash;
-			}
 
-			If($NameWordTable.Count -gt 0)
-			{
-				$Table = AddWordTable -Hashtable $NameWordTable `
-				-Columns GatewayIP `
-				-Headers "Secure Gateways"`
-				-Format $wdTableGrid `
-				-AutoFit $wdAutoFitFixed;
+				WriteWordLine 5 0 "Apply policy if Gateway"
+				WriteWordLine 0 0 "Enable criteria: " $PolicyRule.criteria.Gateways.Enabled.ToString()
+				If($PolicyRule.criteria.Gateways.Enabled)
+				{
+					If($PolicyRule.criteria.Gateways.MatchingMode -eq "IsOneOfTheFollowing")
+					{
+						WriteWordLine 0 0 "is one of the following"
+					}
+					Else
+					{
+						WriteWordLine 0 0 "is not one of the following"
+					}
+					
+					[System.Collections.Hashtable[]] $NameWordTable = @();
+					
+					ForEach($Item in $PolicyRule.criteria.Gateways.Members)
+					{
+						$NameTableRowHash = @{
+						GatewayIP = $Item.GatewayIP;
+						}
+						$NameWordTable += $NameTableRowHash;
+					}
 
-				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
-				SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+					If($NameWordTable.Count -gt 0)
+					{
+						$Table = AddWordTable -Hashtable $NameWordTable `
+						-Columns GatewayIP `
+						-Headers "Secure Gateways"`
+						-Format $wdTableGrid `
+						-AutoFit $wdAutoFitFixed;
 
-				$Table.Columns.Item(1).Width = 200;
+						SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
+						SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+						$Table.Columns.Item(1).Width = 200;
 
-				FindWordDocumentEnd
-				$Table = $Null
-				WriteWordLine 0 0 ""
-			}
+						$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
-			WriteWordLine 5 0 "Apply policy if Operating system"
-			WriteWordLine 0 0 "Enable criteria: " $Policy.Assignment.Rules.criteria.OSs.Enabled.ToString()
-			If($Policy.Assignment.Rules.criteria.OSs.MatchingMode -eq "IsOneOfTheFollowing")
-			{
-				WriteWordLine 0 0 "is one of the following"
-			}
-			Else
-			{
-				WriteWordLine 0 0 "is not one of the following"
-			}
-			
-			[System.Collections.Hashtable[]] $NameWordTable = @();
-			
-			If($Policy.Assignment.Rules.criteria.OSs.AllowedOSes.Windows)
-			{
-				$NameTableRowHash = @{
-				OS = "Windows";
+						FindWordDocumentEnd
+						$Table = $Null
+						WriteWordLine 0 0 ""
+					}
 				}
-				$NameWordTable += $NameTableRowHash;
-			}
 
-			If($Policy.Assignment.Rules.criteria.OSs.AllowedOSes.WebClient)
-			{
-				$NameTableRowHash = @{
-				OS = 'User Portal (Web Client)';
+				WriteWordLine 5 0 "Apply policy if Operating system"
+				WriteWordLine 0 0 "Enable criteria: " $PolicyRule.criteria.OSs.Enabled.ToString()
+				If($PolicyRule.criteria.OSs.Enabled)
+				{
+					If($PolicyRule.criteria.OSs.MatchingMode -eq "IsOneOfTheFollowing")
+					{
+						WriteWordLine 0 0 "is one of the following"
+					}
+					Else
+					{
+						WriteWordLine 0 0 "is not one of the following"
+					}
+					
+					[System.Collections.Hashtable[]] $NameWordTable = @();
+					
+					If($PolicyRule.criteria.OSs.AllowedOSes.Windows)
+					{
+						$NameTableRowHash = @{
+						OS = "Windows";
+						}
+						$NameWordTable += $NameTableRowHash;
+					}
+
+					If($PolicyRule.criteria.OSs.AllowedOSes.WebClient)
+					{
+						$NameTableRowHash = @{
+						OS = 'User Portal (Web Client)';
+						}
+						$NameWordTable += $NameTableRowHash;
+					}
+
+					If($PolicyRule.criteria.OSs.AllowedOSes.Mac)
+					{
+						$NameTableRowHash = @{
+						OS = "macOS";
+						}
+						$NameWordTable += $NameTableRowHash;
+					}
+
+					If($PolicyRule.criteria.OSs.AllowedOSes.Linux)
+					{
+						$NameTableRowHash = @{
+						OS = "Linux";
+						}
+						$NameWordTable += $NameTableRowHash;
+					}
+
+					If($PolicyRule.criteria.OSs.AllowedOSes.iOS)
+					{
+						$NameTableRowHash = @{
+						OS = 'iOS/iPadOS';
+						}
+						$NameWordTable += $NameTableRowHash;
+					}
+
+					If($PolicyRule.criteria.OSs.AllowedOSes.Android)
+					{
+						$NameTableRowHash = @{
+						OS = "Android";
+						}
+						$NameWordTable += $NameTableRowHash;
+					}
+
+					If($PolicyRule.criteria.OSs.AllowedOSes.Chrome)
+					{
+						$NameTableRowHash = @{
+						OS = "Chrome OS";
+						}
+						$NameWordTable += $NameTableRowHash;
+					}
+
+					If($NameWordTable.Count -gt 0)
+					{
+						$Table = AddWordTable -Hashtable $NameWordTable `
+						-Columns OS `
+						-Headers "Operating system" `
+						-Format $wdTableGrid `
+						-AutoFit $wdAutoFitFixed;
+
+						SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
+						SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+						$Table.Columns.Item(1).Width = 200;
+
+						$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+						FindWordDocumentEnd
+						$Table = $Null
+						WriteWordLine 0 0 ""
+					}
 				}
-				$NameWordTable += $NameTableRowHash;
-			}
 
-			If($Policy.Assignment.Rules.criteria.OSs.AllowedOSes.Mac)
-			{
-				$NameTableRowHash = @{
-				OS = "macOS";
+				WriteWordLine 5 0 "Apply policy if IP"
+				WriteWordLine 0 0 "Enable criteria: " $PolicyRule.criteria.IPs.Enabled.ToString()
+				If($PolicyRule.criteria.IPs.Enabled)
+				{
+					If($PolicyRule.criteria.IPs.MatchingMode -eq "IsOneOfTheFollowing")
+					{
+						WriteWordLine 0 0 "is one of the following"
+					}
+					Else
+					{
+						WriteWordLine 0 0 "is not one of the following"
+					}
+					
+					If($PolicyRule.criteria.IPs.AllowedIPs.IPv4s.Count -ne 0)
+					{
+						[System.Collections.Hashtable[]] $NameWordTable = @();
+						
+						ForEach($Item in $PolicyRule.criteria.IPs.AllowedIPs.IPv4s)
+						{
+							$NameTableRowHash = @{
+							From = $Item.From;
+							To   = $Item.To;
+							}
+							$NameWordTable += $NameTableRowHash;
+						}
+
+						If($NameWordTable.Count -gt 0)
+						{
+							$Table = AddWordTable -Hashtable $NameWordTable `
+							-Columns From, To `
+							-Headers "IPv4 Address From", "IPv4 Address To" `
+							-Format $wdTableGrid `
+							-AutoFit $wdAutoFitFixed;
+
+							SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
+							SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+							$Table.Columns.Item(1).Width = 200;
+							$Table.Columns.Item(2).Width = 200;
+
+							$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+							FindWordDocumentEnd
+							$Table = $Null
+							WriteWordLine 0 0 ""
+						}
+					}
+
+					If($PolicyRule.criteria.IPs.AllowedIPs.IPv6s.Count -ne 0)
+					{
+						[System.Collections.Hashtable[]] $NameWordTable = @();
+						
+						ForEach($Item in $PolicyRule.criteria.IPs.AllowedIPs.IPv6s)
+						{
+							$NameTableRowHash = @{
+							From = $Item.From;
+							To   = $Item.To;
+							}
+							$NameWordTable += $NameTableRowHash;
+						}
+
+						If($NameWordTable.Count -gt 0)
+						{
+							$Table = AddWordTable -Hashtable $NameWordTable `
+							-Columns From, To `
+							-Headers "IPv6 Address From", "IPv6 Address To" `
+							-Format $wdTableGrid `
+							-AutoFit $wdAutoFitFixed;
+
+							SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
+							SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+							$Table.Columns.Item(1).Width = 200;
+							$Table.Columns.Item(2).Width = 200;
+
+							$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+							FindWordDocumentEnd
+							$Table = $Null
+							WriteWordLine 0 0 ""
+						}
+					}
 				}
-				$NameWordTable += $NameTableRowHash;
-			}
 
-			If($Policy.Assignment.Rules.criteria.OSs.AllowedOSes.Linux)
-			{
-				$NameTableRowHash = @{
-				OS = "Linux";
+				WriteWordLine 5 0 "Apply policy if Hardware ID"
+				WriteWordLine 0 0 "Enable criteria: " $PolicyRule.criteria.HardwareIDs.Enabled.ToString()
+				If($PolicyRule.criteria.HardwareIDs.Enabled)
+				{
+					If($PolicyRule.criteria.HardwareIDs.MatchingMode -eq "IsOneOfTheFollowing")
+					{
+						WriteWordLine 0 0 "is one of the following"
+					}
+					Else
+					{
+						WriteWordLine 0 0 "is not one of the following"
+					}
+					
+					[System.Collections.Hashtable[]] $NameWordTable = @();
+					
+					ForEach($Item in $PolicyRule.criteria.HardwareIDs.Members)
+					{
+						$NameTableRowHash = @{
+						HardwareID = $Item.HardwareID;
+						}
+						$NameWordTable += $NameTableRowHash;
+					}
+
+					If($NameWordTable.Count -gt 0)
+					{
+						$Table = AddWordTable -Hashtable $NameWordTable `
+						-Columns HardwareID `
+						-Headers "Device Hardware ID"`
+						-Format $wdTableGrid `
+						-AutoFit $wdAutoFitFixed;
+
+						SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
+						SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+						$Table.Columns.Item(1).Width = 200;
+
+						$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+						FindWordDocumentEnd
+						$Table = $Null
+						WriteWordLine 0 0 ""
+					}
 				}
-				$NameWordTable += $NameTableRowHash;
-			}
-
-			If($Policy.Assignment.Rules.criteria.OSs.AllowedOSes.iOS)
-			{
-				$NameTableRowHash = @{
-				OS = 'iOS/iPadOS';
-				}
-				$NameWordTable += $NameTableRowHash;
-			}
-
-			If($Policy.Assignment.Rules.criteria.OSs.AllowedOSes.Android)
-			{
-				$NameTableRowHash = @{
-				OS = "Android";
-				}
-				$NameWordTable += $NameTableRowHash;
-			}
-
-			If($Policy.Assignment.Rules.criteria.OSs.AllowedOSes.Chrome)
-			{
-				$NameTableRowHash = @{
-				OS = "Chrome OS";
-				}
-				$NameWordTable += $NameTableRowHash;
-			}
-
-			If($NameWordTable.Count -gt 0)
-			{
-				$Table = AddWordTable -Hashtable $NameWordTable `
-				-Columns OS `
-				-Headers "Operating system" `
-				-Format $wdTableGrid `
-				-AutoFit $wdAutoFitFixed;
-
-				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
-				SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
-				$Table.Columns.Item(1).Width = 200;
-
-				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-				FindWordDocumentEnd
-				$Table = $Null
-				WriteWordLine 0 0 ""
-			}
-
-
-			WriteWordLine 5 0 "Apply policy if IP"
-			WriteWordLine 0 0 "Enable criteria: " $Policy.Assignment.Rules.criteria.IPs.Enabled.ToString()
-			If($Policy.Assignment.Rules.criteria.IPs.MatchingMode -eq "IsOneOfTheFollowing")
-			{
-				WriteWordLine 0 0 "is one of the following"
-			}
-			Else
-			{
-				WriteWordLine 0 0 "is not one of the following"
-			}
-			
-			[System.Collections.Hashtable[]] $NameWordTable = @();
-			
-			ForEach($Item in $Policy.Assignment.Rules.criteria.IPs.AllowedIPs.IPv4s)
-			{
-				$NameTableRowHash = @{
-				From = $Item.From;
-				To   = $Item.To;
-				}
-				$NameWordTable += $NameTableRowHash;
-			}
-
-			If($NameWordTable.Count -gt 0)
-			{
-				$Table = AddWordTable -Hashtable $NameWordTable `
-				-Columns From, To `
-				-Headers "IPv4 Address From", "IPv4 Address To" `
-				-Format $wdTableGrid `
-				-AutoFit $wdAutoFitFixed;
-
-				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
-				SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
-				$Table.Columns.Item(1).Width = 200;
-				$Table.Columns.Item(2).Width = 200;
-
-				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-				FindWordDocumentEnd
-				$Table = $Null
-				WriteWordLine 0 0 ""
-			}
-
-			[System.Collections.Hashtable[]] $NameWordTable = @();
-			
-			ForEach($Item in $Policy.Assignment.Rules.criteria.IPs.AllowedIPs.IPv6s)
-			{
-				$NameTableRowHash = @{
-				From = $Item.From;
-				To   = $Item.To;
-				}
-				$NameWordTable += $NameTableRowHash;
-			}
-
-			If($NameWordTable.Count -gt 0)
-			{
-				$Table = AddWordTable -Hashtable $NameWordTable `
-				-Columns From, To `
-				-Headers "IPv6 Address From", "IPv6 Address To" `
-				-Format $wdTableGrid `
-				-AutoFit $wdAutoFitFixed;
-
-				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
-				SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
-				$Table.Columns.Item(1).Width = 200;
-				$Table.Columns.Item(2).Width = 200;
-
-				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-				FindWordDocumentEnd
-				$Table = $Null
-				WriteWordLine 0 0 ""
-			}
-
-			WriteWordLine 5 0 "Apply policy if Hardware ID"
-			WriteWordLine 0 0 "Enable criteria: " $Policy.Assignment.Rules.criteria.HardwareIDs.Enabled.ToString()
-			If($Policy.Assignment.Rules.criteria.HardwareIDs.MatchingMode -eq "IsOneOfTheFollowing")
-			{
-				WriteWordLine 0 0 "is one of the following"
-			}
-			Else
-			{
-				WriteWordLine 0 0 "is not one of the following"
-			}
-			
-			[System.Collections.Hashtable[]] $NameWordTable = @();
-			
-			ForEach($Item in $Policy.Assignment.Rules.criteria.HardwareIDs.Members)
-			{
-				$NameTableRowHash = @{
-				HardwareID = $Item.HardwareID;
-				}
-				$NameWordTable += $NameTableRowHash;
-			}
-
-			If($NameWordTable.Count -gt 0)
-			{
-				$Table = AddWordTable -Hashtable $NameWordTable `
-				-Columns HardwareID `
-				-Headers "Device Hardware ID"`
-				-Format $wdTableGrid `
-				-AutoFit $wdAutoFitFixed;
-
-				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
-				SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
-				$Table.Columns.Item(1).Width = 200;
-
-				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-				FindWordDocumentEnd
-				$Table = $Null
-				WriteWordLine 0 0 ""
 			}
 		}
 		If($Text)
@@ -41026,161 +41069,189 @@ Function OutputPoliciesDetails
 			Line 0 ""
 
 			Line 2 "Apply policy to"
-			Line 2 "$($Policy.Assignment.Rules.Name) Properties"
-			Line 0 ""
-			Line 2 "Enable rule: " $Policy.Assignment.Rules.Enabled.ToString()
-			Line 2 "General"
-			Line 3 "Name: " $Policy.Assignment.Rules.Name
-			Line 3 "Description: " $Policy.Assignment.Rules.Description
-			Line 0 ""
-			Line 2 "Criteria"
-			Line 2 "Apply policy if User, group, or computer"
-			Line 2 "Enable criteria: " $Policy.Assignment.Rules.criteria.SecurityPrincipals.Enabled.ToString()
-			If($Policy.Assignment.Rules.criteria.SecurityPrincipals.MatchingMode -eq "IsOneOfTheFollowing")
+			Line 2 "$($PolicyRule.Name) Properties"
+			ForEach($PolicyRule in $Policy.Assignment.Rules)
 			{
-				Line 2 "is one of the following"
-			}
-			Else
-			{
-				Line 2 "is not one of the following"
-			}
-			Line 0 ""
-			Line 3 "Name                                      Type                            SID                                               "
-			Line 3 "============================================================================================================================"
-			#       1234567890123456789012345678901234567890SS123456789012345678901234567890SS12345678901234567890123456789012345678901234567890
-			#		SID://Everyone                            ForeignSecurityPrincipal        S-1-1-0                           
-			
-			ForEach($Item in $Policy.Assignment.Rules.criteria.SecurityPrincipals.Members)
-			{
-				Line 3 ( "{0,-40}  {1,-30}  {2,-50}" -f `
-				$Item.Account, $Item.Type, $Item.Sid)
-			}
-			Line 0 ""
+				Line 0 ""
+				
+				Line 2 "Enable rule: " $PolicyRule.Enabled.ToString()
+				Line 2 "General"
+				Line 3 "Name: " $PolicyRule.Name
+				Line 3 "Description: " $PolicyRule.Description
+				Line 0 ""
+				
+				Line 2 "Criteria"
+				Line 2 "Apply policy if User, group, or computer"
+				Line 2 "Enable criteria: " $PolicyRule.criteria.SecurityPrincipals.Enabled.ToString()
+				If($PolicyRule.criteria.SecurityPrincipals.Enabled)
+				{
+					If($PolicyRule.criteria.SecurityPrincipals.MatchingMode -eq "IsOneOfTheFollowing")
+					{
+						Line 2 "is one of the following"
+					}
+					Else
+					{
+						Line 2 "is not one of the following"
+					}
+					Line 0 ""
+					Line 3 "Name                                      Type                            SID                                               "
+					Line 3 "============================================================================================================================"
+					#       1234567890123456789012345678901234567890SS123456789012345678901234567890SS12345678901234567890123456789012345678901234567890
+					#		SID://Everyone                            ForeignSecurityPrincipal        S-1-1-0                           
+					
+					ForEach($Item in $PolicyRule.criteria.SecurityPrincipals.Members)
+					{
+						Line 3 ( "{0,-40}  {1,-30}  {2,-50}" -f `
+						$Item.Account, $Item.Type, $Item.Sid)
+					}
+					Line 0 ""
+				}
 
-			Line 2 "Apply policy if Gateway"
-			Line 2 "Enable criteria: " $Policy.Assignment.Rules.criteria.Gateways.Enabled.ToString()
-			If($Policy.Assignment.Rules.criteria.Gateways.MatchingMode -eq "IsOneOfTheFollowing")
-			{
-				Line 2 "is one of the following"
-			}
-			Else
-			{
-				Line 2 "is not one of the following"
-			}
-			Line 0 ""
-			Line 3 "Secure Gateways     "
-			Line 3 "===================="
-			#       12345678901234567890
-			
-			ForEach($Item in $Policy.Assignment.Rules.criteria.Gateways.Members)
-			{
-				Line 3 ( "{0,-20}" -f $Item.GatewayIP)
-			}
-			Line 0 ""
+				Line 2 "Apply policy if Gateway"
+				Line 2 "Enable criteria: " $PolicyRule.criteria.Gateways.Enabled.ToString()
+				If($PolicyRule.criteria.Gateways.Enabled)
+				{
+					If($PolicyRule.criteria.Gateways.MatchingMode -eq "IsOneOfTheFollowing")
+					{
+						Line 2 "is one of the following"
+					}
+					Else
+					{
+						Line 2 "is not one of the following"
+					}
+					Line 0 ""
+					Line 3 "Secure Gateways     "
+					Line 3 "===================="
+					#       12345678901234567890
+					
+					ForEach($Item in $PolicyRule.criteria.Gateways.Members)
+					{
+						Line 3 ( "{0,-20}" -f $Item.GatewayIP)
+					}
+					Line 0 ""
+				}
 
-			Line 2 "Apply policy if Operating system"
-			Line 2 "Enable criteria: " $Policy.Assignment.Rules.criteria.OSs.Enabled.ToString()
-			If($Policy.Assignment.Rules.criteria.OSs.MatchingMode -eq "IsOneOfTheFollowing")
-			{
-				Line 2 "is one of the following"
-			}
-			Else
-			{
-				Line 2 "is not one of the following"
-			}
-			Line 0 ""
-			Line 3 "Operating system         "
-			Line 3 "========================="
-			#       1234567890123456789012345
-			
-			If($Policy.Assignment.Rules.criteria.OSs.AllowedOSes.Windows)
-			{
-				Line 3 ( "{0,-25}" -f "Windows")
-			}
+				Line 2 "Apply policy if Operating system"
+				Line 2 "Enable criteria: " $PolicyRule.criteria.OSs.Enabled.ToString()
+				If($PolicyRule.criteria.OSs.Enabled)
+				{
+					If($PolicyRule.criteria.OSs.MatchingMode -eq "IsOneOfTheFollowing")
+					{
+						Line 2 "is one of the following"
+					}
+					Else
+					{
+						Line 2 "is not one of the following"
+					}
+					Line 0 ""
+					Line 3 "Operating system         "
+					Line 3 "========================="
+					#       1234567890123456789012345
+					
+					If($PolicyRule.criteria.OSs.AllowedOSes.Windows)
+					{
+						Line 3 ( "{0,-25}" -f "Windows")
+					}
 
-			If($Policy.Assignment.Rules.criteria.OSs.AllowedOSes.WebClient)
-			{
-				Line 3 ( "{0,-25}" -f 'User Portal (Web Client)')
-			}
+					If($PolicyRule.criteria.OSs.AllowedOSes.WebClient)
+					{
+						Line 3 ( "{0,-25}" -f 'User Portal (Web Client)')
+					}
 
-			If($Policy.Assignment.Rules.criteria.OSs.AllowedOSes.Mac)
-			{
-				Line 3 ( "{0,-25}" -f "macOS")
-			}
+					If($PolicyRule.criteria.OSs.AllowedOSes.Mac)
+					{
+						Line 3 ( "{0,-25}" -f "macOS")
+					}
 
-			If($Policy.Assignment.Rules.criteria.OSs.AllowedOSes.Linux)
-			{
-				Line 3 ( "{0,-25}" -f "Linux")
-			}
+					If($PolicyRule.criteria.OSs.AllowedOSes.Linux)
+					{
+						Line 3 ( "{0,-25}" -f "Linux")
+					}
 
-			If($Policy.Assignment.Rules.criteria.OSs.AllowedOSes.iOS)
-			{
-				Line 3 ( "{0,-25}" -f 'iOS/iPadOS')
-			}
+					If($PolicyRule.criteria.OSs.AllowedOSes.iOS)
+					{
+						Line 3 ( "{0,-25}" -f 'iOS/iPadOS')
+					}
 
-			If($Policy.Assignment.Rules.criteria.OSs.AllowedOSes.Android)
-			{
-				Line 3 ( "{0,-25}" -f "Android")
-			}
+					If($PolicyRule.criteria.OSs.AllowedOSes.Android)
+					{
+						Line 3 ( "{0,-25}" -f "Android")
+					}
 
-			If($Policy.Assignment.Rules.criteria.OSs.AllowedOSes.Chrome)
-			{
-				Line 3 ( "{0,-25}" -f "Chrome OS")
-			}
-			Line 0 ""
+					If($PolicyRule.criteria.OSs.AllowedOSes.Chrome)
+					{
+						Line 3 ( "{0,-25}" -f "Chrome OS")
+					}
+					Line 0 ""
+				}
 
-			Line 2 "Apply policy if IP"
-			Line 2 "Enable criteria: " $Policy.Assignment.Rules.criteria.IPs.Enabled.ToString()
-			If($Policy.Assignment.Rules.criteria.IPs.MatchingMode -eq "IsOneOfTheFollowing")
-			{
-				Line 2 "is one of the following"
-			}
-			Else
-			{
-				Line 2 "is not one of the following"
-			}
-			Line 0 ""
-			Line 3 "IPv4 Address From                                   IPv4 Address To                                   "
-			Line 3 "======================================================================================================"
-			#       12345678901234567890123456789012345678901234567890SS12345678901234567890123456789012345678901234567890
-			
-			ForEach($Item in $Policy.Assignment.Rules.criteria.IPs.AllowedIPs.IPv4s)
-			{
-				Line 3 ( "{0,-50}  {1,-50}" -f `
-				$Item.From, $Item.To)
-			}
-			Line 0 ""
-			Line 3 "IPv6 Address From                                   IPv6 Address To                                   "
-			Line 3 "======================================================================================================"
-			#       12345678901234567890123456789012345678901234567890SS12345678901234567890123456789012345678901234567890
-			
-			ForEach($Item in $Policy.Assignment.Rules.criteria.IPs.AllowedIPs.IPv6s)
-			{
-				Line 3 ( "{0,-50}  {1,-50}" -f `
-				$Item.From, $Item.To)
-			}
-			Line 0 ""
+				Line 2 "Apply policy if IP"
+				Line 2 "Enable criteria: " $PolicyRule.criteria.IPs.Enabled.ToString()
+				If($PolicyRule.criteria.IPs.Enabled)
+				{
+					If($PolicyRule.criteria.IPs.MatchingMode -eq "IsOneOfTheFollowing")
+					{
+						Line 2 "is one of the following"
+					}
+					Else
+					{
+						Line 2 "is not one of the following"
+					}
+					Line 0 ""
 
-			Line 2 "Apply policy if Hardware ID"
-			Line 2 "Enable criteria: " $Policy.Assignment.Rules.criteria.HardwareIDs.Enabled.ToString()
-			If($Policy.Assignment.Rules.criteria.HardwareIDs.MatchingMode -eq "IsOneOfTheFollowing")
-			{
-				Line 2 "is one of the following"
+					If($PolicyRule.criteria.IPs.AllowedIPs.IPv4s.Count -ne 0)
+					{
+						Line 3 "IPv4 Address From                                   IPv4 Address To                                   "
+						Line 3 "======================================================================================================"
+						#       12345678901234567890123456789012345678901234567890SS12345678901234567890123456789012345678901234567890
+						
+						ForEach($Item in $PolicyRule.criteria.IPs.AllowedIPs.IPv4s)
+						{
+							Line 3 ( "{0,-50}  {1,-50}" -f `
+							$Item.From, $Item.To)
+						}
+						Line 0 ""
+					}
+					
+					If($PolicyRule.criteria.IPs.AllowedIPs.IPv6s.Count -ne 0)
+					{
+						Line 3 "IPv6 Address From                                   IPv6 Address To                                   "
+						Line 3 "======================================================================================================"
+						#       12345678901234567890123456789012345678901234567890SS12345678901234567890123456789012345678901234567890
+						
+						ForEach($Item in $PolicyRule.criteria.IPs.AllowedIPs.IPv6s)
+						{
+							Line 3 ( "{0,-50}  {1,-50}" -f `
+							$Item.From, $Item.To)
+						}
+						Line 0 ""
+					}
+				}
+
+				Line 2 "Apply policy if Hardware ID"
+				Line 2 "Enable criteria: " $PolicyRule.criteria.HardwareIDs.Enabled.ToString()
+				If($PolicyRule.criteria.HardwareIDs.Enabled)
+				{
+					If($PolicyRule.criteria.HardwareIDs.MatchingMode -eq "IsOneOfTheFollowing")
+					{
+						Line 2 "is one of the following"
+					}
+					Else
+					{
+						Line 2 "is not one of the following"
+					}
+					Line 0 ""
+					Line 3 "Device Hardware ID  "
+					Line 3 "===================="
+					#       12345678901234567890
+					
+					ForEach($Item in $PolicyRule.criteria.HardwareIDs.Members)
+					{
+						Line 3 ( "{0,-20}" -f $Item.HardwareID)
+					}
+					Line 0 ""
+				}
 			}
-			Else
-			{
-				Line 2 "is not one of the following"
-			}
-			Line 0 ""
-			Line 3 "Device Hardware ID  "
-			Line 3 "===================="
-			#       12345678901234567890
-			
-			ForEach($Item in $Policy.Assignment.Rules.criteria.HardwareIDs.Members)
-			{
-				Line 3 ( "{0,-20}" -f $Item.HardwareID)
-			}
-			Line 0 ""
 		}
 		If($HTML)
 		{
@@ -41195,202 +41266,227 @@ Function OutputPoliciesDetails
 			WriteHTMLLine 0 0 ""
 
 			WriteHTMLLine 4 0 "Apply policy to:"
-			WriteHTMLLine 5 0 "$($Policy.Assignment.Rules.Name) Properties"
-			
-			$rowdata = @()
-			$columnHeaders = @("Enable rule",($Script:htmlsb),$Policy.Assignment.Rules.Enabled.ToString(),$htmlwhite)
-			$rowdata += @(,("General",($Script:htmlsb),"",$htmlwhite))
-			$rowdata += @(,("     Name",($Script:htmlsb),$Policy.Assignment.Rules.Name,$htmlwhite))
-			$rowdata += @(,("     Description",($Script:htmlsb),$Policy.Assignment.Rules.Description,$htmlwhite))
-
-			$msg = ""
-			$columnWidths = @("150","200")
-			FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-			WriteHTMLLine 0 0 ""
-
-			WriteHTMLLine 4 0 "Criteria"
-			WriteHTMLLine 5 0 "Apply policy if User, group, or computer"
-			WriteHTMLLine 0 0 "Enable criteria: " $Policy.Assignment.Rules.criteria.SecurityPrincipals.Enabled.ToString()
-			If($Policy.Assignment.Rules.criteria.SecurityPrincipals.MatchingMode -eq "IsOneOfTheFollowing")
+			WriteHTMLLine 5 0 "$($PolicyRule.Name) Properties"
+			ForEach($PolicyRule in $Policy.Assignment.Rules)
 			{
-				WriteHTMLLine 0 0 "is one of the following"
+				
+				$rowdata = @()
+				$columnHeaders = @("Enable rule",($Script:htmlsb),$PolicyRule.Enabled.ToString(),$htmlwhite)
+				$rowdata += @(,("General",($Script:htmlsb),"",$htmlwhite))
+				$rowdata += @(,("     Name",($Script:htmlsb),$PolicyRule.Name,$htmlwhite))
+				$rowdata += @(,("     Description",($Script:htmlsb),$PolicyRule.Description,$htmlwhite))
+
+				$msg = ""
+				$columnWidths = @("150","200")
+				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+				WriteHTMLLine 0 0 ""
+
+				WriteHTMLLine 4 0 "Criteria"
+				
+				WriteHTMLLine 5 0 "Apply policy if User, group, or computer"
+				WriteHTMLLine 0 0 "Enable criteria: " $PolicyRule.criteria.SecurityPrincipals.Enabled.ToString()
+				If($PolicyRule.criteria.SecurityPrincipals.Enabled)
+				{
+					If($PolicyRule.criteria.SecurityPrincipals.MatchingMode -eq "IsOneOfTheFollowing")
+					{
+						WriteHTMLLine 0 0 "is one of the following"
+					}
+					Else
+					{
+						WriteHTMLLine 0 0 "is not one of the following"
+					}
+
+					$rowdata = @()
+
+					ForEach($Item in $PolicyRule.criteria.SecurityPrincipals.Members)
+					{
+						$rowdata += @(,(
+						$Item.Account,$htmlwhite,
+						$Item.Type,$htmlwhite,
+						$Item.Sid,$htmlwhite))
+					}
+
+					$columnHeaders = @(
+					"Name",($Script:htmlsb),
+					"Type",($Script:htmlsb),
+					"SID",($Script:htmlsb))
+
+					$msg = ""
+					$columnWidths = @("200","50","300")
+					FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+					WriteHTMLLine 0 0 ""
+				}
+				
+				WriteHTMLLine 5 0 "Apply policy if Gateway"
+				WriteHTMLLine 0 0 "Enable criteria: " $PolicyRule.criteria.Gateways.Enabled.ToString()
+				If($PolicyRule.criteria.Gateways.Enabled)
+				{
+					If($PolicyRule.criteria.Gateways.MatchingMode -eq "IsOneOfTheFollowing")
+					{
+						WriteHTMLLine 0 0 "is one of the following"
+					}
+					Else
+					{
+						WriteHTMLLine 0 0 "is not one of the following"
+					}
+
+					$rowdata = @()
+
+					ForEach($Item in $PolicyRule.criteria.Gateways.Members)
+					{
+						$rowdata += @(,($Item.GatewayIP,$htmlwhite))
+					}
+
+					$columnHeaders = @("Secure Gateways",($Script:htmlsb))
+
+					$msg = ""
+					$columnWidths = @("200")
+					FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+					WriteHTMLLine 0 0 ""
+				}
+				
+				WriteHTMLLine 5 0 "Apply policy if Operating system"
+				WriteHTMLLine 0 0 "Enable criteria: " $PolicyRule.criteria.OSs.Enabled.ToString()
+				If($PolicyRule.criteria.OSs.Enabled)
+				{
+					If($PolicyRule.criteria.OSs.MatchingMode -eq "IsOneOfTheFollowing")
+					{
+						WriteHTMLLine 0 0 "is one of the following"
+					}
+					Else
+					{
+						WriteHTMLLine 0 0 "is not one of the following"
+					}
+
+					$rowdata = @()
+
+					If($PolicyRule.criteria.OSs.AllowedOSes.Windows)
+					{
+						$rowdata += @(,("Windows",$htmlwhite))
+					}
+
+					If($PolicyRule.criteria.OSs.AllowedOSes.WebClient)
+					{
+						$rowdata += @(,('User Portal (Web Client)',$htmlwhite))
+					}
+
+					If($PolicyRule.criteria.OSs.AllowedOSes.Mac)
+					{
+						$rowdata += @(,("macOS",$htmlwhite))
+					}
+
+					If($PolicyRule.criteria.OSs.AllowedOSes.Linux)
+					{
+						$rowdata += @(,("Linux",$htmlwhite))
+					}
+
+					If($PolicyRule.criteria.OSs.AllowedOSes.iOS)
+					{
+						$rowdata += @(,('iOS/iPadOS',$htmlwhite))
+					}
+
+					If($PolicyRule.criteria.OSs.AllowedOSes.Android)
+					{
+						$rowdata += @(,("Android",$htmlwhite))
+					}
+
+					If($PolicyRule.criteria.OSs.AllowedOSes.Chrome)
+					{
+						$rowdata += @(,("Chrome OS",$htmlwhite))
+					}
+
+					$columnHeaders = @("Operating system",($Script:htmlsb))
+
+					$msg = ""
+					$columnWidths = @("200")
+					FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+					WriteHTMLLine 0 0 ""
+				}
+				
+				WriteHTMLLine 5 0 "Apply policy if IP"
+				WriteHTMLLine 0 0 "Enable criteria: " $PolicyRule.criteria.IPs.Enabled.ToString()
+				If($PolicyRule.criteria.IPs.Enabled)
+				{
+					If($PolicyRule.criteria.IPs.MatchingMode -eq "IsOneOfTheFollowing")
+					{
+						WriteHTMLLine 0 0 "is one of the following"
+					}
+					Else
+					{
+						WriteHTMLLine 0 0 "is not one of the following"
+					}
+
+					If($PolicyRule.criteria.IPs.AllowedIPs.IPv4s.Count -ne 0)
+					{
+						$rowdata = @()
+
+						ForEach($Item in $PolicyRule.criteria.IPs.AllowedIPs.IPv4s)
+						{
+							$rowdata += @(,(
+							$Item.From,$htmlwhite,
+							$Item.To,$htmlwhite))
+						}
+
+						$columnHeaders = @(
+						"IPv4 Address From",($Script:htmlsb),
+						"IPv4 Address To",($Script:htmlsb))
+
+						$msg = ""
+						$columnWidths = @("200","200")
+						FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+						WriteHTMLLine 0 0 ""
+					}
+					
+					If($PolicyRule.criteria.IPs.AllowedIPs.IPv6s.Count -ne 0)
+					{
+						$rowdata = @()
+
+						ForEach($Item in $PolicyRule.criteria.IPs.AllowedIPs.IPv6s)
+						{
+							$rowdata += @(,(
+							$Item.From,$htmlwhite,
+							$Item.To,$htmlwhite))
+						}
+
+						$columnHeaders = @(
+						"IPv6 Address From",($Script:htmlsb),
+						"IPv6 Address To",($Script:htmlsb))
+
+						$msg = ""
+						$columnWidths = @("200","200")
+						FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+						WriteHTMLLine 0 0 ""
+					}
+				}
+				
+				WriteHTMLLine 5 0 "Apply policy if Hardware ID"
+				WriteHTMLLine 0 0 "Enable criteria: " $PolicyRule.criteria.HardwareIDs.Enabled.ToString()
+				If($PolicyRule.criteria.HardwareIDs.Enabled)
+				{
+					If($PolicyRule.criteria.HardwareIDs.MatchingMode -eq "IsOneOfTheFollowing")
+					{
+						WriteHTMLLine 0 0 "is one of the following"
+					}
+					Else
+					{
+						WriteHTMLLine 0 0 "is not one of the following"
+					}
+
+					$rowdata = @()
+
+					ForEach($Item in $PolicyRule.criteria.HardwareIDs.Members)
+					{
+						$rowdata += @(,($Item.HardwareID,$htmlwhite))
+					}
+
+					$columnHeaders = @("Device Hardware ID",($Script:htmlsb))
+
+					$msg = ""
+					$columnWidths = @("200")
+					FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+					WriteHTMLLine 0 0 ""
+				}
 			}
-			Else
-			{
-				WriteHTMLLine 0 0 "is not one of the following"
-			}
-
-			$rowdata = @()
-
-			ForEach($Item in $Policy.Assignment.Rules.criteria.SecurityPrincipals.Members)
-			{
-				$rowdata += @(,(
-				$Item.Account,$htmlwhite,
-				$Item.Type,$htmlwhite,
-				$Item.Sid,$htmlwhite))
-			}
-
-			$columnHeaders = @(
-			"Name",($Script:htmlsb),
-			"Type",($Script:htmlsb),
-			"SID",($Script:htmlsb))
-
-			$msg = ""
-			$columnWidths = @("200","50","300")
-			FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-			WriteHTMLLine 0 0 ""
-
-			WriteHTMLLine 5 0 "Apply policy if Gateway"
-			WriteHTMLLine 0 0 "Enable criteria: " $Policy.Assignment.Rules.criteria.Gateways.Enabled.ToString()
-			If($Policy.Assignment.Rules.criteria.Gateways.MatchingMode -eq "IsOneOfTheFollowing")
-			{
-				WriteHTMLLine 0 0 "is one of the following"
-			}
-			Else
-			{
-				WriteHTMLLine 0 0 "is not one of the following"
-			}
-
-			$rowdata = @()
-
-			ForEach($Item in $Policy.Assignment.Rules.criteria.Gateways.Members)
-			{
-				$rowdata += @(,($Item.GatewayIP,$htmlwhite))
-			}
-
-			$columnHeaders = @("Secure Gateways",($Script:htmlsb))
-
-			$msg = ""
-			$columnWidths = @("200")
-			FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-			WriteHTMLLine 0 0 ""
-
-			WriteHTMLLine 5 0 "Apply policy if Operating system"
-			WriteHTMLLine 0 0 "Enable criteria: " $Policy.Assignment.Rules.criteria.OSs.Enabled.ToString()
-			If($Policy.Assignment.Rules.criteria.OSs.MatchingMode -eq "IsOneOfTheFollowing")
-			{
-				WriteHTMLLine 0 0 "is one of the following"
-			}
-			Else
-			{
-				WriteHTMLLine 0 0 "is not one of the following"
-			}
-
-			$rowdata = @()
-
-			If($Policy.Assignment.Rules.criteria.OSs.AllowedOSes.Windows)
-			{
-				$rowdata += @(,("Windows",$htmlwhite))
-			}
-
-			If($Policy.Assignment.Rules.criteria.OSs.AllowedOSes.WebClient)
-			{
-				$rowdata += @(,('User Portal (Web Client)',$htmlwhite))
-			}
-
-			If($Policy.Assignment.Rules.criteria.OSs.AllowedOSes.Mac)
-			{
-				$rowdata += @(,("macOS",$htmlwhite))
-			}
-
-			If($Policy.Assignment.Rules.criteria.OSs.AllowedOSes.Linux)
-			{
-				$rowdata += @(,("Linux",$htmlwhite))
-			}
-
-			If($Policy.Assignment.Rules.criteria.OSs.AllowedOSes.iOS)
-			{
-				$rowdata += @(,('iOS/iPadOS',$htmlwhite))
-			}
-
-			If($Policy.Assignment.Rules.criteria.OSs.AllowedOSes.Android)
-			{
-				$rowdata += @(,("Android",$htmlwhite))
-			}
-
-			If($Policy.Assignment.Rules.criteria.OSs.AllowedOSes.Chrome)
-			{
-				$rowdata += @(,("Chrome OS",$htmlwhite))
-			}
-
-			$columnHeaders = @("Operating system",($Script:htmlsb))
-
-			$msg = ""
-			$columnWidths = @("200")
-			FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-			WriteHTMLLine 0 0 ""
-
-			WriteHTMLLine 5 0 "Apply policy if IP"
-			WriteHTMLLine 0 0 "Enable criteria: " $Policy.Assignment.Rules.criteria.IPs.Enabled.ToString()
-			If($Policy.Assignment.Rules.criteria.IPs.MatchingMode -eq "IsOneOfTheFollowing")
-			{
-				WriteHTMLLine 0 0 "is one of the following"
-			}
-			Else
-			{
-				WriteHTMLLine 0 0 "is not one of the following"
-			}
-
-			$rowdata = @()
-
-			ForEach($Item in $Policy.Assignment.Rules.criteria.IPs.AllowedIPs.IPv4s)
-			{
-				$rowdata += @(,(
-				$Item.From,$htmlwhite,
-				$Item.To,$htmlwhite))
-			}
-
-			$columnHeaders = @(
-			"IPv4 Address From",($Script:htmlsb),
-			"IPv4 Address To",($Script:htmlsb))
-
-			$msg = ""
-			$columnWidths = @("200","200")
-			FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-			WriteHTMLLine 0 0 ""
-
-			$rowdata = @()
-
-			ForEach($Item in $Policy.Assignment.Rules.criteria.IPs.AllowedIPs.IPv6s)
-			{
-				$rowdata += @(,(
-				$Item.From,$htmlwhite,
-				$Item.To,$htmlwhite))
-			}
-
-			$columnHeaders = @(
-			"IPv6 Address From",($Script:htmlsb),
-			"IPv6 Address To",($Script:htmlsb))
-
-			$msg = ""
-			$columnWidths = @("200","200")
-			FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-			WriteHTMLLine 0 0 ""
-
-			WriteHTMLLine 5 0 "Apply policy if Hardware ID"
-			WriteHTMLLine 0 0 "Enable criteria: " $Policy.Assignment.Rules.criteria.HardwareIDs.Enabled.ToString()
-			If($Policy.Assignment.Rules.criteria.HardwareIDs.MatchingMode -eq "IsOneOfTheFollowing")
-			{
-				WriteHTMLLine 0 0 "is one of the following"
-			}
-			Else
-			{
-				WriteHTMLLine 0 0 "is not one of the following"
-			}
-
-			$rowdata = @()
-
-			ForEach($Item in $Policy.Assignment.Rules.criteria.HardwareIDs.Members)
-			{
-				$rowdata += @(,($Item.HardwareID,$htmlwhite))
-			}
-
-			$columnHeaders = @("Device Hardware ID",($Script:htmlsb))
-
-			$msg = ""
-			$columnWidths = @("200")
-			FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-			WriteHTMLLine 0 0 ""
 		}
 
 		If($MSWord -or $PDF)
@@ -41448,11 +41544,12 @@ Function OutputPoliciesDetails
 			$AuthType = ""
 			Switch($Policy.ClientPolicy.Session.PrimaryConnection.AuthenticationType)
 			{
-				"Credentials"	{$AuthType = "Credentials"; Break}
-				"SingleSignOn"	{$AuthType = "Single Sign-On"; Break}
-				"SmartCard"		{$AuthType = "Smart card"; Break}
-				"Web"			{$AuthType = "Web"; Break}
-				Default			{$AuthType = "Primary connection/Login/Authentication type not found: $($Policy.ClientPolicy.Session.PrimaryConnection.AuthenticationType)"; Break}
+				"Credentials"		{$AuthType = "Credentials"; Break}
+				"SingleSignOn"		{$AuthType = "Single Sign-On"; Break}
+				"SmartCard"			{$AuthType = "Smart card"; Break}
+				"Web"				{$AuthType = "Web"; Break}
+				"WebCredentials"	{$AuthType = "Web + Credentials"; Break}
+				Default				{$AuthType = "Primary connection/Login/Authentication type not found: $($Policy.ClientPolicy.Session.PrimaryConnection.AuthenticationType)"; Break}
 			}
 			
 			$txt = "Session/Connection/Primary connection/Login/Authentication type"
@@ -41512,6 +41609,27 @@ Function OutputPoliciesDetails
 				If($Text)
 				{
 					OutputPolicySetting $txt $Policy.ClientPolicy.Session.PrimaryConnection.Domain
+				}
+			}
+			ElseIf($Policy.ClientPolicy.Session.PrimaryConnection.AuthenticationType -eq "WebCredentials")
+			{
+				$txt = "Session/Connection/Primary connection/Login/Save password"
+				If($MSWord -or $PDF)
+				{
+					$SettingsWordTable += @{
+					Text = $txt;
+					Value = $Policy.ClientPolicy.Session.PrimaryConnection.SavePassword.ToString();
+					}
+				}
+				If($HTML)
+				{
+					$rowdata += @(,(
+					$txt,$htmlbold,
+					$Policy.ClientPolicy.Session.PrimaryConnection.SavePassword.ToString(),$htmlwhite))
+				}
+				If($Text)
+				{
+					OutputPolicySetting $txt $Policy.ClientPolicy.Session.PrimaryConnection.SavePassword.ToString()
 				}
 			}
 		}
@@ -41726,23 +41844,33 @@ Function OutputPoliciesDetails
 		Write-Verbose "$(Get-Date -Format G): `t`t`t`tSession/Connection/Web authentication"
 		If($Policy.ClientPolicy.Session.WebAuthentication.Enabled)
 		{
-			$txt = "Session/Connection/Web authentication/Web authentication/Use default OS browser"
+			$txt = "Session/Connection/Web authentication/Web authentication/Browser mode"
+			
+			If($Policy.ClientPolicy.Session.WebAuthentication.DefaultOsBrowser)
+			{
+				$BrowserMode = "External"
+			}
+			Else
+			{
+				$BrowserMode = "Internal"
+			}
+			
 			If($MSWord -or $PDF)
 			{
 				$SettingsWordTable += @{
 				Text = $txt;
-				Value = $Policy.ClientPolicy.Session.WebAuthentication.DefaultOsBrowser.ToString();
+				Value = $BrowserMode;
 				}
 			}
 			If($HTML)
 			{
 				$rowdata += @(,(
 				$txt,$htmlbold,
-				$Policy.ClientPolicy.Session.WebAuthentication.DefaultOsBrowser.ToString(),$htmlwhite))
+				$BrowserMode,$htmlwhite))
 			}
 			If($Text)
 			{
-				OutputPolicySetting $txt $Policy.ClientPolicy.Session.WebAuthentication.DefaultOsBrowser.ToString()
+				OutputPolicySetting $txt $BrowserMode
 			}
 			
 			If($Policy.ClientPolicy.Session.WebAuthentication.DefaultOsBrowser -eq $False)
@@ -41889,9 +42017,7 @@ Function OutputPoliciesDetails
 						OutputPolicySetting "`t`t`t`t`t`t`t`t`t`t " "Day: $Day   Month: $Month"
 					}
 				}
-				
 			}
-			
 		}
 		
 		Write-Verbose "$(Get-Date -Format G): `t`t`t`tSession/Connection/Local proxy address"
@@ -41985,7 +42111,7 @@ Function OutputPoliciesDetails
 		Write-Verbose "$(Get-Date -Format G): `t`t`t`tSession/Display/Multi-monitor"
 		If($Policy.ClientPolicy.Session.MultiMonitor.Enabled)
 		{
-			$txt = "Session/Display/Multi-monitor/Multi-monitor/Use all monitors for desktop session (if applicable)"
+			$txt = "Session/Display/Multi-monitor/Multi-monitor/DIsplay configuration"
 			If($MSWord -or $PDF)
 			{
 				$SettingsWordTable += @{
@@ -42025,6 +42151,25 @@ Function OutputPoliciesDetails
 			If($Text)
 			{
 				OutputPolicySetting $txt $Policy.ClientPolicy.Session.PublishedApplications.UsePrimaryMonitor.ToString()
+			}
+
+			$txt = "Session/Display/Published applications/Published applications/Use dynamic desktop resizing"
+			If($MSWord -or $PDF)
+			{
+				$SettingsWordTable += @{
+				Text = $txt;
+				Value = $Policy.ClientPolicy.Session.PublishedApplications.UseDynamicDesktopResizing.ToString();
+				}
+			}
+			If($HTML)
+			{
+				$rowdata += @(,(
+				$txt,$htmlbold,
+				$Policy.ClientPolicy.Session.PublishedApplications.UseDynamicDesktopResizing.ToString(),$htmlwhite))
+			}
+			If($Text)
+			{
+				OutputPolicySetting $txt $Policy.ClientPolicy.Session.PublishedApplications.UseDynamicDesktopResizing.ToString()
 			}
 		}
 		
@@ -42161,13 +42306,13 @@ Function OutputPoliciesDetails
 		If($Policy.ClientPolicy.Session.Printing.Enabled)
 		{
 			$PrintTechUse = ""
-			Switch($Policy.ClientPolicy.Session.Printing.DefaultPrintingSettings)
+			Switch($Policy.ClientPolicy.Session.Printing.DefaultPrintingSettings.DefaultPrinterTech)
 			{
 				"None"											{$PrintTechUse = "None"; Break}
 				"RasUniversalPrintingTechnology"				{$PrintTechUse = "RAS Universal Printing technology"; Break}
 				"MicrosoftBasicPrintingTechnology"				{$PrintTechUse = "Microsoft basic Printing Redirection technology"; Break}
 				"RasUniversalPrintingAndMsBasicTechnologies"	{$PrintTechUse = "RAS Universal Printing and MS Basic Redirection technologies"; Break}
-				Default											{$PrintTechUse = "Technology/Use not found: $($Policy.ClientPolicy.Session.Printing.DefaultPrintingSettings)"; Break}
+				Default											{$PrintTechUse = "Technology/Use not found: $($Policy.ClientPolicy.Session.Printing.DefaultPrintingSettings.DefaultPrinterTech)"; Break}
 			}
 
 			$txt = "Session/Printing/Technology/Use"
@@ -42189,8 +42334,8 @@ Function OutputPoliciesDetails
 				OutputPolicySetting $txt $PrintTechUse
 			}
 
-			If( $Policy.ClientPolicy.Session.Printing.DefaultPrintingSettings -eq "RasUniversalPrintingTechnology" -or 
-				$Policy.ClientPolicy.Session.Printing.DefaultPrintingSettings -eq "RasUniversalPrintingAndMsBasicTechnologies" )
+			If( $Policy.ClientPolicy.Session.Printing.DefaultPrintingSettings.DefaultPrinterTech -eq "RasUniversalPrintingTechnology" -or 
+				$Policy.ClientPolicy.Session.Printing.DefaultPrintingSettings.DefaultPrinterTech -eq "RasUniversalPrintingAndMsBasicTechnologies" )
 			{
 				$RedirectPrinters = ""
 				Switch($Policy.ClientPolicy.Session.Printing.RedirectPrinters)
@@ -42242,6 +42387,172 @@ Function OutputPoliciesDetails
 							OutputPolicySetting "`t`t`t`t`t`t`t " "Name: $($Item)"
 						}
 					}
+				}
+				
+				$txt = "Session/Printing/RAS Universal Printing/Options/Data format/Choose format"
+				
+				$ChooseFormat = ""
+				Switch($Policy.ClientPolicy.Session.Printing.PrintingOptions.DataFormat)
+				{
+					"PrintPDF"			{$ChooseFormat = "Print Portable Document Format (PDF)"; Break}
+					"ViewPDF_ExtApp"	{$ChooseFormat = "View PDF with External Application"; Break}
+					"PrintPDF_ExtApp"	{$ChooseFormat = "Print PDF with External Application"; Break}
+					"EMF"				{$ChooseFormat = "Enhanced Meta File (EMF)"; Break}
+					"BMP"				{$ChooseFormat = "Bitmap (BMP)"; Break}
+					Default				{$ChooseFormat = "Session/Printing/RAS Universal Printing/Options/Data format/Choose format not found: $($Policy.ClientPolicy.Session.Printing.PrintingOptions.DataFormat)"; Break}
+				}
+
+				If($MSWord -or $PDF)
+				{
+					$SettingsWordTable += @{
+					Text = $txt;
+					Value = $ChooseFormat;
+					}
+				}
+				If($HTML)
+				{
+					$rowdata += @(,(
+					$txt,$htmlbold,
+					$ChooseFormat,$htmlwhite))
+				}
+				If($Text)
+				{
+					OutputPolicySetting $txt $ChooseFormat
+				}
+				
+				$txt = "Session/Printing/RAS Universal Printing/Options/Client printer preferences"
+				
+				$ClientPrinterPref = ""
+				Switch($Policy.ClientPolicy.Session.Printing.PrintingOptions.PrinterPreference)
+				{
+					"ServerPrefAllPrinters"			{$ClientPrinterPref = "Use server preferences for all printers"; Break}
+					"ClientPrefAllPrinters"			{$ClientPrinterPref = "Use client preferences for all printers"; Break}
+					"ClientPrefSpecificPrinters"	{$ClientPrinterPref = "Use client preferences for the following printers"; Break}
+					Default							{$ClientPrinterPref = "Session/Printing/RAS Universal Printing/Options/Client printer preferences not found: $($Policy.ClientPolicy.Session.Printing.PrintingOptions.PrinterPreference)"; Break}
+				}
+
+				If($MSWord -or $PDF)
+				{
+					$SettingsWordTable += @{
+					Text = $txt;
+					Value = $ClientPrinterPref;
+					}
+				}
+				If($HTML)
+				{
+					$rowdata += @(,(
+					$txt,$htmlbold,
+					$ClientPrinterPref,$htmlwhite))
+				}
+				If($Text)
+				{
+					OutputPolicySetting $txt $ClientPrinterPref
+				}
+				
+				If($Policy.ClientPolicy.Session.Printing.PrintingOptions.PrinterPreference -eq "$Policy.ClientPolicy.Session.Printing.PrintingOptions.PrinterPreference")
+				{
+					ForEach($Item in $Policy.ClientPolicy.Session.Printing.PrintingOptions.SpecificPreferredPrinter)
+					{
+						If($MSWord -or $PDF)
+						{
+							$SettingsWordTable += @{
+							Text = "";
+							Value = "Name: $($Item)";
+							}
+						}
+						If($HTML)
+						{
+							$rowdata += @(,(
+							"",$htmlbold,
+							"Name: $($Item)",$htmlwhite))
+						}
+						If($Text)
+						{
+							OutputPolicySetting "`t`t`t`t`t`t`t " "Name: $($Item)"
+						}
+					}
+				}
+
+				<#
+				$txt = "Session/Printing/Default printer/Set the following printer as default" #not available in PowerShell yet
+				
+				If($MSWord -or $PDF)
+				{
+					$SettingsWordTable += @{
+					Text = $txt;
+					Value = "";
+					}
+				}
+				If($HTML)
+				{
+					$rowdata += @(,(
+					$txt,$htmlbold,
+					"",$htmlwhite))
+				}
+				If($Text)
+				{
+					OutputPolicySetting $txt ""
+				}
+				#>
+
+				$txt = "Session/Printing/Default printer/Set the following printer as default/Match exact printer name"
+				
+				If($MSWord -or $PDF)
+				{
+					$SettingsWordTable += @{
+					Text = $txt;
+					Value = $Policy.ClientPolicy.Session.Printing.DefaultPrintingSettings.MatchExactPrinterName.ToString();
+					}
+				}
+				If($HTML)
+				{
+					$rowdata += @(,(
+					$txt,$htmlbold,
+					$Policy.ClientPolicy.Session.Printing.DefaultPrintingSettings.MatchExactPrinterName.ToString(),$htmlwhite))
+				}
+				If($Text)
+				{
+					OutputPolicySetting $txt $Policy.ClientPolicy.Session.Printing.DefaultPrintingSettings.MatchExactPrinterName.ToString()
+				}
+
+				$txt = "Session/Printing/Default printer/Options/Force Default printer for (seconds)"
+				
+				If($MSWord -or $PDF)
+				{
+					$SettingsWordTable += @{
+					Text = $txt;
+					Value = $Policy.ClientPolicy.Session.Printing.DefaultPrintingSettings.ForceTime.ToString();
+					}
+				}
+				If($HTML)
+				{
+					$rowdata += @(,(
+					$txt,$htmlbold,
+					$Policy.ClientPolicy.Session.Printing.DefaultPrintingSettings.ForceTime.ToString(),$htmlwhite))
+				}
+				If($Text)
+				{
+					OutputPolicySetting $txt $Policy.ClientPolicy.Session.Printing.DefaultPrintingSettings.ForceTime.ToString()
+				}
+
+				$txt = "Session/Printing/Default printer/Options/Update the Remote Default printer if the local default printer is changed"
+				
+				If($MSWord -or $PDF)
+				{
+					$SettingsWordTable += @{
+					Text = $txt;
+					Value = $Policy.ClientPolicy.Session.Printing.DefaultPrintingSettings.UpdateRemoteDefPrinter.ToString();
+					}
+				}
+				If($HTML)
+				{
+					$rowdata += @(,(
+					$txt,$htmlbold,
+					$Policy.ClientPolicy.Session.Printing.DefaultPrintingSettings.UpdateRemoteDefPrinter.ToString(),$htmlwhite))
+				}
+				If($Text)
+				{
+					OutputPolicySetting $txt $Policy.ClientPolicy.Session.Printing.DefaultPrintingSettings.UpdateRemoteDefPrinter.ToString()
 				}
 			}
 		}
