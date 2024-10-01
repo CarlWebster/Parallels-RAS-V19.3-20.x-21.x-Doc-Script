@@ -12,7 +12,9 @@
 #
 #	Fixed HTML, Text, and MSWord output
 #	In Function OutputFarmSite, add Farm Properties
-#	In Function OutputPoliciesDetails, update for the Policy changes in 19.3 and 19.4
+#	In Function OutputPoliciesDetails:
+#		Update for the Policy changes in 19.3 and 19.4
+#		Handle multiple criteria
 #	In Function OutputRASLicense, update output to match the 19.4 console
 #	In Function OutputSAMLSetting, handle multiple SAML items
 #	In Function OutputSite, when processing Themes, Properties, Access:

@@ -448,7 +448,7 @@
 	text document.
 .NOTES
 	NAME: RAS_Inventory_V4_0.ps1
-	VERSION: 4.00 Beta 6
+	VERSION: 4.00 Beta 7
 	AUTHOR: Carl Webster
 	LASTEDIT: October 1, 2024
 #>
@@ -572,7 +572,9 @@ Param(
 #
 #	Fixed HTML, Text, and MSWord output
 #	In Function OutputFarmSite, add Farm Properties
-#	In Function OutputPoliciesDetails, update for the Policy changes in 19.3 and 19.4
+#	In Function OutputPoliciesDetails:
+#		Update for the Policy changes in 19.3 and 19.4
+#		Handle multiple criteria
 #	In Function OutputRASLicense, update output to match the 19.4 console
 #	In Function OutputSAMLSetting, handle multiple SAML items
 #	In Function OutputSite, when processing Themes, Properties, Access:
@@ -644,7 +646,7 @@ $ErrorActionPreference    = 'SilentlyContinue'
 $Error.Clear()
 
 $Script:emailCredentials  = $Null
-$script:MyVersion         = '4.00 Beta 6'
+$script:MyVersion         = '4.00 Beta 7'
 $Script:ScriptName        = "RAS_Inventory_V4_0.ps1"
 $tmpdate                  = [datetime] "10/01/2024"
 $Script:ReleaseDate       = $tmpdate.ToUniversalTime().ToShortDateString()
@@ -702,7 +704,7 @@ If($ValidSection -eq $False)
 	`tLB (Load Balancing)
 	`tPublishing
 	`tPrinting (Universal Printing)
-	`tScanning (Universal canning)
+	`tScanning (Universal Scanning)
 	`tConnection
 	`tPolicies
 	`tAdmin (Administration)
@@ -42816,12 +42818,41 @@ Function OutputPoliciesDetails
 			{
 				OutputPolicySetting $txt $ClipboardRedir
 			}
+
+			$ClipboardTextOnly = ""
+			Switch($Policy.ClientPolicy.Session.Clipboard.LimitClipboardToTextOnly)
+			{
+				"ClientToServer"	{$ClipboardTextOnly = "Client to server only"; Break}
+				"ServerToClient"	{$ClipboardTextOnly = "Server to client only"; Break}
+				"Bidirectional"		{$ClipboardTextOnly = "Both directions"; Break}
+				"NoLimit"			{$ClipboardTextOnly = "No limit"; Break}
+				Default				{$ClipboardTextOnly = "Clipboard/Limit clipboard to text only not found: $($Policy.ClientPolicy.Session.Clipboard.LimitClipboardToTextOnly)"; Break}
+			}
+
+			$txt = "Session/Local devices and resources/Clipboard/Clipboard/Limit clipboard to text only"
+			If($MSWord -or $PDF)
+			{
+				$SettingsWordTable += @{
+				Text = $txt;
+				Value = $ClipboardTextOnly;
+				}
+			}
+			If($HTML)
+			{
+				$rowdata += @(,(
+				$txt,$htmlbold,
+				$ClipboardTextOnly,$htmlwhite))
+			}
+			If($Text)
+			{
+				OutputPolicySetting $txt $ClipboardTextOnly
+			}
 		}
 		
 		Write-Verbose "$(Get-Date -Format G): `t`t`t`tSession/Local devices and resources/Disk drives and folders"
 		If($Policy.ClientPolicy.Session.DiskDrives.Enabled)
 		{
-			$txt = "Session/Local devices and resources/Disk drives and folders/Disk drives and folders/Allow disk drives redirection"
+			$txt = "Session/Local devices and resources/Disk drives and folders/Disk drives and folders/Allow disk drives and folders redirection"
 			If($MSWord -or $PDF)
 			{
 				$SettingsWordTable += @{
@@ -42838,6 +42869,25 @@ Function OutputPoliciesDetails
 			If($Text)
 			{
 				OutputPolicySetting $txt $Policy.ClientPolicy.Session.DiskDrives.RedirectDrives.ToString()
+			}
+
+			$txt = "Session/Local devices and resources/Disk drives and folders/Disk drives and folders/Redirect as read-only drives"
+			If($MSWord -or $PDF)
+			{
+				$SettingsWordTable += @{
+				Text = $txt;
+				Value = $Policy.ClientPolicy.Session.DiskDrives.RedirectReadonlyDrives.ToString();
+				}
+			}
+			If($HTML)
+			{
+				$rowdata += @(,(
+				$txt,$htmlbold,
+				$Policy.ClientPolicy.Session.DiskDrives.RedirectReadonlyDrives.ToString(),$htmlwhite))
+			}
+			If($Text)
+			{
+				OutputPolicySetting $txt $Policy.ClientPolicy.Session.DiskDrives.RedirectReadonlyDrives.ToString()
 			}
 
 			$txt = "Session/Local devices and resources/Disk drives and folders/Disk drives and folders/Use all disk drives available"
@@ -42920,6 +42970,25 @@ Function OutputPoliciesDetails
 			If($Text)
 			{
 				OutputPolicySetting $txt $Policy.ClientPolicy.Session.DiskDrives.DynamicDrives.ToString()
+			}
+
+			$txt = "Session/Local devices and resources/Disk drives and folders/Disk drives and folders/Cache"
+			If($MSWord -or $PDF)
+			{
+				$SettingsWordTable += @{
+				Text = $txt;
+				Value = $Policy.ClientPolicy.Session.DiskDrives.DriveCacheMode.ToString();
+				}
+			}
+			If($HTML)
+			{
+				$rowdata += @(,(
+				$txt,$htmlbold,
+				$Policy.ClientPolicy.Session.DiskDrives.DriveCacheMode.ToString(),$htmlwhite))
+			}
+			If($Text)
+			{
+				OutputPolicySetting $txt $Policy.ClientPolicy.Session.DiskDrives.DriveCacheMode.ToString()
 			}
 		}
 		
@@ -43106,10 +43175,10 @@ Function OutputPoliciesDetails
 			}
 		}
 		
-		Write-Verbose "$(Get-Date -Format G): `t`t`t`tSession/Local devices and resources/Windows touch input"
+		Write-Verbose "$(Get-Date -Format G): `t`t`t`tSession/Local devices and resources/Pen and touch input"
 		If($Policy.ClientPolicy.Session.WindowsTouchInput.Enabled)
 		{
-			$txt = "Session/Local devices and resources/Windows touch input/Allow Windows touch input redirection"
+			$txt = "Session/Local devices and resources/Pen and touch input/Allow pen and touch input redirection"
 			If($MSWord -or $PDF)
 			{
 				$SettingsWordTable += @{
@@ -43126,6 +43195,29 @@ Function OutputPoliciesDetails
 			If($Text)
 			{
 				OutputPolicySetting $txt $Policy.ClientPolicy.Session.WindowsTouchInput.TouchInput.ToString()
+			}
+		}
+		
+		Write-Verbose "$(Get-Date -Format G): `t`t`t`tSession/Local devices and resources/Multimedia redirection for AVD"
+		If($Policy.ClientPolicy.Session.AVDMultimediaRedirection.Enabled)
+		{
+			$txt = "Session/Local devices and resources/Multimedia redirection for AVD/Multimedia redirection for AVD/Allow Multimedia redirection for AVD"
+			If($MSWord -or $PDF)
+			{
+				$SettingsWordTable += @{
+				Text = $txt;
+				Value = $Policy.ClientPolicy.Session.AVDMultimediaRedirection.AVDMultimediaRedir.ToString();
+				}
+			}
+			If($HTML)
+			{
+				$rowdata += @(,(
+				$txt,$htmlbold,
+				$Policy.ClientPolicy.Session.AVDMultimediaRedirection.AVDMultimediaRedir.ToString(),$htmlwhite))
+			}
+			If($Text)
+			{
+				OutputPolicySetting $txt $Policy.ClientPolicy.Session.AVDMultimediaRedirection.AVDMultimediaRedir.ToString()
 			}
 		}
 		
@@ -43277,36 +43369,24 @@ Function OutputPoliciesDetails
 					OutputPolicySetting $txt $Policy.ClientPolicy.Session.Performance.DesktopComposition.ToString()
 				}
 
-				<#$txt = "Session/Experience/Performance/Performance/Show contents of window while dragging"
-				#This property is missing from $Policy.ClientPolicy.Session.Performance
-				PS C:\Webster> $Policy.ClientPolicy.Session.Performance | fl *
-
-				Enabled             : True
-				NetType             : Satellite
-				DesktopBackground   : True
-				FontSmoothing       : True
-				WindowMenuAnimation : True
-				DesktopComposition  : True
-				Themes              : True
-				BitmapCaching       : True
-				MoveSizeFullDrag    : True				
+				$txt = "Session/Experience/Performance/Performance/Show contents of window while dragging"
 				If($MSWord -or $PDF)
 				{
 					$SettingsWordTable += @{
 					Text = $txt;
-					Value = $Policy.ClientPolicy.Session.Performance.ToString();
+					Value = $Policy.ClientPolicy.Session.Performance.ShowContent.ToString();
 					}
 				}
 				If($HTML)
 				{
 					$rowdata += @(,(
 					$txt,$htmlbold,
-					$Policy.ClientPolicy.Session.Performance.ToString(),$htmlwhite))
+					$Policy.ClientPolicy.Session.Performance.ShowContent.ToString(),$htmlwhite))
 				}
 				If($Text)
 				{
-					OutputPolicySetting $txt $Policy.ClientPolicy.Session.Performance.ToString()
-				}#>
+					OutputPolicySetting $txt $Policy.ClientPolicy.Session.Performance.ShowContent.ToString()
+				}
 
 				$txt = "Session/Experience/Performance/Performance/Themes"
 				If($MSWord -or $PDF)
@@ -43370,26 +43450,7 @@ Function OutputPoliciesDetails
 		Write-Verbose "$(Get-Date -Format G): `t`t`t`tSession/Experience/Compression"
 		If($Policy.ClientPolicy.Session.Compression.Enabled)
 		{
-			$txt = "Session/Experience/Compression/Choose your compress preferences to optimize performance"
-			If($MSWord -or $PDF)
-			{
-				$SettingsWordTable += @{
-				Text = $txt;
-				Value = $Policy.ClientPolicy.Session.Compression.Compress.ToString();
-				}
-			}
-			If($HTML)
-			{
-				$rowdata += @(,(
-				$txt,$htmlbold,
-				$Policy.ClientPolicy.Session.Compression.Compress.ToString(),$htmlwhite))
-			}
-			If($Text)
-			{
-				OutputPolicySetting $txt $Policy.ClientPolicy.Session.Compression.Compress.ToString()
-			}
-
-			$txt = "Session/Experience/Compression/Enable RDP compression"
+			$txt = "Session/Experience/Compression/Compression/Enable RDP compression"
 			If($MSWord -or $PDF)
 			{
 				$SettingsWordTable += @{
@@ -43912,6 +43973,60 @@ Function OutputPoliciesDetails
 		
 		Write-Verbose "$(Get-Date -Format G): `t`t`t`tClient options"
 		Write-Verbose "$(Get-Date -Format G): `t`t`t`tClient options/Connection"
+		If($Policy.ClientPolicy.ClientOptions.Appearance.Enabled)
+		{
+			$ClientInt = ""
+			Switch($Policy.ClientPolicy.ClientOptions.Appearance.UIType)
+			{
+				"Modern"	{$ClientInt = "Force Modern interface"; Break}
+				"Classic"	{$ClientInt = "Force Classic interface"; Break}
+				"User"		{$ClientInt = "Allow user to choose"; Break}
+				Default		{$ClientInt = "Client options/Appearance/Appearance/Parallels Client interface not found: $($Policy.ClientPolicy.ClientOptions.Appearance.UIType)"; Break}
+			}
+
+			$txt = "Client options/Appearance/Appearance/Parallels Client interface"
+			If($MSWord -or $PDF)
+			{
+				$SettingsWordTable += @{
+				Text = $txt;
+				Value = $ClientInt;
+				}
+			}
+			If($HTML)
+			{
+				$rowdata += @(,(
+				$txt,$htmlbold,
+				$ClientInt,$htmlwhite))
+			}
+			If($Text)
+			{
+				OutputPolicySetting $txt $ClientInt
+			}
+			
+			If($Policy.ClientPolicy.ClientOptions.Appearance.UIType -eq "User")
+			{
+				$txt = "Client options/Appearance/Appearance/Prompt user to switch to Modern interface"
+				If($MSWord -or $PDF)
+				{
+					$SettingsWordTable += @{
+					Text = $txt;
+					Value = $Policy.ClientPolicy.ClientOptions.Appearance.PromptSwitchToModern.ToString();
+					}
+				}
+				If($HTML)
+				{
+					$rowdata += @(,(
+					$txt,$htmlbold,
+					$Policy.ClientPolicy.ClientOptions.Appearance.PromptSwitchToModern.ToString(),$htmlwhite))
+				}
+				If($Text)
+				{
+					OutputPolicySetting $txt $Policy.ClientPolicy.ClientOptions.Appearance.PromptSwitchToModern.ToString()
+				}
+			}
+		}
+
+		Write-Verbose "$(Get-Date -Format G): `t`t`t`tClient options/Connection"
 		If($Policy.ClientPolicy.ClientOptions.Connection.Enabled)
 		{
 			$ConnBanner = ""
@@ -43983,6 +44098,34 @@ Function OutputPoliciesDetails
 				{
 					OutputPolicySetting $txt $Policy.ClientPolicy.ClientOptions.Connection.AutoRefreshTime_Mins.ToString()
 				}
+			}
+
+			$SessionsClosed = ""
+			Switch($Policy.ClientPolicy.ClientOptions.Connection.WhenAllSessionClosedAction)
+			{
+				"Nothing"			{$SessionsClosed = "Do nothing"; Break}
+				"LockWorkstation"	{$SessionsClosed = "Lock workstation"; Break}
+				"Logoff"			{$SessionsClosed = "Sign out from workstation"; Break}
+				Default				{$SessionsClosed = "Client options/Connection/Connection/Connection banner/When all sessions are closed not found: $($Policy.ClientPolicy.ClientOptions.Connection.WhenAllSessionClosedAction)"; Break}
+			}
+
+			$txt = "Client options/Connection/Connection/Connection banner/When all sessions are closed"
+			If($MSWord -or $PDF)
+			{
+				$SettingsWordTable += @{
+				Text = $txt;
+				Value = $SessionsClosed;
+				}
+			}
+			If($HTML)
+			{
+				$rowdata += @(,(
+				$txt,$htmlbold,
+				$SessionsClosed,$htmlwhite))
+			}
+			If($Text)
+			{
+				OutputPolicySetting $txt $SessionsClosed
 			}
 		}
 		
@@ -44179,6 +44322,28 @@ Function OutputPoliciesDetails
 			{
 				OutputPolicySetting $txt $Policy.ClientPolicy.ClientOptions.Update.UpdateClientXmlUrl
 			}
+
+			<# 
+			not in PowerShell
+			$txt = "Client options/Update/Client version management/Azure Virtual Desktop Client"
+			If($MSWord -or $PDF)
+			{
+				$SettingsWordTable += @{
+				Text = $txt;
+				Value = $Policy.ClientPolicy.ClientOptions.Update.UpdateClientXmlUrl;
+				}
+			}
+			If($HTML)
+			{
+				$rowdata += @(,(
+				$txt,$htmlbold,
+				$Policy.ClientPolicy.ClientOptions.Update.UpdateClientXmlUrl,$htmlwhite))
+			}
+			If($Text)
+			{
+				OutputPolicySetting $txt $Policy.ClientPolicy.ClientOptions.Update.UpdateClientXmlUrl
+			}
+			#>
 		}
 
 		Write-Verbose "$(Get-Date -Format G): `t`t`t`tClient options/PC keyboard"
@@ -44328,7 +44493,7 @@ Function OutputPoliciesDetails
 				OutputPolicySetting $txt $Policy.ClientPolicy.ClientOptions.Global.AlwaysOnTop.ToString()
 			}
 			#>
-			$txt = "Client options/Advanced/Global/Show connections tree"
+			$txt = "Client options/Advanced/Global/Advanced client options - Global settings/Show connections tree (Clasic interface only)"
 			If($MSWord -or $PDF)
 			{
 				$SettingsWordTable += @{
@@ -44347,7 +44512,7 @@ Function OutputPoliciesDetails
 				OutputPolicySetting $txt $Policy.ClientPolicy.ClientOptions.Advanced.Global.ShowFolders.ToString()
 			}
 
-			$txt = "Client options/Advanced/Global/Minimize to tray on close or escape"
+			$txt = "Client options/Advanced/Global/Advanced client options - Global settings/On close, keep the application running"
 			If($MSWord -or $PDF)
 			{
 				$SettingsWordTable += @{
@@ -44366,7 +44531,7 @@ Function OutputPoliciesDetails
 				OutputPolicySetting $txt $Policy.ClientPolicy.ClientOptions.Advanced.Global.MinimizeToTrayOnClose.ToString()
 			}
 
-			$txt = "Client options/Advanced/Global/Enable graphic accelerator (Chrome client)"
+			$txt = "Client options/Advanced/Global/Advanced client options - Global settings/Enable graphic accelerator (Chrome client)"
 			If($MSWord -or $PDF)
 			{
 				$SettingsWordTable += @{
@@ -44385,7 +44550,7 @@ Function OutputPoliciesDetails
 				OutputPolicySetting $txt $Policy.ClientPolicy.ClientOptions.Advanced.Global.GraphicsAccel.ToString()
 			}
 
-			$txt = "Client options/Advanced/Global/Enable work area background (Chrome client)"
+			$txt = "Client options/Advanced/Global/Advanced client options - Global settings/Enable work area background (Chrome client)"
 			If($MSWord -or $PDF)
 			{
 				$SettingsWordTable += @{
@@ -44404,7 +44569,7 @@ Function OutputPoliciesDetails
 				OutputPolicySetting $txt $Policy.ClientPolicy.ClientOptions.Advanced.Global.ClientWorkAreaBackground.ToString()
 			}
 
-			$txt = "Client options/Advanced/Global/Do not warn if server certificate is not verified"
+			$txt = "Client options/Advanced/Global/Advanced client options - Global settings/Do not warn if server certificate is not verified"
 			If($MSWord -or $PDF)
 			{
 				$SettingsWordTable += @{
@@ -44423,7 +44588,7 @@ Function OutputPoliciesDetails
 				OutputPolicySetting $txt $Policy.ClientPolicy.ClientOptions.Advanced.Global.SSLNoWarning.ToString()
 			}
 
-			$txt = "Client options/Advanced/Global/Swap mouse buttons"
+			$txt = "Client options/Advanced/Global/Advanced client options - Global settings/Swap mouse buttons"
 			If($MSWord -or $PDF)
 			{
 				$SettingsWordTable += @{
@@ -44442,7 +44607,7 @@ Function OutputPoliciesDetails
 				OutputPolicySetting $txt $Policy.ClientPolicy.ClientOptions.Advanced.Global.SwapMouse.ToString()
 			}
 
-			$txt = "Client options/Advanced/Global/DPI aware"
+			$txt = "Client options/Advanced/Global/Advanced client options - Global settings/DPI aware"
 			If($MSWord -or $PDF)
 			{
 				$SettingsWordTable += @{
@@ -44461,7 +44626,7 @@ Function OutputPoliciesDetails
 				OutputPolicySetting $txt $Policy.ClientPolicy.ClientOptions.Advanced.Global.DPIAware.ToString()
 			}
 
-			$txt = "Client options/Advanced/Global/Add RAS connection automatically when starting web or shortcut items"
+			$txt = "Client options/Advanced/Global/Advanced client options - Global settings/Add RAS connection automatically when starting web or shortcut items"
 			If($MSWord -or $PDF)
 			{
 				$SettingsWordTable += @{
@@ -44480,7 +44645,7 @@ Function OutputPoliciesDetails
 				OutputPolicySetting $txt $Policy.ClientPolicy.ClientOptions.Advanced.Global.AutoAddFarm.ToString()
 			}
 
-			$txt = "Client options/Advanced/Global/Do not show prompt message for auto add RAS connection"
+			$txt = "Client options/Advanced/Global/Advanced client options - Global settings/Do not show prompt message for auto add RAS connection"
 			If($MSWord -or $PDF)
 			{
 				$SettingsWordTable += @{
@@ -44499,7 +44664,7 @@ Function OutputPoliciesDetails
 				OutputPolicySetting $txt $Policy.ClientPolicy.ClientOptions.Advanced.Global.DontPromptAutoAddFarm.ToString()
 			}
 
-			$txt = "Client options/Advanced/Global/Close error messages automatically"
+			$txt = "Client options/Advanced/Global/Advanced client options - Global settings/Close error messages automatically"
 			If($MSWord -or $PDF)
 			{
 				$SettingsWordTable += @{
@@ -44518,7 +44683,7 @@ Function OutputPoliciesDetails
 				OutputPolicySetting $txt $Policy.ClientPolicy.ClientOptions.Advanced.Global.SuppErrMsgs.ToString()
 			}
 
-			$txt = "Client options/Advanced/Global/Clear session cookies on exit"
+			$txt = "Client options/Advanced/Global/Advanced client options - Global settings/Clear session cookies on exit"
 			If($MSWord -or $PDF)
 			{
 				$SettingsWordTable += @{
@@ -44536,6 +44701,25 @@ Function OutputPoliciesDetails
 			{
 				OutputPolicySetting $txt $Policy.ClientPolicy.ClientOptions.Advanced.Global.ClearCookies.ToString()
 			}
+
+			$txt = "Client options/Advanced/Global/Advanced client options - Global settings/Turn off UDP on Client"
+			If($MSWord -or $PDF)
+			{
+				$SettingsWordTable += @{
+				Text = $txt;
+				Value = $Policy.ClientPolicy.ClientOptions.Advanced.Global.TurnOffUDPOnClient.ToString();
+				}
+			}
+			If($HTML)
+			{
+				$rowdata += @(,(
+				$txt,$htmlbold,
+				$Policy.ClientPolicy.ClientOptions.Advanced.Global.TurnOffUDPOnClient.ToString(),$htmlwhite))
+			}
+			If($Text)
+			{
+				OutputPolicySetting $txt $Policy.ClientPolicy.ClientOptions.Advanced.Global.TurnOffUDPOnClient.ToString()
+			}
 		}
 		
 		Write-Verbose "$(Get-Date -Format G): `t`t`t`tClient options/Advanced/Language"
@@ -44548,7 +44732,6 @@ Function OutputPoliciesDetails
 				"English"				{$Lang = "English"	    		; Break}
 				"German"				{$Lang = "German"			    ; Break}
 				"Japanese"				{$Lang = "Japanese"			    ; Break}
-				"Russian"				{$Lang = "Russian"			    ; Break}
 				"French"				{$Lang = "French"			    ; Break}
 				"Spanish"				{$Lang = "Spanish"			    ; Break}
 				"Italian"				{$Lang = "Italian"			    ; Break}
@@ -44583,7 +44766,7 @@ Function OutputPoliciesDetails
 		Write-Verbose "$(Get-Date -Format G): `t`t`t`tClient options/Advanced/Printing"
 		If($Policy.ClientPolicy.ClientOptions.Advanced.Printing.Enabled)
 		{
-			$txt = "Client options/Advanced/Printing/Install missing fonts automatically"
+			$txt = "Client options/Advanced/Printing/Advanced client options - Printing settings/Install missing fonts automatically"
 			If($MSWord -or $PDF)
 			{
 				$SettingsWordTable += @{
@@ -44602,26 +44785,7 @@ Function OutputPoliciesDetails
 				OutputPolicySetting $txt $Policy.ClientPolicy.ClientOptions.Advanced.Printing.PrintInstallFonts.ToString()
 			}
 
-			<#$txt = "Client options/Advanced/Printing/Redirect custom paper sizes when server preferences are selected"
-			If($MSWord -or $PDF)
-			{
-				$SettingsWordTable += @{
-				Text = $txt;
-				Value = $Policy.ClientPolicy.ClientOptions.Printing.PrintAddCustomPapers.ToString();
-				}
-			}
-			If($HTML)
-			{
-				$rowdata += @(,(
-				$txt,$htmlbold,
-				$Policy.ClientPolicy.ClientOptions.Printing.PrintAddCustomPapers.ToString(),$htmlwhite))
-			}
-			If($Text)
-			{
-				OutputPolicySetting $txt $Policy.ClientPolicy.ClientOptions.Printing.PrintAddCustomPapers.ToString()
-			}#>
-
-			$txt = "Client options/Advanced/Printing/Raw printing support"
+			$txt = "Client options/Advanced/Printing/Advanced client options - Printing settings/Raw printing support"
 			If($MSWord -or $PDF)
 			{
 				$SettingsWordTable += @{
@@ -44640,7 +44804,7 @@ Function OutputPoliciesDetails
 				OutputPolicySetting $txt $Policy.ClientPolicy.ClientOptions.Advanced.Printing.PrintRawSupport.ToString()
 			}
 
-			$txt = "Client options/Advanced/Printing/Convert non distributable fonts data to images"
+			$txt = "Client options/Advanced/Printing/Advanced client options - Printing settings/Convert non distributable fonts data to images"
 			If($MSWord -or $PDF)
 			{
 				$SettingsWordTable += @{
@@ -44659,7 +44823,7 @@ Function OutputPoliciesDetails
 				OutputPolicySetting $txt $Policy.ClientPolicy.ClientOptions.Advanced.Printing.AllowEMFRasterization.ToString()
 			}
 
-			$txt = "Client options/Advanced/Printing/Cache printers hardware information"
+			$txt = "Client options/Advanced/Printing/Advanced client options - Printing settings/Cache printers hardware information"
 			If($MSWord -or $PDF)
 			{
 				$SettingsWordTable += @{
@@ -44678,7 +44842,7 @@ Function OutputPoliciesDetails
 				OutputPolicySetting $txt $Policy.ClientPolicy.ClientOptions.Advanced.Printing.PrintUseCache.ToString()
 			}
 
-			$txt = "Client options/Advanced/Printing/Refressh printer hardware information every 30 days"
+			$txt = "Client options/Advanced/Printing/Advanced client options - Printing settings/Refresh printer hardware information every 30 days"
 			If($MSWord -or $PDF)
 			{
 				$SettingsWordTable += @{
@@ -44697,7 +44861,7 @@ Function OutputPoliciesDetails
 				OutputPolicySetting $txt $Policy.ClientPolicy.ClientOptions.Advanced.Printing.PrintRefreshCache.ToString()
 			}
 
-			$txt = "Client options/Advanced/Printing/Cache RAS Universal Printing embedded fonts"
+			$txt = "Client options/Advanced/Printing/Advanced client options - Printing settings/Cache RAS Universal Printing embedded fonts"
 			If($MSWord -or $PDF)
 			{
 				$SettingsWordTable += @{
@@ -44762,7 +44926,7 @@ Function OutputPoliciesDetails
 		Write-Verbose "$(Get-Date -Format G): `t`t`t`tClient options/Advanced/RemoteFX USB redirection"
 		If($Policy.ClientPolicy.ClientOptions.Advanced.RemoteFxUsbRedirection.Enabled)
 		{
-			$txt = "Client options/Advanced/RemoteFX USB redirection/RemoteFX USB redirection"
+			$txt = "Client options/Advanced/RemoteFX USB redirection/RemoteFX USB redirection/Allow RDP redirection of other supported RemoteFX USB devices to all users"
 			If($MSWord -or $PDF)
 			{
 				$SettingsWordTable += @{
@@ -44779,6 +44943,29 @@ Function OutputPoliciesDetails
 			If($Text)
 			{
 				OutputPolicySetting $txt $Policy.ClientPolicy.ClientOptions.Advanced.RemoteFxUsbRedirection.RemoteFXUSBRedir.ToString()
+			}
+		}
+		
+		Write-Verbose "$(Get-Date -Format G): `t`t`t`tClient options/Advanced/Customer Experience Program"
+		If($Policy.ClientPolicy.ClientOptions.Advanced.CustomerExperienceProgram.Enabled)
+		{
+			$txt = "Client options/Advanced/Customer Experience Program/Customer Experience Program/Participate in Customer Experience Program"
+			If($MSWord -or $PDF)
+			{
+				$SettingsWordTable += @{
+				Text = $txt;
+				Value = $Policy.ClientPolicy.ClientOptions.Advanced.CustomerExperienceProgram.ParticipateInCEP.ToString();
+				}
+			}
+			If($HTML)
+			{
+				$rowdata += @(,(
+				$txt,$htmlbold,
+				$Policy.ClientPolicy.ClientOptions.Advanced.CustomerExperienceProgram.ParticipateInCEP.ToString(),$htmlwhite))
+			}
+			If($Text)
+			{
+				OutputPolicySetting $txt $Policy.ClientPolicy.ClientOptions.Advanced.CustomerExperienceProgram.ParticipateInCEP.ToString()
 			}
 		}
 		
@@ -44828,6 +45015,25 @@ Function OutputPoliciesDetails
 		Write-Verbose "$(Get-Date -Format G): `t`t`t`tControl settings/Credentials"
 		If($Policy.ClientPolicy.ControlSettings.Credentials.Enabled)
 		{
+			$txt = "Control settings/Credentials/Credentials/Prohibit saving username"
+			If($MSWord -or $PDF)
+			{
+				$SettingsWordTable += @{
+				Text = $txt;
+				Value = $Policy.ClientPolicy.ControlSettings.Credentials.DontSaveUsername.ToString();
+				}
+			}
+			If($HTML)
+			{
+				$rowdata += @(,(
+				$txt,$htmlbold,
+				$Policy.ClientPolicy.ControlSettings.Credentials.DontSaveUsername.ToString(),$htmlwhite))
+			}
+			If($Text)
+			{
+				OutputPolicySetting $txt $Policy.ClientPolicy.ControlSettings.Credentials.DontSaveUsername.ToString()
+			}
+
 			$txt = "Control settings/Credentials/Credentials/Prohibit saving password"
 			If($MSWord -or $PDF)
 			{
@@ -44870,30 +45076,49 @@ Function OutputPoliciesDetails
 		Write-Verbose "$(Get-Date -Format G): `t`t`t`tControl settings/Import and export"
 		If($Policy.ClientPolicy.ControlSettings.ImportExport.Enabled)
 		{
-			$txt = "Control settings/Import and export/Import and export/Prohibit import/export connection settings"
+			$txt = "Control settings/Import and export/Import and export/Prohibit import connection settings"
 			If($MSWord -or $PDF)
 			{
 				$SettingsWordTable += @{
 				Text = $txt;
-				Value = $Policy.ClientPolicy.ControlSettings.ImportExport.DontImportExport.ToString();
+				Value = $Policy.ClientPolicy.ControlSettings.ImportExport.DontImport.ToString();
 				}
 			}
 			If($HTML)
 			{
 				$rowdata += @(,(
 				$txt,$htmlbold,
-				$Policy.ClientPolicy.ControlSettings.ImportExport.DontImportExport.ToString(),$htmlwhite))
+				$Policy.ClientPolicy.ControlSettings.ImportExport.DontImport.ToString(),$htmlwhite))
 			}
 			If($Text)
 			{
-				OutputPolicySetting $txt $Policy.ClientPolicy.ControlSettings.ImportExport.DontImportExport.ToString()
+				OutputPolicySetting $txt $Policy.ClientPolicy.ControlSettings.ImportExport.DontImport.ToString()
+			}
+
+			$txt = "Control settings/Import and export/Import and export/Prohibit export connection settings"
+			If($MSWord -or $PDF)
+			{
+				$SettingsWordTable += @{
+				Text = $txt;
+				Value = $Policy.ClientPolicy.ControlSettings.ImportExport.DontExport.ToString();
+				}
+			}
+			If($HTML)
+			{
+				$rowdata += @(,(
+				$txt,$htmlbold,
+				$Policy.ClientPolicy.ControlSettings.ImportExport.DontExport.ToString(),$htmlwhite))
+			}
+			If($Text)
+			{
+				OutputPolicySetting $txt $Policy.ClientPolicy.ControlSettings.ImportExport.DontExport.ToString()
 			}
 		}
 		
 		Write-Verbose "$(Get-Date -Format G): `t`t`t`tRedirection"
 		If($Policy.ClientPolicy.Redirection.Enabled)
 		{
-			$txt = "Redirection/New gateway/Gateway address"
+			$txt = "Redirection/New Secure Gateway/Secure Gateway address"
 			If($MSWord -or $PDF)
 			{
 				$SettingsWordTable += @{
@@ -44924,7 +45149,7 @@ Function OutputPoliciesDetails
 				Default				{$ConnMode = "New gateway/Connection mode not found: $($Policy.ClientPolicy.Redirection.Mode)"; Break}
 			}
 
-			$txt = "Redirection/New gateway/Connection mode"
+			$txt = "Redirection/New Secure Gateway/Connection mode"
 			If($MSWord -or $PDF)
 			{
 				$SettingsWordTable += @{
@@ -44943,7 +45168,7 @@ Function OutputPoliciesDetails
 				OutputPolicySetting $txt $ConnMode
 			}
 
-			$txt = "Redirection/New gateway/Port"
+			$txt = "Redirection/New Secure Gateway/Port"
 			If($MSWord -or $PDF)
 			{
 				$SettingsWordTable += @{
@@ -44962,7 +45187,7 @@ Function OutputPoliciesDetails
 				OutputPolicySetting $txt $Policy.ClientPolicy.Redirection.ServerPort.ToString()
 			}
 
-			$txt = "Redirection/New gateway/Alternative address"
+			$txt = "Redirection/New Secure Gateway/Alternative address"
 			If($MSWord -or $PDF)
 			{
 				$SettingsWordTable += @{
