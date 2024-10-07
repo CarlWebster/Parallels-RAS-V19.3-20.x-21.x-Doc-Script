@@ -10,16 +10,35 @@
 
 #Version 4.00 
 #
+#	Added new Functions:
+#		OutputSiteSummary
+#		OutputSiteDetails
+#			OutputRDSessionHostsDetails
+#			OutputVDIDetails
+#			OutputRemotePCDetails
+#			OutputProvidersDetails
+#			OutputSecureGatewaysDetails
+#			OutputConnectionBrokersDetails
+#			OutputEnrollmentServersDetails
+#			OutputHALBDetails
+#			OutputThemesDetails
+#			OutputCertificatesDetails
+#			OutputApplicationPackagesDetails
+#			OutputSettingsDetails
 #	Fixed HTML, Text, and MSWord output
 #	In Function OutputFarmSite, add Farm Properties
 #	In Function OutputPoliciesDetails:
 #		Update for the Policy changes in 19.3 and 19.4
 #		Handle multiple criteria
 #	In Function OutputRASLicense, update output to match the 19.4 console
+#	In Function OutputRDSessionHostsDetails, only output optimization data if optimization is enabled
 #	In Function OutputSAMLSetting, handle multiple SAML items
-#	In Function OutputSite, when processing Themes, Properties, Access:
+#	In Function OutputSiteDetails, when processing Themes, Properties, Access:
 #		If the Theme's MFA ID is not 0 and is found, use the MFA name
 #		If the Theme's MFA ID is 0, use "No MFA provider selected for this Theme"
 #		If the Theme's MFA ID is not found, use "Unable to determine MFA provider"
+#	In Function OutputSiteSummary:
+#		Added basic information for Tenant Brokers
+#		Changed "VDI Host" to "Provider"
 #	Updated for the PowerShell module changes in RAS 19.3 and 19.4
 #	Updated numerous ENUMS throughout the script
