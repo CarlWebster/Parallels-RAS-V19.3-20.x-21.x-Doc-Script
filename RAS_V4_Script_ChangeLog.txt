@@ -31,8 +31,12 @@
 #		Update for the Policy changes in 19.3 and 19.4
 #		Handle multiple criteria
 #	In Function OutputRASLicense, update output to match the 19.4 console
-#	In Function OutputRDSessionHostsDetails, only output optimization data if optimization is enabled
+#	In Function OutputRDSessionHostsDetails:
+#		For RDS Hosts details, rename "Agent settings" to "Settings, and move to after Desktop access
+#		Add Application Packages
+#		Only output optimization data if optimization is enabled
 #	In Function OutputSAMLSetting, handle multiple SAML items
+#	In Function OutputSettingsDetails, add Azure Virtual Desktop to the Features section
 #	In Function OutputSiteDetails, when processing Themes, Properties, Access:
 #		If the Theme's MFA ID is not 0 and is found, use the MFA name
 #		If the Theme's MFA ID is 0, use "No MFA provider selected for this Theme"

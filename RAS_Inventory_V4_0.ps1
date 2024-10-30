@@ -448,9 +448,9 @@
 	text document.
 .NOTES
 	NAME: RAS_Inventory_V4_0.ps1
-	VERSION: 4.00 Beta 8
+	VERSION: 4.00 Beta 9
 	AUTHOR: Carl Webster
-	LASTEDIT: October 7, 2024
+	LASTEDIT: October 30, 2024
 #>
 
 
@@ -591,8 +591,12 @@ Param(
 #		Update for the Policy changes in 19.3 and 19.4
 #		Handle multiple criteria
 #	In Function OutputRASLicense, update output to match the 19.4 console
-#	In Function OutputRDSessionHostsDetails, only output optimization data if optimization is enabled
+#	In Function OutputRDSessionHostsDetails:
+#		For RDS Hosts details, rename "Agent settings" to "Settings, and move to after Desktop access
+#		Add Application Packages
+#		Only output optimization data if optimization is enabled
 #	In Function OutputSAMLSetting, handle multiple SAML items
+#	In Function OutputSettingsDetails, add Azure Virtual Desktop to the Features section
 #	In Function OutputSiteDetails, when processing Themes, Properties, Access:
 #		If the Theme's MFA ID is not 0 and is found, use the MFA name
 #		If the Theme's MFA ID is 0, use "No MFA provider selected for this Theme"
@@ -665,9 +669,9 @@ $ErrorActionPreference    = 'SilentlyContinue'
 $Error.Clear()
 
 $Script:emailCredentials  = $Null
-$script:MyVersion         = '4.00 Beta 8'
+$script:MyVersion         = '4.00 Beta 9'
 $Script:ScriptName        = "RAS_Inventory_V4_0.ps1"
-$tmpdate                  = [datetime] "10/07/2024"
+$tmpdate                  = [datetime] "10/30/2024"
 $Script:ReleaseDate       = $tmpdate.ToUniversalTime().ToShortDateString()
 
 If($MSWord -eq $False -and $PDF -eq $False -and $Text -eq $False -and $HTML -eq $False)
@@ -4343,7 +4347,7 @@ Function OutputFarmSite
 	#added Properties in V4
 	If($MSWord -or $PDF)
 	{
-		WriteWordLine 2 0 "$Script:RASFarmName Properties"
+		WriteWordLine 2 0 "$($Site.Name) Properties"
 		$ScriptInformation = New-Object System.Collections.ArrayList
 		$ScriptInformation.Add(@{Data = "Site"; Value = $Site.Name; }) > $Null
 		$ScriptInformation.Add(@{Data = "Server"; Value = $PrimaryPublishingAgent; }) > $Null
@@ -4398,11 +4402,30 @@ Function OutputFarmSite
 		WriteWordLine 0 0 ""
 		#>
 		
-		WriteWordLine 0 0 "Enable HTTP host header attacks protection: " $Site.EnableHttpHostAttackProtection.ToString()
+		$ScriptInformation = New-Object System.Collections.ArrayList
+		$ScriptInformation.Add(@{Data = "Enable HTTP host header attacks protection"; Value = $Site.EnableHttpHostAttackProtection.ToString(); }) > $Null
+
+		$Table = AddWordTable -Hashtable $ScriptInformation `
+		-Columns Data,Value `
+		-List `
+		-Format $wdTableGrid `
+		-AutoFit $wdAutoFitFixed;
+
+		SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+		SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+		$Table.Columns.Item(1).Width = 250;
+		$Table.Columns.Item(2).Width = 225;
+
+		$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+		FindWordDocumentEnd
+		$Table = $Null
+		WriteWordLine 0 0 ""
 	}
 	If($Text)
 	{
-		Line 1 "$Script:RASFarmName Properties"
+		Line 1 "$($Site.Name) Properties"
 		Line 2 "Site`t`t : " $Site.Name
 		Line 2 "Server`t`t: " $PrimaryPublishingAgent
 		Line 2 "Description`t : " $Description
@@ -4425,7 +4448,7 @@ Function OutputFarmSite
 	}
 	If($HTML)
 	{
-		WriteHTMLLine 2 0 "$Script:RASFarmName Properties"
+		WriteHTMLLine 2 0 "$($Site.Name) Properties"
 
 		$rowdata = @()
 		$columnHeaders = @("Site",($Script:htmlsb),$Site.Name,$htmlwhite)
@@ -4455,7 +4478,12 @@ Function OutputFarmSite
 		WriteHTMLLine 0 0 ""
 		#>
 
-		WriteHTMLLine 0 0 "Enable HTTP host header attacks protection: " $Site.EnableHttpHostAttackProtection.ToString()
+		$rowdata = @()
+		$columnHeaders = @("Enable HTTP host header attacks protection",($Script:htmlsb),$Site.EnableHttpHostAttackProtection.ToString(),$htmlwhite)
+
+		$msg = ""
+		$columnWidths = @("250","225")
+		FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 		WriteHTMLLIne 0 0 ""
 	}
 }
@@ -5149,8 +5177,8 @@ Function OutputSiteSummary
 					}
 					Else
 					{
-						$ProviderOS = "Unable to determine because $ConnectionBrokerStatusAgentState"
-						$ProviderHypervisor = "Unable to determine because $ConnectionBrokerStatusAgentState"
+						$ProviderOS = "Unable to determine because $FullProviderStatus"
+						$ProviderHypervisor = "Unable to determine because $FullProviderStatus"
 					}
 					
 					If($MSWord -or $PDF)
@@ -5326,14 +5354,14 @@ Function OutputSiteSummary
 				$SecureGatewayStatusAgentState = GetRASStatus $SecureGatewayStatus.AgentState
 				If($Null -ne $SecureGatewayStatus.ServerOS)
 				{
-					$SecureGatewayBrokerOS = $SecureGatewayStatus.ServerOS -Replace '\s*-.*$'
+					$SecureGatewayOS = $SecureGatewayStatus.ServerOS -Replace '\s*-.*$'
 					$TmpArray = $SecureGatewayStatus.ServerOS.Split(":")
 					$SGHypervisor = $TmpArray[$TmpArray.Count -1]
 				}
 				Else
 				{
-					$SecureGatewayOS = "Unable to determine because $ConnectionBrokerStatusAgentState"
-					$SGHypervisor = "Unable to determine because $ConnectionBrokerStatusAgentState"
+					$SecureGatewayOS = "Unable to determine because $SecureGatewayStatusAgentState"
+					$SGHypervisor = "Unable to determine because $SecureGatewayStatusAgentState"
 				}
 				
 				If($MSWord -or $PDF)
@@ -5347,7 +5375,7 @@ Function OutputSiteSummary
 					$ScriptInformation.Add(@{Data = "Disk write time"; Value = "$($SecureGatewayStatus.DiskWrite)%"; }) > $Null
 					$ScriptInformation.Add(@{Data = "Sessions"; Value = $Sessions.ToString(); }) > $Null
 					$ScriptInformation.Add(@{Data = "Preferred Connection Broker"; Value = $SecureGatewayStatus.PreferredBroker; }) > $Null
-					$ScriptInformation.Add(@{Data = "Operating system"; Value = $SecureGatewayBrokerOS; }) > $Null
+					$ScriptInformation.Add(@{Data = "Operating system"; Value = $SecureGatewayOS; }) > $Null
 					$ScriptInformation.Add(@{Data = "Agent version"; Value = $SecureGatewayStatus.AgentVer; }) > $Null
 					$ScriptInformation.Add(@{Data = "Hypervisor"; Value = $SGHypervisor; }) > $Null
 
@@ -5379,7 +5407,7 @@ Function OutputSiteSummary
 					Line 2 "Disk write time`t`t`t: " "$($SecureGatewayStatus.DiskWrite)%"
 					Line 2 "Sessions`t`t`t: " $Sessions.ToString()
 					Line 2 "Preferred Connection Broker`t: " $SecureGatewayStatus.PreferredBroker
-					Line 2 "Operating system`t`t: " $SecureGatewayBrokerOS
+					Line 2 "Operating system`t`t: " $SecureGatewayOS
 					Line 2 "Agent version`t`t`t: " $SecureGatewayStatus.AgentVer
 					Line 2 "Hypervisor`t: " $SGHypervisor
 					Line 0 ""
@@ -5395,7 +5423,7 @@ Function OutputSiteSummary
 					$rowdata += @(,("Disk write time",($Script:htmlsb),"$($SecureGatewayStatus.DiskWrite)%",$htmlwhite))
 					$rowdata += @(,("Sessions",($Script:htmlsb),$Sessions.ToString(),$htmlwhite))
 					$rowdata += @(,("Preferred Connection Broker",($Script:htmlsb),$SecureGatewayStatus.PreferredBroker,$htmlwhite))
-					$rowdata += @(,("Operating system",($Script:htmlsb),$SecureGatewayBrokerOS,$htmlwhite))
+					$rowdata += @(,("Operating system",($Script:htmlsb),$SecureGatewayOS,$htmlwhite))
 					$rowdata += @(,("Agent version",($Script:htmlsb),$SecureGatewayStatus.AgentVer,$htmlwhite))
 					$rowdata += @(,("Hypervisor",($Script:htmlsb),$SGHypervisor,$htmlwhite))
 
@@ -6061,12 +6089,22 @@ Function OutputRDSessionHostsDetails
 				#Nothing
 			}
 			
+			If($RDSHost.Server -ne $RDSHost.DirectAddress)
+			{
+				$ChangeDirectAccess = "Enabled"
+			}
+			Else
+			{
+				$ChangeDirectAccess = "Disabled"
+			}
+			
 			If($MSWord -or $PDF)
 			{
 				$ScriptInformation = New-Object System.Collections.ArrayList
-				$ScriptInformation.Add(@{Data = "Enable server in site"; Value = $RDSHost.Enabled.ToString(); }) > $Null
-				$ScriptInformation.Add(@{Data = "Server"; Value = $RDSHost.Server; }) > $Null
+				$ScriptInformation.Add(@{Data = "Enable host in site"; Value = $RDSHost.Enabled.ToString(); }) > $Null
+				$ScriptInformation.Add(@{Data = "Host"; Value = $RDSHost.Server; }) > $Null
 				$ScriptInformation.Add(@{Data = "Description"; Value = $RDSHost.Description; }) > $Null
+				$ScriptInformation.Add(@{Data = "Change Direct Address"; Value = $ChangeDirectAccess; }) > $Null
 				$ScriptInformation.Add(@{Data = "Direct Address"; Value = $RDSHost.DirectAddress; }) > $Null
 
 				$Table = AddWordTable -Hashtable $ScriptInformation `
@@ -6089,581 +6127,23 @@ Function OutputRDSessionHostsDetails
 			}
 			If($Text)
 			{
-				Line 4 "Enable server in site`t: " $RDSHost.Enabled.ToString()
-				Line 4 "Server`t`t`t: " $RDSHost.Server
+				Line 4 "Enable host in site`t: " $RDSHost.Enabled.ToString()
+				Line 4 "Host`t`t`t: " $RDSHost.Server
 				Line 4 "Description`t`t: " $RDSHost.Description
+				Line 4 "ChangeDirect Address`t: " $ChangeDirectAccess
 				Line 4 "Direct Address`t`t: " $RDSHost.DirectAddress
 				Line 0 ""
 			}
 			If($HTML)
 			{
 				$rowdata = @()
-				$columnHeaders = @("Enable server in site",($Script:htmlsb),$RDSHost.Enabled.ToString(),$htmlwhite)
-				$rowdata += @(,("Server",($Script:htmlsb),$RDSHost.Server,$htmlwhite))
+				$columnHeaders = @("Enable host in site",($Script:htmlsb),$RDSHost.Enabled.ToString(),$htmlwhite)
+				$rowdata += @(,("Host",($Script:htmlsb),$RDSHost.Server,$htmlwhite))
 				$rowdata += @(,("Description",($Script:htmlsb),$RDSHost.Description,$htmlwhite))
+				$rowdata += @(,("Change Direct Address",($Script:htmlsb),$ChangeDirectAccess,$htmlwhite))
 				$rowdata += @(,("Direct Address",($Script:htmlsb),$RDSHost.DirectAddress,$htmlwhite))
 
 				$msg = "General"
-				$columnWidths = @("300","275")
-				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-				WriteHTMLLine 0 0 ""
-			}
-
-			#Agent Settings
-			
-			If($MSWord -or $PDF)
-			{
-				WriteWordLine 4 0 "Agent settings"
-			}
-			If($Text)
-			{
-				Line 3 "Agent settings"
-			}
-			If($HTML)
-			{
-				#Nothing
-			}
-			
-			If($RDSHost.InheritDefaultAgentSettings)
-			{
-				#do we inherit group or site defaults?
-				#is this RDS host in a group?
-				$Results = Get-RASRDSHostPool -SiteId $Site.Id -EA 0 4>$Null
-				
-				If($? -and $Null -ne $Results)
-				{
-					If($Results.RDSIds -Contains $RDSHost.Id )
-					{
-						$Result = $Results | Where-Object {$_.RDSIDs -eq $RDSHost.Id} #fix for 2.53
-						#does this group inherit default settings?
-						If($Result.InheritDefaultAgentSettings -eq $False) #fix for 2.53
-						{
-							#no we don't, so get the default settings for the group
-							$GroupDefaults  = $Result.RDSDefSettings #fix for 2.53
-
-							$RDSPort        = $GroupDefaults.Port.ToString()
-							$RDSMaxSessions = $GroupDefaults.MaxSessions.ToString()
-							
-							Switch ($GroupDefaults.DisconnectActiveSessionAfter)
-							{
-								0		{$RDSPublishingSessionDisconnectTimeout = "Never"; Break}
-								1		{$RDSPublishingSessionDisconnectTimeout = "1 minute"; Break}
-								5		{$RDSPublishingSessionDisconnectTimeout = "5 minutes"; Break}
-								25		{$RDSPublishingSessionDisconnectTimeout = "25 seconds"; Break}
-								60		{$RDSPublishingSessionDisconnectTimeout = "1 minute"; Break}
-								300		{$RDSPublishingSessionDisconnectTimeout = "5 minutes"; Break}
-								3600	{$RDSPublishingSessionDisconnectTimeout = "1 hour"; Break}
-								Default	{$RDSPublishingSessionDisconnectTimeout = "Unable to determine Publishing Session Disconnect Timeout: $($GroupDefaults.DisconnectActiveSessionAfter)"; Break}
-							}
-							
-							Switch ($GroupDefaults.LogoffDisconnectedSessionAfter)
-							{
-								0		{$RDSPublishingSessionResetTime = "Never"; Break}
-								1		{$RDSPublishingSessionResetTime = "Immediate"; Break}
-								25		{$RDSPublishingSessionResetTime = "25 seconds"; Break}
-								60		{$RDSPublishingSessionResetTime = "1 minute"; Break}
-								300		{$RDSPublishingSessionResetTime = "5 minutes"; Break}
-								3600	{$RDSPublishingSessionResetTime = "1 hour"; Break}
-								Default	{$RDSPublishingSessionResetTime = "Unable to determine Publishing Session Reset Timeout: $($GroupDefaults.LogoffDisconnectedSessionAfter)"; Break}
-							}
-							
-							Switch($GroupDefaults.AllowURLAndMailRedirection)
-							{
-								"Enabled"						{$RDSAllowClientURLMailRedirection = "Enabled"; 
-																 $ReplaceRegisteredApplication = "False";
-																 Break}
-								"Disabled"						{$RDSAllowClientURLMailRedirection = "Disabled"; 
-																 $ReplaceRegisteredApplication = "False";
-																 Break}
-								"EnabledWithAppRegistration"	{$RDSAllowClientURLMailRedirection = "Enabled";
-																 $ReplaceRegisteredApplication = "True";
-																 Break}
-								Default 						{$RDSAllowClientURLMailRedirection = "Unable to determine Allow CLient URL/Mail Redirection: $($GroupDefaults.AllowURLAndMailRedirection)"; 
-																 $ReplaceRegisteredApplication = "False";
-																 Break}
-							}
-							
-							$RDSSupportShellURLNamespaceObject = $GroupDefaults.SupportShellURLNamespaceObjects.ToString()
-							
-							Switch ($GroupDefaults.DragAndDropMode)
-							{
-								"Bidirectional"		{$RDSDragAndDrop = "Bidirectional"; 
-								$RDSAllowDragAndDrop = "True";
-								Break}
-								"Disabled"			{$RDSDragAndDrop = "Disabled"; 
-								$RDSAllowDragAndDrop = "False";
-								Break}
-								"ClientToServer"	{$RDSDragAndDrop = "Client to server only"; 
-								$RDSAllowDragAndDrop = "True";
-								Break}
-								"ServerToClient"	{$RDSDragAndDrop = "Server to client only"; 
-								$RDSAllowDragAndDrop = "True";
-								Break}
-								Default				{$RDSDragAndDrop = "Unable to determine Drag and drop: $($GroupDefaults.DragAndDropMode)"; 
-								$RDSAllowDragAndDrop = "False";
-								Break}
-							}
-							
-							If($GroupDefaults.PreferredBrokerId -eq 0)
-							{
-								$RDSPreferredPublishingAgent = "Automatically"
-							}
-							Else
-							{
-								$RDSPreferredPublishingAgent = (Get-RASBroker -Id $GroupDefaults.PreferredBrokerId -EA 0 4>$Null).Server
-							}
-
-							Switch ($GroupDefaults.FileTransferMode)
-							{
-								"Bidirectional"		{$RDSFileTransferMode = "Bidirectional"; Break}
-								"Disabled"			{$RDSFileTransferMode = "Disabled"; Break}
-								"ClientToServer"	{$RDSFileTransferMode = "Client to server only"; Break}
-								"ServerToClient"	{$RDSFileTransferMode = "Server to client only"; Break}
-								Default				{$RDSFileTransferMode = "Unable to determine File Transfer mode: $($GroupDefaults.FileTransferMode)"; Break}
-							}
-							If($GroupDefaults.FileTransferLocation -eq "")
-							{
-								$RDSFileTransferLocation = "Default download location"
-							}
-							Else
-							{
-								$RDSFileTransferLocation = $GroupDefaults.FileTransferLocation
-							}
-							$RDSFileTransferChangeLocation = $GroupDefaults.FileTransferLockLocation.ToString()
-
-							#fixed the following missing variables in 2.52 thanks to Thomas Krampe
-							$RDSAllowRemoteExec             = $GroupDefaults.AllowRemoteExec.ToString()
-							$RDSUseRemoteApps               = $GroupDefaults.UseRemoteApps.ToString()
-							$RDSEnableAppMonitoring         = $GroupDefaults.EnableAppMonitoring.ToString()
-							$RDSAllowFileTransfer           = $GroupDefaults.AllowFileTransfer.ToString()
-							$RDSEnableDriveRedirectionCache = $GroupDefaults.EnableDriveRedirectionCache.ToString()
-						}
-						Else
-						{
-							#yes we do, get the default settings for the Site
-							#use the Site default settings
-
-							$RDSDefaults = Get-RASRDSDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
-							
-							If($? -and $Null -ne $RDSDefaults)
-							{
-								$RDSPort        = $RDSDefaults.Port.ToString()
-								$RDSMaxSessions = $RDSDefaults.MaxSessions.ToString()
-								
-								Switch ($RDSDefaults.DisconnectActiveSessionAfter)
-								{
-									0		{$RDSPublishingSessionDisconnectTimeout = "Never"; Break}
-									1		{$RDSPublishingSessionDisconnectTimeout = "1 minute"; Break}
-									5		{$RDSPublishingSessionDisconnectTimeout = "5 minutes"; Break}
-									25		{$RDSPublishingSessionDisconnectTimeout = "25 seconds"; Break}
-									60		{$RDSPublishingSessionDisconnectTimeout = "1 minute"; Break}
-									300		{$RDSPublishingSessionDisconnectTimeout = "5 minutes"; Break}
-									3600	{$RDSPublishingSessionDisconnectTimeout = "1 hour"; Break}
-									Default	{$RDSPublishingSessionDisconnectTimeout = "Unable to determine Publishing Session Disconnect Timeout: $($RDSDefaults.DisconnectActiveSessionAfter)"; Break}
-								}
-								
-								Switch ($RDSDefaults.LogoffDisconnectedSessionAfter)
-								{
-									0		{$RDSPublishingSessionResetTime = "Never"; Break}
-									1		{$RDSPublishingSessionResetTime = "Immediate"; Break}
-									25		{$RDSPublishingSessionResetTime = "25 seconds"; Break}
-									60		{$RDSPublishingSessionResetTime = "1 minute"; Break}
-									300		{$RDSPublishingSessionResetTime = "5 minutes"; Break}
-									3600	{$RDSPublishingSessionResetTime = "1 hour"; Break}
-									Default	{$RDSPublishingSessionResetTime = "Unable to determine Publishing Session Reset Timeout: $($RDSDefaults.LogoffDisconnectedSessionAfter)"; Break}
-								}
-								
-								Switch($RDSDefaults.AllowURLAndMailRedirection)
-								{
-									"Enabled"						{$RDSAllowClientURLMailRedirection = "Enabled"; 
-																	 $ReplaceRegisteredApplication = "False";
-																	 Break}
-									"Disabled"						{$RDSAllowClientURLMailRedirection = "Disabled"; 
-																	 $ReplaceRegisteredApplication = "False";
-																	 Break}
-									"EnabledWithAppRegistration"	{$RDSAllowClientURLMailRedirection = "Enabled";
-																	 $ReplaceRegisteredApplication = "True";
-																	 Break}
-									Default 						{$RDSAllowClientURLMailRedirection = "Unable to determine Allow CLient URL/Mail Redirection: $($RDSDefaults.AllowURLAndMailRedirection)"; 
-																	 $ReplaceRegisteredApplication = "False";
-																	 Break}
-								}
-								
-								$RDSSupportShellURLNamespaceObject = $RDSDefaults.SupportShellURLNamespaceObjects.ToString()
-								
-								Switch ($RDSDefaults.DragAndDropMode)
-								{
-									"Bidirectional"		{$RDSDragAndDrop = "Bidirectional"; 
-									$RDSAllowDragAndDrop = "True";
-									Break}
-									"Disabled"			{$RDSDragAndDrop = "Disabled"; 
-									$RDSAllowDragAndDrop = "False";
-									Break}
-									"ClientToServer"	{$RDSDragAndDrop = "Client to server only"; 
-									$RDSAllowDragAndDrop = "True";
-									Break}
-									"ServerToClient"	{$RDSDragAndDrop = "Server to client only"; 
-									$RDSAllowDragAndDrop = "True";
-									Break}
-									Default				{$RDSDragAndDrop = "Unable to determine Drag and drop: $($RDSDefaults.DragAndDropMode)"; 
-									$RDSAllowDragAndDrop = "False";
-									Break}
-								}
-								
-								Switch ($RDSDefaults.FileTransferMode)
-								{
-									"Bidirectional"		{$RDSFileTransferMode = "Bidirectional"; Break}
-									"Disabled"			{$RDSFileTransferMode = "Disabled"; Break}
-									"ClientToServer"	{$RDSFileTransferMode = "Client to server only"; Break}
-									"ServerToClient"	{$RDSFileTransferMode = "Server to client only"; Break}
-									Default				{$RDSFileTransferMode = "Unable to determine File Transfer mode: $($RDSDefaults.FileTransferMode)"; Break}
-								}
-								If($RDSDefaults.FileTransferLocation -eq "")
-								{
-									$RDSFileTransferLocation = "Default download location"
-								}
-								Else
-								{
-									$RDSFileTransferLocation = $RDSDefaults.FileTransferLocation
-								}
-								$RDSFileTransferChangeLocation = $RDSDefaults.FileTransferLockLocation.ToString()
-
-								If($RDSDefaults.PreferredBrokerId -eq 0)
-								{
-									$RDSPreferredPublishingAgent = "Automatically"
-								}
-								Else
-								{
-									$RDSPreferredPublishingAgent = (Get-RASBroker -Id $RDSDefaults.PreferredBrokerId -EA 0 4>$Null).Server
-								}
-								$RDSAllowRemoteExec             = $RDSDefaults.AllowRemoteExec.ToString()
-								$RDSUseRemoteApps               = $RDSDefaults.UseRemoteApps.ToString()
-								$RDSEnableAppMonitoring         = $RDSDefaults.EnableAppMonitoring.ToString()
-								$RDSAllowFileTransfer           = $RDSDefaults.AllowFileTransfer.ToString()
-								$RDSEnableDriveRedirectionCache = $RDSDefaults.EnableDriveRedirectionCache.ToString()
-							}
-							Else
-							{
-								#unable to retrieve default, use built-in default values
-								$RDSPort                               = "3389"
-								$RDSMaxSessions                        = "250"
-								$RDSPublishingSessionDisconnectTimeout = "25 seconds"
-								$RDSPublishingSessionResetTime         = "Immediate"
-								$RDSAllowClientURLMailRedirection      = "Enabled"
-								$ReplaceRegisteredApplication          = "False"
-								$RDSSupportShellURLNamespaceObject     = "True"
-								$RDSDragAndDrop                        = "Bidirectional"
-								$RDSAllowDragAndDrop                   = "Enabled"
-								$RDSFileTransferMode                   = "Bidirectional"
-								$RDSFileTransferLocation               = "Default download location"
-								$RDSFileTransferChangeLocation         = "False"
-								$RDSPreferredPublishingAgent           = "Automatically"
-								$RDSAllowRemoteExec                    = "True"
-								$RDSUseRemoteApps                      = "False"
-								$RDSEnableAppMonitoring                = "True"
-								$RDSAllowFileTransfer                  = "True"
-								$RDSEnableDriveRedirectionCache        = "True"
-							}
-						}
-					}
-				}
-				Else
-				{
-					#server is not in an RDS group
-					#get the settings configured for this RDS host
-					$RDSPort        = $RDSHost.Port.ToString()
-					$RDSMaxSessions = $RDSHost.MaxSessions.ToString()
-					
-					Switch ($RDSHost.DisconnectActiveSessionAfter)
-					{
-						0		{$RDSPublishingSessionDisconnectTimeout = "Never"; Break}
-						1		{$RDSPublishingSessionDisconnectTimeout = "1 minute"; Break}
-						5		{$RDSPublishingSessionDisconnectTimeout = "5 minutes"; Break}
-						25		{$RDSPublishingSessionDisconnectTimeout = "25 seconds"; Break}
-						60		{$RDSPublishingSessionDisconnectTimeout = "1 minute"; Break}
-						300		{$RDSPublishingSessionDisconnectTimeout = "5 minutes"; Break}
-						3600	{$RDSPublishingSessionDisconnectTimeout = "1 hour"; Break}
-						Default	{$RDSPublishingSessionDisconnectTimeout = "Unable to determine Publishing Session Disconnect Timeout: $($RDSHost.DisconnectActiveSessionAfter)"; Break}
-					}
-					
-					Switch ($RDSHost.LogoffDisconnectedSessionAfter)
-					{
-						0		{$RDSPublishingSessionResetTime = "Never"; Break}
-						1		{$RDSPublishingSessionResetTime = "Immediate"; Break}
-						25		{$RDSPublishingSessionResetTime = "25 seconds"; Break}
-						60		{$RDSPublishingSessionResetTime = "1 minute"; Break}
-						300		{$RDSPublishingSessionResetTime = "5 minutes"; Break}
-						3600	{$RDSPublishingSessionResetTime = "1 hour"; Break}
-						Default	{$RDSPublishingSessionResetTime = "Unable to determine Publishing Session Reset Timeout: $($RDSHost.LogoffDisconnectedSessionAfter)"; Break}
-					}
-					
-					Switch($RDSHost.AllowURLAndMailRedirection)
-					{
-						"Enabled"						{$RDSAllowClientURLMailRedirection = "Enabled"; 
-														 $ReplaceRegisteredApplication = "False";
-														 Break}
-						"Disabled"						{$RDSAllowClientURLMailRedirection = "Disabled"; 
-														 $ReplaceRegisteredApplication = "False";
-														 Break}
-						"EnabledWithAppRegistration"	{$RDSAllowClientURLMailRedirection = "Enabled";
-														 $ReplaceRegisteredApplication = "True";
-														 Break}
-						Default 						{$RDSAllowClientURLMailRedirection = "Unable to determine Allow CLient URL/Mail Redirection: $($RDSHost.AllowURLAndMailRedirection)"; 
-														 $ReplaceRegisteredApplication = "False";
-														 Break}
-					}
-					
-					$RDSSupportShellURLNamespaceObject = $RDSHost.SupportShellURLNamespaceObjects.ToString()
-					
-					Switch ($RDSHost.DragAndDropMode)
-					{
-						"Bidirectional"		{$RDSDragAndDrop = "Bidirectional"; 
-						$RDSAllowDragAndDrop = "True";
-						Break}
-						"Disabled"			{$RDSDragAndDrop = "Disabled"; 
-						$RDSAllowDragAndDrop = "False";
-						Break}
-						"ClientToServer"	{$RDSDragAndDrop = "Client to server only"; 
-						$RDSAllowDragAndDrop = "True";
-						Break}
-						"ServerToClient"	{$RDSDragAndDrop = "Server to client only"; 
-						$RDSAllowDragAndDrop = "True";
-						Break}
-						Default				{$RDSDragAndDrop = "Unable to determine Drag and drop: $($RDSHost.DragAndDropMode)"; 
-						$RDSAllowDragAndDrop = "False";
-						Break}
-					}
-					
-					Switch ($RDSHost.FileTransferMode)
-					{
-						"Bidirectional"		{$RDSFileTransferMode = "Bidirectional"; Break}
-						"Disabled"			{$RDSFileTransferMode = "Disabled"; Break}
-						"ClientToServer"	{$RDSFileTransferMode = "Client to server only"; Break}
-						"ServerToClient"	{$RDSFileTransferMode = "Server to client only"; Break}
-						Default				{$RDSFileTransferMode = "Unable to determine File Transfer mode: $($RDSHost.FileTransferMode)"; Break}
-					}
-					If($RDSHost.FileTransferLocation -eq "")
-					{
-						$RDSFileTransferLocation = "Default download location"
-					}
-					Else
-					{
-						$RDSFileTransferLocation = $RDSHost.FileTransferLocation
-					}
-					$RDSFileTransferChangeLocation = $RDSHost.FileTransferLockLocation.ToString()
-
-					If($RDSHost.PreferredBrokerId -eq 0)
-					{
-						$RDSPreferredPublishingAgent = "Automatically"
-					}
-					Else
-					{
-						$RDSPreferredPublishingAgent = (Get-RASBroker -Id $RDSHost.PreferredBrokerId -EA 0 4>$Null).Server
-					}
-					$RDSAllowRemoteExec             = $RDSHost.AllowRemoteExec.ToString()
-					$RDSUseRemoteApps               = $RDSHost.UseRemoteApps.ToString()
-					$RDSEnableAppMonitoring         = $RDSHost.EnableAppMonitoring.ToString()
-					$RDSAllowFileTransfer           = $RDSHost.AllowFileTransfer.ToString()
-					$RDSEnableDriveRedirectionCache = $RDSHost.EnableDriveRedirectionCache.ToString()
-				}
-			}
-			Else
-			{
-				#we don't inherit settings
-				#get the settings configured for this RDS host
-				$RDSPort        = $RDSHost.Port.ToString()
-				$RDSMaxSessions = $RDSHost.MaxSessions.ToString()
-				
-				Switch ($RDSHost.DisconnectActiveSessionAfter)
-				{
-					0		{$RDSPublishingSessionDisconnectTimeout = "Never"; Break}
-					1		{$RDSPublishingSessionDisconnectTimeout = "1 minute"; Break}
-					5		{$RDSPublishingSessionDisconnectTimeout = "5 minutes"; Break}
-					25		{$RDSPublishingSessionDisconnectTimeout = "25 seconds"; Break}
-					60		{$RDSPublishingSessionDisconnectTimeout = "1 minute"; Break}
-					300		{$RDSPublishingSessionDisconnectTimeout = "5 minutes"; Break}
-					3600	{$RDSPublishingSessionDisconnectTimeout = "1 hour"; Break}
-					Default	{$RDSPublishingSessionDisconnectTimeout = "Unable to determine Publishing Session Disconnect Timeout: $($RDSHost.DisconnectActiveSessionAfter)"; Break}
-				}
-				
-				Switch ($RDSHost.LogoffDisconnectedSessionAfter)
-				{
-					0		{$RDSPublishingSessionResetTime = "Never"; Break}
-					1		{$RDSPublishingSessionResetTime = "Immediate"; Break}
-					25		{$RDSPublishingSessionResetTime = "25 seconds"; Break}
-					60		{$RDSPublishingSessionResetTime = "1 minute"; Break}
-					300		{$RDSPublishingSessionResetTime = "5 minutes"; Break}
-					3600	{$RDSPublishingSessionResetTime = "1 hour"; Break}
-					Default	{$RDSPublishingSessionResetTime = "Unable to determine Publishing Session Reset Timeout: $($RDSHost.LogoffDisconnectedSessionAfter)"; Break}
-				}
-				
-				Switch($RDSHost.AllowURLAndMailRedirection)
-				{
-					"Enabled"						{$RDSAllowClientURLMailRedirection = "Enabled"; 
-													 $ReplaceRegisteredApplication = "False";
-													 Break}
-					"Disabled"						{$RDSAllowClientURLMailRedirection = "Disabled"; 
-													 $ReplaceRegisteredApplication = "False";
-													 Break}
-					"EnabledWithAppRegistration"	{$RDSAllowClientURLMailRedirection = "Enabled";
-													 $ReplaceRegisteredApplication = "True";
-													 Break}
-					Default 						{$RDSAllowClientURLMailRedirection = "Unable to determine Allow CLient URL/Mail Redirection: $($RDSHost.AllowURLAndMailRedirection)"; 
-													 $ReplaceRegisteredApplication = "False";
-													 Break}
-				}
-				
-				$RDSSupportShellURLNamespaceObject = $RDSHost.SupportShellURLNamespaceObjects.ToString()
-				
-				Switch ($RDSHost.DragAndDropMode)
-				{
-					"Bidirectional"		{$RDSDragAndDrop = "Bidirectional"; 
-					$RDSAllowDragAndDrop = "True";
-					Break}
-					"Disabled"			{$RDSDragAndDrop = "Disabled"; 
-					$RDSAllowDragAndDrop = "False";
-					Break}
-					"ClientToServer"	{$RDSDragAndDrop = "Client to server only"; 
-					$RDSAllowDragAndDrop = "True";
-					Break}
-					"ServerToClient"	{$RDSDragAndDrop = "Server to client only"; 
-					$RDSAllowDragAndDrop = "True";
-					Break}
-					Default				{$RDSDragAndDrop = "Unable to determine Drag and drop: $($RDSHost.DragAndDropMode)"; 
-					$RDSAllowDragAndDrop = "False";
-					Break}
-				}
-				
-				Switch ($RDSHost.FileTransferMode)
-				{
-					"Bidirectional"		{$RDSFileTransferMode = "Bidirectional"; Break}
-					"Disabled"			{$RDSFileTransferMode = "Disabled"; Break}
-					"ClientToServer"	{$RDSFileTransferMode = "Client to server only"; Break}
-					"ServerToClient"	{$RDSFileTransferMode = "Server to client only"; Break}
-					Default				{$RDSFileTransferMode = "Unable to determine File Transfer mode: $($RDSHost.FileTransferMode)"; Break}
-				}
-				If($RDSHost.FileTransferLocation -eq "")
-				{
-					$RDSFileTransferLocation = "Default download location"
-				}
-				Else
-				{
-					$RDSFileTransferLocation = $RDSHost.FileTransferLocation
-				}
-				$RDSFileTransferChangeLocation = $RDSHost.FileTransferLockLocation.ToString()
-
-				If($RDSHost.PreferredBrokerId -eq 0)
-				{
-					$RDSPreferredPublishingAgent = "Automatically"
-				}
-				Else
-				{
-					$RDSPreferredPublishingAgent = (Get-RASBroker -Id $RDSHost.PreferredBrokerId -EA 0 4>$Null).Server
-				}
-				$RDSAllowRemoteExec             = $RDSHost.AllowRemoteExec.ToString()
-				$RDSUseRemoteApps               = $RDSHost.UseRemoteApps.ToString()
-				$RDSEnableAppMonitoring         = $RDSHost.EnableAppMonitoring.ToString()
-				$RDSAllowFileTransfer           = $RDSHost.AllowFileTransfer.ToString()
-				$RDSEnableDriveRedirectionCache = $RDSHost.EnableDriveRedirectionCache.ToString()
-			}
-			
-			If($MSWord -or $PDF)
-			{
-				$ScriptInformation = New-Object System.Collections.ArrayList
-				$ScriptInformation.Add(@{Data = "Inherit default settings"; Value = $RDSHost.InheritDefaultAgentSettings.ToString(); }) > $Null
-				$ScriptInformation.Add(@{Data = "Application session lingering"; Value = ""; }) > $Null
-				$ScriptInformation.Add(@{Data = "     Disconnect active session after"; Value = $RDSPublishingSessionDisconnectTimeout; }) > $Null
-				$ScriptInformation.Add(@{Data = "     Logoff disconnected session after"; Value = $RDSPublishingSessionResetTime; }) > $Null
-				$ScriptInformation.Add(@{Data = "Other settings"; Value = ""; }) > $Null
-				$ScriptInformation.Add(@{Data = "     Port"; Value = $RDSPort; }) > $Null
-				$ScriptInformation.Add(@{Data = "     Max Sessions"; Value = $RDSMaxSessions; }) > $Null
-				$ScriptInformation.Add(@{Data = "     Preferred Connection Broker"; Value = $RDSPreferredPublishingAgent; }) > $Null
-				$ScriptInformation.Add(@{Data = "Allow Client URL/Mail Redirection"; Value = $RDSAllowClientURLMailRedirection; }) > $Null
-				$ScriptInformation.Add(@{Data = "     Replace registered application"; Value = $ReplaceRegisteredApplication; }) > $Null
-				$ScriptInformation.Add(@{Data = "     Support Windows Shell URL namespace objects"; Value = $RDSSupportShellURLNamespaceObject; }) > $Null
-				$ScriptInformation.Add(@{Data = "Enable Drag and drop"; Value = $RDSAllowDragandDrop; }) > $Null
-				$ScriptInformation.Add(@{Data = "     Direction"; Value = $RDSDragAndDrop; }) > $Null
-				$ScriptInformation.Add(@{Data = "Allow 2xRemoteExec to send command to the client"; Value = $RDSAllowRemoteExec; }) > $Null
-				$ScriptInformation.Add(@{Data = "Use RemoteApp if available"; Value = $RDSUseRemoteApps; }) > $Null
-				$ScriptInformation.Add(@{Data = "Enable applications monitoring"; Value = $RDSEnableAppMonitoring; }) > $Null
-				$ScriptInformation.Add(@{Data = "Allow file transfer command (Web (HTML5) and Chrome clients)"; Value = $RDSAllowFileTransfer; }) > $Null
-				$ScriptInformation.Add(@{Data = "     Configure File Transfer"; Value = ""; }) > $Null
-				$ScriptInformation.Add(@{Data = "          Direction"; Value = $RDSFileTransferMode; }) > $Null
-				$ScriptInformation.Add(@{Data = "          Location"; Value = $RDSFileTransferLocation; }) > $Null
-				$ScriptInformation.Add(@{Data = "          Do not allow to change location"; Value = $RDSFileTransferChangeLocation; }) > $Null
-				$ScriptInformation.Add(@{Data = "Enable drive redirection cache"; Value = $RDSEnableDriveRedirectionCache; }) > $Null
-
-				$Table = AddWordTable -Hashtable $ScriptInformation `
-				-Columns Data,Value `
-				-List `
-				-Format $wdTableGrid `
-				-AutoFit $wdAutoFitFixed;
-
-				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
-				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
-				$Table.Columns.Item(1).Width = 250;
-				$Table.Columns.Item(2).Width = 250;
-
-				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-				FindWordDocumentEnd
-				$Table = $Null
-				WriteWordLine 0 0 ""
-			}
-			If($Text)
-			{
-				Line 4 "Inherit default settings`t`t`t`t`t: " $RDSHost.InheritDefaultAgentSettings.ToString()
-				Line 4 "Application session lingering"
-				Line 5 "Disconnect active session after`t`t`t`t: " $RDSPublishingSessionDisconnectTimeout
-				Line 5 "Logoff disconnected session after`t`t`t: " $RDSPublishingSessionResetTime
-				Line 4 "Other settings"
-				Line 5 "Port`t`t`t`t`t`t`t: " $RDSPort
-				Line 5 "Max Sessions`t`t`t`t`t`t: " $RDSMaxSessions
-				Line 5 "Preferred Connection Broker`t`t`t`t: " $RDSPreferredPublishingAgent
-				Line 4 "Allow Client URL/Mail Redirection`t`t`t`t: " $RDSAllowClientURLMailRedirection
-				Line 5 "Replace registered application`t`t`t`t: " $ReplaceRegisteredApplication
-				Line 5 "Support Windows Shell URL namespace objects`t`t: " $RDSSupportShellURLNamespaceObject
-				Line 4 "Enable Drag and drop`t`t`t`t`t`t: " $RDSAllowDragandDrop
-				Line 5 "Direction`t`t`t`t`t`t: " $RDSDragAndDrop
-				Line 4 "Allow 2xRemoteExec to send command to the client`t`t: " $RDSAllowRemoteExec
-				Line 4 "Use RemoteApp if available`t`t`t`t`t: " $RDSUseRemoteApps
-				Line 4 "Enable applications monitoring`t`t`t`t`t: " $RDSEnableAppMonitoring
-				Line 4 "Allow file transfer command (Web (HTML5) and Chrome clients)`t: " $RDSAllowFileTransfer
-				Line 5 "Configure File Transfer"
-				Line 6 "Direction`t`t`t: " $RDSFileTransferMode
-				Line 6 "Location`t`t`t: " $RDSFileTransferLocation
-				Line 6 "Do not allow to change location : " $RDSFileTransferChangeLocation
-				Line 4 "Enable drive redirection cache`t`t`t`t`t: " $RDSEnableDriveRedirectionCache
-				Line 0 ""
-			}
-			If($HTML)
-			{
-				$rowdata = @()
-				$columnHeaders = @("Inherit default settings",($Script:htmlsb),$RDSHost.InheritDefaultAgentSettings.ToString(),$htmlwhite)
-				$rowdata += @(,("Application session lingering",($Script:htmlsb),"",$htmlwhite))
-				$rowdata += @(,("     Disconnect active session after",($Script:htmlsb),$RDSPublishingSessionDisconnectTimeout,$htmlwhite))
-				$rowdata += @(,("     Logoff disconnected session after",($Script:htmlsb),$RDSPublishingSessionResetTime,$htmlwhite))
-				$rowdata += @(,("Other settings",($Script:htmlsb),$RDSPort,$htmlwhite))
-				$rowdata += @(,("     Port",($Script:htmlsb),$RDSPort,$htmlwhite))
-				$rowdata += @(,("     Max Sessions",($Script:htmlsb),$RDSMaxSessions,$htmlwhite))
-				$rowdata += @(,("     Preferred Connection Broker",($Script:htmlsb),$RDSPreferredPublishingAgent,$htmlwhite))
-				$rowdata += @(,("Allow Client URL/Mail Redirection",($Script:htmlsb),$RDSAllowClientURLMailRedirection,$htmlwhite))
-				$rowdata += @(,("     Replace registered application",($Script:htmlsb),$ReplaceRegisteredApplication,$htmlwhite))
-				$rowdata += @(,("     Support Windows Shell URL namespace objects",($Script:htmlsb),$RDSSupportShellURLNamespaceObject,$htmlwhite))
-				$rowdata += @(,("Enable Drag and drop",($Script:htmlsb),$RDSAllowDragandDrop,$htmlwhite))
-				$rowdata += @(,("     Direction",($Script:htmlsb),$RDSDragAndDrop,$htmlwhite))
-				$rowdata += @(,("Allow 2xRemoteExec to send command to the client",($Script:htmlsb),$RDSAllowRemoteExec,$htmlwhite))
-				$rowdata += @(,("Use RemoteApp if available",($Script:htmlsb),$RDSUseRemoteApps,$htmlwhite))
-				$rowdata += @(,("Enable applications monitoring",($Script:htmlsb),$RDSEnableAppMonitoring,$htmlwhite))
-				$rowdata += @(,("Allow file transfer command (Web (HTML5) and Chrome clients)",($Script:htmlsb),$RDSAllowFileTransfer,$htmlwhite))
-				$rowdata += @(,("     Configure File Transfer",($Script:htmlsb),"",$htmlwhite))
-				$rowdata += @(,("          Direction",($Script:htmlsb),$RDSFileTransferMode,$htmlwhite))
-				$rowdata += @(,("          Location",($Script:htmlsb),$RDSFileTransferLocation,$htmlwhite))
-				$rowdata += @(,("          Do not allow to change location",($Script:htmlsb),$RDSFileTransferChangeLocation,$htmlwhite))
-				$rowdata += @(,("Enable drive redirection cache",($Script:htmlsb),$RDSEnableDriveRedirectionCache,$htmlwhite))
-
-				$msg = "Agent settings"
 				$columnWidths = @("300","275")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
@@ -6760,7 +6240,6 @@ Function OutputRDSessionHostsDetails
 							$FSLogixDeploymentSettingsInstallOnlineURL  = $FSLogixDeploymentSettings.InstallOnlineURL
 							$FSLogixDeploymentSettingsNetworkDrivePath  = $FSLogixDeploymentSettings.NetworkDrivePath
 							$FSLogixDeploymentSettingsInstallerFileName = $FSLogixDeploymentSettings.InstallerFileName
-							#$FSLogixDeploymentSettingsReplicate         = $FSLogixDeploymentSettings.Replicate
 							
 							Switch ($FSLogixSettings.LocationType)
 							{
@@ -7040,7 +6519,6 @@ Function OutputRDSessionHostsDetails
 								$FSLogixDeploymentSettingsInstallOnlineURL  = $FSLogixDeploymentSettings.InstallOnlineURL
 								$FSLogixDeploymentSettingsNetworkDrivePath  = $FSLogixDeploymentSettings.NetworkDrivePath
 								$FSLogixDeploymentSettingsInstallerFileName = $FSLogixDeploymentSettings.InstallerFileName
-								#$FSLogixDeploymentSettingsReplicate         = $FSLogixDeploymentSettings.Replicate
 								
 								Switch ($FSLogixSettings.LocationType)
 								{
@@ -7272,7 +6750,6 @@ Function OutputRDSessionHostsDetails
 								$FSLogixDeploymentSettingsInstallOnlineURL      = "None"
 								$FSLogixDeploymentSettingsNetworkDrivePath      = "None"
 								$FSLogixDeploymentSettingsInstallerFileName     = "None"
-								#$FSLogixDeploymentSettingsReplicate             = $False
 								$FSLogixLocationType                            = "None"
 								$FSLogixLocationOfProfileDisks                  = @()
 								$FSLogixProfileDiskFormat                       = "None"
@@ -7379,7 +6856,6 @@ Function OutputRDSessionHostsDetails
 					$FSLogixDeploymentSettingsInstallOnlineURL  = $FSLogixDeploymentSettings.InstallOnlineURL
 					$FSLogixDeploymentSettingsNetworkDrivePath  = $FSLogixDeploymentSettings.NetworkDrivePath
 					$FSLogixDeploymentSettingsInstallerFileName = $FSLogixDeploymentSettings.InstallerFileName
-					#$FSLogixDeploymentSettingsReplicate         = $FSLogixDeploymentSettings.Replicate
 					
 					Switch ($FSLogixSettings.LocationType)
 					{
@@ -7660,7 +7136,6 @@ Function OutputRDSessionHostsDetails
 				$FSLogixDeploymentSettingsInstallOnlineURL  = $FSLogixDeploymentSettings.InstallOnlineURL
 				$FSLogixDeploymentSettingsNetworkDrivePath  = $FSLogixDeploymentSettings.NetworkDrivePath
 				$FSLogixDeploymentSettingsInstallerFileName = $FSLogixDeploymentSettings.InstallerFileName
-				#$FSLogixDeploymentSettingsReplicate         = $FSLogixDeploymentSettings.Replicate
 				
 				Switch ($FSLogixSettings.LocationType)
 				{
@@ -7955,7 +7430,6 @@ Function OutputRDSessionHostsDetails
 					{
 						$ScriptInformation.Add(@{Data = ""; Value = $FSLogixDeploymentSettingsInstallerFileName; }) > $Null
 					}
-					#$ScriptInformation.Add(@{Data = "Settings are replicated to all Sites"; Value = $FSLogixDeploymentSettingsReplicate.ToString(); }) > $Null
 					$ScriptInformation.Add(@{Data = "Settings"; Value = ""; }) > $Null
 					$ScriptInformation.Add(@{Data = "     Location type"; Value = $FSLogixLocationType; }) > $Null
 					
@@ -8225,7 +7699,6 @@ Function OutputRDSessionHostsDetails
 					{
 						Line 11 ": " $FSLogixDeploymentSettingsInstallerFileName
 					}
-					#Line 4 "Settings are replicated to all Sites`t`t`t: " $FSLogixDeploymentSettingsReplicate.ToString()
 					Line 4 "Settings"
 					Line 5 "Location type`t`t`t`t`t: " $FSLogixLocationType
 					
@@ -8485,7 +7958,6 @@ Function OutputRDSessionHostsDetails
 					{
 						$rowdata += @(,("",($Script:htmlsb),$FSLogixDeploymentSettingsInstallerFileName,$htmlwhite))
 					}
-					#$rowdata += @(,("Settings are replicated to all Sites",($Script:htmlsb),$FSLogixDeploymentSettingsReplicate.ToString(),$htmlwhite))
 					$rowdata += @(,("Settings",($Script:htmlsb),"",$htmlwhite))
 					$rowdata += @(,("     Location type",($Script:htmlsb),$FSLogixLocationType,$htmlwhite))
 					
@@ -8677,6 +8149,147 @@ Function OutputRDSessionHostsDetails
 				WriteHTMLLine 0 0 ""
 			}
 
+			#Application Packages
+			If($MSWord -or $PDF)
+			{
+				WriteWordLine 4 0 "Application Packages"
+			}
+			If($Text)
+			{
+				Line 3 "Application Packages"
+			}
+			If($HTML)
+			{
+				#Nothing
+			}
+
+			If($RDSHost.InheritDefaultAppPackageSettings)
+			{
+				#do we inherit group or site defaults?
+				#is this RDS host in a group?
+				$Result = Get-RASRDSHostPool -SiteId $Site.Id -EA 0 4>$Null | Where-Object {$_.RDSIds -Contains $RDSHost.Id}
+				
+				If($? -and $Null -ne $Result)
+				{
+					#does this group inherit default settings?
+					If($Result.InheritDefaultAppPackageSettings -eq $False)
+					{
+						#no we don't, so get the default settings for the group
+						[array]$AppPackagesAssigned = $Result.RDSDefSettings.AppPackagesAssigned
+					}
+					Else
+					{
+						#yes we do, get the default settings for the Site
+						#use the Site default settings
+						$RDSDefaults = Get-RASRDSDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
+						
+						If($? -and $Null -ne $RDSDefaults)
+						{
+							[array]$AppPackagesAssigned = $RDSDefaults.AppPackagesAssigned
+						}
+						Else
+						{
+							#unable to retrieve default, use built-in default values
+							[array]$AppPackagesAssigned = @()
+						}
+					}
+				}
+				Else
+				{
+					#RDS Host is not in a group
+					#get the settings for the host
+					[array]$AppPackagesAssigned = $RDSHost.AppPackagesAssigned
+				}
+			}
+			Else
+			{
+				#we don't inherit
+				#get the settings for the host
+				[array]$AppPackagesAssigned = $RDSHost.AppPackagesAssigned
+			}
+
+			If($MSWord -or $PDF)
+			{
+				$ScriptInformation = New-Object System.Collections.ArrayList
+				$ScriptInformation.Add(@{Data = "Inherit default settings"; Value = $RDSHost.InheritDefaultAppPackageSettings.ToString(); }) > $Null
+				$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+
+				ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
+				{
+					$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4>$Null
+					
+					If($? -and $Null -ne $Result)
+					{
+						$ScriptInformation.Add(@{Data = "Name"; Value = $Result.PackageName; }) > $Null
+						$ScriptInformation.Add(@{Data = "Status"; Value = ""; }) > $Null
+						$ScriptInformation.Add(@{Data = "Version"; Value = $Result.Version; }) > $Null
+						$ScriptInformation.Add(@{Data = "Display name"; Value = $Result.DisplayName; }) > $Null
+						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+					}
+				}
+
+				$Table = AddWordTable -Hashtable $ScriptInformation `
+				-Columns Data,Value `
+				-List `
+				-Format $wdTableGrid `	
+				-AutoFit $wdAutoFitFixed;
+
+				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+				$Table.Columns.Item(1).Width = 200;
+				$Table.Columns.Item(2).Width = 250;
+
+				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+				FindWordDocumentEnd
+				$Table = $Null
+				WriteWordLine 0 0 ""
+			}
+			If($Text)
+			{
+				Line 4 "Inherit default settings`t: " $RDSHost.InheritDefaultAppPackageSettings.ToString()
+				Line 5 ""
+
+				ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
+				{
+					$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4>$Null
+					
+					If($? -and $Null -ne $Result)
+					{
+						Line 4 "Name`t`t: " $Result.PackageName
+						Line 4 "Status`t`t: "
+						Line 4 "Version`t`t: " $Result.Version
+						Line 4 "Display name`t: " $Result.DisplayName
+						Line 4 ""
+					}
+				}
+			}
+			If($HTML)
+			{
+				$rowdata = @()
+				$columnHeaders = @("Inherit default settings",($Script:htmlsb),$RDSHost.InheritDefaultAppPackageSettings.ToString(),$htmlwhite)
+				$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+
+				ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
+				{
+					$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4>$Null
+					
+					If($? -and $Null -ne $Result)
+					{
+						$rowdata += @(,("Name",($Script:htmlsb),$Result.PackageName,$htmlwhite))
+						$rowdata += @(,("Status",($Script:htmlsb),"",$htmlwhite))
+						$rowdata += @(,("Version",($Script:htmlsb),$Result.Version,$htmlwhite))
+						$rowdata += @(,("Display name",($Script:htmlsb),$Result.DisplayName,$htmlwhite))
+						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+					}
+				}
+
+				$msg = "Application Packages"
+				$columnWidths = @("200","275")
+				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+				WriteHTMLLine 0 0 ""
+			}
+			
 			#Optimization
 			
 			If($MSWord -or $PDF)
@@ -10909,6 +10522,566 @@ Function OutputRDSessionHostsDetails
 				WriteHTMLLine 0 0 ""
 			}
 
+			#Agent Settings
+			
+			If($MSWord -or $PDF)
+			{
+				WriteWordLine 4 0 "Settings"
+			}
+			If($Text)
+			{
+				Line 3 "Settings"
+			}
+			If($HTML)
+			{
+				#Nothing
+			}
+			
+			If($RDSHost.InheritDefaultAgentSettings)
+			{
+				#do we inherit group or site defaults?
+				#is this RDS host in a group?
+				$Results = Get-RASRDSHostPool -SiteId $Site.Id -EA 0 4>$Null
+				
+				If($? -and $Null -ne $Results)
+				{
+					If($Results.RDSIds -Contains $RDSHost.Id )
+					{
+						$Result = $Results | Where-Object {$_.RDSIDs -eq $RDSHost.Id} #fix for 2.53
+						#does this group inherit default settings?
+						If($Result.InheritDefaultAgentSettings -eq $False) #fix for 2.53
+						{
+							#no we don't, so get the default settings for the group
+							$GroupDefaults  = $Result.RDSDefSettings #fix for 2.53
+
+							$RDSPort        = $GroupDefaults.Port.ToString()
+							$RDSMaxSessions = $GroupDefaults.MaxSessions.ToString()
+							
+							Switch ($GroupDefaults.DisconnectActiveSessionAfter)
+							{
+								0		{$RDSPublishingSessionDisconnectTimeout = "Never"; Break}
+								1		{$RDSPublishingSessionDisconnectTimeout = "1 minute"; Break}
+								5		{$RDSPublishingSessionDisconnectTimeout = "5 minutes"; Break}
+								25		{$RDSPublishingSessionDisconnectTimeout = "25 seconds"; Break}
+								60		{$RDSPublishingSessionDisconnectTimeout = "1 minute"; Break}
+								300		{$RDSPublishingSessionDisconnectTimeout = "5 minutes"; Break}
+								3600	{$RDSPublishingSessionDisconnectTimeout = "1 hour"; Break}
+								Default	{$RDSPublishingSessionDisconnectTimeout = "Unable to determine Publishing Session Disconnect Timeout: $($GroupDefaults.DisconnectActiveSessionAfter)"; Break}
+							}
+							
+							Switch ($GroupDefaults.LogoffDisconnectedSessionAfter)
+							{
+								0		{$RDSPublishingSessionResetTime = "Never"; Break}
+								1		{$RDSPublishingSessionResetTime = "Immediate"; Break}
+								25		{$RDSPublishingSessionResetTime = "25 seconds"; Break}
+								60		{$RDSPublishingSessionResetTime = "1 minute"; Break}
+								300		{$RDSPublishingSessionResetTime = "5 minutes"; Break}
+								3600	{$RDSPublishingSessionResetTime = "1 hour"; Break}
+								Default	{$RDSPublishingSessionResetTime = "Unable to determine Publishing Session Reset Timeout: $($GroupDefaults.LogoffDisconnectedSessionAfter)"; Break}
+							}
+							
+							Switch($GroupDefaults.AllowURLAndMailRedirection)
+							{
+								"Enabled"						{$RDSAllowClientURLMailRedirection = "Enabled"; 
+																 $ReplaceRegisteredApplication = "False";
+																 Break}
+								"Disabled"						{$RDSAllowClientURLMailRedirection = "Disabled"; 
+																 $ReplaceRegisteredApplication = "False";
+																 Break}
+								"EnabledWithAppRegistration"	{$RDSAllowClientURLMailRedirection = "Enabled";
+																 $ReplaceRegisteredApplication = "True";
+																 Break}
+								Default 						{$RDSAllowClientURLMailRedirection = "Unable to determine Allow CLient URL/Mail Redirection: $($GroupDefaults.AllowURLAndMailRedirection)"; 
+																 $ReplaceRegisteredApplication = "False";
+																 Break}
+							}
+							
+							$RDSSupportShellURLNamespaceObject = $GroupDefaults.SupportShellURLNamespaceObjects.ToString()
+							
+							Switch ($GroupDefaults.DragAndDropMode)
+							{
+								"Bidirectional"		{$RDSDragAndDrop = "Bidirectional"; 
+								$RDSAllowDragAndDrop = "True";
+								Break}
+								"Disabled"			{$RDSDragAndDrop = "Disabled"; 
+								$RDSAllowDragAndDrop = "False";
+								Break}
+								"ClientToServer"	{$RDSDragAndDrop = "Client to server only"; 
+								$RDSAllowDragAndDrop = "True";
+								Break}
+								"ServerToClient"	{$RDSDragAndDrop = "Server to client only"; 
+								$RDSAllowDragAndDrop = "True";
+								Break}
+								Default				{$RDSDragAndDrop = "Unable to determine Drag and drop: $($GroupDefaults.DragAndDropMode)"; 
+								$RDSAllowDragAndDrop = "False";
+								Break}
+							}
+							
+							If($GroupDefaults.PreferredBrokerId -eq 0)
+							{
+								$RDSPreferredPublishingAgent = "Automatically"
+							}
+							Else
+							{
+								$RDSPreferredPublishingAgent = (Get-RASBroker -Id $GroupDefaults.PreferredBrokerId -EA 0 4>$Null).Server
+							}
+
+							Switch ($GroupDefaults.FileTransferMode)
+							{
+								"Bidirectional"		{$RDSFileTransferMode = "Bidirectional"; Break}
+								"Disabled"			{$RDSFileTransferMode = "Disabled"; Break}
+								"ClientToServer"	{$RDSFileTransferMode = "Client to server only"; Break}
+								"ServerToClient"	{$RDSFileTransferMode = "Server to client only"; Break}
+								Default				{$RDSFileTransferMode = "Unable to determine File Transfer mode: $($GroupDefaults.FileTransferMode)"; Break}
+							}
+							If($GroupDefaults.FileTransferLocation -eq "")
+							{
+								$RDSFileTransferLocation = "Default download location"
+							}
+							Else
+							{
+								$RDSFileTransferLocation = $GroupDefaults.FileTransferLocation
+							}
+							$RDSFileTransferChangeLocation = $GroupDefaults.FileTransferLockLocation.ToString()
+
+							#fixed the following missing variables in 2.52 thanks to Thomas Krampe
+							$RDSAllowRemoteExec             = $GroupDefaults.AllowRemoteExec.ToString()
+							$RDSUseRemoteApps               = $GroupDefaults.UseRemoteApps.ToString()
+							$RDSEnableAppMonitoring         = $GroupDefaults.EnableAppMonitoring.ToString()
+							$RDSAllowFileTransfer           = $GroupDefaults.AllowFileTransfer.ToString()
+							$RDSEnableDriveRedirectionCache = $GroupDefaults.EnableDriveRedirectionCache.ToString()
+						}
+						Else
+						{
+							#yes we do, get the default settings for the Site
+							#use the Site default settings
+
+							$RDSDefaults = Get-RASRDSDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
+							
+							If($? -and $Null -ne $RDSDefaults)
+							{
+								$RDSPort        = $RDSDefaults.Port.ToString()
+								$RDSMaxSessions = $RDSDefaults.MaxSessions.ToString()
+								
+								Switch ($RDSDefaults.DisconnectActiveSessionAfter)
+								{
+									0		{$RDSPublishingSessionDisconnectTimeout = "Never"; Break}
+									1		{$RDSPublishingSessionDisconnectTimeout = "1 minute"; Break}
+									5		{$RDSPublishingSessionDisconnectTimeout = "5 minutes"; Break}
+									25		{$RDSPublishingSessionDisconnectTimeout = "25 seconds"; Break}
+									60		{$RDSPublishingSessionDisconnectTimeout = "1 minute"; Break}
+									300		{$RDSPublishingSessionDisconnectTimeout = "5 minutes"; Break}
+									3600	{$RDSPublishingSessionDisconnectTimeout = "1 hour"; Break}
+									Default	{$RDSPublishingSessionDisconnectTimeout = "Unable to determine Publishing Session Disconnect Timeout: $($RDSDefaults.DisconnectActiveSessionAfter)"; Break}
+								}
+								
+								Switch ($RDSDefaults.LogoffDisconnectedSessionAfter)
+								{
+									0		{$RDSPublishingSessionResetTime = "Never"; Break}
+									1		{$RDSPublishingSessionResetTime = "Immediate"; Break}
+									25		{$RDSPublishingSessionResetTime = "25 seconds"; Break}
+									60		{$RDSPublishingSessionResetTime = "1 minute"; Break}
+									300		{$RDSPublishingSessionResetTime = "5 minutes"; Break}
+									3600	{$RDSPublishingSessionResetTime = "1 hour"; Break}
+									Default	{$RDSPublishingSessionResetTime = "Unable to determine Publishing Session Reset Timeout: $($RDSDefaults.LogoffDisconnectedSessionAfter)"; Break}
+								}
+								
+								Switch($RDSDefaults.AllowURLAndMailRedirection)
+								{
+									"Enabled"						{$RDSAllowClientURLMailRedirection = "Enabled"; 
+																	 $ReplaceRegisteredApplication = "False";
+																	 Break}
+									"Disabled"						{$RDSAllowClientURLMailRedirection = "Disabled"; 
+																	 $ReplaceRegisteredApplication = "False";
+																	 Break}
+									"EnabledWithAppRegistration"	{$RDSAllowClientURLMailRedirection = "Enabled";
+																	 $ReplaceRegisteredApplication = "True";
+																	 Break}
+									Default 						{$RDSAllowClientURLMailRedirection = "Unable to determine Allow CLient URL/Mail Redirection: $($RDSDefaults.AllowURLAndMailRedirection)"; 
+																	 $ReplaceRegisteredApplication = "False";
+																	 Break}
+								}
+								
+								$RDSSupportShellURLNamespaceObject = $RDSDefaults.SupportShellURLNamespaceObjects.ToString()
+								
+								Switch ($RDSDefaults.DragAndDropMode)
+								{
+									"Bidirectional"		{$RDSDragAndDrop = "Bidirectional"; 
+									$RDSAllowDragAndDrop = "True";
+									Break}
+									"Disabled"			{$RDSDragAndDrop = "Disabled"; 
+									$RDSAllowDragAndDrop = "False";
+									Break}
+									"ClientToServer"	{$RDSDragAndDrop = "Client to server only"; 
+									$RDSAllowDragAndDrop = "True";
+									Break}
+									"ServerToClient"	{$RDSDragAndDrop = "Server to client only"; 
+									$RDSAllowDragAndDrop = "True";
+									Break}
+									Default				{$RDSDragAndDrop = "Unable to determine Drag and drop: $($RDSDefaults.DragAndDropMode)"; 
+									$RDSAllowDragAndDrop = "False";
+									Break}
+								}
+								
+								Switch ($RDSDefaults.FileTransferMode)
+								{
+									"Bidirectional"		{$RDSFileTransferMode = "Bidirectional"; Break}
+									"Disabled"			{$RDSFileTransferMode = "Disabled"; Break}
+									"ClientToServer"	{$RDSFileTransferMode = "Client to server only"; Break}
+									"ServerToClient"	{$RDSFileTransferMode = "Server to client only"; Break}
+									Default				{$RDSFileTransferMode = "Unable to determine File Transfer mode: $($RDSDefaults.FileTransferMode)"; Break}
+								}
+								If($RDSDefaults.FileTransferLocation -eq "")
+								{
+									$RDSFileTransferLocation = "Default download location"
+								}
+								Else
+								{
+									$RDSFileTransferLocation = $RDSDefaults.FileTransferLocation
+								}
+								$RDSFileTransferChangeLocation = $RDSDefaults.FileTransferLockLocation.ToString()
+
+								If($RDSDefaults.PreferredBrokerId -eq 0)
+								{
+									$RDSPreferredPublishingAgent = "Automatically"
+								}
+								Else
+								{
+									$RDSPreferredPublishingAgent = (Get-RASBroker -Id $RDSDefaults.PreferredBrokerId -EA 0 4>$Null).Server
+								}
+								$RDSAllowRemoteExec             = $RDSDefaults.AllowRemoteExec.ToString()
+								$RDSUseRemoteApps               = $RDSDefaults.UseRemoteApps.ToString()
+								$RDSEnableAppMonitoring         = $RDSDefaults.EnableAppMonitoring.ToString()
+								$RDSAllowFileTransfer           = $RDSDefaults.AllowFileTransfer.ToString()
+								$RDSEnableDriveRedirectionCache = $RDSDefaults.EnableDriveRedirectionCache.ToString()
+							}
+							Else
+							{
+								#unable to retrieve default, use built-in default values
+								$RDSPort                               = "3389"
+								$RDSMaxSessions                        = "250"
+								$RDSPublishingSessionDisconnectTimeout = "25 seconds"
+								$RDSPublishingSessionResetTime         = "Immediate"
+								$RDSAllowClientURLMailRedirection      = "Enabled"
+								$ReplaceRegisteredApplication          = "False"
+								$RDSSupportShellURLNamespaceObject     = "True"
+								$RDSDragAndDrop                        = "Bidirectional"
+								$RDSAllowDragAndDrop                   = "Enabled"
+								$RDSFileTransferMode                   = "Bidirectional"
+								$RDSFileTransferLocation               = "Default download location"
+								$RDSFileTransferChangeLocation         = "False"
+								$RDSPreferredPublishingAgent           = "Automatically"
+								$RDSAllowRemoteExec                    = "True"
+								$RDSUseRemoteApps                      = "False"
+								$RDSEnableAppMonitoring                = "True"
+								$RDSAllowFileTransfer                  = "True"
+								$RDSEnableDriveRedirectionCache        = "True"
+							}
+						}
+					}
+				}
+				Else
+				{
+					#server is not in an RDS group
+					#get the settings configured for this RDS host
+					$RDSPort        = $RDSHost.Port.ToString()
+					$RDSMaxSessions = $RDSHost.MaxSessions.ToString()
+					
+					Switch ($RDSHost.DisconnectActiveSessionAfter)
+					{
+						0		{$RDSPublishingSessionDisconnectTimeout = "Never"; Break}
+						1		{$RDSPublishingSessionDisconnectTimeout = "1 minute"; Break}
+						5		{$RDSPublishingSessionDisconnectTimeout = "5 minutes"; Break}
+						25		{$RDSPublishingSessionDisconnectTimeout = "25 seconds"; Break}
+						60		{$RDSPublishingSessionDisconnectTimeout = "1 minute"; Break}
+						300		{$RDSPublishingSessionDisconnectTimeout = "5 minutes"; Break}
+						3600	{$RDSPublishingSessionDisconnectTimeout = "1 hour"; Break}
+						Default	{$RDSPublishingSessionDisconnectTimeout = "Unable to determine Publishing Session Disconnect Timeout: $($RDSHost.DisconnectActiveSessionAfter)"; Break}
+					}
+					
+					Switch ($RDSHost.LogoffDisconnectedSessionAfter)
+					{
+						0		{$RDSPublishingSessionResetTime = "Never"; Break}
+						1		{$RDSPublishingSessionResetTime = "Immediate"; Break}
+						25		{$RDSPublishingSessionResetTime = "25 seconds"; Break}
+						60		{$RDSPublishingSessionResetTime = "1 minute"; Break}
+						300		{$RDSPublishingSessionResetTime = "5 minutes"; Break}
+						3600	{$RDSPublishingSessionResetTime = "1 hour"; Break}
+						Default	{$RDSPublishingSessionResetTime = "Unable to determine Publishing Session Reset Timeout: $($RDSHost.LogoffDisconnectedSessionAfter)"; Break}
+					}
+					
+					Switch($RDSHost.AllowURLAndMailRedirection)
+					{
+						"Enabled"						{$RDSAllowClientURLMailRedirection = "Enabled"; 
+														 $ReplaceRegisteredApplication = "False";
+														 Break}
+						"Disabled"						{$RDSAllowClientURLMailRedirection = "Disabled"; 
+														 $ReplaceRegisteredApplication = "False";
+														 Break}
+						"EnabledWithAppRegistration"	{$RDSAllowClientURLMailRedirection = "Enabled";
+														 $ReplaceRegisteredApplication = "True";
+														 Break}
+						Default 						{$RDSAllowClientURLMailRedirection = "Unable to determine Allow CLient URL/Mail Redirection: $($RDSHost.AllowURLAndMailRedirection)"; 
+														 $ReplaceRegisteredApplication = "False";
+														 Break}
+					}
+					
+					$RDSSupportShellURLNamespaceObject = $RDSHost.SupportShellURLNamespaceObjects.ToString()
+					
+					Switch ($RDSHost.DragAndDropMode)
+					{
+						"Bidirectional"		{$RDSDragAndDrop = "Bidirectional"; 
+						$RDSAllowDragAndDrop = "True";
+						Break}
+						"Disabled"			{$RDSDragAndDrop = "Disabled"; 
+						$RDSAllowDragAndDrop = "False";
+						Break}
+						"ClientToServer"	{$RDSDragAndDrop = "Client to server only"; 
+						$RDSAllowDragAndDrop = "True";
+						Break}
+						"ServerToClient"	{$RDSDragAndDrop = "Server to client only"; 
+						$RDSAllowDragAndDrop = "True";
+						Break}
+						Default				{$RDSDragAndDrop = "Unable to determine Drag and drop: $($RDSHost.DragAndDropMode)"; 
+						$RDSAllowDragAndDrop = "False";
+						Break}
+					}
+					
+					Switch ($RDSHost.FileTransferMode)
+					{
+						"Bidirectional"		{$RDSFileTransferMode = "Bidirectional"; Break}
+						"Disabled"			{$RDSFileTransferMode = "Disabled"; Break}
+						"ClientToServer"	{$RDSFileTransferMode = "Client to server only"; Break}
+						"ServerToClient"	{$RDSFileTransferMode = "Server to client only"; Break}
+						Default				{$RDSFileTransferMode = "Unable to determine File Transfer mode: $($RDSHost.FileTransferMode)"; Break}
+					}
+					If($RDSHost.FileTransferLocation -eq "")
+					{
+						$RDSFileTransferLocation = "Default download location"
+					}
+					Else
+					{
+						$RDSFileTransferLocation = $RDSHost.FileTransferLocation
+					}
+					$RDSFileTransferChangeLocation = $RDSHost.FileTransferLockLocation.ToString()
+
+					If($RDSHost.PreferredBrokerId -eq 0)
+					{
+						$RDSPreferredPublishingAgent = "Automatically"
+					}
+					Else
+					{
+						$RDSPreferredPublishingAgent = (Get-RASBroker -Id $RDSHost.PreferredBrokerId -EA 0 4>$Null).Server
+					}
+					$RDSAllowRemoteExec             = $RDSHost.AllowRemoteExec.ToString()
+					$RDSUseRemoteApps               = $RDSHost.UseRemoteApps.ToString()
+					$RDSEnableAppMonitoring         = $RDSHost.EnableAppMonitoring.ToString()
+					$RDSAllowFileTransfer           = $RDSHost.AllowFileTransfer.ToString()
+					$RDSEnableDriveRedirectionCache = $RDSHost.EnableDriveRedirectionCache.ToString()
+				}
+			}
+			Else
+			{
+				#we don't inherit settings
+				#get the settings configured for this RDS host
+				$RDSPort        = $RDSHost.Port.ToString()
+				$RDSMaxSessions = $RDSHost.MaxSessions.ToString()
+				
+				Switch ($RDSHost.DisconnectActiveSessionAfter)
+				{
+					0		{$RDSPublishingSessionDisconnectTimeout = "Never"; Break}
+					1		{$RDSPublishingSessionDisconnectTimeout = "1 minute"; Break}
+					5		{$RDSPublishingSessionDisconnectTimeout = "5 minutes"; Break}
+					25		{$RDSPublishingSessionDisconnectTimeout = "25 seconds"; Break}
+					60		{$RDSPublishingSessionDisconnectTimeout = "1 minute"; Break}
+					300		{$RDSPublishingSessionDisconnectTimeout = "5 minutes"; Break}
+					3600	{$RDSPublishingSessionDisconnectTimeout = "1 hour"; Break}
+					Default	{$RDSPublishingSessionDisconnectTimeout = "Unable to determine Publishing Session Disconnect Timeout: $($RDSHost.DisconnectActiveSessionAfter)"; Break}
+				}
+				
+				Switch ($RDSHost.LogoffDisconnectedSessionAfter)
+				{
+					0		{$RDSPublishingSessionResetTime = "Never"; Break}
+					1		{$RDSPublishingSessionResetTime = "Immediate"; Break}
+					25		{$RDSPublishingSessionResetTime = "25 seconds"; Break}
+					60		{$RDSPublishingSessionResetTime = "1 minute"; Break}
+					300		{$RDSPublishingSessionResetTime = "5 minutes"; Break}
+					3600	{$RDSPublishingSessionResetTime = "1 hour"; Break}
+					Default	{$RDSPublishingSessionResetTime = "Unable to determine Publishing Session Reset Timeout: $($RDSHost.LogoffDisconnectedSessionAfter)"; Break}
+				}
+				
+				Switch($RDSHost.AllowURLAndMailRedirection)
+				{
+					"Enabled"						{$RDSAllowClientURLMailRedirection = "Enabled"; 
+													 $ReplaceRegisteredApplication = "False";
+													 Break}
+					"Disabled"						{$RDSAllowClientURLMailRedirection = "Disabled"; 
+													 $ReplaceRegisteredApplication = "False";
+													 Break}
+					"EnabledWithAppRegistration"	{$RDSAllowClientURLMailRedirection = "Enabled";
+													 $ReplaceRegisteredApplication = "True";
+													 Break}
+					Default 						{$RDSAllowClientURLMailRedirection = "Unable to determine Allow CLient URL/Mail Redirection: $($RDSHost.AllowURLAndMailRedirection)"; 
+													 $ReplaceRegisteredApplication = "False";
+													 Break}
+				}
+				
+				$RDSSupportShellURLNamespaceObject = $RDSHost.SupportShellURLNamespaceObjects.ToString()
+				
+				Switch ($RDSHost.DragAndDropMode)
+				{
+					"Bidirectional"		{$RDSDragAndDrop = "Bidirectional"; 
+					$RDSAllowDragAndDrop = "True";
+					Break}
+					"Disabled"			{$RDSDragAndDrop = "Disabled"; 
+					$RDSAllowDragAndDrop = "False";
+					Break}
+					"ClientToServer"	{$RDSDragAndDrop = "Client to server only"; 
+					$RDSAllowDragAndDrop = "True";
+					Break}
+					"ServerToClient"	{$RDSDragAndDrop = "Server to client only"; 
+					$RDSAllowDragAndDrop = "True";
+					Break}
+					Default				{$RDSDragAndDrop = "Unable to determine Drag and drop: $($RDSHost.DragAndDropMode)"; 
+					$RDSAllowDragAndDrop = "False";
+					Break}
+				}
+				
+				Switch ($RDSHost.FileTransferMode)
+				{
+					"Bidirectional"		{$RDSFileTransferMode = "Bidirectional"; Break}
+					"Disabled"			{$RDSFileTransferMode = "Disabled"; Break}
+					"ClientToServer"	{$RDSFileTransferMode = "Client to server only"; Break}
+					"ServerToClient"	{$RDSFileTransferMode = "Server to client only"; Break}
+					Default				{$RDSFileTransferMode = "Unable to determine File Transfer mode: $($RDSHost.FileTransferMode)"; Break}
+				}
+				If($RDSHost.FileTransferLocation -eq "")
+				{
+					$RDSFileTransferLocation = "Default download location"
+				}
+				Else
+				{
+					$RDSFileTransferLocation = $RDSHost.FileTransferLocation
+				}
+				$RDSFileTransferChangeLocation = $RDSHost.FileTransferLockLocation.ToString()
+
+				If($RDSHost.PreferredBrokerId -eq 0)
+				{
+					$RDSPreferredPublishingAgent = "Automatically"
+				}
+				Else
+				{
+					$RDSPreferredPublishingAgent = (Get-RASBroker -Id $RDSHost.PreferredBrokerId -EA 0 4>$Null).Server
+				}
+				$RDSAllowRemoteExec             = $RDSHost.AllowRemoteExec.ToString()
+				$RDSUseRemoteApps               = $RDSHost.UseRemoteApps.ToString()
+				$RDSEnableAppMonitoring         = $RDSHost.EnableAppMonitoring.ToString()
+				$RDSAllowFileTransfer           = $RDSHost.AllowFileTransfer.ToString()
+				$RDSEnableDriveRedirectionCache = $RDSHost.EnableDriveRedirectionCache.ToString()
+			}
+			
+			If($MSWord -or $PDF)
+			{
+				$ScriptInformation = New-Object System.Collections.ArrayList
+				$ScriptInformation.Add(@{Data = "Inherit default settings"; Value = $RDSHost.InheritDefaultAgentSettings.ToString(); }) > $Null
+				$ScriptInformation.Add(@{Data = "Application session lingering"; Value = ""; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Disconnect active session after"; Value = $RDSPublishingSessionDisconnectTimeout; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Logoff disconnected session after"; Value = $RDSPublishingSessionResetTime; }) > $Null
+				$ScriptInformation.Add(@{Data = "Other settings"; Value = ""; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Port"; Value = $RDSPort; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Max Sessions"; Value = $RDSMaxSessions; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Preferred Connection Broker"; Value = $RDSPreferredPublishingAgent; }) > $Null
+				$ScriptInformation.Add(@{Data = "Allow Client URL/Mail Redirection"; Value = $RDSAllowClientURLMailRedirection; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Replace registered application"; Value = $ReplaceRegisteredApplication; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Support Windows Shell URL namespace objects"; Value = $RDSSupportShellURLNamespaceObject; }) > $Null
+				$ScriptInformation.Add(@{Data = "Enable Drag and drop"; Value = $RDSAllowDragandDrop; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Direction"; Value = $RDSDragAndDrop; }) > $Null
+				$ScriptInformation.Add(@{Data = "Allow 2xRemoteExec to send command to the client"; Value = $RDSAllowRemoteExec; }) > $Null
+				$ScriptInformation.Add(@{Data = "Use RemoteApp if available"; Value = $RDSUseRemoteApps; }) > $Null
+				$ScriptInformation.Add(@{Data = "Enable applications monitoring"; Value = $RDSEnableAppMonitoring; }) > $Null
+				$ScriptInformation.Add(@{Data = "Allow file transfer command (Web (HTML5) and Chrome clients)"; Value = $RDSAllowFileTransfer; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Configure File Transfer"; Value = ""; }) > $Null
+				$ScriptInformation.Add(@{Data = "          Direction"; Value = $RDSFileTransferMode; }) > $Null
+				$ScriptInformation.Add(@{Data = "          Location"; Value = $RDSFileTransferLocation; }) > $Null
+				$ScriptInformation.Add(@{Data = "          Do not allow to change location"; Value = $RDSFileTransferChangeLocation; }) > $Null
+				$ScriptInformation.Add(@{Data = "Enable drive redirection cache"; Value = $RDSEnableDriveRedirectionCache; }) > $Null
+
+				$Table = AddWordTable -Hashtable $ScriptInformation `
+				-Columns Data,Value `
+				-List `
+				-Format $wdTableGrid `
+				-AutoFit $wdAutoFitFixed;
+
+				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+				$Table.Columns.Item(1).Width = 250;
+				$Table.Columns.Item(2).Width = 250;
+
+				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+				FindWordDocumentEnd
+				$Table = $Null
+				WriteWordLine 0 0 ""
+			}
+			If($Text)
+			{
+				Line 4 "Inherit default settings`t`t`t`t`t: " $RDSHost.InheritDefaultAgentSettings.ToString()
+				Line 4 "Application session lingering"
+				Line 5 "Disconnect active session after`t`t`t`t: " $RDSPublishingSessionDisconnectTimeout
+				Line 5 "Logoff disconnected session after`t`t`t: " $RDSPublishingSessionResetTime
+				Line 4 "Other settings"
+				Line 5 "Port`t`t`t`t`t`t`t: " $RDSPort
+				Line 5 "Max Sessions`t`t`t`t`t`t: " $RDSMaxSessions
+				Line 5 "Preferred Connection Broker`t`t`t`t: " $RDSPreferredPublishingAgent
+				Line 4 "Allow Client URL/Mail Redirection`t`t`t`t: " $RDSAllowClientURLMailRedirection
+				Line 5 "Replace registered application`t`t`t`t: " $ReplaceRegisteredApplication
+				Line 5 "Support Windows Shell URL namespace objects`t`t: " $RDSSupportShellURLNamespaceObject
+				Line 4 "Enable Drag and drop`t`t`t`t`t`t: " $RDSAllowDragandDrop
+				Line 5 "Direction`t`t`t`t`t`t: " $RDSDragAndDrop
+				Line 4 "Allow 2xRemoteExec to send command to the client`t`t: " $RDSAllowRemoteExec
+				Line 4 "Use RemoteApp if available`t`t`t`t`t: " $RDSUseRemoteApps
+				Line 4 "Enable applications monitoring`t`t`t`t`t: " $RDSEnableAppMonitoring
+				Line 4 "Allow file transfer command (Web (HTML5) and Chrome clients)`t: " $RDSAllowFileTransfer
+				Line 5 "Configure File Transfer"
+				Line 6 "Direction`t`t`t: " $RDSFileTransferMode
+				Line 6 "Location`t`t`t: " $RDSFileTransferLocation
+				Line 6 "Do not allow to change location : " $RDSFileTransferChangeLocation
+				Line 4 "Enable drive redirection cache`t`t`t`t`t: " $RDSEnableDriveRedirectionCache
+				Line 0 ""
+			}
+			If($HTML)
+			{
+				$rowdata = @()
+				$columnHeaders = @("Inherit default settings",($Script:htmlsb),$RDSHost.InheritDefaultAgentSettings.ToString(),$htmlwhite)
+				$rowdata += @(,("Application session lingering",($Script:htmlsb),"",$htmlwhite))
+				$rowdata += @(,("     Disconnect active session after",($Script:htmlsb),$RDSPublishingSessionDisconnectTimeout,$htmlwhite))
+				$rowdata += @(,("     Logoff disconnected session after",($Script:htmlsb),$RDSPublishingSessionResetTime,$htmlwhite))
+				$rowdata += @(,("Other settings",($Script:htmlsb),$RDSPort,$htmlwhite))
+				$rowdata += @(,("     Port",($Script:htmlsb),$RDSPort,$htmlwhite))
+				$rowdata += @(,("     Max Sessions",($Script:htmlsb),$RDSMaxSessions,$htmlwhite))
+				$rowdata += @(,("     Preferred Connection Broker",($Script:htmlsb),$RDSPreferredPublishingAgent,$htmlwhite))
+				$rowdata += @(,("Allow Client URL/Mail Redirection",($Script:htmlsb),$RDSAllowClientURLMailRedirection,$htmlwhite))
+				$rowdata += @(,("     Replace registered application",($Script:htmlsb),$ReplaceRegisteredApplication,$htmlwhite))
+				$rowdata += @(,("     Support Windows Shell URL namespace objects",($Script:htmlsb),$RDSSupportShellURLNamespaceObject,$htmlwhite))
+				$rowdata += @(,("Enable Drag and drop",($Script:htmlsb),$RDSAllowDragandDrop,$htmlwhite))
+				$rowdata += @(,("     Direction",($Script:htmlsb),$RDSDragAndDrop,$htmlwhite))
+				$rowdata += @(,("Allow 2xRemoteExec to send command to the client",($Script:htmlsb),$RDSAllowRemoteExec,$htmlwhite))
+				$rowdata += @(,("Use RemoteApp if available",($Script:htmlsb),$RDSUseRemoteApps,$htmlwhite))
+				$rowdata += @(,("Enable applications monitoring",($Script:htmlsb),$RDSEnableAppMonitoring,$htmlwhite))
+				$rowdata += @(,("Allow file transfer command (Web (HTML5) and Chrome clients)",($Script:htmlsb),$RDSAllowFileTransfer,$htmlwhite))
+				$rowdata += @(,("     Configure File Transfer",($Script:htmlsb),"",$htmlwhite))
+				$rowdata += @(,("          Direction",($Script:htmlsb),$RDSFileTransferMode,$htmlwhite))
+				$rowdata += @(,("          Location",($Script:htmlsb),$RDSFileTransferLocation,$htmlwhite))
+				$rowdata += @(,("          Do not allow to change location",($Script:htmlsb),$RDSFileTransferChangeLocation,$htmlwhite))
+				$rowdata += @(,("Enable drive redirection cache",($Script:htmlsb),$RDSEnableDriveRedirectionCache,$htmlwhite))
+
+				$msg = "Settings"
+				$columnWidths = @("300","275")
+				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+				WriteHTMLLine 0 0 ""
+			}
+
 			#RDP Printer
 			
 			If($MSWord -or $PDF)
@@ -11855,7 +12028,6 @@ Function OutputRDSessionHostsDetails
 					$FSLogixDeploymentSettingsInstallOnlineURL  = $FSLogixDeploymentSettings.InstallOnlineURL
 					$FSLogixDeploymentSettingsNetworkDrivePath  = $FSLogixDeploymentSettings.NetworkDrivePath
 					$FSLogixDeploymentSettingsInstallerFileName = $FSLogixDeploymentSettings.InstallerFileName
-					#$FSLogixDeploymentSettingsReplicate         = $FSLogixDeploymentSettings.Replicate
 
 					Switch ($FSLogixSettings.LocationType)
 					{
@@ -12087,7 +12259,6 @@ Function OutputRDSessionHostsDetails
 					$FSLogixDeploymentSettingsInstallOnlineURL      = "None"
 					$FSLogixDeploymentSettingsNetworkDrivePath      = "None"
 					$FSLogixDeploymentSettingsInstallerFileName     = "None"
-					#$FSLogixDeploymentSettingsReplicate             = $False
 					$FSLogixLocationType                            = "None"
 					$FSLogixLocationOfProfileDisks                  = @()
 					$FSLogixProfileDiskFormat                       = "None"
@@ -12193,7 +12364,6 @@ Function OutputRDSessionHostsDetails
 				$FSLogixDeploymentSettingsInstallOnlineURL  = $FSLogixDeploymentSettings.InstallOnlineURL
 				$FSLogixDeploymentSettingsNetworkDrivePath  = $FSLogixDeploymentSettings.NetworkDrivePath
 				$FSLogixDeploymentSettingsInstallerFileName = $FSLogixDeploymentSettings.InstallerFileName
-				#$FSLogixDeploymentSettingsReplicate         = $FSLogixDeploymentSettings.Replicate
 				
 				Switch ($FSLogixSettings.LocationType)
 				{
@@ -12489,7 +12659,6 @@ Function OutputRDSessionHostsDetails
 					{
 						$ScriptInformation.Add(@{Data = ""; Value = $FSLogixDeploymentSettingsInstallerFileName; }) > $Null
 					}
-					#$ScriptInformation.Add(@{Data = "Settings are replicated to all Sites"; Value = $FSLogixDeploymentSettingsReplicate.ToString(); }) > $Null
 					$ScriptInformation.Add(@{Data = "Settings"; Value = ""; }) > $Null
 					$ScriptInformation.Add(@{Data = "     Location type"; Value = $FSLogixLocationType; }) > $Null
 					
@@ -12759,7 +12928,6 @@ Function OutputRDSessionHostsDetails
 					{
 						Line 10 ": " $FSLogixDeploymentSettingsInstallerFileName
 					}
-					#Line 3 "Settings are replicated to all Sites`t`t`t: " $FSLogixDeploymentSettingsReplicate.ToString()
 					Line 3 "Settings"
 					Line 4 "Location type`t`t`t`t`t: " $FSLogixLocationType
 					
@@ -13020,7 +13188,6 @@ Function OutputRDSessionHostsDetails
 					{
 						$rowdata += @(,("",($Script:htmlsb),$FSLogixDeploymentSettingsInstallerFileName,$htmlwhite))
 					}
-					#$rowdata += @(,("Settings are replicated to all Sites",($Script:htmlsb),$FSLogixDeploymentSettingsReplicate.ToString(),$htmlwhite))
 					$rowdata += @(,("Settings",($Script:htmlsb),"",$htmlwhite))
 					$rowdata += @(,("     Location type",($Script:htmlsb),$FSLogixLocationType,$htmlwhite))
 					
@@ -13674,7 +13841,7 @@ Function OutputRDSessionHostsDetails
 				$ScriptInformation.Add(@{Data = "Maximum guest VMs"; Value = $RDSTemplate.MaxVMs.ToString(); }) > $Null
 				$ScriptInformation.Add(@{Data = "Keep available buffer"; Value = $RDSTemplate.PreCreatedVMs.ToString(); }) > $Null
 				$ScriptInformation.Add(@{Data = "Guest VM name"; Value = $RDSTemplate.VMNameFormat; }) > $Null
-				$ScriptInformation.Add(@{Data = "Guest VM state after the preparation"; Value = "Can't find"; }) > $Null
+				#$ScriptInformation.Add(@{Data = "Guest VM state after the preparation"; Value = "Can't find"; }) > $Null
 				$ScriptInformation.Add(@{Data = "Delete unused guest VMs after"; Value = $DeleteVMTime; }) > $Null
 				$ScriptInformation.Add(@{Data = "Clone method"; Value = $CloneMethod; }) > $Null
 
@@ -13702,7 +13869,7 @@ Function OutputRDSessionHostsDetails
 				Line 3 "Maximum guest VMs`t`t`t`t: " $RDSTemplate.MaxVMs.ToString()
 				Line 3 "Keep available buffer`t`t`t`t: " $RDSTemplate.PreCreatedVMs.ToString()
 				Line 3 "Guest VM name`t`t`t`t`t: " $RDSTemplate.VMNameFormat
-				Line 3 "Guest VM state after the preparation`t: " "Can't find"
+				#Line 3 "Guest VM state after the preparation`t: " "Can't find"
 				Line 3 "Delete unused guest VMs after`t`t`t: " $DeleteVMTime
 				Line 3 "Clone method`t`t`t`t`t: " $CloneMethod
 				Line 0 ""
@@ -13714,7 +13881,7 @@ Function OutputRDSessionHostsDetails
 				$rowdata += @(,("Maximum guest VMs",($Script:htmlsb),$RDSTemplate.MaxVMs.ToString(),$htmlwhite))
 				$rowdata += @(,("Keep available buffer",($Script:htmlsb),$RDSTemplate.PreCreatedVMs.ToString(),$htmlwhite))
 				$rowdata += @(,("Guest VM name",($Script:htmlsb),$RDSTemplate.VMNameFormat,$htmlwhite))
-				$rowdata += @(,("Guest VM state after the preparation",($Script:htmlsb),"Can't find",$htmlwhite))
+				#$rowdata += @(,("Guest VM state after the preparation",($Script:htmlsb),"Can't find",$htmlwhite))
 				$rowdata += @(,("Delete unused guest VMs after",($Script:htmlsb),$DeleteVMTime,$htmlwhite))
 				$rowdata += @(,("Clone method",($Script:htmlsb),$CloneMethod,$htmlwhite))
 
@@ -17143,7 +17310,7 @@ Function OutputVDIDetails
 					$ScriptInformation.Add(@{Data = "Maximum guest VMs"; Value = $VDITemplate.MaxVMs.ToString(); }) > $Null
 					$ScriptInformation.Add(@{Data = "Keep available buffer"; Value = $VDITemplate.PreCreatedVMs.ToString(); }) > $Null
 					$ScriptInformation.Add(@{Data = "Guest VM name"; Value = $VDITemplate.VMNameFormat; }) > $Null
-					$ScriptInformation.Add(@{Data = "Guest VM state after the preparation"; Value = "Can't find"; }) > $Null
+					#$ScriptInformation.Add(@{Data = "Guest VM state after the preparation"; Value = "Can't find"; }) > $Null
 					$ScriptInformation.Add(@{Data = "Delete unused guest VMs after"; Value = $DeleteVMTime; }) > $Null
 					$ScriptInformation.Add(@{Data = "Clone method"; Value = $CloneMethod; }) > $Null
 
@@ -17170,7 +17337,7 @@ Function OutputVDIDetails
 					Line 4 "Template name`t`t`t: " $VDITemplate.Name
 					Line 4 "Maximum guest VMs`t`t: " $VDITemplate.MaxVMs.ToString()
 					Line 4 "Keep available buffer`t`t: " $VDITemplate.PreCreatedVMs.ToString()
-					Line 4 "Guest VM state after the preparation`t: " "Can't find"
+					#Line 4 "Guest VM state after the preparation`t: " "Can't find"
 					Line 4 "Guest VM name`t`t`t: " $VDITemplate.VMNameFormat
 					Line 4 "Delete unused guest VMs after`t: " $DeleteVMTime
 					Line 4 "Clone method`t`t`t: " $CloneMethod
@@ -17183,7 +17350,7 @@ Function OutputVDIDetails
 					$rowdata += @(,("Maximum guest VMs",($Script:htmlsb),$VDITemplate.MaxVMs.ToString(),$htmlwhite))
 					$rowdata += @(,("Keep available buffer",($Script:htmlsb),$VDITemplate.PreCreatedVMs.ToString(),$htmlwhite))
 					$rowdata += @(,("Guest VM name",($Script:htmlsb),$VDITemplate.VMNameFormat,$htmlwhite))
-					$rowdata += @(,("Guest VM state after the preparation",($Script:htmlsb),"Can't find",$htmlwhite))
+					#$rowdata += @(,("Guest VM state after the preparation",($Script:htmlsb),"Can't find",$htmlwhite))
 					$rowdata += @(,("Delete unused guest VMs after",($Script:htmlsb),$DeleteVMTime,$htmlwhite))
 					$rowdata += @(,("Clone method",($Script:htmlsb),$CloneMethod,$htmlwhite))
 
@@ -17393,7 +17560,6 @@ Function OutputVDIDetails
 						$FSLogixDeploymentSettingsInstallOnlineURL  = $FSLogixDeploymentSettings.InstallOnlineURL
 						$FSLogixDeploymentSettingsNetworkDrivePath  = $FSLogixDeploymentSettings.NetworkDrivePath
 						$FSLogixDeploymentSettingsInstallerFileName = $FSLogixDeploymentSettings.InstallerFileName
-						#$FSLogixDeploymentSettingsReplicate         = $FSLogixDeploymentSettings.Replicate
 
 						Switch ($FSLogixSettings.LocationType)
 						{
@@ -17617,7 +17783,6 @@ Function OutputVDIDetails
 						$FSLogixDeploymentSettingsInstallOnlineURL      = "None"
 						$FSLogixDeploymentSettingsNetworkDrivePath      = "None"
 						$FSLogixDeploymentSettingsInstallerFileName     = "None"
-						#$FSLogixDeploymentSettingsReplicate             = $False
 						$FSLogixLocationType                            = "None"
 						$FSLogixLocationOfProfileDisks                  = @()
 						$FSLogixProfileDiskFormat                       = "None"
@@ -17686,7 +17851,6 @@ Function OutputVDIDetails
 					$FSLogixDeploymentSettingsInstallOnlineURL  = $FSLogixDeploymentSettings.InstallOnlineURL
 					$FSLogixDeploymentSettingsNetworkDrivePath  = $FSLogixDeploymentSettings.NetworkDrivePath
 					$FSLogixDeploymentSettingsInstallerFileName = $FSLogixDeploymentSettings.InstallerFileName
-					#$FSLogixDeploymentSettingsReplicate         = $FSLogixDeploymentSettings.Replicate
 					
 					Switch ($FSLogixSettings.LocationType)
 					{
@@ -17928,7 +18092,6 @@ Function OutputVDIDetails
 						{
 							$ScriptInformation.Add(@{Data = ""; Value = $FSLogixDeploymentSettingsInstallerFileName; }) > $Null
 						}
-						#$ScriptInformation.Add(@{Data = "Settings are replicated to all Sites"; Value = $FSLogixDeploymentSettingsReplicate.ToString(); }) > $Null
 						$ScriptInformation.Add(@{Data = "Settings"; Value = ""; }) > $Null
 						$ScriptInformation.Add(@{Data = "     Location type"; Value = $FSLogixLocationType; }) > $Null
 						
@@ -18158,7 +18321,6 @@ Function OutputVDIDetails
 						{
 							Line 10 ": " $FSLogixDeploymentSettingsInstallerFileName
 						}
-						#Line 3 "Settings are replicated to all Sites`t`t`t: " $FSLogixDeploymentSettingsReplicate.ToString()
 						Line 3 "Settings"
 						Line 4 "Location type`t`t`t`t`t: " $FSLogixLocationType
 						
@@ -18366,7 +18528,6 @@ Function OutputVDIDetails
 						{
 							$rowdata += @(,("",($Script:htmlsb),$FSLogixDeploymentSettingsInstallerFileName,$htmlwhite))
 						}
-						#$rowdata += @(,("Settings are replicated to all Sites",($Script:htmlsb),$FSLogixDeploymentSettingsReplicate.ToString(),$htmlwhite))
 						$rowdata += @(,("Settings",($Script:htmlsb),"",$htmlwhite))
 						$rowdata += @(,("     Location type",($Script:htmlsb),$FSLogixLocationType,$htmlwhite))
 						
@@ -27335,7 +27496,7 @@ Function OutputSettingsDetails
 		OutputRASClientSettings $RASClientSettings
 	}
 
-	$FSLogixDeploymentSettings = Get-RASFSLogixSettings -EA 0 4>$Null | Where-Object{ $_.SiteId -eq $Site.Id}
+	$FSLogixDeploymentSettings = Get-RASFSLogixSettings -SiteID $Site.Id-EA 0 4>$Null
 	
 	If(!($?))
 	{
@@ -27388,7 +27549,29 @@ Function OutputSettingsDetails
 		$FSLogixDeploymentSettingsInstallOnlineURL  = $FSLogixDeploymentSettings.InstallOnlineURL
 		$FSLogixDeploymentSettingsNetworkDrivePath  = $FSLogixDeploymentSettings.NetworkDrivePath
 		$FSLogixDeploymentSettingsInstallerFileName = $FSLogixDeploymentSettings.InstallerFileName
-		#$FSLogixDeploymentSettingsReplicate         = $FSLogixDeploymentSettings.Replicate
+		$FSLogixDeploymentSettingsReplicate         = $FSLogixDeploymentSettings.Replicate.ToString()
+		
+		$AVDSettings = Get-RASAVDSettings -SiteID $Site.Id-EA 0 4>$Null
+		
+		If(!($?) -or $Null -eq $AVDSettings)
+		{
+			$AVDMgmtEnabled = "False"
+			$AVDClientFeatureSet = ""
+			$AVDReplicate = "False"
+		}
+		Else
+		{
+			$AVDMgmtEnabled      = $AVDSettings.Enabled.ToString()
+			$AVDReplicate        = $AVDSettings.Replicate.ToString()
+			$AVDClientFeatureSet = ""
+			Switch($AVDSettings.ClientFeatureSet)
+			{
+				"Standard"				{$AVDClientFeatureSet = "Standard"; Break}
+				"Advanced"				{$AVDClientFeatureSet = "Advanced"; Break}
+				"AdvancedWithFallback"	{$AVDClientFeatureSet = "Advanced with fallback"; Break}
+				Default					{$AVDClientFeatureSet = "Unable to determine AVD Client feature set: $($AVDSettings.ClientFeatureSet)"; Break}
+			}
+		}
 		
 		If($MSWord -or $PDF)
 		{
@@ -27408,11 +27591,12 @@ Function OutputSettingsDetails
 			{
 				$ScriptInformation.Add(@{Data = "     Push from a Connection Broker"; Value = $FSLogixDeploymentSettingsInstallerFileName; }) > $Null
 			}
-			#not available yet
-			#$ScriptInformation.Add(@{Data = "Azure Virtual Desktop"; Value = ""; }) > $Null
-			#$ScriptInformation.Add(@{Data = "     Enable Azure Virtual Desktop management"; Value = "Can't find"; }) > $Null
-			#$ScriptInformation.Add(@{Data = "     Client feature set"; Value = "Can't find"; }) > $Null
-			#$ScriptInformation.Add(@{Data = "Settings are replicated to all Sites"; Value = $FSLogixDeploymentSettingsReplicate.ToString(); }) > $Null
+			$ScriptInformation.Add(@{Data = "     Settings are replicated to all Sites"; Value = $FSLogixDeploymentSettingsReplicate; }) > $Null
+			$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+			$ScriptInformation.Add(@{Data = "Azure Virtual Desktop"; Value = ""; }) > $Null
+			$ScriptInformation.Add(@{Data = "     Enable Azure Virtual Desktop management"; Value = $AVDMgmtEnabled; }) > $Null
+			$ScriptInformation.Add(@{Data = "     Client feature set"; Value = $AVDClientFeatureSet; }) > $Null
+			$ScriptInformation.Add(@{Data = "     Settings are replicated to all Sites"; Value = $AVDReplicate; }) > $Null
 			
 			$Table = AddWordTable -Hashtable $ScriptInformation `
 			-Columns Data,Value `
@@ -27423,7 +27607,7 @@ Function OutputSettingsDetails
 			SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 			SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-			$Table.Columns.Item(1).Width = 200;
+			$Table.Columns.Item(1).Width = 250;
 			$Table.Columns.Item(2).Width = 250;
 
 			$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
@@ -27449,11 +27633,11 @@ Function OutputSettingsDetails
 			{
 				Line 4 "Push from a Connection Broker`t`t: " $FSLogixDeploymentSettingsInstallerFileName
 			}
-			#not available yet
-			#Line 3 "Azure Virtual Desktop"
-			#Line 4 "Enable Azure Virtual Desktop management`t: " "Can't find"
-			#Line 4 "Client feature set`t`t`t: " "Can't find"
-			#Line 3 "Settings are replicated to all Sites`t`t: " $FSLogixDeploymentSettingsReplicate.ToString()
+			Line 4 "Settings are replicated to all Sites`t: " $FSLogixDeploymentSettingsReplicate
+			Line 3 "Azure Virtual Desktop"
+			Line 4 "Enable Azure Virtual Desktop management`t: " $AVDMgmtEnabled
+			Line 4 "Client feature set`t`t`t: " $AVDClientFeatureSet
+			Line 4 "Settings are replicated to all Sites`t: " $AVDReplicate
 			Line 0 ""
 		}
 		If($HTML)
@@ -27474,14 +27658,14 @@ Function OutputSettingsDetails
 			{
 				$rowdata += @(,("     Push from a Connection Broker",($Script:htmlsb),$FSLogixDeploymentSettingsInstallerFileName,$htmlwhite))
 			}
-			#not available yet
-			#$rowdata += @(,("Azure Virtual Desktop",($Script:htmlsb),"",$htmlwhite))
-			#$rowdata += @(,("     Enable Azure Virtual Desktop management",($Script:htmlsb),"Can't find",$htmlwhite))
-			#$rowdata += @(,("     Client feature set",($Script:htmlsb),"Can't find",$htmlwhite))
-			#$rowdata += @(,("Settings are replicated to all Sites",($Script:htmlsb),$FSLogixDeploymentSettingsReplicate.ToString(),$htmlwhite))
+			$rowdata += @(,("     Settings are replicated to all Sites",($Script:htmlsb),$FSLogixDeploymentSettingsReplicate,$htmlwhite))
+			$rowdata += @(,("Azure Virtual Desktop",($Script:htmlsb),"",$htmlwhite))
+			$rowdata += @(,("     Enable Azure Virtual Desktop management",($Script:htmlsb),$AVDMgmtEnabled,$htmlwhite))
+			$rowdata += @(,("     Client feature set",($Script:htmlsb),$AVDClientFeatureSet,$htmlwhite))
+			$rowdata += @(,("     Settings are replicated to all Sites",($Script:htmlsb),$AVDReplicate,$htmlwhite))
 					
 			$msg = ""
-			$columnWidths = @("250","225")
+			$columnWidths = @("275","225")
 			FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 			WriteHTMLLine 0 0 ""
 		}
@@ -42406,23 +42590,23 @@ Function OutputPoliciesDetails
 		Write-Verbose "$(Get-Date -Format G): `t`t`t`tSession/Display/Multi-monitor"
 		If($Policy.ClientPolicy.Session.MultiMonitor.Enabled)
 		{
-			$txt = "Session/Display/Multi-monitor/Multi-monitor/DIsplay configuration"
+			$txt = "Session/Display/Multi-monitor/Multi-monitor/Display configuration"
 			If($MSWord -or $PDF)
 			{
 				$SettingsWordTable += @{
 				Text = $txt;
-				Value = $Policy.ClientPolicy.Session.MultiMonitor.UseAllMonitors.ToString();
+				Value = $Policy.ClientPolicy.Session.MultiMonitor.DisplayConfig.ToString();
 				}
 			}
 			If($HTML)
 			{
 				$rowdata += @(,(
 				$txt,$htmlbold,
-				$Policy.ClientPolicy.Session.MultiMonitor.UseAllMonitors.ToString(),$htmlwhite))
+				$Policy.ClientPolicy.Session.MultiMonitor.DisplayConfig.ToString(),$htmlwhite))
 			}
 			If($Text)
 			{
-				OutputPolicySetting $txt $Policy.ClientPolicy.Session.MultiMonitor.UseAllMonitors.ToString()
+				OutputPolicySetting $txt $Policy.ClientPolicy.Session.MultiMonitor.DisplayConfig.ToString()
 			}
 		}
 		
@@ -47178,7 +47362,7 @@ Function OutputRASClientSettings
 	{
 		WriteHTMLLine 3 0 "Client settings"
 		$rowdata = @()
-		$columnHeaders = @("Published application icons",($Script:htmlsb),"S",$htmlwhite)
+		$columnHeaders = @("Published application icons",($Script:htmlsb),"",$htmlwhite)
 		If($RASClientSettings.SendHDIcons)
 		{
 			$rowdata += @(,("     Resolution:",($Script:htmlsb),"High resolution (uses more network bandwidth)",$htmlwhite))
@@ -47275,7 +47459,10 @@ Function OutputRASLicense
 	If($MSWord -or $PDF)
 	{
 		$ScriptInformation.Add(@{Data = "License Type"; Value = $RASLicense.LicenseType; }) > $Null
-		$ScriptInformation.Add(@{Data = "License Key"; Value = $RASLicense.LicenseKey; }) > $Null
+		If(validObject $RASLicense LicenseKey)
+		{
+			$ScriptInformation.Add(@{Data = "License Key"; Value = $RASLicense.LicenseKey; }) > $Null
+		}
 		$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
 		If(validObject $RASLicense SupportExpireDate)
 		{
@@ -47353,7 +47540,10 @@ Function OutputRASLicense
 	If($Text)
 	{
 		Line 1 "License Type`t`t: " $RASLicense.LicenseType
-		Line 1 "License Key`t`t: " $RASLicense.LicenseKey
+		If(validObject $RASLicense LicenseKey)
+		{
+			Line 1 "License Key`t`t: " $RASLicense.LicenseKey
+		}
 		Line 0 ""
 		If(validObject $RASLicense SupportExpireDate)
 		{
@@ -47414,7 +47604,10 @@ Function OutputRASLicense
 	If($HTML)
 	{
 		$columnHeaders = @("License Type",($Script:htmlsb),$RASLicense.LicenseType,$htmlwhite)
-		$rowdata += @(,("License Key",($Script:htmlsb),$RASLicense.LicenseKey,$htmlwhite))
+		If(validObject $RASLicense LicenseKey)
+		{
+			$rowdata += @(,("License Key",($Script:htmlsb),$RASLicense.LicenseKey,$htmlwhite))
+		}
 		$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 		If(validObject $RASLicense SupportExpireDate)
 		{
