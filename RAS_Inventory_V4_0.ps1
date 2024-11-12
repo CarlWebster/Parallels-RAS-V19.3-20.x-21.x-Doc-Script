@@ -3,9 +3,9 @@
 
 <#
 .SYNOPSIS
-	Creates a complete inventory of a V19.x or later Parallels Remote Application Server.
+	Creates a complete inventory of a V19.3/4 or 20 Parallels Remote Application Server.
 .DESCRIPTION
-	Creates a complete inventory of a V19.x or later Parallels Remote Application Server 
+	Creates a complete inventory of a V19.3/4 or 20 Parallels Remote Application Server 
 	(RAS) using Microsoft PowerShell, Word, plain text, or HTML.
 	
 	The script requires at least PowerShell version 3 but runs best in version 5.
@@ -448,9 +448,9 @@
 	text document.
 .NOTES
 	NAME: RAS_Inventory_V4_0.ps1
-	VERSION: 4.00 Beta 9
+	VERSION: 4.00 Beta 10
 	AUTHOR: Carl Webster
-	LASTEDIT: October 30, 2024
+	LASTEDIT: November 12, 2024
 #>
 
 
@@ -595,6 +595,7 @@ Param(
 #		For RDS Hosts details, rename "Agent settings" to "Settings, and move to after Desktop access
 #		Add Application Packages
 #		Only output optimization data if optimization is enabled
+#		Add Auto-upgrade
 #	In Function OutputSAMLSetting, handle multiple SAML items
 #	In Function OutputSettingsDetails, add Azure Virtual Desktop to the Features section
 #	In Function OutputSiteDetails, when processing Themes, Properties, Access:
@@ -669,9 +670,9 @@ $ErrorActionPreference    = 'SilentlyContinue'
 $Error.Clear()
 
 $Script:emailCredentials  = $Null
-$script:MyVersion         = '4.00 Beta 9'
+$script:MyVersion         = '4.00 Beta 10'
 $Script:ScriptName        = "RAS_Inventory_V4_0.ps1"
-$tmpdate                  = [datetime] "10/30/2024"
+$tmpdate                  = [datetime] "11/12/2024"
 $Script:ReleaseDate       = $tmpdate.ToUniversalTime().ToShortDateString()
 
 If($MSWord -eq $False -and $PDF -eq $False -and $Text -eq $False -and $HTML -eq $False)
@@ -11619,331 +11620,6 @@ Function OutputRDSessionHostsDetails
 				WriteHTMLLine 0 0 ""
 			}
 
-			#Agent Settings
-			
-			If($MSWord -or $PDF)
-			{
-				WriteWordLine 4 0 "Agent settings"
-			}
-			If($Text)
-			{
-				Line 2 "Agent settings"
-			}
-			If($HTML)
-			{
-				#Nothing
-			}
-			
-			If($RDSGroup.InheritDefaultAgentSettings)
-			{
-				#do we inherit site defaults?
-				#yes we do, get the default settings for the Site
-				#use the Site default settings
-
-				$RDSDefaults = Get-RASRDSDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
-				
-				If($? -and $Null -ne $RDSDefaults)
-				{
-					$RDSPort        = $RDSDefaults.Port.ToString()
-					$RDSMaxSessions = $RDSDefaults.MaxSessions.ToString()
-					
-					Switch ($RDSDefaults.DisconnectActiveSessionAfter)
-					{
-						0		{$RDSPublishingSessionDisconnectTimeout = "Never"; Break}
-						1		{$RDSPublishingSessionDisconnectTimeout = "1 minute"; Break}
-						5		{$RDSPublishingSessionDisconnectTimeout = "5 minutes"; Break}
-						25		{$RDSPublishingSessionDisconnectTimeout = "25 seconds"; Break}
-						60		{$RDSPublishingSessionDisconnectTimeout = "1 minute"; Break}
-						300		{$RDSPublishingSessionDisconnectTimeout = "5 minutes"; Break}
-						3600	{$RDSPublishingSessionDisconnectTimeout = "1 hour"; Break}
-						Default	{$RDSPublishingSessionDisconnectTimeout = "Unable to determine Publishing Session Disconnect Timeout: $($RDSDefaults.DisconnectActiveSessionAfter)"; Break}
-					}
-					
-					Switch ($RDSDefaults.LogoffDisconnectedSessionAfter)
-					{
-						0		{$RDSPublishingSessionResetTime = "Never"; Break}
-						1		{$RDSPublishingSessionResetTime = "Immediate"; Break}
-						25		{$RDSPublishingSessionResetTime = "25 seconds"; Break}
-						60		{$RDSPublishingSessionResetTime = "1 minute"; Break}
-						300		{$RDSPublishingSessionResetTime = "5 minutes"; Break}
-						3600	{$RDSPublishingSessionResetTime = "1 hour"; Break}
-						Default	{$RDSPublishingSessionResetTime = "Unable to determine Publishing Session Reset Timeout: $($RDSDefaults.LogoffDisconnectedSessionAfter)"; Break}
-					}
-					
-					Switch($RDSDefaults.AllowURLAndMailRedirection)
-					{
-						"Enabled"						{$RDSAllowClientURLMailRedirection = "Enabled"; 
-														 $ReplaceRegisteredApplication = "False";
-														 Break}
-						"Disabled"						{$RDSAllowClientURLMailRedirection = "Disabled"; 
-														 $ReplaceRegisteredApplication = "False";
-														 Break}
-						"EnabledWithAppRegistration"	{$RDSAllowClientURLMailRedirection = "Enabled";
-														 $ReplaceRegisteredApplication = "True";
-														 Break}
-						Default 						{$RDSAllowClientURLMailRedirection = "Unable to determine Allow CLient URL/Mail Redirection: $($RDSDefaults.AllowURLAndMailRedirection)"; 
-														 $ReplaceRegisteredApplication = "False";
-														 Break}
-					}
-					
-					$RDSSupportShellURLNamespaceObject = $RDSDefaults.SupportShellURLNamespaceObjects.ToString()
-					
-					Switch ($RDSDefaults.DragAndDropMode)
-					{
-						"Bidirectional"		{$RDSDragAndDrop = "Bidirectional"; 
-						$RDSAllowDragAndDrop = "True";
-						Break}
-						"Disabled"			{$RDSDragAndDrop = "Disabled"; 
-						$RDSAllowDragAndDrop = "False";
-						Break}
-						"ClientToServer"	{$RDSDragAndDrop = "Client to server only"; 
-						$RDSAllowDragAndDrop = "True";
-						Break}
-						"ServerToClient"	{$RDSDragAndDrop = "Server to client only"; 
-						$RDSAllowDragAndDrop = "True";
-						Break}
-						Default				{$RDSDragAndDrop = "Unable to determine Drag and drop: $($RDSDefaults.DragAndDropMode)"; 
-						$RDSAllowDragAndDrop = "False";
-						Break}
-					}
-					
-					Switch ($RDSDefaults.FileTransferMode)
-					{
-						"Bidirectional"		{$RDSFileTransferMode = "Bidirectional"; Break}
-						"Disabled"			{$RDSFileTransferMode = "Disabled"; Break}
-						"ClientToServer"	{$RDSFileTransferMode = "Client to server only"; Break}
-						"ServerToClient"	{$RDSFileTransferMode = "Server to client only"; Break}
-						Default				{$RDSFileTransferMode = "Unable to determine File Transfer mode: $($RDSDefaults.FileTransferMode)"; Break}
-					}
-					If($RDSDefaults.FileTransferLocation -eq "")
-					{
-						$RDSFileTransferLocation = "Default download location"
-					}
-					Else
-					{
-						$RDSFileTransferLocation = $RDSDefaults.FileTransferLocation
-					}
-					$RDSFileTransferChangeLocation = $RDSDefaults.FileTransferLockLocation.ToString()
-
-					If($RDSDefaults.PreferredBrokerId -eq 0)
-					{
-						$RDSPreferredPublishingAgent = "Automatically"
-					}
-					Else
-					{
-						$RDSPreferredPublishingAgent = (Get-RASBroker -Id $RDSDefaults.PreferredBrokerId -EA 0 4>$Null).Server
-					}
-					$RDSAllowRemoteExec     = $RDSDefaults.AllowRemoteExec.ToString()
-					$RDSUseRemoteApps       = $RDSDefaults.UseRemoteApps.ToString()
-					$RDSEnableAppMonitoring = $RDSDefaults.EnableAppMonitoring.ToString()
-					$RDSAllowFileTransfer   = $RDSDefaults.AllowFileTransfer.ToString()
-				}
-				Else
-				{
-					#unable to retrieve default, use built-in default values
-					$RDSPort                               = "3389"
-					$RDSMaxSessions                        = "250"
-					$RDSPublishingSessionDisconnectTimeout = "25 seconds"
-					$RDSPublishingSessionResetTime         = "Immediate"
-					$RDSAllowClientURLMailRedirection      = "Enabled"
-					$ReplaceRegisteredApplication          = "False"
-					$RDSSupportShellURLNamespaceObject     = "True"
-					$RDSDragAndDrop                        = "Bidirectional"
-					$RDSAllowDragAndDrop                   = "True"
-					$RDSFileTransferMode                   = "Bidirectional"
-					$RDSFileTransferLocation               = "Default download location"
-					$RDSFileTransferChangeLocation         = "False"
-					$RDSPreferredPublishingAgent           = "Automatically"
-					$RDSAllowRemoteExec                    = "True"
-					$RDSUseRemoteApps                      = "False"
-					$RDSEnableAppMonitoring                = "True"
-					$RDSAllowFileTransfer                  = "True"
-				}
-			}
-			Else
-			{
-				#we don't inherit settings
-				#get the settings configured for this RDS group
-				$RDSGroupDefaults = $RDSGroup.RDSDefSettings
-				$RDSPort          = $RDSGroupDefaults.Port.ToString()
-				$RDSMaxSessions   = $RDSGroupDefaults.MaxSessions.ToString()
-				
-				Switch ($RDSGroupDefaults.DisconnectActiveSessionAfter)
-				{
-					0		{$RDSPublishingSessionDisconnectTimeout = "Never"; Break}
-					1		{$RDSPublishingSessionDisconnectTimeout = "1 minute"; Break}
-					5		{$RDSPublishingSessionDisconnectTimeout = "5 minutes"; Break}
-					25		{$RDSPublishingSessionDisconnectTimeout = "25 seconds"; Break}
-					60		{$RDSPublishingSessionDisconnectTimeout = "1 minute"; Break}
-					300		{$RDSPublishingSessionDisconnectTimeout = "5 minutes"; Break}
-					3600	{$RDSPublishingSessionDisconnectTimeout = "1 hour"; Break}
-					Default	{$RDSPublishingSessionDisconnectTimeout = "Unable to determine Publishing Session Disconnect Timeout: $($RDSGroupDefaults.DisconnectActiveSessionAfter)"; Break}
-				}
-				
-				Switch ($RDSGroupDefaults.LogoffDisconnectedSessionAfter)
-				{
-					0		{$RDSPublishingSessionResetTime = "Never"; Break}
-					1		{$RDSPublishingSessionResetTime = "Immediate"; Break}
-					25		{$RDSPublishingSessionResetTime = "25 seconds"; Break}
-					60		{$RDSPublishingSessionResetTime = "1 minute"; Break}
-					300		{$RDSPublishingSessionResetTime = "5 minutes"; Break}
-					3600	{$RDSPublishingSessionResetTime = "1 hour"; Break}
-					Default	{$RDSPublishingSessionResetTime = "Unable to determine Publishing Session Reset Timeout: $($RDSGroup.LogoffDisconnectedSessionAfter)"; Break}
-				}
-				
-				Switch($RDSGroupDefaults.AllowURLAndMailRedirection)
-				{
-					"Enabled"						{$RDSAllowClientURLMailRedirection = "Enabled"; 
-													 $ReplaceRegisteredApplication = "False";
-													 Break}
-					"Disabled"						{$RDSAllowClientURLMailRedirection = "Disabled"; 
-													 $ReplaceRegisteredApplication = "False";
-													 Break}
-					"EnabledWithAppRegistration"	{$RDSAllowClientURLMailRedirection = "Enabled";
-													 $ReplaceRegisteredApplication = "True";
-													 Break}
-					Default 						{$RDSAllowClientURLMailRedirection = "Unable to determine Allow CLient URL/Mail Redirection: $($RDSGroupDefaults.AllowURLAndMailRedirection)"; 
-													 $ReplaceRegisteredApplication = "False";
-													 Break}
-				}
-				
-				$RDSSupportShellURLNamespaceObject = $RDSGroupDefaults.SupportShellURLNamespaceObjects.ToString()
-				
-				Switch ($RDSGroupDefaults.DragAndDropMode)
-				{
-					"Bidirectional"		{$RDSDragAndDrop = "Bidirectional"; 
-					$RDSAllowDragAndDrop = "True";
-					Break}
-					"Disabled"			{$RDSDragAndDrop = "Disabled"; 
-					$RDSAllowDragAndDrop = "False";
-					Break}
-					"ClientToServer"	{$RDSDragAndDrop = "Client to server only"; 
-					$RDSAllowDragAndDrop = "True";
-					Break}
-					"ServerToClient"	{$RDSDragAndDrop = "Server to client only"; 
-					$RDSAllowDragAndDrop = "True";
-					Break}
-					Default				{$RDSDragAndDrop = "Unable to determine Drag and drop: $($RDSGroupDefaults.DragAndDropMode)"; 
-					$RDSAllowDragAndDrop = "False";
-					Break}
-				}
-				
-				If($RDSGroupDefaults.PreferredBrokerId -eq 0)
-				{
-					$RDSPreferredPublishingAgent = "Automatically"
-				}
-				Else
-				{
-					$RDSPreferredPublishingAgent = (Get-RASBroker -Id $RDSGroupDefaults.PreferredBrokerId -EA 0 4>$Null).Server
-				}
-				$RDSAllowRemoteExec     = $RDSGroupDefaults.AllowRemoteExec.ToString()
-				$RDSUseRemoteApps       = $RDSGroupDefaults.UseRemoteApps.ToString()
-				$RDSEnableAppMonitoring = $RDSGroupDefaults.EnableAppMonitoring.ToString()
-				$RDSAllowFileTransfer   = $RDSGroupDefaults.AllowFileTransfer.ToString()
-			}
-			
-			If($MSWord -or $PDF)
-			{
-				$ScriptInformation = New-Object System.Collections.ArrayList
-				$ScriptInformation.Add(@{Data = "Inherit default settings"; Value = $RDSGroup.InheritDefaultAgentSettings.ToString(); }) > $Null
-				$ScriptInformation.Add(@{Data = "Application session lingering"; Value = ""; }) > $Null
-				$ScriptInformation.Add(@{Data = "     Disconnect active session after"; Value = $RDSPublishingSessionDisconnectTimeout; }) > $Null
-				$ScriptInformation.Add(@{Data = "     Logoff disconnected session after"; Value = $RDSPublishingSessionResetTime; }) > $Null
-				$ScriptInformation.Add(@{Data = "Other settings"; Value = ""; }) > $Null
-				$ScriptInformation.Add(@{Data = "     Port"; Value = $RDSPort; }) > $Null
-				$ScriptInformation.Add(@{Data = "     Max Sessions"; Value = $RDSMaxSessions; }) > $Null
-				$ScriptInformation.Add(@{Data = "     Preferred Connection Broker"; Value = $RDSPreferredPublishingAgent; }) > $Null
-				$ScriptInformation.Add(@{Data = "Allow Client URL/Mail Redirection"; Value = $RDSAllowClientURLMailRedirection; }) > $Null
-				$ScriptInformation.Add(@{Data = "     Replace registered application"; Value = $ReplaceRegisteredApplication; }) > $Null
-				$ScriptInformation.Add(@{Data = "     Support Windows Shell URL namespace objects"; Value = $RDSSupportShellURLNamespaceObject; }) > $Null
-				$ScriptInformation.Add(@{Data = "Enable Drag and drop"; Value = $RDSAllowDragandDrop; }) > $Null
-				$ScriptInformation.Add(@{Data = "     Direction"; Value = $RDSDragAndDrop; }) > $Null
-				$ScriptInformation.Add(@{Data = "Allow 2xRemoteExec to send command to the client"; Value = $RDSAllowRemoteExec; }) > $Null
-				$ScriptInformation.Add(@{Data = "Use RemoteApp if available"; Value = $RDSUseRemoteApps; }) > $Null
-				$ScriptInformation.Add(@{Data = "Enable applications monitoring"; Value = $RDSEnableAppMonitoring; }) > $Null
-				$ScriptInformation.Add(@{Data = "Allow file transfer command (Web (HTML5) and Chrome clients)"; Value = $RDSAllowFileTransfer; }) > $Null
-				$ScriptInformation.Add(@{Data = "     Configure File Transfer"; Value = ""; }) > $Null
-				$ScriptInformation.Add(@{Data = "          Direction"; Value = $RDSFileTransferMode; }) > $Null
-				$ScriptInformation.Add(@{Data = "          Location"; Value = $RDSFileTransferLocation; }) > $Null
-				$ScriptInformation.Add(@{Data = "          Do not allow to change location"; Value = $RDSFileTransferChangeLocation; }) > $Null
-				$ScriptInformation.Add(@{Data = "Enable drive redirection cache"; Value = $RDSEnableDriveRedirectionCache; }) > $Null
-
-				$Table = AddWordTable -Hashtable $ScriptInformation `
-				-Columns Data,Value `
-				-List `
-				-Format $wdTableGrid `
-				-AutoFit $wdAutoFitFixed;
-
-				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
-				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
-				$Table.Columns.Item(1).Width = 250;
-				$Table.Columns.Item(2).Width = 250;
-
-				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-				FindWordDocumentEnd
-				$Table = $Null
-				WriteWordLine 0 0 ""
-			}
-			If($Text)
-			{
-				Line 3 "Inherit default settings`t`t`t`t`t: " $RDSGroup.InheritDefaultAgentSettings.ToString()
-				Line 3 "Application session lingering"
-				Line 4 "Disconnect active session after`t`t`t`t: " $RDSPublishingSessionDisconnectTimeout
-				Line 4 "Logoff disconnected session after`t`t`t: " $RDSPublishingSessionResetTime
-				Line 3 "Other settings"
-				Line 4 "Port`t`t`t`t`t`t`t: " $RDSPort
-				Line 4 "Max Sessions`t`t`t`t`t`t: " $RDSMaxSessions
-				Line 4 "Preferred Connection Broker`t`t`t`t: " $RDSPreferredPublishingAgent
-				Line 3 "Allow Client URL/Mail Redirection`t`t`t`t: " $RDSAllowClientURLMailRedirection
-				Line 4 "Replace registered application`t`t`t`t: " $ReplaceRegisteredApplication
-				Line 4 "Support Windows Shell URL namespace objects`t`t: " $RDSSupportShellURLNamespaceObject
-				Line 3 "Enable Drag and drop`t`t`t`t`t`t: " $RDSAllowDragandDrop
-				Line 4 "Direction`t`t`t`t`t`t: " $RDSDragAndDrop
-				Line 3 "Allow 2xRemoteExec to send command to the client`t`t: " $RDSAllowRemoteExec
-				Line 3 "Use RemoteApp if available`t`t`t`t`t: " $RDSUseRemoteApps
-				Line 3 "Enable applications monitoring`t`t`t`t`t: " $RDSEnableAppMonitoring
-				Line 3 "Allow file transfer command (Web (HTML5) and Chrome clients)`t: " $RDSAllowFileTransfer
-				Line 4 "Configure File Transfer"
-				Line 5 "Direction`t`t`t: " $RDSFileTransferMode
-				Line 5 "Location`t`t`t: " $RDSFileTransferLocation
-				Line 5 "Do not allow to change location : " $RDSFileTransferChangeLocation
-				Line 3 "Enable drive redirection cache`t`t`t`t`t: " $RDSEnableDriveRedirectionCache
-				Line 0 ""
-			}
-			If($HTML)
-			{
-				$rowdata = @()
-				$columnHeaders = @("Inherit default settings",($Script:htmlsb),$RDSGroup.InheritDefaultAgentSettings.ToString(),$htmlwhite)
-				$rowdata += @(,("Application session lingering",($Script:htmlsb),"",$htmlwhite))
-				$rowdata += @(,("     Disconnect active session after",($Script:htmlsb),$RDSPublishingSessionDisconnectTimeout,$htmlwhite))
-				$rowdata += @(,("     Logoff disconnected session after",($Script:htmlsb),$RDSPublishingSessionResetTime,$htmlwhite))
-				$rowdata += @(,("Other settings",($Script:htmlsb),$RDSPort,$htmlwhite))
-				$rowdata += @(,("     Port",($Script:htmlsb),$RDSPort,$htmlwhite))
-				$rowdata += @(,("     Max Sessions",($Script:htmlsb),$RDSMaxSessions,$htmlwhite))
-				$rowdata += @(,("     Preferred Connection Broker",($Script:htmlsb),$RDSPreferredPublishingAgent,$htmlwhite))
-				$rowdata += @(,("Allow Client URL/Mail Redirection",($Script:htmlsb),$RDSAllowClientURLMailRedirection,$htmlwhite))
-				$rowdata += @(,("     Replace registered application",($Script:htmlsb),$ReplaceRegisteredApplication,$htmlwhite))
-				$rowdata += @(,("     Support Windows Shell URL namespace objects",($Script:htmlsb),$RDSSupportShellURLNamespaceObject,$htmlwhite))
-				$rowdata += @(,("Enable Drag and drop",($Script:htmlsb),$RDSAllowDragandDrop,$htmlwhite))
-				$rowdata += @(,("     Direction",($Script:htmlsb),$RDSDragAndDrop,$htmlwhite))
-				$rowdata += @(,("Allow 2xRemoteExec to send command to the client",($Script:htmlsb),$RDSAllowRemoteExec,$htmlwhite))
-				$rowdata += @(,("Use RemoteApp if available",($Script:htmlsb),$RDSUseRemoteApps,$htmlwhite))
-				$rowdata += @(,("Enable applications monitoring",($Script:htmlsb),$RDSEnableAppMonitoring,$htmlwhite))
-				$rowdata += @(,("Allow file transfer command (Web (HTML5) and Chrome clients)",($Script:htmlsb),$RDSAllowFileTransfer,$htmlwhite))
-				$rowdata += @(,("     Configure File Transfer",($Script:htmlsb),"",$htmlwhite))
-				$rowdata += @(,("          Direction",($Script:htmlsb),$RDSFileTransferMode,$htmlwhite))
-				$rowdata += @(,("          Location",($Script:htmlsb),$RDSFileTransferLocation,$htmlwhite))
-				$rowdata += @(,("          Do not allow to change location",($Script:htmlsb),$RDSFileTransferChangeLocation,$htmlwhite))
-				$rowdata += @(,("Enable drive redirection cache",($Script:htmlsb),$RDSEnableDriveRedirectionCache,$htmlwhite))
-
-				$msg = "Agent settings"
-				$columnWidths = @("300","275")
-				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-				WriteHTMLLine 0 0 ""
-			}
-
 			#User Profile Disks
 			
 			If($MSWord -or $PDF)
@@ -13380,6 +13056,8 @@ Function OutputRDSessionHostsDetails
 				WriteHTMLLine 0 0 ""
 			}
 
+			#Application Packages
+			
 			#Desktop Access
 			
 			If($MSWord -or $PDF)
@@ -13524,6 +13202,331 @@ Function OutputRDSessionHostsDetails
 				WriteHTMLLine 0 0 ""
 			}
 
+			#Agent Settings
+			
+			If($MSWord -or $PDF)
+			{
+				WriteWordLine 4 0 "Settings"
+			}
+			If($Text)
+			{
+				Line 2 "Settings"
+			}
+			If($HTML)
+			{
+				#Nothing
+			}
+			
+			If($RDSGroup.InheritDefaultAgentSettings)
+			{
+				#do we inherit site defaults?
+				#yes we do, get the default settings for the Site
+				#use the Site default settings
+
+				$RDSDefaults = Get-RASRDSDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
+				
+				If($? -and $Null -ne $RDSDefaults)
+				{
+					$RDSPort        = $RDSDefaults.Port.ToString()
+					$RDSMaxSessions = $RDSDefaults.MaxSessions.ToString()
+					
+					Switch ($RDSDefaults.DisconnectActiveSessionAfter)
+					{
+						0		{$RDSPublishingSessionDisconnectTimeout = "Never"; Break}
+						1		{$RDSPublishingSessionDisconnectTimeout = "1 minute"; Break}
+						5		{$RDSPublishingSessionDisconnectTimeout = "5 minutes"; Break}
+						25		{$RDSPublishingSessionDisconnectTimeout = "25 seconds"; Break}
+						60		{$RDSPublishingSessionDisconnectTimeout = "1 minute"; Break}
+						300		{$RDSPublishingSessionDisconnectTimeout = "5 minutes"; Break}
+						3600	{$RDSPublishingSessionDisconnectTimeout = "1 hour"; Break}
+						Default	{$RDSPublishingSessionDisconnectTimeout = "Unable to determine Publishing Session Disconnect Timeout: $($RDSDefaults.DisconnectActiveSessionAfter)"; Break}
+					}
+					
+					Switch ($RDSDefaults.LogoffDisconnectedSessionAfter)
+					{
+						0		{$RDSPublishingSessionResetTime = "Never"; Break}
+						1		{$RDSPublishingSessionResetTime = "Immediate"; Break}
+						25		{$RDSPublishingSessionResetTime = "25 seconds"; Break}
+						60		{$RDSPublishingSessionResetTime = "1 minute"; Break}
+						300		{$RDSPublishingSessionResetTime = "5 minutes"; Break}
+						3600	{$RDSPublishingSessionResetTime = "1 hour"; Break}
+						Default	{$RDSPublishingSessionResetTime = "Unable to determine Publishing Session Reset Timeout: $($RDSDefaults.LogoffDisconnectedSessionAfter)"; Break}
+					}
+					
+					Switch($RDSDefaults.AllowURLAndMailRedirection)
+					{
+						"Enabled"						{$RDSAllowClientURLMailRedirection = "Enabled"; 
+														 $ReplaceRegisteredApplication = "False";
+														 Break}
+						"Disabled"						{$RDSAllowClientURLMailRedirection = "Disabled"; 
+														 $ReplaceRegisteredApplication = "False";
+														 Break}
+						"EnabledWithAppRegistration"	{$RDSAllowClientURLMailRedirection = "Enabled";
+														 $ReplaceRegisteredApplication = "True";
+														 Break}
+						Default 						{$RDSAllowClientURLMailRedirection = "Unable to determine Allow CLient URL/Mail Redirection: $($RDSDefaults.AllowURLAndMailRedirection)"; 
+														 $ReplaceRegisteredApplication = "False";
+														 Break}
+					}
+					
+					$RDSSupportShellURLNamespaceObject = $RDSDefaults.SupportShellURLNamespaceObjects.ToString()
+					
+					Switch ($RDSDefaults.DragAndDropMode)
+					{
+						"Bidirectional"		{$RDSDragAndDrop = "Bidirectional"; 
+						$RDSAllowDragAndDrop = "True";
+						Break}
+						"Disabled"			{$RDSDragAndDrop = "Disabled"; 
+						$RDSAllowDragAndDrop = "False";
+						Break}
+						"ClientToServer"	{$RDSDragAndDrop = "Client to server only"; 
+						$RDSAllowDragAndDrop = "True";
+						Break}
+						"ServerToClient"	{$RDSDragAndDrop = "Server to client only"; 
+						$RDSAllowDragAndDrop = "True";
+						Break}
+						Default				{$RDSDragAndDrop = "Unable to determine Drag and drop: $($RDSDefaults.DragAndDropMode)"; 
+						$RDSAllowDragAndDrop = "False";
+						Break}
+					}
+					
+					Switch ($RDSDefaults.FileTransferMode)
+					{
+						"Bidirectional"		{$RDSFileTransferMode = "Bidirectional"; Break}
+						"Disabled"			{$RDSFileTransferMode = "Disabled"; Break}
+						"ClientToServer"	{$RDSFileTransferMode = "Client to server only"; Break}
+						"ServerToClient"	{$RDSFileTransferMode = "Server to client only"; Break}
+						Default				{$RDSFileTransferMode = "Unable to determine File Transfer mode: $($RDSDefaults.FileTransferMode)"; Break}
+					}
+					If($RDSDefaults.FileTransferLocation -eq "")
+					{
+						$RDSFileTransferLocation = "Default download location"
+					}
+					Else
+					{
+						$RDSFileTransferLocation = $RDSDefaults.FileTransferLocation
+					}
+					$RDSFileTransferChangeLocation = $RDSDefaults.FileTransferLockLocation.ToString()
+
+					If($RDSDefaults.PreferredBrokerId -eq 0)
+					{
+						$RDSPreferredPublishingAgent = "Automatically"
+					}
+					Else
+					{
+						$RDSPreferredPublishingAgent = (Get-RASBroker -Id $RDSDefaults.PreferredBrokerId -EA 0 4>$Null).Server
+					}
+					$RDSAllowRemoteExec     = $RDSDefaults.AllowRemoteExec.ToString()
+					$RDSUseRemoteApps       = $RDSDefaults.UseRemoteApps.ToString()
+					$RDSEnableAppMonitoring = $RDSDefaults.EnableAppMonitoring.ToString()
+					$RDSAllowFileTransfer   = $RDSDefaults.AllowFileTransfer.ToString()
+				}
+				Else
+				{
+					#unable to retrieve default, use built-in default values
+					$RDSPort                               = "3389"
+					$RDSMaxSessions                        = "250"
+					$RDSPublishingSessionDisconnectTimeout = "25 seconds"
+					$RDSPublishingSessionResetTime         = "Immediate"
+					$RDSAllowClientURLMailRedirection      = "Enabled"
+					$ReplaceRegisteredApplication          = "False"
+					$RDSSupportShellURLNamespaceObject     = "True"
+					$RDSDragAndDrop                        = "Bidirectional"
+					$RDSAllowDragAndDrop                   = "True"
+					$RDSFileTransferMode                   = "Bidirectional"
+					$RDSFileTransferLocation               = "Default download location"
+					$RDSFileTransferChangeLocation         = "False"
+					$RDSPreferredPublishingAgent           = "Automatically"
+					$RDSAllowRemoteExec                    = "True"
+					$RDSUseRemoteApps                      = "False"
+					$RDSEnableAppMonitoring                = "True"
+					$RDSAllowFileTransfer                  = "True"
+				}
+			}
+			Else
+			{
+				#we don't inherit settings
+				#get the settings configured for this RDS group
+				$RDSGroupDefaults = $RDSGroup.RDSDefSettings
+				$RDSPort          = $RDSGroupDefaults.Port.ToString()
+				$RDSMaxSessions   = $RDSGroupDefaults.MaxSessions.ToString()
+				
+				Switch ($RDSGroupDefaults.DisconnectActiveSessionAfter)
+				{
+					0		{$RDSPublishingSessionDisconnectTimeout = "Never"; Break}
+					1		{$RDSPublishingSessionDisconnectTimeout = "1 minute"; Break}
+					5		{$RDSPublishingSessionDisconnectTimeout = "5 minutes"; Break}
+					25		{$RDSPublishingSessionDisconnectTimeout = "25 seconds"; Break}
+					60		{$RDSPublishingSessionDisconnectTimeout = "1 minute"; Break}
+					300		{$RDSPublishingSessionDisconnectTimeout = "5 minutes"; Break}
+					3600	{$RDSPublishingSessionDisconnectTimeout = "1 hour"; Break}
+					Default	{$RDSPublishingSessionDisconnectTimeout = "Unable to determine Publishing Session Disconnect Timeout: $($RDSGroupDefaults.DisconnectActiveSessionAfter)"; Break}
+				}
+				
+				Switch ($RDSGroupDefaults.LogoffDisconnectedSessionAfter)
+				{
+					0		{$RDSPublishingSessionResetTime = "Never"; Break}
+					1		{$RDSPublishingSessionResetTime = "Immediate"; Break}
+					25		{$RDSPublishingSessionResetTime = "25 seconds"; Break}
+					60		{$RDSPublishingSessionResetTime = "1 minute"; Break}
+					300		{$RDSPublishingSessionResetTime = "5 minutes"; Break}
+					3600	{$RDSPublishingSessionResetTime = "1 hour"; Break}
+					Default	{$RDSPublishingSessionResetTime = "Unable to determine Publishing Session Reset Timeout: $($RDSGroup.LogoffDisconnectedSessionAfter)"; Break}
+				}
+				
+				Switch($RDSGroupDefaults.AllowURLAndMailRedirection)
+				{
+					"Enabled"						{$RDSAllowClientURLMailRedirection = "Enabled"; 
+													 $ReplaceRegisteredApplication = "False";
+													 Break}
+					"Disabled"						{$RDSAllowClientURLMailRedirection = "Disabled"; 
+													 $ReplaceRegisteredApplication = "False";
+													 Break}
+					"EnabledWithAppRegistration"	{$RDSAllowClientURLMailRedirection = "Enabled";
+													 $ReplaceRegisteredApplication = "True";
+													 Break}
+					Default 						{$RDSAllowClientURLMailRedirection = "Unable to determine Allow CLient URL/Mail Redirection: $($RDSGroupDefaults.AllowURLAndMailRedirection)"; 
+													 $ReplaceRegisteredApplication = "False";
+													 Break}
+				}
+				
+				$RDSSupportShellURLNamespaceObject = $RDSGroupDefaults.SupportShellURLNamespaceObjects.ToString()
+				
+				Switch ($RDSGroupDefaults.DragAndDropMode)
+				{
+					"Bidirectional"		{$RDSDragAndDrop = "Bidirectional"; 
+					$RDSAllowDragAndDrop = "True";
+					Break}
+					"Disabled"			{$RDSDragAndDrop = "Disabled"; 
+					$RDSAllowDragAndDrop = "False";
+					Break}
+					"ClientToServer"	{$RDSDragAndDrop = "Client to server only"; 
+					$RDSAllowDragAndDrop = "True";
+					Break}
+					"ServerToClient"	{$RDSDragAndDrop = "Server to client only"; 
+					$RDSAllowDragAndDrop = "True";
+					Break}
+					Default				{$RDSDragAndDrop = "Unable to determine Drag and drop: $($RDSGroupDefaults.DragAndDropMode)"; 
+					$RDSAllowDragAndDrop = "False";
+					Break}
+				}
+				
+				If($RDSGroupDefaults.PreferredBrokerId -eq 0)
+				{
+					$RDSPreferredPublishingAgent = "Automatically"
+				}
+				Else
+				{
+					$RDSPreferredPublishingAgent = (Get-RASBroker -Id $RDSGroupDefaults.PreferredBrokerId -EA 0 4>$Null).Server
+				}
+				$RDSAllowRemoteExec     = $RDSGroupDefaults.AllowRemoteExec.ToString()
+				$RDSUseRemoteApps       = $RDSGroupDefaults.UseRemoteApps.ToString()
+				$RDSEnableAppMonitoring = $RDSGroupDefaults.EnableAppMonitoring.ToString()
+				$RDSAllowFileTransfer   = $RDSGroupDefaults.AllowFileTransfer.ToString()
+			}
+			
+			If($MSWord -or $PDF)
+			{
+				$ScriptInformation = New-Object System.Collections.ArrayList
+				$ScriptInformation.Add(@{Data = "Inherit default settings"; Value = $RDSGroup.InheritDefaultAgentSettings.ToString(); }) > $Null
+				$ScriptInformation.Add(@{Data = "Application session lingering"; Value = ""; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Disconnect active session after"; Value = $RDSPublishingSessionDisconnectTimeout; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Logoff disconnected session after"; Value = $RDSPublishingSessionResetTime; }) > $Null
+				$ScriptInformation.Add(@{Data = "Other settings"; Value = ""; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Port"; Value = $RDSPort; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Max Sessions"; Value = $RDSMaxSessions; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Preferred Connection Broker"; Value = $RDSPreferredPublishingAgent; }) > $Null
+				$ScriptInformation.Add(@{Data = "Allow Client URL/Mail Redirection"; Value = $RDSAllowClientURLMailRedirection; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Replace registered application"; Value = $ReplaceRegisteredApplication; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Support Windows Shell URL namespace objects"; Value = $RDSSupportShellURLNamespaceObject; }) > $Null
+				$ScriptInformation.Add(@{Data = "Enable Drag and drop"; Value = $RDSAllowDragandDrop; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Direction"; Value = $RDSDragAndDrop; }) > $Null
+				$ScriptInformation.Add(@{Data = "Allow 2xRemoteExec to send command to the client"; Value = $RDSAllowRemoteExec; }) > $Null
+				$ScriptInformation.Add(@{Data = "Use RemoteApp if available"; Value = $RDSUseRemoteApps; }) > $Null
+				$ScriptInformation.Add(@{Data = "Enable applications monitoring"; Value = $RDSEnableAppMonitoring; }) > $Null
+				$ScriptInformation.Add(@{Data = "Allow file transfer command (Web (HTML5) and Chrome clients)"; Value = $RDSAllowFileTransfer; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Configure File Transfer"; Value = ""; }) > $Null
+				$ScriptInformation.Add(@{Data = "          Direction"; Value = $RDSFileTransferMode; }) > $Null
+				$ScriptInformation.Add(@{Data = "          Location"; Value = $RDSFileTransferLocation; }) > $Null
+				$ScriptInformation.Add(@{Data = "          Do not allow to change location"; Value = $RDSFileTransferChangeLocation; }) > $Null
+				$ScriptInformation.Add(@{Data = "Enable drive redirection cache"; Value = $RDSEnableDriveRedirectionCache; }) > $Null
+
+				$Table = AddWordTable -Hashtable $ScriptInformation `
+				-Columns Data,Value `
+				-List `
+				-Format $wdTableGrid `
+				-AutoFit $wdAutoFitFixed;
+
+				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+				$Table.Columns.Item(1).Width = 250;
+				$Table.Columns.Item(2).Width = 250;
+
+				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+				FindWordDocumentEnd
+				$Table = $Null
+				WriteWordLine 0 0 ""
+			}
+			If($Text)
+			{
+				Line 3 "Inherit default settings`t`t`t`t`t: " $RDSGroup.InheritDefaultAgentSettings.ToString()
+				Line 3 "Application session lingering"
+				Line 4 "Disconnect active session after`t`t`t`t: " $RDSPublishingSessionDisconnectTimeout
+				Line 4 "Logoff disconnected session after`t`t`t: " $RDSPublishingSessionResetTime
+				Line 3 "Other settings"
+				Line 4 "Port`t`t`t`t`t`t`t: " $RDSPort
+				Line 4 "Max Sessions`t`t`t`t`t`t: " $RDSMaxSessions
+				Line 4 "Preferred Connection Broker`t`t`t`t: " $RDSPreferredPublishingAgent
+				Line 3 "Allow Client URL/Mail Redirection`t`t`t`t: " $RDSAllowClientURLMailRedirection
+				Line 4 "Replace registered application`t`t`t`t: " $ReplaceRegisteredApplication
+				Line 4 "Support Windows Shell URL namespace objects`t`t: " $RDSSupportShellURLNamespaceObject
+				Line 3 "Enable Drag and drop`t`t`t`t`t`t: " $RDSAllowDragandDrop
+				Line 4 "Direction`t`t`t`t`t`t: " $RDSDragAndDrop
+				Line 3 "Allow 2xRemoteExec to send command to the client`t`t: " $RDSAllowRemoteExec
+				Line 3 "Use RemoteApp if available`t`t`t`t`t: " $RDSUseRemoteApps
+				Line 3 "Enable applications monitoring`t`t`t`t`t: " $RDSEnableAppMonitoring
+				Line 3 "Allow file transfer command (Web (HTML5) and Chrome clients)`t: " $RDSAllowFileTransfer
+				Line 4 "Configure File Transfer"
+				Line 5 "Direction`t`t`t: " $RDSFileTransferMode
+				Line 5 "Location`t`t`t: " $RDSFileTransferLocation
+				Line 5 "Do not allow to change location : " $RDSFileTransferChangeLocation
+				Line 3 "Enable drive redirection cache`t`t`t`t`t: " $RDSEnableDriveRedirectionCache
+				Line 0 ""
+			}
+			If($HTML)
+			{
+				$rowdata = @()
+				$columnHeaders = @("Inherit default settings",($Script:htmlsb),$RDSGroup.InheritDefaultAgentSettings.ToString(),$htmlwhite)
+				$rowdata += @(,("Application session lingering",($Script:htmlsb),"",$htmlwhite))
+				$rowdata += @(,("     Disconnect active session after",($Script:htmlsb),$RDSPublishingSessionDisconnectTimeout,$htmlwhite))
+				$rowdata += @(,("     Logoff disconnected session after",($Script:htmlsb),$RDSPublishingSessionResetTime,$htmlwhite))
+				$rowdata += @(,("Other settings",($Script:htmlsb),$RDSPort,$htmlwhite))
+				$rowdata += @(,("     Port",($Script:htmlsb),$RDSPort,$htmlwhite))
+				$rowdata += @(,("     Max Sessions",($Script:htmlsb),$RDSMaxSessions,$htmlwhite))
+				$rowdata += @(,("     Preferred Connection Broker",($Script:htmlsb),$RDSPreferredPublishingAgent,$htmlwhite))
+				$rowdata += @(,("Allow Client URL/Mail Redirection",($Script:htmlsb),$RDSAllowClientURLMailRedirection,$htmlwhite))
+				$rowdata += @(,("     Replace registered application",($Script:htmlsb),$ReplaceRegisteredApplication,$htmlwhite))
+				$rowdata += @(,("     Support Windows Shell URL namespace objects",($Script:htmlsb),$RDSSupportShellURLNamespaceObject,$htmlwhite))
+				$rowdata += @(,("Enable Drag and drop",($Script:htmlsb),$RDSAllowDragandDrop,$htmlwhite))
+				$rowdata += @(,("     Direction",($Script:htmlsb),$RDSDragAndDrop,$htmlwhite))
+				$rowdata += @(,("Allow 2xRemoteExec to send command to the client",($Script:htmlsb),$RDSAllowRemoteExec,$htmlwhite))
+				$rowdata += @(,("Use RemoteApp if available",($Script:htmlsb),$RDSUseRemoteApps,$htmlwhite))
+				$rowdata += @(,("Enable applications monitoring",($Script:htmlsb),$RDSEnableAppMonitoring,$htmlwhite))
+				$rowdata += @(,("Allow file transfer command (Web (HTML5) and Chrome clients)",($Script:htmlsb),$RDSAllowFileTransfer,$htmlwhite))
+				$rowdata += @(,("     Configure File Transfer",($Script:htmlsb),"",$htmlwhite))
+				$rowdata += @(,("          Direction",($Script:htmlsb),$RDSFileTransferMode,$htmlwhite))
+				$rowdata += @(,("          Location",($Script:htmlsb),$RDSFileTransferLocation,$htmlwhite))
+				$rowdata += @(,("          Do not allow to change location",($Script:htmlsb),$RDSFileTransferChangeLocation,$htmlwhite))
+				$rowdata += @(,("Enable drive redirection cache",($Script:htmlsb),$RDSEnableDriveRedirectionCache,$htmlwhite))
+
+				$msg = "Settings"
+				$columnWidths = @("300","275")
+				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+				WriteHTMLLine 0 0 ""
+			}
+
 			#RDP Printer
 			
 			If($MSWord -or $PDF)
@@ -13621,6 +13624,280 @@ Function OutputRDSessionHostsDetails
 				$rowdata += @(,("Remove session number from printer name",($Script:htmlsb),$RDSRemoveSessionNumberFromPrinter,$htmlwhite))
 
 				$msg = "RDP printer"
+				$columnWidths = @("300","275")
+				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+				WriteHTMLLine 0 0 ""
+			}
+
+			#Auto-upgrade
+			
+			If($MSWord -or $PDF)
+			{
+				WriteWordLine 4 0 "Auto-upgrade"
+			}
+			If($Text)
+			{
+				Line 2 "Auto-upgrade"
+			}
+			If($HTML)
+			{
+				#Nothing
+			}
+			
+			If($RDSGroup.InheritDefaultAutoUpgradeSettings)
+			{
+				#do we inherit group or site defaults?
+				#yes we do, get the default settings for the Site
+				#use the Site default settings
+				$Results = Get-RASRDSDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
+				
+				If($? -and $Null -ne $Results)
+				{
+					$AutoUpgradeEnabled = $Results.AutoUpgrade.Enabled.ToString()
+					
+					If($Results.AutoUpgrade.Enabled)
+					{
+						$AutoUpgradeDate    = $Results.AutoUpgrade.StartDateTime.ToShortDateString()
+						$AutoUpgradeStart   = $Results.AutoUpgrade.StartDateTime.ToLongTimeString()
+						Switch ($Results.AutoUpgrade.DrainModeDurationInSecs)
+						{
+							900		{$AutoUpgradeDrainModeDuration = "15 minutes"; Break}
+							1800	{$AutoUpgradeDrainModeDuration = "30 minutes"; Break}
+							2700	{$AutoUpgradeDrainModeDuration = "45 minutes"; Break}
+							3600	{$AutoUpgradeDrainModeDuration = "1 hour"; Break}
+							7200	{$AutoUpgradeDrainModeDuration = "2 hours"; Break}
+							10800	{$AutoUpgradeDrainModeDuration = "3 hours"; Break}
+							21600	{$AutoUpgradeDrainModeDuration = "6 hours"; Break}
+							43200	{$AutoUpgradeDrainModeDuration = "12 hours"; Break}
+							86400	{$AutoUpgradeDrainModeDuration = "1 day"; Break}
+							Default	{$AutoUpgradeDrainModeDuration = "Unable to determine Drain mode duration: $($Results.AutoUpgrade.DrainModeDurationInSecs)"; Break}
+						}
+						$AutoUpgradeForceLogoff = $Results.AutoUpgrade.ForceLogoffSessions.ToString()
+						Switch ($Results.AutoUpgrade.Repeat)
+						{
+							Never			{$AutoUpgradeRecur = "Never "; Break}
+							EveryDay		{$AutoUpgradeRecur = "Every day"; Break}
+							EveryWeek		{$AutoUpgradeRecur = "Every week"; Break}
+							Every2Weeks		{$AutoUpgradeRecur = "Every 2 weeks"; Break}
+							EveryMonth		{$AutoUpgradeRecur = "Every month"; Break}
+							EveryYear		{$AutoUpgradeRecur = "Every year"; Break}
+							SpecificDays	{$AutoUpgradeRecur = "Every $($Results.AutoUpgrade.SpecificDays)"; Break}
+							Default			{$AutoUpgradeRecur = "Unable to determine the Recur: $($Results.AutoUpgrade.Repeat)"; Break}
+						}
+						$AutoUpgradeMessages = $Results.AutoUpgrade.Messages
+					}
+					Else
+					{
+						$AutoUpgradeEnabled           = "False"
+						$AutoUpgradeDate              = ""
+						$AutoUpgradeStart             = ""
+						$AutoUpgradeDrainModeDuration = ""
+						$AutoUpgradeForceLogoff       = ""
+						$AutoUpgradeRecur             = ""
+						$AutoUpgradeMessages          = @()
+					}
+				}
+				Else
+				{
+					#unable to retrieve default, use built-in default values
+					$AutoUpgradeEnabled           = "False"
+					$AutoUpgradeDate              = ""
+					$AutoUpgradeStart             = ""
+					$AutoUpgradeDrainModeDuration = ""
+					$AutoUpgradeForceLogoff       = ""
+					$AutoUpgradeRecur             = ""
+					$AutoUpgradeMessages          = @()
+				}
+			}
+			Else
+			{
+				#we don't inherit
+				#get the settings for the host pool
+				$Results = Get-RASAutoUpgrade -Name $RDSGroup.Name -SiteId $Site.Id -ObjType "RDSHostPool" -EA 0 4>$Null
+				
+				If(!$? -or $Null -eq $Results)
+				{
+					$AutoUpgradeEnabled           = "False"
+					$AutoUpgradeDate              = ""
+					$AutoUpgradeStart             = ""
+					$AutoUpgradeDrainModeDuration = ""
+					$AutoUpgradeForceLogoff       = ""
+					$AutoUpgradeRecur             = ""
+					$AutoUpgradeMessages          = @()
+				}
+				Else
+				{
+					$AutoUpgradeEnabled = $Results.Enabled.ToString()
+					
+					If($Results.Enabled)
+					{
+						$AutoUpgradeDate    = $Results.StartDateTime.ToShortDateString()
+						$AutoUpgradeStart   = $Results.StartDateTime.ToLongTimeString()
+						Switch ($Results.DrainModeDurationInSecs)
+						{
+							900		{$AutoUpgradeDrainModeDuration = "15 minutes"; Break}
+							1800	{$AutoUpgradeDrainModeDuration = "30 minutes"; Break}
+							2700	{$AutoUpgradeDrainModeDuration = "45 minutes"; Break}
+							3600	{$AutoUpgradeDrainModeDuration = "1 hour"; Break}
+							7200	{$AutoUpgradeDrainModeDuration = "2 hours"; Break}
+							10800	{$AutoUpgradeDrainModeDuration = "3 hours"; Break}
+							21600	{$AutoUpgradeDrainModeDuration = "6 hours"; Break}
+							43200	{$AutoUpgradeDrainModeDuration = "12 hours"; Break}
+							86400	{$AutoUpgradeDrainModeDuration = "1 day"; Break}
+							Default	{$AutoUpgradeDrainModeDuration = "Unable to determine Drain mode duration: $($Results.DrainModeDurationInSecs)"; Break}
+						}
+						$AutoUpgradeForceLogoff = $Results.ForceLogoffSessions.ToString()
+						Switch ($Results.Repeat)
+						{
+							Never			{$AutoUpgradeRecur = "Never "; Break}
+							EveryDay		{$AutoUpgradeRecur = "Every day"; Break}
+							EveryWeek		{$AutoUpgradeRecur = "Every week"; Break}
+							Every2Weeks		{$AutoUpgradeRecur = "Every 2 weeks"; Break}
+							EveryMonth		{$AutoUpgradeRecur = "Every month"; Break}
+							EveryYear		{$AutoUpgradeRecur = "Every year"; Break}
+							SpecificDays	{$AutoUpgradeRecur = "Every $($Results.SpecificDays)"; Break}
+							Default			{$AutoUpgradeRecur = "Unable to determine the Recur: $($Results.Repeat)"; Break}
+						}
+						$AutoUpgradeMessages = $Results.Messages
+					}
+					Else
+					{
+						$AutoUpgradeEnabled           = "False"
+						$AutoUpgradeDate              = ""
+						$AutoUpgradeStart             = ""
+						$AutoUpgradeDrainModeDuration = ""
+						$AutoUpgradeForceLogoff       = ""
+						$AutoUpgradeRecur             = ""
+						$AutoUpgradeMessages          = @()
+					}
+				}
+			}
+			
+			If($MSWord -or $PDF)
+			{
+				$ScriptInformation = New-Object System.Collections.ArrayList
+				$ScriptInformation.Add(@{Data = "Inherit default settings"; Value = $RDSGroup.InheritDefaultAutoUpgradeSettings.ToString(); }) > $Null
+				$ScriptInformation.Add(@{Data = "Enable auto-upgrade maintenance window"; Value = $AutoUpgradeEnabled; }) > $Null
+				$ScriptInformation.Add(@{Data = "Date"; Value = $AutoUpgradeDate; }) > $Null
+				$ScriptInformation.Add(@{Data = "Start"; Value = $AutoUpgradeStart; }) > $Null
+				$ScriptInformation.Add(@{Data = "Drain mode duration"; Value = $AutoUpgradeDrainModeDuration; }) > $Null
+				$ScriptInformation.Add(@{Data = "Force logoff session at the end of the drain mode period"; Value = $AutoUpgradeForceLogoff; }) > $Null
+				$ScriptInformation.Add(@{Data = "Recur"; Value = $AutoUpgradeRecur; }) > $Null
+				$ScriptInformation.Add(@{Data = "Send message before maintenance window is triggered"; Value = ""; }) > $Null
+
+				If($AutoUpgradeMessages.Count -gt 0)
+				{
+					ForEach($Item in $AutoUpgradeMessages)
+					{
+						Switch ($Item.SendMsgSecs)
+						{
+							900		{$MsgTime = "15 minutes $($Item.SendMsgWhen)"; Break}
+							1800	{$MsgTime = "30 minutes $($Item.SendMsgWhen)"; Break}
+							2700	{$MsgTime = "45 minutes $($Item.SendMsgWhen)"; Break}
+							3600	{$MsgTime = "1 hour $($Item.SendMsgWhen)"; Break}
+							7200	{$MsgTime = "2 hours $($Item.SendMsgWhen)"; Break}
+							10800	{$MsgTime = "3 hours $($Item.SendMsgWhen)"; Break}
+							Default	{$MsgTime = "Unable to determine scheduled message Time: $($Item.SendMsgSecs)"; Break}
+						}
+						
+						$ScriptInformation.Add(@{Data = "     Enabled"; Value = $Item.Enabled.ToString(); }) > $Null
+						$ScriptInformation.Add(@{Data = "     Body"; Value = $Item.Message; }) > $Null
+						$ScriptInformation.Add(@{Data = "     Title"; Value = $Item.MessageTitle; }) > $Null
+						$ScriptInformation.Add(@{Data = "     Time"; Value = $MsgTime; }) > $Null
+						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+					}
+				}
+
+				$Table = AddWordTable -Hashtable $ScriptInformation `
+				-Columns Data,Value `
+				-List `
+				-Format $wdTableGrid `
+				-AutoFit $wdAutoFitFixed;
+
+				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+				$Table.Columns.Item(1).Width = 300;
+				$Table.Columns.Item(2).Width = 250;
+
+				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+				FindWordDocumentEnd
+				$Table = $Null
+				WriteWordLine 0 0 ""
+			}
+			If($Text)
+			{
+				Line 3 "Inherit default settings: " $RDSGroup.InheritDefaultAutoUpgradeSettings.ToString()
+				Line 3 "Enable auto-upgrade maintenance window: " $AutoUpgradeEnabled
+				Line 3 "Date: " $AutoUpgradeDate
+				Line 3 "Start: " $AutoUpgradeStart
+				Line 3 "Drain mode duration: " $AutoUpgradeDrainModeDuration
+				Line 3 "Force logoff session at the end of the drain mode period: " $AutoUpgradeForceLogoff
+				Line 3 "Recur: " $AutoUpgradeRecur
+				Line 3 "Send message before maintenance window is triggered"
+				
+				If($AutoUpgradeMessages.Count -gt 0)
+				{
+					ForEach($Item in $AutoUpgradeMessages)
+					{
+						Switch ($Item.SendMsgSecs)
+						{
+							900		{$MsgTime = "15 minutes $($Item.SendMsgWhen)"; Break}
+							1800	{$MsgTime = "30 minutes $($Item.SendMsgWhen)"; Break}
+							2700	{$MsgTime = "45 minutes $($Item.SendMsgWhen)"; Break}
+							3600	{$MsgTime = "1 hour $($Item.SendMsgWhen)"; Break}
+							7200	{$MsgTime = "2 hours $($Item.SendMsgWhen)"; Break}
+							10800	{$MsgTime = "3 hours $($Item.SendMsgWhen)"; Break}
+							Default	{$MsgTime = "Unable to determine scheduled message Time: $($Item.SendMsgSecs)"; Break}
+						}
+						
+						Line 4 "Enabled`t: " $Item.Enabled.ToString()
+						Line 4 "Body`t: " $Item.Message
+						Line 4 "Title`t: " $Item.MessageTitle
+						Line 4 "Time`t: " $MsgTime
+						Line 4 ""
+					}
+				}
+
+				Line 0 ""
+			}
+			If($HTML)
+			{
+				$rowdata = @()
+				$columnHeaders = @("Inherit default settings",($Script:htmlsb),$RDSGroup.InheritDefaultAutoUpgradeSettings.ToString(),$htmlwhite)
+				$rowdata += @(,("Enable auto-upgrade maintenance window",($Script:htmlsb),$AutoUpgradeEnabled,$htmlwhite))
+				$rowdata += @(,("Date",($Script:htmlsb),$AutoUpgradeDate,$htmlwhite))
+				$rowdata += @(,("Start",($Script:htmlsb),$AutoUpgradeStart,$htmlwhite))
+				$rowdata += @(,("Drain mode duration",($Script:htmlsb),$AutoUpgradeDrainModeDuration,$htmlwhite))
+				$rowdata += @(,("Force logoff session at the end of the drain mode period",($Script:htmlsb),$AutoUpgradeForceLogoff,$htmlwhite))
+				$rowdata += @(,("Recur",($Script:htmlsb),$AutoUpgradeRecur,$htmlwhite))
+				$rowdata += @(,("Send message before maintenance window is triggered",($Script:htmlsb),"",$htmlwhite))
+				
+				If($AutoUpgradeMessages.Count -gt 0)
+				{
+					ForEach($Item in $AutoUpgradeMessages)
+					{
+						Switch ($Item.SendMsgSecs)
+						{
+							900		{$MsgTime = "15 minutes $($Item.SendMsgWhen)"; Break}
+							1800	{$MsgTime = "30 minutes $($Item.SendMsgWhen)"; Break}
+							2700	{$MsgTime = "45 minutes $($Item.SendMsgWhen)"; Break}
+							3600	{$MsgTime = "1 hour $($Item.SendMsgWhen)"; Break}
+							7200	{$MsgTime = "2 hours $($Item.SendMsgWhen)"; Break}
+							10800	{$MsgTime = "3 hours $($Item.SendMsgWhen)"; Break}
+							Default	{$MsgTime = "Unable to determine scheduled message Time: $($Item.SendMsgSecs)"; Break}
+						}
+						
+						$rowdata += @(,("     Enabled",($Script:htmlsb),$Item.Enabled.ToString(),$htmlwhite))
+						$rowdata += @(,("     Body",($Script:htmlsb),$Item.Message,$htmlwhite))
+						$rowdata += @(,("     Title",($Script:htmlsb),$Item.MessageTitle,$htmlwhite))
+						$rowdata += @(,("     Time",($Script:htmlsb),$MsgTime,$htmlwhite))
+						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+					}
+				}
+
+				$msg = "Options"
 				$columnWidths = @("300","275")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""

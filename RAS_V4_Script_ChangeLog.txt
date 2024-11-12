@@ -35,6 +35,7 @@
 #		For RDS Hosts details, rename "Agent settings" to "Settings, and move to after Desktop access
 #		Add Application Packages
 #		Only output optimization data if optimization is enabled
+#		Add Auto-upgrade
 #	In Function OutputSAMLSetting, handle multiple SAML items
 #	In Function OutputSettingsDetails, add Azure Virtual Desktop to the Features section
 #	In Function OutputSiteDetails, when processing Themes, Properties, Access:
