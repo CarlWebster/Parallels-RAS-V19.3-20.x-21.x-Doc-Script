@@ -25,13 +25,24 @@
 #			OutputCertificatesDetails
 #			OutputApplicationPackagesDetails
 #			OutputSettingsDetails
-#	Fixed HTML, Text, and MSWord output
-#	In Function OutputFarmSite, add Farm Properties
+#	Clean up some console output
+#	Fixed and refined the HTML, Text, and MSWord output
+#	In Function OutputFarmSite, 
+#		Add Farm Properties
+#		For RAS V20 and later, add Access addresses
 #	In Function OutputPoliciesDetails:
-#		Update for the Policy changes in 19.3 and 19.4
+#		Update for the Policy changes in 19.3 and later
 #		Handle multiple criteria
+#		For RAS version 20.2 and later, added 
+#			Session/Display/Published applications/Published applications/Enable Z-Order mode (Experimental)
+#			Session/Printing/Default printer/Set the following printer as default
+#			Session/Keyboard/Keyboard/Redirect remote keyboard input
+#			Client options/Update/Client version management/Azure Virtual Desktop client
+#			Client options/Advanced/Printing/Advanced client options - Printing settings/Dynamic printer redirection
 #	In Function OutputRASLicense, update output to match the 19.4 console
 #	In Function OutputRDSessionHostsDetails:
+#		Changed Get-RASVDIHostStatus -Name $VDIPool.Name to Get-RASVDIHostStatus -InputObject $VDIPool.Id
+#		Fixed bug in processing the variable $AppPackagesAssigned.ApplicationPackagesAssigned with the help of Guy Leech
 #		For RDS Hosts details, rename "Agent settings" to "Settings, and move to after Desktop access
 #		Add Application Packages
 #		Only output optimization data if optimization is enabled
@@ -45,5 +56,12 @@
 #	In Function OutputSiteSummary:
 #		Added basic information for Tenant Brokers
 #		Changed "VDI Host" to "Provider"
-#	Updated for the PowerShell module changes in RAS 19.3 and 19.4
+#	In Function OutputVDIDetails:
+#		For Host pools properties, add:
+#			Status
+#			Template
+#			Template version
+#			ID
+#	In Function ProcessScriptSetup, change how the RAS version is retrieved and put into variables
+#	Updated for the PowerShell module changes in RAS 19.3 and later, and 20 and later
 #	Updated numerous ENUMS throughout the script
