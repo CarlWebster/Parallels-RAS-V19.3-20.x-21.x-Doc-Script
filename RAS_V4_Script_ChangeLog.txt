@@ -33,15 +33,46 @@
 #	In Function OutputPoliciesDetails:
 #		Update for the Policy changes in 19.3 and later
 #		Handle multiple criteria
+#		For RAS version 19.4 and later, added 
+#			Session/Printing/Default printer/Set the following printer as default
+#		For RAS version 20.0 and later, added 
+#			Client options/Update/Client version management/Azure Virtual Desktop client
 #		For RAS version 20.2 and later, added 
 #			Session/Display/Published applications/Published applications/Enable Z-Order mode (Experimental)
-#			Session/Printing/Default printer/Set the following printer as default
 #			Session/Keyboard/Keyboard/Redirect remote keyboard input
-#			Client options/Update/Client version management/Azure Virtual Desktop client
 #			Client options/Advanced/Printing/Advanced client options - Printing settings/Dynamic printer redirection
+#		For RAS version 20.2 and later, removed
+#			Client options/Advanced/Printing/Advanced client options - Printing settings/Cache printers hardware information
+#			Client options/Advanced/Printing/Advanced client options - Printing settings/Refresh printer hardware information every 30 days
+#	In Function OutputRASAccounts
+#		Add the Enabled property
+#		Changed "Group or user names" to "Name"
+#		Removed "Receive system notifications"
+#		Add new sub-section "Account Properties"
+#			Enable account
+#			Name
+#			Email
+#			Mobile
+#			Group
+#			Permissions
+#			Receive system notifications
+#	In Function OutputRASFeatures, prepare for the Support setting 
 #	In Function OutputRASLicense, update output to match the 19.4 console
+#	In Function OutputRASMailboxSettings, 
+#		Add the "Use TLS 1.3 if available" option
+#	In Function OutputRASReportingSettings, add:
+#		Session Counters
+#			Session information
+#				Track logon details
+#					Retain information for
+#				Track user experience data
+#					Retain information for
+#					Track UX Evaluator when change is more than (%)
+#					Track Latency when change is more than (%)
+#					Track Bandwidth when change is more than (%)
+#	In Function OutputRASSettings, add the setting "Check for updates when launching RAS console"
 #	In Function OutputRDSessionHostsDetails:
-#		Changed Get-RASVDIHostStatus -Name $VDIPool.Name to Get-RASVDIHostStatus -InputObject $VDIPool.Id
+#		Changed Get-RASVDIHostStatus -Name $VDIPool.Name to Get-RASVDIHostPoolStatus -Name $VDIPool.Name -SiteId $Site.Id
 #		Fixed bug in processing the variable $AppPackagesAssigned.ApplicationPackagesAssigned with the help of Guy Leech
 #		For RDS Hosts details, rename "Agent settings" to "Settings, and move to after Desktop access
 #		Add Application Packages
@@ -63,5 +94,8 @@
 #			Template version
 #			ID
 #	In Function ProcessScriptSetup, change how the RAS version is retrieved and put into variables
+#	Merged functions OutputRASProxySettings and OutputRASMiscSettings into OutputRASSettings
 #	Updated for the PowerShell module changes in RAS 19.3 and later, and 20 and later
+#	Updated Function ProcessAdministration to handle merging functions OutputRASProxySettings 
+#		and OutputRASMiscSettings into Function OutputRASSettings
 #	Updated numerous ENUMS throughout the script

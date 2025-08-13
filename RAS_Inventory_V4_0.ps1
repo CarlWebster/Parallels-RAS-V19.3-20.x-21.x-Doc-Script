@@ -448,9 +448,9 @@
 	text document.
 .NOTES
 	NAME: RAS_Inventory_V4_0.ps1
-	VERSION: 4.00 Beta 11
+	VERSION: 4.00 Beta 12
 	AUTHOR: Carl Webster
-	LASTEDIT: August 7, 2025
+	LASTEDIT: August 13, 2025
 #>
 
 
@@ -593,15 +593,46 @@ Param(
 #	In Function OutputPoliciesDetails:
 #		Update for the Policy changes in 19.3 and later
 #		Handle multiple criteria
+#		For RAS version 19.4 and later, added 
+#			Session/Printing/Default printer/Set the following printer as default
+#		For RAS version 20.0 and later, added 
+#			Client options/Update/Client version management/Azure Virtual Desktop client
 #		For RAS version 20.2 and later, added 
 #			Session/Display/Published applications/Published applications/Enable Z-Order mode (Experimental)
-#			Session/Printing/Default printer/Set the following printer as default
 #			Session/Keyboard/Keyboard/Redirect remote keyboard input
-#			Client options/Update/Client version management/Azure Virtual Desktop client
 #			Client options/Advanced/Printing/Advanced client options - Printing settings/Dynamic printer redirection
+#		For RAS version 20.2 and later, removed
+#			Client options/Advanced/Printing/Advanced client options - Printing settings/Cache printers hardware information
+#			Client options/Advanced/Printing/Advanced client options - Printing settings/Refresh printer hardware information every 30 days
+#	In Function OutputRASAccounts
+#		Add the Enabled property
+#		Changed "Group or user names" to "Name"
+#		Removed "Receive system notifications"
+#		Add new sub-section "Account Properties"
+#			Enable account
+#			Name
+#			Email
+#			Mobile
+#			Group
+#			Permissions
+#			Receive system notifications
+#	In Function OutputRASFeatures, prepare for the Support setting 
 #	In Function OutputRASLicense, update output to match the 19.4 console
+#	In Function OutputRASMailboxSettings, 
+#		Add the "Use TLS 1.3 if available" option
+#	In Function OutputRASReportingSettings, add:
+#		Session Counters
+#			Session information
+#				Track logon details
+#					Retain information for
+#				Track user experience data
+#					Retain information for
+#					Track UX Evaluator when change is more than (%)
+#					Track Latency when change is more than (%)
+#					Track Bandwidth when change is more than (%)
+#	In Function OutputRASSettings, add the setting "Check for updates when launching RAS console"
 #	In Function OutputRDSessionHostsDetails:
-#		Changed Get-RASVDIHostStatus -Name $VDIPool.Name to Get-RASVDIHostStatus -InputObject $VDIPool.Id
+#		Changed Get-RASVDIHostStatus -Name $VDIPool.Name to Get-RASVDIHostPoolStatus -Name $VDIPool.Name -SiteId $Site.Id
 #		Fixed bug in processing the variable $AppPackagesAssigned.ApplicationPackagesAssigned with the help of Guy Leech
 #		For RDS Hosts details, rename "Agent settings" to "Settings, and move to after Desktop access
 #		Add Application Packages
@@ -623,7 +654,10 @@ Param(
 #			Template version
 #			ID
 #	In Function ProcessScriptSetup, change how the RAS version is retrieved and put into variables
+#	Merged functions OutputRASProxySettings and OutputRASMiscSettings into OutputRASSettings
 #	Updated for the PowerShell module changes in RAS 19.3 and later, and 20 and later
+#	Updated Function ProcessAdministration to handle merging functions OutputRASProxySettings 
+#		and OutputRASMiscSettings into Function OutputRASSettings
 #	Updated numerous ENUMS throughout the script
 #
 
@@ -688,9 +722,9 @@ $ErrorActionPreference    = 'SilentlyContinue'
 $Error.Clear()
 
 $Script:emailCredentials  = $Null
-$script:MyVersion         = '4.00 Beta 11'
+$script:MyVersion         = '4.00 Beta 12'
 $Script:ScriptName        = "RAS_Inventory_V4_0.ps1"
-$tmpdate                  = [datetime] "08/07/2025"
+$tmpdate                  = [datetime] "08/13/2025"
 $Script:ReleaseDate       = $tmpdate.ToUniversalTime().ToShortDateString()
 
 If($MSWord -eq $False -and $PDF -eq $False -and $Text -eq $False -and $HTML -eq $False)
@@ -11448,6 +11482,7 @@ Function OutputRDSessionHostsDetails
 	{
 		ForEach($RDSGroup in $RDSGroups)
 		{
+			Write-Verbose "$(Get-Date -Format G): `t`t$($RDSGroup.Name)"
 			#Get the agent state for the group
 			$RDSGroupStatus = Get-RASRDSHostPoolStatus -Name $RDSGroup.Name -EA 0 4>$Null
 			
@@ -14051,7 +14086,7 @@ Function OutputRDSessionHostsDetails
 		}
 	}
 
-	Write-Verbose "$(Get-Date -Format G): `tOutput RD Session Hosts Templates"
+	Write-Verbose "$(Get-Date -Format G): `tOutput RD Session Host Templates"
 	If($MSWord -or $PDF)
 	{
 		WriteWordLine 2 0 "Templates"
@@ -14108,6 +14143,7 @@ Function OutputRDSessionHostsDetails
 	{
 		ForEach($RDSTemplate in $RDSTemplates)
 		{
+			Write-Verbose "$(Get-Date -Format G): `t`t$($RDSTemplate.Name)"
 			$TemplateProvider = Get-RASProvider -Id $RDSTemplate.ProviderId -EA 0 4>$Null
 			
 			If($? -and $Null -ne $TemplateProvider)
@@ -16474,6 +16510,7 @@ Function OutputRDSessionHostsDetails
 	{
 		ForEach($RDSSchedule in $RDSSchedules)
 		{
+			Write-Verbose "$(Get-Date -Format G): `t`t$($RDSSchedule.Name)"
 			$Action = $RDSSchedule.Action
 			If($RDSSChedule.Action -eq "Reboot")
 			{
@@ -17084,8 +17121,7 @@ Function OutputVDIDetails
 				{
 					WriteWordLine 3 0 "Pool $($VDIPool.Name)"
 
-					#$Status = Get-RASVDIHostStatus -Name $VDIPool.Name  -EA 0 4>$Null #original
-					$Status = Get-RASVDIHostStatus -InputObject $VDIPool  -EA 0 4>$Null
+					$Status = Get-RASVDIHostPoolStatus -Name $VDIPool.Name -SiteId $Site.Id -EA 0 4>$Null #original
 
 					If($? -and $Null -ne $Status)
 					{
@@ -17267,8 +17303,7 @@ Function OutputVDIDetails
 				{
 					Line 2 "Pool $($VDIPool.Name)"
 					
-					#$Status = Get-RASVDIHostStatus -Name $VDIPool.Name  -EA 0 4>$Null #original
-					$Status = Get-RASVDIHostStatus -InputObject $VDIPool  -EA 0 4>$Null
+					$Status = Get-RASVDIHostPoolStatus -Name $VDIPool.Name -SiteId $Site.Id -EA 0 4>$Null #original
 
 					If($? -and $Null -ne $Status)
 					{
@@ -17296,10 +17331,14 @@ Function OutputVDIDetails
 							"UNKNOWN"				{$MemberType = "Unknown"; Break}
 							Default					{$MemberType = "Unable to determine Pool Member Type: $($VDIPoolMember.Type)"; Break}
 						}
+						$Template        = $VDIPoolMember.Template
+						$TemplateVersion = $VDIPoolMember.TemplateVersion
 					}
 					Else
 					{
-						$MemberType = ""
+						$MemberType      = ""
+						$Template        = ""
+						$TemplateVersion = ""
 					}
 
 					Line 3 "Name`t`t`t: " $VDIPool.Name
@@ -17390,8 +17429,7 @@ Function OutputVDIDetails
 				{
 					WriteHTMLLine 3 0 "Pool $($VDIPool.Name)"
 		
-					#$Status = Get-RASVDIHostStatus -Name $VDIPool.Name  -EA 0 4>$Null #original
-					$Status = Get-RASVDIHostStatus -InputObject $VDIPool  -EA 0 4>$Null
+					$Status = Get-RASVDIHostPoolStatus -Name $VDIPool.Name -SiteId $Site.Id -EA 0 4>$Null #original
 
 					If($? -and $Null -ne $Status)
 					{
@@ -17419,23 +17457,16 @@ Function OutputVDIDetails
 							"UNKNOWN"				{$MemberType = "Unknown"; Break}
 							Default					{$MemberType = "Unable to determine Pool Member Type: $($VDIPoolMember.Type)"; Break}
 						}
+						$Template        = $VDIPoolMember.Template
+						$TemplateVersion = $VDIPoolMember.TemplateVersion
 					}
 					Else
 					{
-						$MemberType = ""
-					}
-					
-					If($Null -eq $VDIPool.Template)
-					{
+						$MemberType      = ""
 						$Template        = ""
 						$TemplateVersion = ""
 					}
-					Else
-					{
-						$Template        = $VDIPool.Template.ToString()
-						$TemplateVersion = (Get-RASTemplateVersion -SiteId $Site.Id -Id $VDIPool.Template -EA 0 4>$Null).Id.ToString()
-					}
-
+					
 					$rowdata = @()
 					$columnHeaders = @("Name",($Script:htmlsb),$VDIPool.Name,$htmlwhite)
 					$rowdata += @(,("Enabled",($Script:htmlsb),$VDIPool.Enabled.ToString(),$htmlwhite))
@@ -25734,7 +25765,7 @@ Function OutputThemesDetails
 	{
 		ForEach($Theme in $Themes)
 		{
-			Write-Verbose "$(Get-Date -Format G): `tOutput $($Theme.Name)"
+			Write-Verbose "$(Get-Date -Format G): `t$($Theme.Name)"
 			$ThemePostLogonMessage				= $Theme.PostLogonMessage.Split("`n")
 			$ThemeUserPortalPrelogonMessage		= $Theme.UserPortal.Message.PreLogonMessage.Split("`n")
 			$ThemeUserPortalPostlogonMessage	= $Theme.UserPortal.Message.UserPortalPostLogonMessage.Split("`n")
@@ -27345,6 +27376,7 @@ Function OutputCertificatesDetails
 	{
 		ForEach($Cert in $Certs)
 		{
+			Write-Verbose "$(Get-Date -Format G): `t$($Cert.Name)"
 			Switch($Cert.Type)
 			{
 				"Imported"		{$CertType = "Imported"; Break}
@@ -28871,7 +28903,7 @@ Function OutputPublishingSettings
 	
 	ForEach($PubItem in $PubItems)
 	{
-		Write-Verbose "$(Get-Date -Format G): `t`t`tOutput $($PubItem.Name)"
+		Write-Verbose "$(Get-Date -Format G): `t`t$($PubItem.Name)"
 
 		If(ValidObject $PubItem WinType)
 		{
@@ -33652,6 +33684,7 @@ Function OutputPublishingSettings
 
 				FindWordDocumentEnd
 				$Table = $Null
+				WriteWordLine 0 0 ""
 
 				$ScriptInformation = New-Object System.Collections.ArrayList
 				$ScriptInformation.Add(@{Data = "Settings are replicated to all Sites"; Value = $PubItem.ReplicateFileExtensionSettings.ToString(); }) > $Null
@@ -37365,8 +37398,6 @@ Function ProcessUniversalPrinting
 	
 	OutputUniversalPrintingSectionPage
 	
-	Write-Verbose "$(Get-Date -Format G): `tProcessing Universal Printing"
-	
 	$RASPrinterSettings = Get-RASPrintingSettings -SiteId $Site.Id -EA 0 4>$Null
 	
 	If(!($?))
@@ -37547,7 +37578,7 @@ Function OutputUniversalPrintingSettings
 {
 	Param([object]$Printingobj, [object]$RDSobj, [object]$VDIHostsobj)
  
-	Write-Verbose "$(Get-Date -Format G): `t`tOutput Universal Printing"
+	Write-Verbose "$(Get-Date -Format G): `tOutput Universal Printing"
 	
 	If($MSWord -or $PDF)
 	{
@@ -37745,7 +37776,7 @@ Function OutputUniversalPrinterDriversSettings
 {
 	Param([object] $RASPrinterSettings)
  
-	Write-Verbose "$(Get-Date -Format G): `t`tOutput Printer drivers"
+	Write-Verbose "$(Get-Date -Format G): `tOutput Printer drivers"
 	
 	If($MSWord -or $PDF)
 	{
@@ -37952,7 +37983,7 @@ Function OutputUniversalPrinterFontsSettings
 {
 	Param([object] $RASFontsSettings)
 
-	Write-Verbose "$(Get-Date -Format G): `t`tOutput Fonts"
+	Write-Verbose "$(Get-Date -Format G): `tOutput Fonts"
 	
 	If($MSWord -or $PDF)
 	{
@@ -38188,8 +38219,6 @@ Function ProcessUniversalScanning
 	
 	OutputUniversalScanningSectionPage
 	
-	Write-Verbose "$(Get-Date -Format G): `tProcessing Universal Scanning"
-	
 	$results = Get-RASScanningSettings -SiteId $Site.Id -EA 0 4>$Null
 	
 	If(!($?))
@@ -38419,7 +38448,7 @@ Function OutputUniversalScanningSettings
 {
  Param([object]$WIAobj, [object]$TWAINobj, [object]$RDSobj, [object]$VDIHostsobj)
  
-	Write-Verbose "$(Get-Date -Format G): `t`tOutput WIA"
+	Write-Verbose "$(Get-Date -Format G): `tOutput WIA"
 	
 	If($MSWord -or $PDF)
 	{
@@ -38613,7 +38642,7 @@ Function OutputUniversalScanningSettings
 		WriteHTMLLine 0 0 ""
 	}
 
-	Write-Verbose "$(Get-Date -Format G): `t`tOutput TWAIN"
+	Write-Verbose "$(Get-Date -Format G): `tOutput TWAIN"
 	
 	If($MSWord -or $PDF)
 	{
@@ -40718,15 +40747,23 @@ Function OutputSAMLSetting
 		}
 		
 		#get theme used by SAML
-		$xTheme = Get-RASTheme -Id $SAMLSetting.ThemeId -EA 0 4> $Null
 		
-		If(!$? -or $Null -eq $xTheme)
+		If($SAMLSetting.ThemeId -gt 0)
 		{
-			$SAMLTheme = "not used"
+			$xTheme = Get-RASTheme -Id $SAMLSetting.ThemeId -EA 0 4> $Null
+			
+			If(!$? -or $Null -eq $xTheme)
+			{
+				$SAMLTheme = "not used"
+			}
+			Else
+			{
+				$SAMLTheme = $xTheme.Name
+			}
 		}
 		Else
 		{
-			$SAMLTheme = $xTheme.Name
+			$SAMLTheme = "SAML $($SAMLSetting.Name) has an invalid ThemeId of $($SAMLSetting.ThemeId)"
 		}
 		
 		If($MSWord -or $PDF)
@@ -40877,7 +40914,7 @@ Function OutputSAMLSetting
 			$ScriptInformation.Add(@{Data = "IdP certificate"; Value = $SAMLSetting.IDPCertificate; }) > $Null
 			$ScriptInformation.Add(@{Data = "Logon URL"; Value = $SAMLSetting.LogonURL; }) > $Null
 			$ScriptInformation.Add(@{Data = "Logout URL"; Value = $SAMLSetting.LogoutURL; }) > $Null
-			$ScriptInformation.Add(@{Data = "Allow unencrypted assertion"; Value = $SAMLSetting.AllowUnencryptedAssertion; }) > $Null
+			$ScriptInformation.Add(@{Data = "Allow unencrypted assertion"; Value = $SAMLSetting.AllowUnencryptedAssertion.ToString(); }) > $Null
 
 			$Table = AddWordTable -Hashtable $ScriptInformation `
 			-Columns Data,Value `
@@ -40903,7 +40940,7 @@ Function OutputSAMLSetting
 			Line 4 "IdP certificate`t`t`t: " $SAMLSetting.IDPCertificate
 			Line 4 "Logon URL`t`t`t: " $SAMLSetting.LogonURL
 			Line 4 "Logout URL`t`t`t: " $SAMLSetting.LogoutURL
-			Line 4 "Allow unencrypted assertion`t: " $SAMLSetting.AllowUnencryptedAssertion
+			Line 4 "Allow unencrypted assertion`t: " $SAMLSetting.AllowUnencryptedAssertion.ToString()
 			Line 0 ""
 		}
 		If($HTML)
@@ -40913,7 +40950,7 @@ Function OutputSAMLSetting
 			$rowdata += @(,("IdP certificate",($Script:htmlsb),$SAMLSetting.IDPCertificate,$htmlwhite))
 			$rowdata += @(,("Logon URL",($Script:htmlsb),$SAMLSetting.LogonURL,$htmlwhite))
 			$rowdata += @(,("Logout URL",($Script:htmlsb),$SAMLSetting.LogoutURL,$htmlwhite))
-			$rowdata += @(,("Allow unencrypted assertion",($Script:htmlsb),$SAMLSetting.AllowUnencryptedAssertion,$htmlwhite))
+			$rowdata += @(,("Allow unencrypted assertion",($Script:htmlsb),$SAMLSetting.AllowUnencryptedAssertion.ToString(),$htmlwhite))
 
 			$msg = "IdP"
 			$columnWidths = @("200","275")
@@ -43248,11 +43285,11 @@ Function OutputPoliciesDetails
 			If($Script:RASMajorVersion -ge 20 -and $Script:RASMinorVersion -ge 2)
 			{
 				$ZOrderMode = ""
-				Switch($Policy.ClientPolicy.Session.Settings.ZOrderMode)
+				Switch($policy.ClientPolicy.Session.PublishedApplications.ZOrderMode)
 				{
 					"Disabled"				{$ZOrderMode = "Disabled"; Break}
 					"ImprovedHeuristic"		{$ZOrderMode = "Improved heuristic mode"; Break}
-					Default					{$ZOrderMode = "Published applications/Enable Z-Order mode not found: $($Policy.ClientPolicy.Session.Settings.ZOrderMode)"; Break}
+					Default					{$ZOrderMode = "Published applications/Enable Z-Order mode not found: $($policy.ClientPolicy.Session.PublishedApplications.ZOrderMode)"; Break}
 				}
 
 				$txt = "Session/Display/Published applications/Published applications/Enable Z-Order mode (Experimental)"
@@ -43576,7 +43613,7 @@ Function OutputPoliciesDetails
 					}
 				}
 
-				If($Script:RASMajorVersion -ge 20 -and $Script:RASMinorVersion -ge 2)
+				If($Script:RASMajorVersion -ge 19 -and $Script:RASMinorVersion -ge 4)
 				{
 					$txt = "Session/Printing/Default printer/Set the following printer as default"
 					
@@ -45955,44 +45992,47 @@ Function OutputPoliciesDetails
 				}
 			}
 
-			$txt = "Client options/Advanced/Printing/Advanced client options - Printing settings/Cache printers hardware information"
-			If($MSWord -or $PDF)
+			If($Script:RASMajorVersion -le 20 -and $Script:RASMinorVersion -le 1)
 			{
-				$SettingsWordTable += @{
-				Text = $txt;
-				Value = $Policy.ClientPolicy.ClientOptions.Advanced.Printing.PrintUseCache.ToString();
+				$txt = "Client options/Advanced/Printing/Advanced client options - Printing settings/Cache printers hardware information"
+				If($MSWord -or $PDF)
+				{
+					$SettingsWordTable += @{
+					Text = $txt;
+					Value = $Policy.ClientPolicy.ClientOptions.Advanced.Printing.PrintUseCache.ToString();
+					}
+				}
+				If($HTML)
+				{
+					$rowdata += @(,(
+					$txt,$htmlbold,
+					$Policy.ClientPolicy.ClientOptions.Advanced.Printing.PrintUseCache.ToString(),$htmlwhite))
+				}
+				If($Text)
+				{
+					OutputPolicySetting $txt $Policy.ClientPolicy.ClientOptions.Advanced.Printing.PrintUseCache.ToString()
+				}
+
+				$txt = "Client options/Advanced/Printing/Advanced client options - Printing settings/Refresh printer hardware information every 30 days"
+				If($MSWord -or $PDF)
+				{
+					$SettingsWordTable += @{
+					Text = $txt;
+					Value = $Policy.ClientPolicy.ClientOptions.Advanced.Printing.PrintRefreshCache.ToString();
+					}
+				}
+				If($HTML)
+				{
+					$rowdata += @(,(
+					$txt,$htmlbold,
+					$Policy.ClientPolicy.ClientOptions.Advanced.Printing.PrintRefreshCache.ToString(),$htmlwhite))
+				}
+				If($Text)
+				{
+					OutputPolicySetting $txt $Policy.ClientPolicy.ClientOptions.Advanced.Printing.PrintRefreshCache.ToString()
 				}
 			}
-			If($HTML)
-			{
-				$rowdata += @(,(
-				$txt,$htmlbold,
-				$Policy.ClientPolicy.ClientOptions.Advanced.Printing.PrintUseCache.ToString(),$htmlwhite))
-			}
-			If($Text)
-			{
-				OutputPolicySetting $txt $Policy.ClientPolicy.ClientOptions.Advanced.Printing.PrintUseCache.ToString()
-			}
-
-			$txt = "Client options/Advanced/Printing/Advanced client options - Printing settings/Refresh printer hardware information every 30 days"
-			If($MSWord -or $PDF)
-			{
-				$SettingsWordTable += @{
-				Text = $txt;
-				Value = $Policy.ClientPolicy.ClientOptions.Advanced.Printing.PrintRefreshCache.ToString();
-				}
-			}
-			If($HTML)
-			{
-				$rowdata += @(,(
-				$txt,$htmlbold,
-				$Policy.ClientPolicy.ClientOptions.Advanced.Printing.PrintRefreshCache.ToString(),$htmlwhite))
-			}
-			If($Text)
-			{
-				OutputPolicySetting $txt $Policy.ClientPolicy.ClientOptions.Advanced.Printing.PrintRefreshCache.ToString()
-			}
-
+			
 			$txt = "Client options/Advanced/Printing/Advanced client options - Printing settings/Cache RAS Universal Printing embedded fonts"
 			If($MSWord -or $PDF)
 			{
@@ -46508,7 +46548,6 @@ Function ProcessAdministration
 
 	Write-Verbose "$(Get-Date -Format G): `tProcessing Settings"
 	
-	$GotRASSettings = $False
 	$RASSettings = Get-RASSystemSettings -EA 0 4>$Null
 	
 	If(!($?))
@@ -46550,59 +46589,48 @@ Function ProcessAdministration
 	}
 	Else
 	{
-		$GotRASSettings = $True
-		OutputRASSettings $RASSettings
+		$RASProxySettings = Get-RASProxySettings -EA 0 4>$Null
+		
+		If(!($?))
+		{
+			Write-Warning "
+			`n
+			Unable to retrieve Proxy settings information
+			"
+			If($MSWord -or $PDF)
+			{
+				WriteWordLine 0 0 "Unable to retrieve Proxy settings information"
+			}
+			If($Text)
+			{
+				Line 0 "Unable to retrieve Proxy settings information"
+			}
+			If($HTML)
+			{
+				WriteHTMLLine 0 0 "Unable to retrieve Proxy settings information"
+			}
+		}
+		ElseIf($? -and $null -eq $RASProxySettings)
+		{
+			Write-Host "
+			No Proxy settings information was found
+			" -ForegroundColor White
+			If($MSWord -or $PDF)
+			{
+				WriteWordLine 0 0 "No Proxy settings information was found"
+			}
+			If($Text)
+			{
+				Line 0 "No Proxy settings information was found"
+			}
+			If($HTML)
+			{
+				WriteHTMLLine 0 0 "No Proxy settings information was found"
+			}
+		}
+		OutputRASSettings $RASSettings $RASProxySettings
 	}
 
-	$RASProxySettings = Get-RASProxySettings -EA 0 4>$Null
-	
-	If(!($?))
-	{
-		Write-Warning "
-		`n
-		Unable to retrieve Proxy settings information
-		"
-		If($MSWord -or $PDF)
-		{
-			WriteWordLine 0 0 "Unable to retrieve Proxy settings information"
-		}
-		If($Text)
-		{
-			Line 0 "Unable to retrieve Proxy settings information"
-		}
-		If($HTML)
-		{
-			WriteHTMLLine 0 0 "Unable to retrieve Proxy settings information"
-		}
-	}
-	ElseIf($? -and $null -eq $RASProxySettings)
-	{
-		Write-Host "
-		No Proxy settings information was found
-		" -ForegroundColor White
-		If($MSWord -or $PDF)
-		{
-			WriteWordLine 0 0 "No Proxy settings information was found"
-		}
-		If($Text)
-		{
-			Line 0 "No Proxy settings information was found"
-		}
-		If($HTML)
-		{
-			WriteHTMLLine 0 0 "No Proxy settings information was found"
-		}
-	}
-	Else
-	{
-		OutputRASProxySettings $RASProxySettings
-	}
-
-	If($GotRASSettings)
-	{
-		OutputRASMiscSettings $RASSettings
-	}
-	
 	$RASMailboxSettings = Get-RASMailboxSettings -EA 0 4>$Null
 	
 	If(!($?))
@@ -46774,6 +46802,7 @@ Function OutputRASAccounts
 	
 	ForEach($RASAccount in $RASAccounts)
 	{
+		Write-Verbose "$(Get-Date -Format G): `t`t`t$($RASAccount.Name)"
 		Switch ($RASAccount.Permissions)
 		{
 			"CustomAdmin"	{$RASAccountPermissions = "Custom administration"; Break}
@@ -46799,11 +46828,12 @@ Function OutputRASAccounts
 
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 3 0 "Account: $($RASAccount.Name)"
 			$ScriptInformation = New-Object System.Collections.ArrayList
-			$ScriptInformation.Add(@{Data = "Group or user names"; Value = $RASAccount.Name; }) > $Null
+			$ScriptInformation.Add(@{Data = "Enabled"; Value = $RASAccount.Enabled.ToString(); }) > $Null
+			$ScriptInformation.Add(@{Data = "Name"; Value = $RASAccount.Name; }) > $Null
 			$ScriptInformation.Add(@{Data = "Type"; Value = $RASAccountType; }) > $Null
 			$ScriptInformation.Add(@{Data = 'Permissions'; Value = $RASAccountPermissions; }) > $Null
-			$ScriptInformation.Add(@{Data = 'Receive system notifications'; Value = $RASAccountNotify; }) > $Null
 			$ScriptInformation.Add(@{Data = 'Email'; Value = $RASAccount.Email; }) > $Null
 			$ScriptInformation.Add(@{Data = 'Mobile'; Value = $RASAccount.Mobile; }) > $Null
 			$ScriptInformation.Add(@{Data = 'Group'; Value = $RASAccount.GroupName; }) > $Null
@@ -46833,27 +46863,29 @@ Function OutputRASAccounts
 		}
 		If($Text)
 		{
-			Line 2 "Group or user names`t`t: " $RASAccount.Name
-			Line 2 "Type`t`t`t`t: " $RASAccountType
-			Line 2 "Permissions`t`t`t: " $RASAccountPermissions
-			Line 2 "Receive system notifications`t: " $RASAccountNotify
-			Line 2 "Email`t`t`t`t: " $RASAccount.Email
-			Line 2 "Mobile`t`t`t`t: " $RASAccount.Mobile
-			Line 2 "Group`t`t`t`t: " $RASAccount.GroupName
-			Line 2 "Last modification by`t`t: " $RASAccount.AdminLastMod
-			Line 2 "Modified on`t`t`t: " (Get-Date -UFormat "%c" $RASAccount.TimeLastMod)
-			Line 2 "Created by`t`t`t: " $RASAccount.AdminCreate
-			Line 2 "Created on`t`t`t: " (Get-Date -UFormat "%c" $RASAccount.TimeCreate)
-			Line 2 "ID`t`t`t`t: " $RASAccount.Id.ToString()
+			Line 2 "Account: $($RASAccount.Name)"
+			Line 3 "Enabled`t`t`t: " $RASAccount.Enabled.ToString()
+			Line 3 "Name`t`t`t: " $RASAccount.Name
+			Line 3 "Type`t`t`t: " $RASAccountType
+			Line 3 "Permissions`t`t: " $RASAccountPermissions
+			Line 3 "Email`t`t`t: " $RASAccount.Email
+			Line 3 "Mobile`t`t`t: " $RASAccount.Mobile
+			Line 3 "Group`t`t`t: " $RASAccount.GroupName
+			Line 3 "Last modification by`t: " $RASAccount.AdminLastMod
+			Line 3 "Modified on`t`t: " (Get-Date -UFormat "%c" $RASAccount.TimeLastMod)
+			Line 3 "Created by`t`t: " $RASAccount.AdminCreate
+			Line 3 "Created on`t`t: " (Get-Date -UFormat "%c" $RASAccount.TimeCreate)
+			Line 3 "ID`t`t`t: " $RASAccount.Id.ToString()
 			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 3 0 "Account: $($RASAccount.Name)"
 			$rowdata = @()
-			$columnHeaders = @("Group or user names",($Script:htmlsb),$RASAccount.Name,$htmlwhite)
+			$columnHeaders = @("Enabled",($Script:htmlsb),$RASAccount.Enabled.ToString(),$htmlwhite)
+			$rowdata += @(,("Name",($Script:htmlsb),$RASAccount.Name,$htmlwhite))
 			$rowdata += @(,("Type",($Script:htmlsb),$RASAccountType,$htmlwhite))
 			$rowdata += @(,("Permissions",($Script:htmlsb),$RASAccountPermissions,$htmlwhite))
-			$rowdata += @(,("Receive system notifications",($Script:htmlsb),$RASAccountNotify,$htmlwhite))
 			$rowdata += @(,("Email",($Script:htmlsb),$RASAccount.Email,$htmlwhite))
 			$rowdata += @(,("Mobile",($Script:htmlsb),$RASAccount.Mobile,$htmlwhite))
 			$rowdata += @(,("Group",($Script:htmlsb),$RASAccount.GroupName,$htmlwhite))
@@ -46864,6 +46896,77 @@ Function OutputRASAccounts
 			$rowdata += @(,("ID",($Script:htmlsb),$RASAccount.Id.ToString(),$htmlwhite))
 
 			$msg = ""
+			$columnWidths = @("200","175")
+			FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+			WriteHTMLLine 0 0 ""
+		}
+		
+		If($MSWord -or $PDF)
+		{
+			WriteWordLine 4 0 "Account Properties"
+		}
+		If($Text)
+		{
+			Line 2 "Account Properties"
+		}
+		If($HTML)
+		{
+			#Nothing
+		}
+		
+		If($MSWord -or $PDF)
+		{
+			$ScriptInformation = New-Object System.Collections.ArrayList
+			$ScriptInformation.Add(@{Data = "Enable account"; Value = $RASAccount.Enabled.ToString(); }) > $Null
+			$ScriptInformation.Add(@{Data = "Name"; Value = $RASAccount.Name; }) > $Null
+			$ScriptInformation.Add(@{Data = 'Email'; Value = $RASAccount.Email; }) > $Null
+			$ScriptInformation.Add(@{Data = 'Mobile'; Value = $RASAccount.Mobile; }) > $Null
+			$ScriptInformation.Add(@{Data = 'Group'; Value = $RASAccount.GroupName; }) > $Null
+			$ScriptInformation.Add(@{Data = 'Permissions'; Value = $RASAccountPermissions; }) > $Null
+			$ScriptInformation.Add(@{Data = 'Receive system notifications'; Value = $RASAccountNotify; }) > $Null
+
+			$Table = AddWordTable -Hashtable $ScriptInformation `
+			-Columns Data,Value `
+			-List `
+			-Format $wdTableGrid `
+			-AutoFit $wdAutoFitFixed;
+
+			SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+			SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+			$Table.Columns.Item(1).Width = 250;
+			$Table.Columns.Item(2).Width = 250;
+
+			$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+			FindWordDocumentEnd
+			$Table = $Null
+			WriteWordLine 0 0 ""
+		}
+		If($Text)
+		{
+			Line 3 "Enable account`t`t`t: " $RASAccount.Enabled.ToString()
+			Line 3 "Name`t`t`t`t: " $RASAccount.Name
+			Line 3 "Email`t`t`t`t: " $RASAccount.Email
+			Line 3 "Mobile`t`t`t`t: " $RASAccount.Mobile
+			Line 3 "Group`t`t`t`t: " $RASAccount.GroupName
+			Line 3 "Permissions`t`t`t: " $RASAccountPermissions
+			Line 3 "Receive system notifications`t: " $RASAccountNotify
+			Line 0 ""
+		}
+		If($HTML)
+		{
+			$rowdata = @()
+			$columnHeaders = @("Enabled",($Script:htmlsb),$RASAccount.Enabled.ToString(),$htmlwhite)
+			$rowdata += @(,("Name",($Script:htmlsb),$RASAccount.Name,$htmlwhite))
+			$rowdata += @(,("Email",($Script:htmlsb),$RASAccount.Email,$htmlwhite))
+			$rowdata += @(,("Mobile",($Script:htmlsb),$RASAccount.Mobile,$htmlwhite))
+			$rowdata += @(,("Group",($Script:htmlsb),$RASAccount.GroupName,$htmlwhite))
+			$rowdata += @(,("Permissions",($Script:htmlsb),$RASAccountPermissions,$htmlwhite))
+			$rowdata += @(,("Receive system notifications",($Script:htmlsb),$RASAccountNotify,$htmlwhite))
+			$rowdata += @(,("Last modification by",($Script:htmlsb), $RASAccount.AdminLastMod,$htmlwhite))
+
+			$msg = "Account Properties"
 			$columnWidths = @("200","175")
 			FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 			WriteHTMLLine 0 0 ""
@@ -46896,7 +46999,7 @@ Function OutputRASFeatures
 	If($MSWord -or $PDF)
 	{
 		$ScriptInformation = New-Object System.Collections.ArrayList
-		$ScriptInformation.Add(@{Data = "Enable Helpdesk functionality in Parallels Client"; Value = $RASFeatures.HelpDeskEnabled; }) > $Null
+		$ScriptInformation.Add(@{Data = "Enable Helpdesk functionality in Parallels Client"; Value = $RASFeatures.HelpDeskEnabled.ToString(); }) > $Null
 		$ScriptInformation.Add(@{Data = "Helpdesk email"; Value = $RASFeatures.HelpDeskEmail; }) > $Null
 
 		$Table = AddWordTable -Hashtable $ScriptInformation `
@@ -46916,12 +47019,44 @@ Function OutputRASFeatures
 		FindWordDocumentEnd
 		$Table = $Null
 		WriteWordLine 0 0 ""
+
+		<#
+		WriteWordLine 3 0 "Support"
+		$ScriptInformation = New-Object System.Collections.ArrayList
+		$ScriptInformation.Add(@{Data = "Overwrite support actions with the following URL"; Value = ""; }) > $Null
+		$ScriptInformation.Add(@{Data = "Support URL"; Value = ""; }) > $Null
+
+		$Table = AddWordTable -Hashtable $ScriptInformation `
+		-Columns Data,Value `
+		-List `
+		-Format $wdTableGrid `
+		-AutoFit $wdAutoFitFixed;
+
+		SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+		SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+		$Table.Columns.Item(1).Width = 250;
+		$Table.Columns.Item(2).Width = 250;
+
+		$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+		FindWordDocumentEnd
+		$Table = $Null
+		WriteWordLine 0 0 ""
+		#>
 	}
 	If($Text)
 	{
-		Line 3 "Enable Helpdesk functionality in Parallels Client`t: " $RASFeatures.HelpDeskEnabled
+		Line 3 "Enable Helpdesk functionality in Parallels Client`t: " $RASFeatures.HelpDeskEnabled.ToString()
 		Line 3 "Helpdesk email`t`t`t`t`t`t: " $RASFeatures.HelpDeskEmail
 		Line 0 ""
+
+		<#
+		Line 2 "Support"
+		Line 3 "Overwrite support actions with the following URL`t: " ""
+		Line 3 "Support URL`t`t`t`t`t`t: " ""
+		Line 0 ""
+		#>
 	}
 	If($HTML)
 	{
@@ -46933,33 +47068,78 @@ Function OutputRASFeatures
 		$columnWidths = @("275","175")
 		FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 		WriteHTMLLine 0 0 ""
+
+		<#
+		WriteHTMLLine 3 0 "Support"
+		$rowdata = @()
+		$columnHeaders = @("Overwrite support actions with the following URL",($Script:htmlsb),"",$htmlwhite)
+		$rowdata += @(,("Support URL",($Script:htmlsb),"",$htmlwhite))
+
+		$msg = ""
+		$columnWidths = @("275","175")
+		FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+		WriteHTMLLine 0 0 ""
+		#>
 	}
 }
 
 Function OutputRASSettings
 {
-	Param([object] $RASSettings)
+	Param([object] $RASSettings, [object] $RASProxySettings)
 	
 	Write-Verbose "$(Get-Date -Format G): `t`tOutput Settings"
 	
 	If($MSWord -or $PDF)
 	{
 		WriteWordLine 2 0 "Settings"
-		WriteWordLine 3 0 "Customer experience program"
 	}
 	If($Text)
 	{
 		Line 1 "Settings"
-		Line 2 "Customer experience program"
 	}
 	If($HTML)
 	{
 		WriteHTMLLine 2 0 "Settings"
-		WriteHTMLLine 3 0 "Customer experience program"
+	}
+
+	Switch ($RASSettings.ResetIdleSessionAfterMins)
+	{
+		0		{$RASSettingsResetIdleSessionAfterMins = "Never"; Break}
+		15		{$RASSettingsResetIdleSessionAfterMins = "15 minutes"; Break}
+		30		{$RASSettingsResetIdleSessionAfterMins = "30 minutes"; Break}
+		60		{$RASSettingsResetIdleSessionAfterMins = "1 hour"; Break}
+		180		{$RASSettingsResetIdleSessionAfterMins = "3 hours"; Break}
+		360		{$RASSettingsResetIdleSessionAfterMins = "6 hours"; Break}
+		720		{$RASSettingsResetIdleSessionAfterMins = "12 hours"; Break}
+		1440	{$RASSettingsResetIdleSessionAfterMins = "1 day"; Break}
+		Default	{$RASSettingsResetIdleSessionAfterMins = "Unable to determine Console idle time: $($RASSettings.ResetIdleSessionAfterMins)"; Break}
 	}
 	
 	If($MSWord -or $PDF)
 	{
+		WriteWordLine 3 0 "Updates"
+		$ScriptInformation = New-Object System.Collections.ArrayList
+		$ScriptInformation.Add(@{Data = "Check for updates when launching RAS console"; Value = $RASSettings.CheckForUpdateOnLaunch.ToString(); }) > $Null
+
+		$Table = AddWordTable -Hashtable $ScriptInformation `
+		-Columns Data,Value `
+		-List `
+		-Format $wdTableGrid `
+		-AutoFit $wdAutoFitFixed;
+
+		SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+		SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+		$Table.Columns.Item(1).Width = 250;
+		$Table.Columns.Item(2).Width = 250;
+
+		$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+		FindWordDocumentEnd
+		$Table = $Null
+		WriteWordLine 0 0 ""
+
+		WriteWordLine 3 0 "Customer experience program"
 		$ScriptInformation = New-Object System.Collections.ArrayList
 		$ScriptInformation.Add(@{Data = "Participate in the Customer Experience Program"; Value = $RASSettings.CEPEnabled.ToString(); }) > $Null
 
@@ -46980,45 +47160,8 @@ Function OutputRASSettings
 		FindWordDocumentEnd
 		$Table = $Null
 		WriteWordLine 0 0 ""
-	}
-	If($Text)
-	{
-		Line 3 "Participate in the Customer Experience Program`t`t: " $RASSettings.CEPEnabled.ToString()
-		Line 0 ""
-	}
-	If($HTML)
-	{
-		$rowdata = @()
-		$columnHeaders = @("Participate in the Customer Experience Program",($Script:htmlsb),$RASSettings.CEPEnabled.ToString(),$htmlwhite)
 
-		$msg = ""
-		$columnWidths = @("200","175")
-		FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-		WriteHTMLLine 0 0 ""
-	}
-}
-
-Function OutputRASProxySettings
-{
-	Param([object] $RASProxySettings)
-	
-	Write-Verbose "$(Get-Date -Format G): `t`tOutput HTTP Proxy Settings"
-	
-	If($MSWord -or $PDF)
-	{
 		WriteWordLine 3 0 "HTTP proxy settings"
-	}
-	If($Text)
-	{
-		Line 2 "HTTP proxy settings"
-	}
-	If($HTML)
-	{
-		WriteHTMLLine 3 0 "HTTP proxy settings"
-	}
-	
-	If($MSWord -or $PDF)
-	{
 		If($RASProxySettings.HttpProxyMode -eq "NoProxy")
 		{
 			$ScriptInformation = New-Object System.Collections.ArrayList
@@ -47069,87 +47212,9 @@ Function OutputRASProxySettings
 			$Table = $Null
 			WriteWordLine 0 0 ""
 		}
-	}
-	If($Text)
-	{
-		If($RASProxySettings.HttpProxyMode -eq "NoProxy")
-		{
-			Line 3 "No proxy server" 
-			Line 0 ""
-		}
-		Else
-		{
-			Line 3 "Manual HTTP proxy configuration" 
-			Line 3 "Address`t`t: " $RASProxySettings.HttpProxyAddress
-			Line 3 "Port`t`t: " $RASProxySettings.HttpProxyPort
-			Line 3 "User name`t: " $RASProxySettings.HttpProxyUser
-			Line 3 "Password`t: " $RASProxySettings.HttpProxyPwd
-			Line 0 ""
-		}
-	}
-	If($HTML)
-	{
-		If($RASProxySettings.HttpProxyMode -eq "NoProxy")
-		{
-			$rowdata = @()
-			$columnHeaders = @("No proxy server",($Script:htmlsb),"",$htmlwhite)
-
-			$msg = ""
-			$columnWidths = @("200","175")
-			FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-			WriteHTMLLine 0 0 ""
-		}
-		Else
-		{
-			$rowdata = @()
-			$columnHeaders = @("Manual HTTP proxy configuration",($Script:htmlsb),"",$htmlwhite)
-			$rowdata += @(,("Address",($Script:htmlsb),$RASProxySettings.HttpProxyAddress,$htmlwhite))
-			$rowdata += @(,("Port",($Script:htmlsb),$RASProxySettings.HttpProxyPort.ToString(),$htmlwhite))
-			$rowdata += @(,("User name",($Script:htmlsb),$RASProxySettings.HttpProxyUser,$htmlwhite))
-			$rowdata += @(,("Password",($Script:htmlsb),$RASProxySettings.HttpProxyPwd,$htmlwhite))
-
-			$msg = ""
-			$columnWidths = @("200","175")
-			FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-			WriteHTMLLine 0 0 ""
-		}
-	}
-}
-
-Function OutputRASMiscSettings
-{
-	Param([object] $RASSettings)
-	
-	Write-Verbose "$(Get-Date -Format G): `t`tOutput Miscellaneous Settings"
-	
-	If($MSWord -or $PDF)
-	{
+		
 		WriteWordLine 3 0 "Miscellaneous"
-	}
-	If($Text)
-	{
-		Line 2 "Miscellaneous"
-	}
-	If($HTML)
-	{
-		WriteHTMLLine 3 0 "Miscellaneous"
-	}
-	
-	Switch ($RASSettings.ResetIdleSessionAfterMins)
-	{
-		0		{$RASSettingsResetIdleSessionAfterMins = "Never"; Break}
-		15		{$RASSettingsResetIdleSessionAfterMins = "15 minutes"; Break}
-		30		{$RASSettingsResetIdleSessionAfterMins = "30 minutes"; Break}
-		60		{$RASSettingsResetIdleSessionAfterMins = "1 hour"; Break}
-		180		{$RASSettingsResetIdleSessionAfterMins = "3 hours"; Break}
-		360		{$RASSettingsResetIdleSessionAfterMins = "6 hours"; Break}
-		720		{$RASSettingsResetIdleSessionAfterMins = "12 hours"; Break}
-		1440	{$RASSettingsResetIdleSessionAfterMins = "1 day"; Break}
-		Default	{$RASSettingsResetIdleSessionAfterMins = "Unable to determine Console idle time: $($RASSettings.ResetIdleSessionAfterMins)"; Break}
-	}
-	
-	If($MSWord -or $PDF)
-	{
+		
 		$ScriptInformation = New-Object System.Collections.ArrayList
 		$ScriptInformation.Add(@{Data = "Reset idle RAS Console session after"; Value = $RASSettingsResetIdleSessionAfterMins; }) > $Null
 
@@ -47173,16 +47238,86 @@ Function OutputRASMiscSettings
 	}
 	If($Text)
 	{
+		Line 2 "Updates"
+		Line 3 "Check for updates when launching RAS console`t`t: " $RASSettings.CheckForUpdateOnLaunch.ToString()
+		Line 0 ""
+
+		Line 2 "Customer experience program"
+		Line 3 "Participate in the Customer Experience Program`t`t: " $RASSettings.CEPEnabled.ToString()
+		Line 0 ""
+
+		Line 2 "HTTP proxy settings"
+		If($RASProxySettings.HttpProxyMode -eq "NoProxy")
+		{
+			Line 3 "No proxy server" 
+			Line 0 ""
+		}
+		Else
+		{
+			Line 3 "Manual HTTP proxy configuration" 
+			Line 3 "Address`t`t: " $RASProxySettings.HttpProxyAddress
+			Line 3 "Port`t`t: " $RASProxySettings.HttpProxyPort
+			Line 3 "User name`t: " $RASProxySettings.HttpProxyUser
+			Line 3 "Password`t: " $RASProxySettings.HttpProxyPwd
+			Line 0 ""
+		}
+
+		Line 2 "Miscellaneous"
 		Line 3 "Reset idle RAS Console session after`t`t`t: " $RASSettingsResetIdleSessionAfterMins
 		Line 0 ""
 	}
 	If($HTML)
 	{
+		WriteHTMLLine 3 0 "Updates"
+		$rowdata = @()
+		$columnHeaders = @("Check for updates when launching RAS console",($Script:htmlsb),$RASSettings.CheckForUpdateOnLaunch.ToString(),$htmlwhite)
+
+		$msg = ""
+		$columnWidths = @("275","175")
+		FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+		WriteHTMLLine 0 0 ""
+
+		WriteHTMLLine 3 0 "Customer experience program"
+		$rowdata = @()
+		$columnHeaders = @("Participate in the Customer Experience Program",($Script:htmlsb),$RASSettings.CEPEnabled.ToString(),$htmlwhite)
+
+		$msg = ""
+		$columnWidths = @("275","175")
+		FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+		WriteHTMLLine 0 0 ""
+
+		WriteHTMLLine 3 0 "HTTP proxy settings"
+		If($RASProxySettings.HttpProxyMode -eq "NoProxy")
+		{
+			$rowdata = @()
+			$columnHeaders = @("No proxy server",($Script:htmlsb),"",$htmlwhite)
+
+			$msg = ""
+			$columnWidths = @("275","175")
+			FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+			WriteHTMLLine 0 0 ""
+		}
+		Else
+		{
+			$rowdata = @()
+			$columnHeaders = @("Manual HTTP proxy configuration",($Script:htmlsb),"",$htmlwhite)
+			$rowdata += @(,("Address",($Script:htmlsb),$RASProxySettings.HttpProxyAddress,$htmlwhite))
+			$rowdata += @(,("Port",($Script:htmlsb),$RASProxySettings.HttpProxyPort.ToString(),$htmlwhite))
+			$rowdata += @(,("User name",($Script:htmlsb),$RASProxySettings.HttpProxyUser,$htmlwhite))
+			$rowdata += @(,("Password",($Script:htmlsb),$RASProxySettings.HttpProxyPwd,$htmlwhite))
+
+			$msg = ""
+			$columnWidths = @("275","175")
+			FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+			WriteHTMLLine 0 0 ""
+		}
+
+		WriteHTMLLine 3 0 "Miscellaneous"
 		$rowdata = @()
 		$columnHeaders = @("Reset idle RAS Console session after",($Script:htmlsb),$RASSettingsResetIdleSessionAfterMins,$htmlwhite)
 
 		$msg = ""
-		$columnWidths = @("200","175")
+		$columnWidths = @("275","175")
 		FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 		WriteHTMLLine 0 0 ""
 	}
@@ -47217,6 +47352,7 @@ Function OutputRASMailboxSettings
 		"No"					{$RASMailboxSettingsUseTLS = "Do not use"; Break}
 		"3"						{$RASMailboxSettingsUseTLS = "Use TLS 1.2 if available"; Break}
 		"YesTLS12IfAvailable"	{$RASMailboxSettingsUseTLS = "Use TLS 1.2 if available"; Break} #fixed in 19.2, added in 3.01
+		"4"						{$RASMailboxSettingsUseTLS = "Use TLS 1.3 if available"; Break}
 		Default					{$RASMailboxSettingsUseTLS = "Unable to determine TLS/SSL setting: $($RASMailboxSettings.UseTLS)"; Break}
 	}
 	
@@ -47251,12 +47387,12 @@ Function OutputRASMailboxSettings
 	}
 	If($Text)
 	{
-		Line 3 "Mail server`t`t`t`t`t`t: " $RASMailboxSettings.SMTPServer
-		Line 3 "TLS/SSL`t`t`t`t`t`t`t: " $RASMailboxSettingsUseTLS
-		Line 3 "SMTP server requires authentication`t`t`t: " $RASMailboxSettings.RequireAuth
+		Line 3 "Mail server`t`t`t`t: " $RASMailboxSettings.SMTPServer
+		Line 3 "TLS/SSL`t`t`t`t`t: " $RASMailboxSettingsUseTLS
+		Line 3 "SMTP server requires authentication`t: " $RASMailboxSettings.RequireAuth
 		If($RASMailboxSettings.RequireAuth)
 		{
-			Line 3 "Username`t`t`t`t`t`t: " $RASMailboxSettings.Username
+			Line 3 "Username`t`t`t`t: " $RASMailboxSettings.Username
 		}
 		Line 0 ""
 	}
@@ -47315,7 +47451,7 @@ Function OutputRASMailboxSettings
 	}
 	If($Text)
 	{
-		Line 3 "Email address`t`t`t`t`t`t: " $RASMailboxSettings.SenderAddress
+		Line 3 "Email address`t`t`t`t: " $RASMailboxSettings.SenderAddress
 		Line 0 ""
 	}
 	If($HTML)
@@ -47373,7 +47509,19 @@ Function OutputRASReportingSettings
 		31449600	{$ServerInfoRetain = "52 weeks"; Break}
 		Default		{$ServerInfoRetain = "Unable to determine Server retain info for: $($RASReportingSettings.TrackServerTime)"; Break}
 	}
-	
+
+	$LogonInfoRetain = ""
+	Switch($RASReportingSettings.TrackServerTime)
+	{
+		0			{$LogonInfoRetain = "Do not delete"; Break}
+		2419200		{$LogonInfoRetain = "4 weeks"; Break}
+		4838400		{$LogonInfoRetain = "8 weeks"; Break}
+		7257600		{$LogonInfoRetain = "12 weeks"; Break}
+		15724800	{$LogonInfoRetain = "26 weeks"; Break}
+		31449600	{$LogonInfoRetain = "52 weeks"; Break}
+		Default		{$LogonInfoRetain = "Unable to determine Server retain info for: $($RASReportingSettings.TrackServerTime)"; Break}
+	}
+
 	If($MSWord -or $PDF)
 	{
 		$ScriptInformation = New-Object System.Collections.ArrayList
@@ -47389,24 +47537,40 @@ Function OutputRASReportingSettings
 			}
 			Else
 			{
-				$ScriptInformation.Add(@{Data = '     Use the following credentials:'; Value = ""; }) > $Null
-				$ScriptInformation.Add(@{Data = '     Username'; Value = $RASReportingSettings.Username; }) > $Null
+				$ScriptInformation.Add(@{Data = '     '; Value = ""; }) > $Null
+				$ScriptInformation.Add(@{Data = '          Username'; Value = $RASReportingSettings.Username; }) > $Null
 			}
 
-			$ScriptInformation.Add(@{Data = 'Session information'; Value = ""; }) > $Null
-			$ScriptInformation.Add(@{Data = "     Enable Tracking"; Value = $RASReportingSettings.TrackSessions.ToString(); }) > $Null
+			$ScriptInformation.Add(@{Data = 'Session Counters'; Value = ""; }) > $Null
+			$ScriptInformation.Add(@{Data = '     Session information'; Value = ""; }) > $Null
+			$ScriptInformation.Add(@{Data = "          Enable Tracking"; Value = $RASReportingSettings.TrackSessions.ToString(); }) > $Null
 			If($RASReportingSettings.TrackSessions)
 			{
-				$ScriptInformation.Add(@{Data = "     Retain information for"; Value = $SessionInfoRetain; }) > $Null
+				$ScriptInformation.Add(@{Data = "          Retain information for"; Value = $SessionInfoRetain; }) > $Null
+			}
+			
+			$ScriptInformation.Add(@{Data = "          Track logon details"; Value = $RASReportingSettings.TrackLogonDetails.ToString(); }) > $Null
+			If($RASReportingSettings.TrackSessions)
+			{
+				$ScriptInformation.Add(@{Data = "          Retain information for"; Value = $LogonInfoRetain; }) > $Null
+			}
+			
+			$ScriptInformation.Add(@{Data = "          Track user experience data"; Value = $RASReportingSettings.TrackUserExperience.ToString(); }) > $Null
+			If($RASReportingSettings.TrackUserExperience)
+			{
+				$ScriptInformation.Add(@{Data = "          Track UX Evaluator when change is more than"; Value = "$($RASReportingSettings.DeltaUXEvaluator.ToString()) %"; }) > $Null
+				$ScriptInformation.Add(@{Data = "          Track Latency when change is more than"; Value = "$($RASReportingSettings.DeltaLatency.ToString()) %"; }) > $Null
+				$ScriptInformation.Add(@{Data = "          Track Bandwidth when change is more than"; Value = "$($RASReportingSettings.DeltaBandwidth.ToString()) %"; }) > $Null
 			}
 
-			$ScriptInformation.Add(@{Data = "Server counters information"; Value = ""; }) > $Null
-			$ScriptInformation.Add(@{Data = "     Enable Tracking"; Value = $RASReportingSettings.TrackServers.ToString() ; }) > $Null
+			$ScriptInformation.Add(@{Data = "Server Counters"; Value = ""; }) > $Null
+			$ScriptInformation.Add(@{Data = "     Server counters information"; Value = ""; }) > $Null
+			$ScriptInformation.Add(@{Data = "          Enable Tracking"; Value = $RASReportingSettings.TrackServers.ToString() ; }) > $Null
 			If($RASReportingSettings.TrackServers)
 			{
-				$ScriptInformation.Add(@{Data = "     Retain information for"; Value = $ServerInfoRetain; }) > $Null
-				$ScriptInformation.Add(@{Data = "     Track CPU counter when change is more than"; Value = "$($RASReportingSettings.DeltaCpu) %"; }) > $Null
-				$ScriptInformation.Add(@{Data = "     Track Memory counter when change is more than"; Value = "$($RASReportingSettings.DeltaMemory) %"; }) > $Null
+				$ScriptInformation.Add(@{Data = "          Retain information for"; Value = $ServerInfoRetain; }) > $Null
+				$ScriptInformation.Add(@{Data = "          Track CPU counter when change is more than"; Value = "$($RASReportingSettings.DeltaCpu) %"; }) > $Null
+				$ScriptInformation.Add(@{Data = "          Track Memory counter when change is more than"; Value = "$($RASReportingSettings.DeltaMemory) %"; }) > $Null
 			}
 
 			$ScriptInformation.Add(@{Data = "Custom reports"; Value = ""; }) > $Null
@@ -47450,30 +47614,46 @@ Function OutputRASReportingSettings
 			Else
 			{
 				Line 3 "Use the following credentials:"
-				Line 3 "Username`t`t`t`t`t: " $RASReportingSettings.Username
+				Line 4 "Username`t`t`t`t: " $RASReportingSettings.Username
 			}
 
-			Line 2 "Session information" 
-			Line 3 "Enable Tracking`t`t`t`t`t: " $RASReportingSettings.TrackSessions.ToString()
+			Line 2 "Session Counters" 
+			Line 3 "Session information" 
+			Line 4 "Enable Tracking`t`t`t`t`t: " $RASReportingSettings.TrackSessions.ToString()
 			If($RASReportingSettings.TrackSessions)
 			{
-				Line 3 "Retain information for`t`t`t`t: " $SessionInfoRetain
+				Line 4 "Retain information for`t`t`t`t: " $SessionInfoRetain
 			}
 
-			Line 2 "Server counters information" 
-			Line 3 "Enable Tracking`t`t`t`t`t: " $RASReportingSettings.TrackServers.ToString()
+			Line 4 "Track logon details`t`t`t`t: " $RASReportingSettings.TrackLogonDetails.ToString()
+			If($RASReportingSettings.TrackSessions)
+			{
+				Line 4 "Retain information for`t`t`t`t: " $LogonInfoRetain
+			}
+			
+			Line 4 "Track user experience data`t`t`t: " $RASReportingSettings.TrackUserExperience.ToString()
+			If($RASReportingSettings.TrackUserExperience)
+			{
+				Line 4 "Track UX Evaluator when change is more than`t: $($RASReportingSettings.DeltaUXEvaluator.ToString()) %"
+				Line 4 "Track Latency when change is more than`t`t: $($RASReportingSettings.DeltaLatency.ToString()) %"
+				Line 4 "Track Bandwidth when change is more than`t: $($RASReportingSettings.DeltaBandwidth.ToString()) %"
+			}
+
+			Line 2 "Server Counters" 
+			Line 3 "Server counters information" 
+			Line 4 "Enable Tracking`t`t`t`t`t: " $RASReportingSettings.TrackServers.ToString()
 			If($RASReportingSettings.TrackServers)
 			{
-				Line 3 "Retain information for`t`t`t`t: " $ServerInfoRetain
-				Line 3 "Track CPU counter when change is more than`t: " "$($RASReportingSettings.DeltaCpu) %"
-				Line 3 "Track Memory counter when change is more than`t: " "$($RASReportingSettings.DeltaMemory) %"
+				Line 4 "Retain information for`t`t`t`t: " $ServerInfoRetain
+				Line 4 "Track CPU counter when change is more than`t: " "$($RASReportingSettings.DeltaCpu) %"
+				Line 4 "Track Memory counter when change is more than`t: " "$($RASReportingSettings.DeltaMemory) %"
 			}
 
 			Line 2 "Custom reports"
-			Line 3 "Enable custom reports`t`t`t`t: " $RASReportingSettings.EnableCustomReports.ToString()
+			Line 3 "Enable custom reports`t`t`t`t`t: " $RASReportingSettings.EnableCustomReports.ToString()
 			If($RASReportingSettings.EnableCustomReports)
 			{
-				Line 3 "Folder name`t`t`t`t`t: " $RASReportingSettings.FolderName
+				Line 3 "Folder name`t`t`t`t`t`t: " $RASReportingSettings.FolderName
 			}
 		}
 		Line 0 ""
@@ -47494,23 +47674,39 @@ Function OutputRASReportingSettings
 			Else
 			{
 				$rowdata += @(,("     Use the following credentials:",($Script:htmlsb),"",$htmlwhite))
-				$rowdata += @(,("     Username",($Script:htmlsb),$RASReportingSettings.Username,$htmlwhite))
+				$rowdata += @(,("          Username",($Script:htmlsb),$RASReportingSettings.Username,$htmlwhite))
 			}
 
-			$rowdata += @(,("Session information",($Script:htmlsb),"",$htmlwhite))
-			$rowdata += @(,("     Enable Tracking",($Script:htmlsb), $RASReportingSettings.TrackSessions.ToString(),$htmlwhite))
+			$rowdata += @(,("Session Counters",($Script:htmlsb),"",$htmlwhite))
+			$rowdata += @(,("     Session information",($Script:htmlsb),"",$htmlwhite))
+			$rowdata += @(,("          Enable Tracking",($Script:htmlsb), $RASReportingSettings.TrackSessions.ToString(),$htmlwhite))
 			If($RASReportingSettings.TrackSessions)
 			{
-				$rowdata += @(,("     Retain information for",($Script:htmlsb), $SessionInfoRetain,$htmlwhite))
+				$rowdata += @(,("          Retain information for",($Script:htmlsb),$SessionInfoRetain,$htmlwhite))
 			}
 
-			$rowdata += @(,("Server counters information",($Script:htmlsb),"",$htmlwhite))
-			$rowdata += @(,("     Enable Tracking",($Script:htmlsb),$RASReportingSettings.TrackServers.ToString(),$htmlwhite))
+			$rowdata += @(,("          Track logon details",($Script:htmlsb),$RASReportingSettings.TrackLogonDetails.ToString(),$htmlwhite))
+			If($RASReportingSettings.TrackSessions)
+			{
+				$rowdata += @(,("          Retain information for",($Script:htmlsb),$LogonInfoRetain,$htmlwhite))
+			}
+			
+			$rowdata += @(,("          Track user experience data",($Script:htmlsb),$RASReportingSettings.TrackUserExperience.ToString(),$htmlwhite))
+			If($RASReportingSettings.TrackUserExperience)
+			{
+				$rowdata += @(,("          Track UX Evaluator when change is more than",($Script:htmlsb),"$($RASReportingSettings.DeltaUXEvaluator.ToString()) %",$htmlwhite))
+				$rowdata += @(,("          Track Latency when change is more than",($Script:htmlsb),"$($RASReportingSettings.DeltaLatency.ToString()) %",$htmlwhite))
+				$rowdata += @(,("          Track Bandwidth when change is more than",($Script:htmlsb),"$($RASReportingSettings.DeltaBandwidth.ToString()) %",$htmlwhite))
+			}
+
+			$rowdata += @(,("Server Counters",($Script:htmlsb),"",$htmlwhite))
+			$rowdata += @(,("     Server counters information",($Script:htmlsb),"",$htmlwhite))
+			$rowdata += @(,("          Enable Tracking",($Script:htmlsb),$RASReportingSettings.TrackServers.ToString(),$htmlwhite))
 			If($RASReportingSettings.TrackServers)
 			{
-				$rowdata += @(,("     Retain information for",($Script:htmlsb),$ServerInfoRetain,$htmlwhite))
-				$rowdata += @(,("     Track CPU counter when change is more than",($Script:htmlsb),"$($RASReportingSettings.DeltaCpu) %",$htmlwhite))
-				$rowdata += @(,("     Track Memory counter when change is more than",($Script:htmlsb),"$($RASReportingSettings.DeltaMemory) %",$htmlwhite))
+				$rowdata += @(,("          Retain information for",($Script:htmlsb),$ServerInfoRetain,$htmlwhite))
+				$rowdata += @(,("          Track CPU counter when change is more than",($Script:htmlsb),"$($RASReportingSettings.DeltaCpu) %",$htmlwhite))
+				$rowdata += @(,("          Track Memory counter when change is more than",($Script:htmlsb),"$($RASReportingSettings.DeltaMemory) %",$htmlwhite))
 			}
 
 			$rowdata += @(,("Custom reports",($Script:htmlsb),"",$htmlwhite))
@@ -47566,11 +47762,11 @@ Function OutputRASPerformanceMonitorSettings
 	If($Text)
 	{
 		Line 2 "RAS Performance Monitor configuration"
-		Line 3 "Enable RAS Performance Monitor`t`t`t: " $RASPerformanceMonitorSettings.Enabled.ToString()
+		Line 3 "Enable RAS Performance Monitor`t`t`t`t: " $RASPerformanceMonitorSettings.Enabled.ToString()
 		If($RASPerformanceMonitorSettings.Enabled)
 		{
-			Line 3 "Server`t`t`t`t`t`t: " $RASPerformanceMonitorSettings.Server
-			Line 3 "Port`t`t`t`t`t`t: " $RASPerformanceMonitorSettings.Port.ToString()
+			Line 3 "Server`t`t`t`t`t`t`t: " $RASPerformanceMonitorSettings.Server
+			Line 3 "Port`t`t`t`t`t`t`t: " $RASPerformanceMonitorSettings.Port.ToString()
 		}
 		Line 0 ""
 	}
