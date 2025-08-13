@@ -1,4 +1,4 @@
-# Parallels-RAS-V19.3-4-Doc-Script
+# Parallels-RAS-V19.3+/20+-Doc-Script
 Creates a complete inventory of a V19.3/4 or 20 Parallels Remote Application Server (RAS) using Microsoft PowerShell, Word, plain text, or HTML.
 
 The script requires at least PowerShell version 3 but runs best in version 5.
