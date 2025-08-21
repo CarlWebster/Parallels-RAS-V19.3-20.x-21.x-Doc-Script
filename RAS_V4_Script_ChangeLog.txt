@@ -44,6 +44,17 @@
 #		For RAS version 20.2 and later, removed
 #			Client options/Advanced/Printing/Advanced client options - Printing settings/Cache printers hardware information
 #			Client options/Advanced/Printing/Advanced client options - Printing settings/Refresh printer hardware information every 30 days
+#	In Function OutputPubItemFilterSummary
+#		Move check for the default filter setting to this function from Function OutputPublishingSettings
+#		Add test for the defualt filter
+#		For each filter, add Enabled/Disabled
+#		For the Default Rule, add "Enabled" and "Default Rule" to the output
+#	In Function OutputPublishingSettings
+#		Add "Status" of Enabled, Disabled, or In Maintenance to all published item types
+#		Add LocalApp published item type
+#		Fix bug where "Allow if no other rule matches" was always the default filter setting. Move this check to Function OutputPubItemFilterSummary
+#		Fix bug for Word/PDF output for the VDIDesktop published item type
+#		Fix bug in the Text output for Sites
 #	In Function OutputRASAccounts
 #		Add the Enabled property
 #		Changed "Group or user names" to "Name"
@@ -56,7 +67,11 @@
 #			Group
 #			Permissions
 #			Receive system notifications
-#	In Function OutputRASFeatures, prepare for the Support setting 
+#	In Function OutputRASFeatures
+#		Rename variable $RASFeatures to $RASHelpdesk
+#		Add variable $RASSupport
+#		Change function to use two parameters: $RASHelpdesk and $RASSupport
+#		Add output for "Overwrite support actions with the following URL"
 #	In Function OutputRASLicense, update output to match the 19.4 console
 #	In Function OutputRASMailboxSettings, 
 #		Add the "Use TLS 1.3 if available" option
@@ -93,6 +108,11 @@
 #			Template
 #			Template version
 #			ID
+#	In Function ProcessAdministration
+#		Rename variable $RASFeatures to $RASHelpdesk
+#		Add variable $RASSupport
+#		Add retrieving Get-RASOverwriteSupportActions
+#		Change call to OutputRASFeatures to use two parameters: $RASHelpdesk and $RASSupport
 #	In Function ProcessScriptSetup, change how the RAS version is retrieved and put into variables
 #	Merged functions OutputRASProxySettings and OutputRASMiscSettings into OutputRASSettings
 #	Updated for the PowerShell module changes in RAS 19.3 and later, and 20 and later
