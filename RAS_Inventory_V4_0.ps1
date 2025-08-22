@@ -448,9 +448,9 @@
 	text document.
 .NOTES
 	NAME: RAS_Inventory_V4_0.ps1
-	VERSION: 4.00 Beta 13
+	VERSION: 4.00 Beta 14
 	AUTHOR: Carl Webster
-	LASTEDIT: August 21, 2025
+	LASTEDIT: August 22, 2025
 #>
 
 
@@ -612,9 +612,11 @@ Param(
 #	In Function OutputPublishingSettings
 #		Add "Status" of Enabled, Disabled, or In Maintenance to all published item types
 #		Add LocalApp published item type
+#		Ensure the output for all sections for all published item types matches the RAS V20.x console
 #		Fix bug where "Allow if no other rule matches" was always the default filter setting. Move this check to Function OutputPubItemFilterSummary
 #		Fix bug for Word/PDF output for the VDIDesktop published item type
 #		Fix bug in the Text output for Sites
+#		Add "Routing" to published item type of "Folder"
 #	In Function OutputRASAccounts
 #		Add the Enabled property
 #		Changed "Group or user names" to "Name"
@@ -742,9 +744,9 @@ $ErrorActionPreference    = 'SilentlyContinue'
 $Error.Clear()
 
 $Script:emailCredentials  = $Null
-$script:MyVersion         = '4.00 Beta 13'
+$script:MyVersion         = '4.00 Beta 14'
 $Script:ScriptName        = "RAS_Inventory_V4_0.ps1"
-$tmpdate                  = [datetime] "08/21/2025"
+$tmpdate                  = [datetime] "08/22/2025"
 $Script:ReleaseDate       = $tmpdate.ToUniversalTime().ToShortDateString()
 
 If($MSWord -eq $False -and $PDF -eq $False -and $Text -eq $False -and $HTML -eq $False)
@@ -29065,47 +29067,11 @@ Function OutputPublishingSettings
 				$Table = $Null
 				WriteWordLine 0 0 ""
 
-				WriteWordLine 3 0 "Sites"
-				$ScriptInformation = New-Object System.Collections.ArrayList
-
-				$cnt =-1
-				ForEach($Site in $PubItem.PublishToSite)
-				{
-					$cnt++
-					$SiteName = @(Get-RASSite -Id $Site -EA 0 4>$Null).Name
-					
-					If($cnt -eq 0)
-					{
-						$ScriptInformation.Add(@{Data = "This published item will be available from the following Sites"; Value = $SiteName; }) > $Null
-					}
-					Else
-					{
-						$ScriptInformation.Add(@{Data = ""; Value = $SiteName; }) > $Null
-					}
-				}
-
-				$Table = AddWordTable -Hashtable $ScriptInformation `
-				-Columns Data,Value `
-				-List `
-				-Format $wdTableGrid `
-				-AutoFit $wdAutoFitFixed;
-
-				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
-				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
-				$Table.Columns.Item(1).Width = 200;
-				$Table.Columns.Item(2).Width = 300;
-
-				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-				FindWordDocumentEnd
-				$Table = $Null
-				WriteWordLine 0 0 ""
-
 				WriteWordLine 3 0 "Folder"
 				$ScriptInformation = New-Object System.Collections.ArrayList
 				$ScriptInformation.Add(@{Data = "Folder Name"; Value = $PubItem.Name; }) > $Null
 				$ScriptInformation.Add(@{Data = "Description"; Value = $PubItem.Description; }) > $Null
+				$ScriptInformation.Add(@{Data = "Status"; Value = $PubItemStatus; }) > $Null
 				$ScriptInformation.Add(@{Data = "Use for administrative purposes"; Value = $PubItem.AdminOnly.ToString(); }) > $Null
 
 				$Table = AddWordTable -Hashtable $ScriptInformation `
@@ -29127,6 +29093,58 @@ Function OutputPublishingSettings
 				WriteWordLine 0 0 ""
 
 				OutputPubItemFilters $PubItem "MSWordPDF"
+
+				WriteWordLine 3 0 "Routing"
+				$ScriptInformation = New-Object System.Collections.ArrayList
+				If($PubItem.PreferredRoutingEnabled)
+				{
+					$Results = Get-RASPubItemPreferredRoute -Id $PubItem.Id -EA 0 4> $Null
+					
+					If($? -and $Null -ne $Results)
+					{
+						$cnt =-1
+						ForEach($PrefRoute in $Results)
+						{
+							$CustomRoute = Get-RASCustomRoute -Id $PrefRoute.Id -EA 0 4>$Null
+							
+							If($? -and $Null -ne $CustomRoute)
+							{
+								$cnt++
+								If($cnt -eq 0)
+								{
+									$ScriptInformation.Add(@{Data = "Preferred routing is enabled"; Value = ""; }) > $Null
+									$ScriptInformation.Add(@{Data = ""; Value = "$($CustomRoute.Name), custom route on IP $($CustomRoute.PublicAddress)"; }) > $Null
+								}
+								Else
+								{
+									$ScriptInformation.Add(@{Data = ""; Value = "$($CustomRoute.Name), custom route on IP $($CustomRoute.PublicAddress)"; }) > $Null
+								}
+							}
+						}
+					}
+				}
+				Else
+				{
+					$ScriptInformation.Add(@{Data = "Preferred routing is disabled"; Value = ""; }) > $Null
+				}
+
+				$Table = AddWordTable -Hashtable $ScriptInformation `
+				-Columns Data,Value `
+				-List `
+				-Format $wdTableGrid `
+				-AutoFit $wdAutoFitFixed;
+
+				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+				$Table.Columns.Item(1).Width = 200;
+				$Table.Columns.Item(2).Width = 300;
+
+				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+				FindWordDocumentEnd
+				$Table = $Null
+				WriteWordLine 0 0 ""
 			}
 			If($Text)
 			{
@@ -29195,32 +29213,49 @@ Function OutputPublishingSettings
 				
 				Line 0 ""
 
-				Line 2 Sites
-				$cnt =-1
-				ForEach($Site in $PubItem.PublishToSite)
-				{
-					$cnt++
-					$SiteName = @(Get-RASSite -Id $Site -EA 0 4>$Null).Name
-					
-					If($cnt -eq 0)
-					{
-						Line 3 "This published item will be available"
-						Line 3 "from the following Sites`t`t`t`t: " $SiteName
-					}
-					Else
-					{
-						Line 10 "  " $SiteName
-					}
-				}
-				Line 0 ""
-				
 				Line 2 "Folder"
 				Line 3 "Folder Name`t`t`t`t`t`t: " $PubItem.Name
 				Line 3 "Description`t`t`t`t`t`t: " $PubItem.Description
+				Line 3 "Status`t`t`t`t`t`t`t: " $PubItemStatus
 				Line 3 "Use for administrative purposes`t`t`t`t: " $PubItem.AdminOnly.ToString()
 				Line 0 ""
 				
 				OutputPubItemFilters $PubItem "Text"
+
+				Line 2 "Routing"
+				If($PubItem.PreferredRoutingEnabled)
+				{
+					$Results = Get-RASPubItemPreferredRoute -Id $PubItem.Id -EA 0 4> $Null
+					
+					If($? -and $Null -ne $Results)
+					{
+						$cnt =-1
+						ForEach($PrefRoute in $Results)
+						{
+							$CustomRoute = Get-RASCustomRoute -Id $PrefRoute.Id -EA 0 4>$Null
+							
+							If($? -and $Null -ne $CustomRoute)
+							{
+								$cnt++
+								If($cnt -eq 0)
+								{
+									Line 3 "Preferred routing is enabled"
+									Line 7 "$($CustomRoute.Name), custom route on IP $($CustomRoute.PublicAddress)"
+								}
+								Else
+								{
+									Line 7 "$($CustomRoute.Name), custom route on IP $($CustomRoute.PublicAddress)"
+								}
+							}
+						}
+					}
+				}
+				Else
+				{
+					Line 3 "Preferred routing is disabled"
+				}
+				Line 0 ""
+
 			}
 			If($HTML)
 			{
@@ -29307,6 +29342,45 @@ Function OutputPublishingSettings
 				WriteHTMLLine 0 0 ""
 
 				OutputPubItemFilters $PubItem "HTML"
+
+				WriteHTMLLine 3 0 "Routing"
+				$rowdata = @()
+
+				If($PubItem.PreferredRoutingEnabled)
+				{
+					$Results = Get-RASPubItemPreferredRoute -Id $PubItem.Id -EA 0 4> $Null
+					
+					If($? -and $Null -ne $Results)
+					{
+						$cnt =-1
+						ForEach($PrefRoute in $Results)
+						{
+							$CustomRoute = Get-RASCustomRoute -Id $PrefRoute.Id -EA 0 4>$Null
+							
+							If($? -and $Null -ne $CustomRoute)
+							{
+								$cnt++
+								If($cnt -eq 0)
+								{
+									$columnHeaders = @("Preferred routing is enabled",($Script:htmlsb),"",$htmlwhite)
+									$rowdata += @(,("",($Script:htmlsb),"$($CustomRoute.Name), custom route on IP $($CustomRoute.PublicAddress)",$htmlwhite))
+								}
+								Else
+								{
+									$rowdata += @(,("",($Script:htmlsb),"$($CustomRoute.Name), custom route on IP $($CustomRoute.PublicAddress)",$htmlwhite))
+								}
+							}
+						}
+					}
+				}
+				Else
+				{
+					$columnHeaders = @("Preferred routing is disabled",($Script:htmlsb),"",$htmlwhite)
+				}
+				$msg = ""
+				$columnWidths = @("200","300")
+				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+				WriteHTMLLine 0 0 ""
 			}
 		}
 		ElseIf($PubItem.Type -eq "PCApp")
@@ -29325,14 +29399,14 @@ Function OutputPublishingSettings
 				
 				$ScriptInformation.Add(@{Data = "Target"; Value = $PubItem.Target; }) > $Null
 				$ScriptInformation.Add(@{Data = "Start In"; Value = $PubItem.StartIn; }) > $Null
-				$ScriptInformation.Add(@{Data = "Start automatically when user logs on"; Value = $PubItem.StartOnLogon.ToString(); }) > $Null
+				#$ScriptInformation.Add(@{Data = "Start automatically when user logs on"; Value = $PubItem.StartOnLogon.ToString(); }) > $Null
 
 				If(![String]::IsNullOrEmpty($PubItem.Parameters))
 				{
 					$ScriptInformation.Add(@{Data = "Parameters"; Value = $PubItem.Parameters; }) > $Null
 				}
 				
-				$ScriptInformation.Add(@{Data = "Settings for Site $xSiteName"; Value = ""; }) > $Null
+				#$ScriptInformation.Add(@{Data = "Settings for Site $xSiteName"; Value = ""; }) > $Null
 				
 				If($PubItem.InheritShortcutDefaultSettings)
 				{
@@ -29382,43 +29456,39 @@ Function OutputPublishingSettings
 						$ScriptInformation.Add(@{Data = ""; Value = $SiteName; }) > $Null
 					}
 				}
-				$Table = AddWordTable -Hashtable $ScriptInformation `
-				-Columns Data,Value `
-				-List `
-				-Format $wdTableGrid `
-				-AutoFit $wdAutoFitFixed;
-
-				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
-				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
-				$Table.Columns.Item(1).Width = 200;
-				$Table.Columns.Item(2).Width = 300;
-
-				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-				FindWordDocumentEnd
-				$Table = $Null
-				WriteWordLine 0 0 ""
-
-				WriteWordLine 3 0 "Sites"
-				$ScriptInformation = New-Object System.Collections.ArrayList
-
-				$cnt =-1
-				ForEach($Site in $PubItem.PublishToSite)
+				
+				If($PubItem.PreferredRoutingEnabled)
 				{
-					$cnt++
-					$SiteName = @(Get-RASSite -Id $Site -EA 0 4>$Null).Name
+					$Results = Get-RASPubItemPreferredRoute -Id $PubItem.Id -EA 0 4> $Null
 					
-					If($cnt -eq 0)
+					If($? -and $Null -ne $Results)
 					{
-						$ScriptInformation.Add(@{Data = "This published item will be available from the following Sites"; Value = $SiteName; }) > $Null
-					}
-					Else
-					{
-						$ScriptInformation.Add(@{Data = ""; Value = $SiteName; }) > $Null
+						$cnt =-1
+						ForEach($PrefRoute in $Results)
+						{
+							$CustomRoute = Get-RASCustomRoute -Id $PrefRoute.Id -EA 0 4>$Null
+							
+							If($? -and $Null -ne $CustomRoute)
+							{
+								$cnt++
+								If($cnt -eq 0)
+								{
+									$ScriptInformation.Add(@{Data = "Preferred routing is enabled"; Value = ""; }) > $Null
+									$ScriptInformation.Add(@{Data = ""; Value = "$($CustomRoute.Name), custom route on IP $($CustomRoute.PublicAddress)"; }) > $Null
+								}
+								Else
+								{
+									$ScriptInformation.Add(@{Data = ""; Value = "$($CustomRoute.Name), custom route on IP $($CustomRoute.PublicAddress)"; }) > $Null
+								}
+							}
+						}
 					}
 				}
-
+				Else
+				{
+					$ScriptInformation.Add(@{Data = "Preferred routing is disabled"; Value = ""; }) > $Null
+				}
+				
 				$Table = AddWordTable -Hashtable $ScriptInformation `
 				-Columns Data,Value `
 				-List `
@@ -29437,16 +29507,18 @@ Function OutputPublishingSettings
 				$Table = $Null
 				WriteWordLine 0 0 ""
 
-				WriteWordLine 3 0 "Remote PC Application"
+				WriteWordLine 3 0 "Application"
 				WriteWordLine 4 0 "Application"
 				$ScriptInformation = New-Object System.Collections.ArrayList
 				$ScriptInformation.Add(@{Data = "Name"; Value = $PubItem.Name; }) > $Null
 				$ScriptInformation.Add(@{Data = "Description"; Value = $PubItem.Description; }) > $Null
+				$ScriptInformation.Add(@{Data = "Status"; Value = $PubItemStatus; }) > $Null
 				$ScriptInformation.Add(@{Data = "Run"; Value = $WinType; }) > $Null
 				$ScriptInformation.Add(@{Data = "Target"; Value = $PubItem.Target; }) > $Null
 				$ScriptInformation.Add(@{Data = "Start In"; Value = $PubItem.StartIn; }) > $Null
 				$ScriptInformation.Add(@{Data = "Parameters"; Value = $PubItem.Parameters; }) > $Null
 				$ScriptInformation.Add(@{Data = "Start automatically when user logs on"; Value = $PubItem.StartOnLogon.ToString(); }) > $Null
+				$ScriptInformation.Add(@{Data = "Exclude from session prelaunch"; Value = $PubItem.ExcludePrelaunch.ToString(); }) > $Null
 
 				$Table = AddWordTable -Hashtable $ScriptInformation `
 				-Columns Data,Value `
@@ -29468,6 +29540,58 @@ Function OutputPublishingSettings
 				
 				OutputPubItemFilters $PubItem "MSWordPDF"
 				
+				WriteWordLine 3 0 "Routing"
+				$ScriptInformation = New-Object System.Collections.ArrayList
+				If($PubItem.PreferredRoutingEnabled)
+				{
+					$Results = Get-RASPubItemPreferredRoute -Id $PubItem.Id -EA 0 4> $Null
+					
+					If($? -and $Null -ne $Results)
+					{
+						$cnt =-1
+						ForEach($PrefRoute in $Results)
+						{
+							$CustomRoute = Get-RASCustomRoute -Id $PrefRoute.Id -EA 0 4>$Null
+							
+							If($? -and $Null -ne $CustomRoute)
+							{
+								$cnt++
+								If($cnt -eq 0)
+								{
+									$ScriptInformation.Add(@{Data = "Preferred routing is enabled"; Value = ""; }) > $Null
+									$ScriptInformation.Add(@{Data = ""; Value = "$($CustomRoute.Name), custom route on IP $($CustomRoute.PublicAddress)"; }) > $Null
+								}
+								Else
+								{
+									$ScriptInformation.Add(@{Data = ""; Value = "$($CustomRoute.Name), custom route on IP $($CustomRoute.PublicAddress)"; }) > $Null
+								}
+							}
+						}
+					}
+				}
+				Else
+				{
+					$ScriptInformation.Add(@{Data = "Preferred routing is disabled"; Value = ""; }) > $Null
+				}
+
+				$Table = AddWordTable -Hashtable $ScriptInformation `
+				-Columns Data,Value `
+				-List `
+				-Format $wdTableGrid `
+				-AutoFit $wdAutoFitFixed;
+
+				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+				$Table.Columns.Item(1).Width = 200;
+				$Table.Columns.Item(2).Width = 300;
+
+				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+				FindWordDocumentEnd
+				$Table = $Null
+				WriteWordLine 0 0 ""
+
 				OutputPubItemShortcuts $PubItem "MSWordPDF" `
 				$DefaultCreateShortcutOnDesktop `
 				$DefaultCreateShortcutInStartFolder `
@@ -29488,14 +29612,14 @@ Function OutputPublishingSettings
 				
 				Line 3 "Target`t`t`t`t`t`t`t: " $PubItem.Target
 				Line 3 "Start In`t`t`t`t`t`t: " $PubItem.StartIn
-				Line 3 "Start automatically when user logs on`t`t`t: " $PubItem.StartOnLogon.ToString()
+				#Line 3 "Start automatically when user logs on`t`t`t: " $PubItem.StartOnLogon.ToString()
 				
 				If(![String]::IsNullOrEmpty($PubItem.Parameters))
 				{
 					Line 3 "Parameters`t`t`t`t`t`t: " $PubItem.Parameters
 				}
 				
-				Line 3 "Settings for Site $xSiteName"
+				#Line 3 "Settings for Site $xSiteName"
 
 				If($PubItem.InheritShortcutDefaultSettings)
 				{
@@ -29545,31 +29669,89 @@ Function OutputPublishingSettings
 						Line 10 $SiteName
 					}
 				}
-				Line 0 ""
 
-				Line 2 "Sites"
-				Line 3 "This published item will be available from the following Sites"
-				ForEach($Site in $PubItem.PublishToSite)
+				If($PubItem.PreferredRoutingEnabled)
 				{
-					$SiteName = @(Get-RASSite -Id $Site -EA 0 4>$Null).Name
+					$Results = Get-RASPubItemPreferredRoute -Id $PubItem.Id -EA 0 4> $Null
 					
-					Line 10 $SiteName
+					If($? -and $Null -ne $Results)
+					{
+						$cnt =-1
+						ForEach($PrefRoute in $Results)
+						{
+							$CustomRoute = Get-RASCustomRoute -Id $PrefRoute.Id -EA 0 4>$Null
+							
+							If($? -and $Null -ne $CustomRoute)
+							{
+								$cnt++
+								If($cnt -eq 0)
+								{
+									Line 3 "Preferred routing is enabled"
+									Line 7 "$($CustomRoute.Name), custom route on IP $($CustomRoute.PublicAddress)"
+								}
+								Else
+								{
+									Line 7 "$($CustomRoute.Name), custom route on IP $($CustomRoute.PublicAddress)"
+								}
+							}
+						}
+					}
+				}
+				Else
+				{
+					Line 3 "Preferred routing is disabled"
 				}
 				Line 0 ""
 
-				Line 2 "Remote PC Application"
+				Line 2 "Application"
 				Line 3 "Application"
 				Line 4 "Name`t`t`t`t`t`t: " $PubItem.Name
 				Line 4 "Description`t`t`t`t`t: " $PubItem.Description
+				Line 4 "Status`t`t`t`t`t`t`t: " $PubItemStatus
 				Line 4 "Run`t`t`t`t`t`t: " $WinType
 				Line 4 "Target`t`t`t`t`t`t: " $PubItem.Target
 				Line 4 "Start In`t`t`t`t`t: " $PubItem.StartIn
 				Line 4 "Parameters`t`t`t`t`t: " $PubItem.Parameters
 				Line 4 "Start automatically when user logs on`t`t: " $PubItem.StartOnLogon.ToString()
+				Line 4 "Exclude from session prelaunch`t`t`t: " $PubItem.ExcludePrelaunch.ToString()
 				Line 0 ""
 				
 				OutputPubItemFilters $PubItem "Text"
 				
+				Line 2 "Routing"
+				If($PubItem.PreferredRoutingEnabled)
+				{
+					$Results = Get-RASPubItemPreferredRoute -Id $PubItem.Id -EA 0 4> $Null
+					
+					If($? -and $Null -ne $Results)
+					{
+						$cnt =-1
+						ForEach($PrefRoute in $Results)
+						{
+							$CustomRoute = Get-RASCustomRoute -Id $PrefRoute.Id -EA 0 4>$Null
+							
+							If($? -and $Null -ne $CustomRoute)
+							{
+								$cnt++
+								If($cnt -eq 0)
+								{
+									Line 3 "Preferred routing is enabled"
+									Line 7 "$($CustomRoute.Name), custom route on IP $($CustomRoute.PublicAddress)"
+								}
+								Else
+								{
+									Line 7 "$($CustomRoute.Name), custom route on IP $($CustomRoute.PublicAddress)"
+								}
+							}
+						}
+					}
+				}
+				Else
+				{
+					Line 3 "Preferred routing is disabled"
+				}
+				Line 0 ""
+
 				OutputPubItemShortcuts $PubItem "Text" `
 				$DefaultCreateShortcutOnDesktop `
 				$DefaultCreateShortcutInStartFolder `
@@ -29591,14 +29773,14 @@ Function OutputPublishingSettings
 				$rowdata += @(,("Status",($Script:htmlsb),$PubItemStatus,$htmlwhite))
 				$rowdata += @(,("Target",($Script:htmlsb),$PubItem.Target,$htmlwhite))
 				$rowdata += @(,("Start In",($Script:htmlsb),$PubItem.StartIn,$htmlwhite))
-				$rowdata += @(,("Start automatically when user logs on",($Script:htmlsb),$PubItem.StartOnLogon.ToString(),$htmlwhite))
+				#$rowdata += @(,("Start automatically when user logs on",($Script:htmlsb),$PubItem.StartOnLogon.ToString(),$htmlwhite))
 				
 				If(![String]::IsNullOrEmpty($PubItem.Parameters))
 				{
 					$rowdata += @(,("Parameters",($Script:htmlsb),$PubItem.Parameters,$htmlwhite))
 				}
 				
-				$rowdata += @(,("Settings for Site $xSiteName",($Script:htmlsb),"",$htmlwhite))
+				#$rowdata += @(,("Settings for Site $xSiteName",($Script:htmlsb),"",$htmlwhite))
 				
 				If($PubItem.InheritShortcutDefaultSettings)
 				{
@@ -29649,28 +29831,36 @@ Function OutputPublishingSettings
 					}
 				}
 			
-				$msg = ""
-				$columnWidths = @("200","300")
-				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-				WriteHTMLLine 0 0 ""
-
-				WriteHTMLLine 3 0 "Sites"
-				$rowdata = @()
-
-				$cnt =-1
-				ForEach($Site in $PubItem.PublishToSite)
+				If($PubItem.PreferredRoutingEnabled)
 				{
-					$cnt++
-					$SiteName = @(Get-RASSite -Id $Site -EA 0 4>$Null).Name
+					$Results = Get-RASPubItemPreferredRoute -Id $PubItem.Id -EA 0 4> $Null
 					
-					If($cnt -eq 0)
+					If($? -and $Null -ne $Results)
 					{
-						$columnHeaders = @("This published item will be available from the following Sites",($Script:htmlsb),$SiteName,$htmlwhite)
+						$cnt =-1
+						ForEach($PrefRoute in $Results)
+						{
+							$CustomRoute = Get-RASCustomRoute -Id $PrefRoute.Id -EA 0 4>$Null
+							
+							If($? -and $Null -ne $CustomRoute)
+							{
+								$cnt++
+								If($cnt -eq 0)
+								{
+									$rowdata += @(,("Preferred routing is enabled",($Script:htmlsb),"",$htmlwhite))
+									$rowdata += @(,("",($Script:htmlsb),"$($CustomRoute.Name), custom route on IP $($CustomRoute.PublicAddress)",$htmlwhite))
+								}
+								Else
+								{
+									$rowdata += @(,("",($Script:htmlsb),"$($CustomRoute.Name), custom route on IP $($CustomRoute.PublicAddress)",$htmlwhite))
+								}
+							}
+						}
 					}
-					Else
-					{
-						$rowdata += @(,("",($Script:htmlsb),$SiteName,$htmlwhite))
-					}
+				}
+				Else
+				{
+					$rowdata += @(,("Preferred routing is disabled",($Script:htmlsb),"",$htmlwhite))
 				}
 
 				$msg = ""
@@ -29678,16 +29868,18 @@ Function OutputPublishingSettings
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 
-				WriteHTMLLine 3 0 "Remote PC Application"
+				WriteHTMLLine 3 0 "Application"
 				$rowdata = @()
 
 				$columnHeaders = @("Name",($Script:htmlsb),$PubItem.Name,$htmlwhite)
 				$rowdata += @(,("Description",($Script:htmlsb),$PubItem.Description,$htmlwhite))
+				$rowdata += @(,("Status",($Script:htmlsb),$PubItemStatus,$htmlwhite))
 				$rowdata += @(,("Run",($Script:htmlsb),$WinType,$htmlwhite))
 				$rowdata += @(,("Target",($Script:htmlsb),$PubItem.Target,$htmlwhite))
 				$rowdata += @(,("Start In",($Script:htmlsb),$PubItem.StartIn,$htmlwhite))
 				$rowdata += @(,("Parameters",($Script:htmlsb),$PubItem.Parameters,$htmlwhite))
 				$rowdata += @(,("Start automatically when user logs on",($Script:htmlsb),$PubItem.StartOnLogon.ToString(),$htmlwhite))
+				$rowdata += @(,("Exclude from session prelaunch",($Script:htmlsb),$PubItem.ExcludePrelaunch.ToString(),$htmlwhite))
 
 				$msg = "Application"
 				$columnWidths = @("200","300")
@@ -29696,6 +29888,45 @@ Function OutputPublishingSettings
 				
 				OutputPubItemFilters $PubItem "HTML"
 				
+				WriteHTMLLine 3 0 "Routing"
+				$rowdata = @()
+
+				If($PubItem.PreferredRoutingEnabled)
+				{
+					$Results = Get-RASPubItemPreferredRoute -Id $PubItem.Id -EA 0 4> $Null
+					
+					If($? -and $Null -ne $Results)
+					{
+						$cnt =-1
+						ForEach($PrefRoute in $Results)
+						{
+							$CustomRoute = Get-RASCustomRoute -Id $PrefRoute.Id -EA 0 4>$Null
+							
+							If($? -and $Null -ne $CustomRoute)
+							{
+								$cnt++
+								If($cnt -eq 0)
+								{
+									$columnHeaders = @("Preferred routing is enabled",($Script:htmlsb),"",$htmlwhite)
+									$rowdata += @(,("",($Script:htmlsb),"$($CustomRoute.Name), custom route on IP $($CustomRoute.PublicAddress)",$htmlwhite))
+								}
+								Else
+								{
+									$rowdata += @(,("",($Script:htmlsb),"$($CustomRoute.Name), custom route on IP $($CustomRoute.PublicAddress)",$htmlwhite))
+								}
+							}
+						}
+					}
+				}
+				Else
+				{
+					$columnHeaders = @("Preferred routing is disabled",($Script:htmlsb),"",$htmlwhite)
+				}
+				$msg = ""
+				$columnWidths = @("200","300")
+				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+				WriteHTMLLine 0 0 ""
+
 				OutputPubItemShortcuts $PubItem "HTML" `
 				$DefaultCreateShortcutOnDesktop `
 				$DefaultCreateShortcutInStartFolder `
@@ -29791,41 +30022,36 @@ Function OutputPublishingSettings
 					}
 				}
 
-				$Table = AddWordTable -Hashtable $ScriptInformation `
-				-Columns Data,Value `
-				-List `
-				-Format $wdTableGrid `
-				-AutoFit $wdAutoFitFixed;
-
-				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
-				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
-				$Table.Columns.Item(1).Width = 200;
-				$Table.Columns.Item(2).Width = 300;
-
-				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-				FindWordDocumentEnd
-				$Table = $Null
-				WriteWordLine 0 0 ""
-
-				WriteWordLine 3 0 "Sites"
-				$ScriptInformation = New-Object System.Collections.ArrayList
-
-				$cnt =-1
-				ForEach($Site in $PubItem.PublishToSite)
+				If($PubItem.PreferredRoutingEnabled)
 				{
-					$cnt++
-					$SiteName = @(Get-RASSite -Id $Site -EA 0 4>$Null).Name
+					$Results = Get-RASPubItemPreferredRoute -Id $PubItem.Id -EA 0 4> $Null
 					
-					If($cnt -eq 0)
+					If($? -and $Null -ne $Results)
 					{
-						$ScriptInformation.Add(@{Data = "This published item will be available from the following Sites"; Value = $SiteName; }) > $Null
+						$cnt =-1
+						ForEach($PrefRoute in $Results)
+						{
+							$CustomRoute = Get-RASCustomRoute -Id $PrefRoute.Id -EA 0 4>$Null
+							
+							If($? -and $Null -ne $CustomRoute)
+							{
+								$cnt++
+								If($cnt -eq 0)
+								{
+									$rowdata += @(,("Preferred routing is enabled",($Script:htmlsb),"",$htmlwhite))
+									$rowdata += @(,("",($Script:htmlsb),"$($CustomRoute.Name), custom route on IP $($CustomRoute.PublicAddress)",$htmlwhite))
+								}
+								Else
+								{
+									$rowdata += @(,("",($Script:htmlsb),"$($CustomRoute.Name), custom route on IP $($CustomRoute.PublicAddress)",$htmlwhite))
+								}
+							}
+						}
 					}
-					Else
-					{
-						$ScriptInformation.Add(@{Data = ""; Value = $SiteName; }) > $Null
-					}
+				}
+				Else
+				{
+					$rowdata += @(,("Preferred routing is disabled",($Script:htmlsb),"",$htmlwhite))
 				}
 
 				$Table = AddWordTable -Hashtable $ScriptInformation `
@@ -29846,12 +30072,14 @@ Function OutputPublishingSettings
 				$Table = $Null
 				WriteWordLine 0 0 ""
 
-				WriteWordLine 3 0 "Remote PC Desktop"
-				WriteWordLine 4 0 "Remote PC Desktop"
+				WriteWordLine 3 0 "Desktop"
+				WriteWordLine 4 0 "Desktop"
 				$ScriptInformation = New-Object System.Collections.ArrayList
 				$ScriptInformation.Add(@{Data = "Name"; Value = $PubItem.Name; }) > $Null
 				$ScriptInformation.Add(@{Data = "Description"; Value = $PubItem.Description; }) > $Null
+				$ScriptInformation.Add(@{Data = "Status"; Value = $PubItemStatus; }) > $Null
 				$ScriptInformation.Add(@{Data = "Start automatically when user logs on"; Value = $PubItem.StartOnLogon.ToString(); }) > $Null
+				$ScriptInformation.Add(@{Data = "Exclude from session prelaunch"; Value = $PubItem.ExcludePrelaunch.ToString(); }) > $Null
 
 				$Table = AddWordTable -Hashtable $ScriptInformation `
 				-Columns Data,Value `
@@ -29896,6 +30124,58 @@ Function OutputPublishingSettings
 				WriteWordLine 0 0 ""
 
 				OutputPubItemFilters $PubItem "MSWordPDF"
+
+				WriteWordLine 3 0 "Routing"
+				$ScriptInformation = New-Object System.Collections.ArrayList
+				If($PubItem.PreferredRoutingEnabled)
+				{
+					$Results = Get-RASPubItemPreferredRoute -Id $PubItem.Id -EA 0 4> $Null
+					
+					If($? -and $Null -ne $Results)
+					{
+						$cnt =-1
+						ForEach($PrefRoute in $Results)
+						{
+							$CustomRoute = Get-RASCustomRoute -Id $PrefRoute.Id -EA 0 4>$Null
+							
+							If($? -and $Null -ne $CustomRoute)
+							{
+								$cnt++
+								If($cnt -eq 0)
+								{
+									$ScriptInformation.Add(@{Data = "Preferred routing is enabled"; Value = ""; }) > $Null
+									$ScriptInformation.Add(@{Data = ""; Value = "$($CustomRoute.Name), custom route on IP $($CustomRoute.PublicAddress)"; }) > $Null
+								}
+								Else
+								{
+									$ScriptInformation.Add(@{Data = ""; Value = "$($CustomRoute.Name), custom route on IP $($CustomRoute.PublicAddress)"; }) > $Null
+								}
+							}
+						}
+					}
+				}
+				Else
+				{
+					$ScriptInformation.Add(@{Data = "Preferred routing is disabled"; Value = ""; }) > $Null
+				}
+
+				$Table = AddWordTable -Hashtable $ScriptInformation `
+				-Columns Data,Value `
+				-List `
+				-Format $wdTableGrid `
+				-AutoFit $wdAutoFitFixed;
+
+				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+				$Table.Columns.Item(1).Width = 200;
+				$Table.Columns.Item(2).Width = 300;
+
+				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+				FindWordDocumentEnd
+				$Table = $Null
+				WriteWordLine 0 0 ""
 
 				OutputPubItemShortcuts $PubItem "MSWordPDF" `
 				$DefaultCreateShortcutOnDesktop `
@@ -29966,13 +30246,47 @@ Function OutputPublishingSettings
 						Line 10 "  " $SiteName
 					}
 				}
+
+				If($PubItem.PreferredRoutingEnabled)
+				{
+					$Results = Get-RASPubItemPreferredRoute -Id $PubItem.Id -EA 0 4> $Null
+					
+					If($? -and $Null -ne $Results)
+					{
+						$cnt =-1
+						ForEach($PrefRoute in $Results)
+						{
+							$CustomRoute = Get-RASCustomRoute -Id $PrefRoute.Id -EA 0 4>$Null
+							
+							If($? -and $Null -ne $CustomRoute)
+							{
+								$cnt++
+								If($cnt -eq 0)
+								{
+									Line 3 "Preferred routing is enabled"
+									Line 7 "$($CustomRoute.Name), custom route on IP $($CustomRoute.PublicAddress)"
+								}
+								Else
+								{
+									Line 7 "$($CustomRoute.Name), custom route on IP $($CustomRoute.PublicAddress)"
+								}
+							}
+						}
+					}
+				}
+				Else
+				{
+					Line 3 "Preferred routing is disabled"
+				}
 				Line 0 ""
 
-				Line 2 "Remote PC Desktop"
-				Line 3 "Remote PC Desktop"
+				Line 2 "Desktop"
+				Line 3 "Desktop"
 				Line 4 "Name`t`t`t`t`t`t: " $PubItem.Name
 				Line 4 "Description`t`t`t`t`t: " $PubItem.Description
+				Line 4 "Status`t`t`t`t`t`t`t: " $PubItemStatus
 				Line 4 "Start automatically when user logs on`t`t: " $PubItem.StartOnLogon.ToString()
+				Line 4 "Exclude from session prelaunch`t`t`t: " $PubItem.ExcludePrelaunch.ToString()
 				Line 0 ""
 				Line 3 "Properties"
 				Line 4 "Desktop Size`t`t`t`t`t: " $DesktopSize
@@ -29981,6 +30295,40 @@ Function OutputPublishingSettings
 
 				OutputPubItemFilters $PubItem "Text"
 				
+				Line 2 "Routing"
+				If($PubItem.PreferredRoutingEnabled)
+				{
+					$Results = Get-RASPubItemPreferredRoute -Id $PubItem.Id -EA 0 4> $Null
+					
+					If($? -and $Null -ne $Results)
+					{
+						$cnt =-1
+						ForEach($PrefRoute in $Results)
+						{
+							$CustomRoute = Get-RASCustomRoute -Id $PrefRoute.Id -EA 0 4>$Null
+							
+							If($? -and $Null -ne $CustomRoute)
+							{
+								$cnt++
+								If($cnt -eq 0)
+								{
+									Line 3 "Preferred routing is enabled"
+									Line 7 "$($CustomRoute.Name), custom route on IP $($CustomRoute.PublicAddress)"
+								}
+								Else
+								{
+									Line 7 "$($CustomRoute.Name), custom route on IP $($CustomRoute.PublicAddress)"
+								}
+							}
+						}
+					}
+				}
+				Else
+				{
+					Line 3 "Preferred routing is disabled"
+				}
+				Line 0 ""
+
 				OutputPubItemShortcuts $PubItem "Text" `
 				$DefaultCreateShortcutOnDesktop `
 				$DefaultCreateShortcutInStartFolder `
@@ -30051,28 +30399,36 @@ Function OutputPublishingSettings
 					}
 				}
 
-				$msg = ""
-				$columnWidths = @("200","300")
-				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-				WriteHTMLLine 0 0 ""
-
-				WriteHTMLLine 3 0 "Sites"
-				$rowdata = @()
-
-				$cnt =-1
-				ForEach($Site in $PubItem.PublishToSite)
+				If($PubItem.PreferredRoutingEnabled)
 				{
-					$cnt++
-					$SiteName = @(Get-RASSite -Id $Site -EA 0 4>$Null).Name
+					$Results = Get-RASPubItemPreferredRoute -Id $PubItem.Id -EA 0 4> $Null
 					
-					If($cnt -eq 0)
+					If($? -and $Null -ne $Results)
 					{
-						$columnHeaders = @("This published item will be available from the following Sites",($Script:htmlsb),$SiteName,$htmlwhite)
+						$cnt =-1
+						ForEach($PrefRoute in $Results)
+						{
+							$CustomRoute = Get-RASCustomRoute -Id $PrefRoute.Id -EA 0 4>$Null
+							
+							If($? -and $Null -ne $CustomRoute)
+							{
+								$cnt++
+								If($cnt -eq 0)
+								{
+									$rowdata += @(,("Preferred routing is enabled",($Script:htmlsb),"",$htmlwhite))
+									$rowdata += @(,("",($Script:htmlsb),"$($CustomRoute.Name), custom route on IP $($CustomRoute.PublicAddress)",$htmlwhite))
+								}
+								Else
+								{
+									$rowdata += @(,("",($Script:htmlsb),"$($CustomRoute.Name), custom route on IP $($CustomRoute.PublicAddress)",$htmlwhite))
+								}
+							}
+						}
 					}
-					Else
-					{
-						$rowdata += @(,("",($Script:htmlsb),$SiteName,$htmlwhite))
-					}
+				}
+				Else
+				{
+					$rowdata += @(,("Preferred routing is disabled",($Script:htmlsb),"",$htmlwhite))
 				}
 
 				$msg = ""
@@ -30080,11 +30436,14 @@ Function OutputPublishingSettings
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 
-				WriteHTMLLine 3 0 "Remote PC Desktop"
+				WriteHTMLLine 3 0 "Desktop"
+				WriteHTMLLine 4 0 "Desktop"
 				$rowdata = @()
 				$columnHeaders = @("Name",($Script:htmlsb),$PubItem.Name,$htmlwhite)
 				$rowdata += @(,("Description",($Script:htmlsb),$PubItem.Description,$htmlwhite))
+				$rowdata += @(,("Status",($Script:htmlsb),$PubItemStatus,$htmlwhite))
 				$rowdata += @(,("Start automatically when user logs on",($Script:htmlsb),$PubItem.StartOnLogon.ToString(),$htmlwhite))
+				$rowdata += @(,("Exclude from session prelaunch",($Script:htmlsb),$PubItem.ExcludePrelaunch.ToString(),$htmlwhite))
 
 				$msg = ""
 				$columnWidths = @("200","300")
@@ -30097,12 +30456,51 @@ Function OutputPublishingSettings
 				$rowdata += @(,("Desktop Size",($Script:htmlsb),$DesktopSize,$htmlwhite))
 				$rowdata += @(,("Multi-Monitor",($Script:htmlsb),$AllowMultiMonitor,$htmlwhite))
 				
-				$msg = "Remote PC Desktop"
+				$msg = ""
 				$columnWidths = @("200","300")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 
 				OutputPubItemFilters $PubItem "HTML"
+
+				WriteHTMLLine 3 0 "Routing"
+				$rowdata = @()
+
+				If($PubItem.PreferredRoutingEnabled)
+				{
+					$Results = Get-RASPubItemPreferredRoute -Id $PubItem.Id -EA 0 4> $Null
+					
+					If($? -and $Null -ne $Results)
+					{
+						$cnt =-1
+						ForEach($PrefRoute in $Results)
+						{
+							$CustomRoute = Get-RASCustomRoute -Id $PrefRoute.Id -EA 0 4>$Null
+							
+							If($? -and $Null -ne $CustomRoute)
+							{
+								$cnt++
+								If($cnt -eq 0)
+								{
+									$columnHeaders = @("Preferred routing is enabled",($Script:htmlsb),"",$htmlwhite)
+									$rowdata += @(,("",($Script:htmlsb),"$($CustomRoute.Name), custom route on IP $($CustomRoute.PublicAddress)",$htmlwhite))
+								}
+								Else
+								{
+									$rowdata += @(,("",($Script:htmlsb),"$($CustomRoute.Name), custom route on IP $($CustomRoute.PublicAddress)",$htmlwhite))
+								}
+							}
+						}
+					}
+				}
+				Else
+				{
+					$columnHeaders = @("Preferred routing is disabled",($Script:htmlsb),"",$htmlwhite)
+				}
+				$msg = ""
+				$columnWidths = @("200","300")
+				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+				WriteHTMLLine 0 0 ""
 
 				OutputPubItemShortcuts $PubItem "HTML" `
 				$DefaultCreateShortcutOnDesktop `
@@ -30320,41 +30718,37 @@ Function OutputPublishingSettings
 						$ScriptInformation.Add(@{Data = ""; Value = $SiteName; }) > $Null
 					}
 				}
-				$Table = AddWordTable -Hashtable $ScriptInformation `
-				-Columns Data,Value `
-				-List `
-				-Format $wdTableGrid `
-				-AutoFit $wdAutoFitFixed;
 
-				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
-				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
-				$Table.Columns.Item(1).Width = 200;
-				$Table.Columns.Item(2).Width = 300;
-
-				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-				FindWordDocumentEnd
-				$Table = $Null
-				WriteWordLine 0 0 ""
-
-				WriteWordLine 3 0 "Sites"
-				$ScriptInformation = New-Object System.Collections.ArrayList
-
-				$cnt =-1
-				ForEach($Site in $PubItem.PublishToSite)
+				If($PubItem.PreferredRoutingEnabled)
 				{
-					$cnt++
-					$SiteName = @(Get-RASSite -Id $Site -EA 0 4>$Null).Name
+					$Results = Get-RASPubItemPreferredRoute -Id $PubItem.Id -EA 0 4> $Null
 					
-					If($cnt -eq 0)
+					If($? -and $Null -ne $Results)
 					{
-						$ScriptInformation.Add(@{Data = "This published item will be available from the following Sites"; Value = $SiteName; }) > $Null
+						$cnt =-1
+						ForEach($PrefRoute in $Results)
+						{
+							$CustomRoute = Get-RASCustomRoute -Id $PrefRoute.Id -EA 0 4>$Null
+							
+							If($? -and $Null -ne $CustomRoute)
+							{
+								$cnt++
+								If($cnt -eq 0)
+								{
+									$ScriptInformation.Add(@{Data = "Preferred routing is enabled"; Value = ""; }) > $Null
+									$ScriptInformation.Add(@{Data = ""; Value = "$($CustomRoute.Name), custom route on IP $($CustomRoute.PublicAddress)"; }) > $Null
+								}
+								Else
+								{
+									$ScriptInformation.Add(@{Data = ""; Value = "$($CustomRoute.Name), custom route on IP $($CustomRoute.PublicAddress)"; }) > $Null
+								}
+							}
+						}
 					}
-					Else
-					{
-						$ScriptInformation.Add(@{Data = ""; Value = $SiteName; }) > $Null
-					}
+				}
+				Else
+				{
+					$ScriptInformation.Add(@{Data = "Preferred routing is disabled"; Value = ""; }) > $Null
 				}
 
 				$Table = AddWordTable -Hashtable $ScriptInformation `
@@ -30451,7 +30845,9 @@ Function OutputPublishingSettings
 				$ScriptInformation.Add(@{Data = "Name"; Value = $PubItem.Name; }) > $Null
 				$ScriptInformation.Add(@{Data = "Description"; Value = $PubItem.Description; }) > $Null
 				$ScriptInformation.Add(@{Data = "Run"; Value = $WinType; }) > $Null
+				$ScriptInformation.Add(@{Data = "Status"; Value = $PubItemStatus; }) > $Null
 				$ScriptInformation.Add(@{Data = "Start automatically when user logs on"; Value = $PubItem.StartOnLogon.ToString(); }) > $Null
+				$ScriptInformation.Add(@{Data = "Exclude from session prelaunch"; Value = $PubItem.ExcludePrelaunch.ToString(); }) > $Null
 
 				$Table = AddWordTable -Hashtable $ScriptInformation `
 				-Columns Data,Value `
@@ -30471,8 +30867,9 @@ Function OutputPublishingSettings
 				$Table = $Null
 				WriteWordLine 0 0 ""
 				
-				WriteWordLine 4 0 "Server settings"
+				WriteWordLine 4 0 "Host settings"
 				$ScriptInformation = New-Object System.Collections.ArrayList
+				$ScriptInformation.Add(@{Data = "Host(s)"; Value = "Default settings"; }) > $Null
 				$ScriptInformation.Add(@{Data = "Target"; Value = $PubItem.Target; }) > $Null
 				$ScriptInformation.Add(@{Data = "Start in"; Value = $PubItem.StartIn; }) > $Null
 				$ScriptInformation.Add(@{Data = "Parameters"; Value = $PubItem.Parameters; }) > $Null
@@ -30497,6 +30894,58 @@ Function OutputPublishingSettings
 				
 				OutputPubItemFilters $PubItem "MSWordPDF"
 				
+				WriteWordLine 3 0 "Routing"
+				$ScriptInformation = New-Object System.Collections.ArrayList
+				If($PubItem.PreferredRoutingEnabled)
+				{
+					$Results = Get-RASPubItemPreferredRoute -Id $PubItem.Id -EA 0 4> $Null
+					
+					If($? -and $Null -ne $Results)
+					{
+						$cnt =-1
+						ForEach($PrefRoute in $Results)
+						{
+							$CustomRoute = Get-RASCustomRoute -Id $PrefRoute.Id -EA 0 4>$Null
+							
+							If($? -and $Null -ne $CustomRoute)
+							{
+								$cnt++
+								If($cnt -eq 0)
+								{
+									$ScriptInformation.Add(@{Data = "Preferred routing is enabled"; Value = ""; }) > $Null
+									$ScriptInformation.Add(@{Data = ""; Value = "$($CustomRoute.Name), custom route on IP $($CustomRoute.PublicAddress)"; }) > $Null
+								}
+								Else
+								{
+									$ScriptInformation.Add(@{Data = ""; Value = "$($CustomRoute.Name), custom route on IP $($CustomRoute.PublicAddress)"; }) > $Null
+								}
+							}
+						}
+					}
+				}
+				Else
+				{
+					$ScriptInformation.Add(@{Data = "Preferred routing is disabled"; Value = ""; }) > $Null
+				}
+
+				$Table = AddWordTable -Hashtable $ScriptInformation `
+				-Columns Data,Value `
+				-List `
+				-Format $wdTableGrid `
+				-AutoFit $wdAutoFitFixed;
+
+				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+				$Table.Columns.Item(1).Width = 200;
+				$Table.Columns.Item(2).Width = 300;
+
+				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+				FindWordDocumentEnd
+				$Table = $Null
+				WriteWordLine 0 0 ""
+
 				OutputPubItemShortcuts $PubItem "MSWordPDF" `
 				$DefaultCreateShortcutOnDesktop `
 				$DefaultCreateShortcutInStartFolder `
@@ -30789,24 +31238,37 @@ Function OutputPublishingSettings
 						Line 10 $SiteName
 					}
 				}
-				Line 0 ""
 
-				Line 2 Sites
-				$cnt =-1
-				ForEach($Site in $PubItem.PublishToSite)
+				If($PubItem.PreferredRoutingEnabled)
 				{
-					$cnt++
-					$SiteName = @(Get-RASSite -Id $Site -EA 0 4>$Null).Name
+					$Results = Get-RASPubItemPreferredRoute -Id $PubItem.Id -EA 0 4> $Null
 					
-					If($cnt -eq 0)
+					If($? -and $Null -ne $Results)
 					{
-						Line 3 "This published item will be available"
-						Line 3 "from the following Sites`t`t`t`t: " $SiteName
+						$cnt =-1
+						ForEach($PrefRoute in $Results)
+						{
+							$CustomRoute = Get-RASCustomRoute -Id $PrefRoute.Id -EA 0 4>$Null
+							
+							If($? -and $Null -ne $CustomRoute)
+							{
+								$cnt++
+								If($cnt -eq 0)
+								{
+									Line 3 "Preferred routing is enabled"
+									Line 7 "$($CustomRoute.Name), custom route on IP $($CustomRoute.PublicAddress)"
+								}
+								Else
+								{
+									Line 7 "$($CustomRoute.Name), custom route on IP $($CustomRoute.PublicAddress)"
+								}
+							}
+						}
 					}
-					Else
-					{
-						Line 10 "  " $SiteName
-					}
+				}
+				Else
+				{
+					Line 3 "Preferred routing is disabled"
 				}
 				Line 0 ""
 
@@ -30843,10 +31305,13 @@ Function OutputPublishingSettings
 				Line 4 "Name`t`t`t`t`t`t":  $PubItem.Name
 				Line 4 "Description`t`t`t`t`t: " $PubItem.Description
 				Line 4 "Run`t`t`t`t`t`t: " $WinType
+				Line 4 "Status`t`t`t`t`t`t`t: " $PubItemStatus
 				Line 4 "Start automatically when user logs on`t`t: " $PubItem.StartOnLogon.ToString()
+				Line 4 "Exclude from session prelaunch`t`t`t: " $PubItem.ExcludePrelaunch.ToString()
 				Line 0 ""
 				
-				Line 3 "Server settings"
+				Line 3 "Host settings"
+				Line 4 "Host(s)`t`t`t`t`t`t: " "Default settings"
 				Line 4 "Target`t`t`t`t`t`t: " $PubItem.Target
 				Line 4 "Start in`t`t`t`t`t: " $PubItem.StartIn
 				Line 4 "Parameters`t`t`t`t`t: " $PubItem.Parameters
@@ -30854,6 +31319,40 @@ Function OutputPublishingSettings
 				
 				OutputPubItemFilters $PubItem "Text"
 				
+				Line 2 "Routing"
+				If($PubItem.PreferredRoutingEnabled)
+				{
+					$Results = Get-RASPubItemPreferredRoute -Id $PubItem.Id -EA 0 4> $Null
+					
+					If($? -and $Null -ne $Results)
+					{
+						$cnt =-1
+						ForEach($PrefRoute in $Results)
+						{
+							$CustomRoute = Get-RASCustomRoute -Id $PrefRoute.Id -EA 0 4>$Null
+							
+							If($? -and $Null -ne $CustomRoute)
+							{
+								$cnt++
+								If($cnt -eq 0)
+								{
+									Line 3 "Preferred routing is enabled"
+									Line 7 "$($CustomRoute.Name), custom route on IP $($CustomRoute.PublicAddress)"
+								}
+								Else
+								{
+									Line 7 "$($CustomRoute.Name), custom route on IP $($CustomRoute.PublicAddress)"
+								}
+							}
+						}
+					}
+				}
+				Else
+				{
+					Line 3 "Preferred routing is disabled"
+				}
+				Line 0 ""
+
 				OutputPubItemShortcuts $PubItem "Text" `
 				$DefaultCreateShortcutOnDesktop `
 				$DefaultCreateShortcutInStartFolder `
@@ -31092,28 +31591,36 @@ Function OutputPublishingSettings
 					}
 				}
 			
-				$msg = ""
-				$columnWidths = @("200","300")
-				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-				WriteHTMLLine 0 0 ""
-
-				WriteHTMLLine 3 0 "Sites"
-				$rowdata = @()
-
-				$cnt =-1
-				ForEach($Site in $PubItem.PublishToSite)
+				If($PubItem.PreferredRoutingEnabled)
 				{
-					$cnt++
-					$SiteName = @(Get-RASSite -Id $Site -EA 0 4>$Null).Name
+					$Results = Get-RASPubItemPreferredRoute -Id $PubItem.Id -EA 0 4> $Null
 					
-					If($cnt -eq 0)
+					If($? -and $Null -ne $Results)
 					{
-						$columnHeaders = @("This published item will be available from the following Sites",($Script:htmlsb),$SiteName,$htmlwhite)
+						$cnt =-1
+						ForEach($PrefRoute in $Results)
+						{
+							$CustomRoute = Get-RASCustomRoute -Id $PrefRoute.Id -EA 0 4>$Null
+							
+							If($? -and $Null -ne $CustomRoute)
+							{
+								$cnt++
+								If($cnt -eq 0)
+								{
+									$rowdata += @(,("Preferred routing is enabled",($Script:htmlsb),"",$htmlwhite))
+									$rowdata += @(,("",($Script:htmlsb),"$($CustomRoute.Name), custom route on IP $($CustomRoute.PublicAddress)",$htmlwhite))
+								}
+								Else
+								{
+									$rowdata += @(,("",($Script:htmlsb),"$($CustomRoute.Name), custom route on IP $($CustomRoute.PublicAddress)",$htmlwhite))
+								}
+							}
+						}
 					}
-					Else
-					{
-						$rowdata += @(,("",($Script:htmlsb),$SiteName,$htmlwhite))
-					}
+				}
+				Else
+				{
+					$rowdata += @(,("Preferred routing is disabled",($Script:htmlsb),"",$htmlwhite))
 				}
 
 				$msg = ""
@@ -31182,7 +31689,9 @@ Function OutputPublishingSettings
 				$columnHeaders = @("Name",($Script:htmlsb),$PubItem.Name,$htmlwhite)
 				$rowdata += @(,("Description",($Script:htmlsb),$PubItem.Description,$htmlwhite))
 				$rowdata += @(,("Run",($Script:htmlsb),$WinType,$htmlwhite))
+				$rowdata += @(,("Status",($Script:htmlsb),$PubItemStatus,$htmlwhite))
 				$rowdata += @(,("Start automatically when user logs on",($Script:htmlsb),$PubItem.StartOnLogon.ToString(),$htmlwhite))
+				$rowdata += @(,("Exclude from session prelaunch",($Script:htmlsb),$PubItem.ExcludePrelaunch.ToString(),$htmlwhite))
 
 				$msg = "Application"
 				$columnWidths = @("200","300")
@@ -31190,18 +31699,57 @@ Function OutputPublishingSettings
 				WriteHTMLLine 0 0 ""
 				
 				$rowdata = @()
-				$columnHeaders = @("Server(s)",($Script:htmlsb),"",$htmlwhite)
+				$columnHeaders = @("Host(s)",($Script:htmlsb),"Default settings",$htmlwhite)
 				$rowdata += @(,("Target",($Script:htmlsb),$PubItem.Target,$htmlwhite))
 				$rowdata += @(,("Start in",($Script:htmlsb),$PubItem.StartIn,$htmlwhite))
 				$rowdata += @(,("Parameters",($Script:htmlsb),$PubItem.Parameters,$htmlwhite))
 
-				$msg = "Server settings"
+				$msg = "Host settings"
 				$columnWidths = @("200","300")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 
 				OutputPubItemFilters $PubItem "HTML"
 				
+				WriteHTMLLine 3 0 "Routing"
+				$rowdata = @()
+
+				If($PubItem.PreferredRoutingEnabled)
+				{
+					$Results = Get-RASPubItemPreferredRoute -Id $PubItem.Id -EA 0 4> $Null
+					
+					If($? -and $Null -ne $Results)
+					{
+						$cnt =-1
+						ForEach($PrefRoute in $Results)
+						{
+							$CustomRoute = Get-RASCustomRoute -Id $PrefRoute.Id -EA 0 4>$Null
+							
+							If($? -and $Null -ne $CustomRoute)
+							{
+								$cnt++
+								If($cnt -eq 0)
+								{
+									$columnHeaders = @("Preferred routing is enabled",($Script:htmlsb),"",$htmlwhite)
+									$rowdata += @(,("",($Script:htmlsb),"$($CustomRoute.Name), custom route on IP $($CustomRoute.PublicAddress)",$htmlwhite))
+								}
+								Else
+								{
+									$rowdata += @(,("",($Script:htmlsb),"$($CustomRoute.Name), custom route on IP $($CustomRoute.PublicAddress)",$htmlwhite))
+								}
+							}
+						}
+					}
+				}
+				Else
+				{
+					$columnHeaders = @("Preferred routing is disabled",($Script:htmlsb),"",$htmlwhite)
+				}
+				$msg = ""
+				$columnWidths = @("200","300")
+				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+				WriteHTMLLine 0 0 ""
+
 				OutputPubItemShortcuts $PubItem "HTML" `
 				$DefaultCreateShortcutOnDesktop `
 				$DefaultCreateShortcutInStartFolder `
