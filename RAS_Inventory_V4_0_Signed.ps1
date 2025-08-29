@@ -448,9 +448,9 @@
 	text document.
 .NOTES
 	NAME: RAS_Inventory_V4_0.ps1
-	VERSION: 4.00 Beta 15
+	VERSION: 4.00 Beta 16
 	AUTHOR: Carl Webster
-	LASTEDIT: August 25, 2025
+	LASTEDIT: August 29, 2025
 #>
 
 
@@ -608,7 +608,6 @@ Param(
 #		Move check for the default filter setting to this function from Function OutputPublishingSettings
 #		Add test for the default filter
 #		For each filter, add Enabled/Disabled
-#		For the Default Rule, add "Enabled" and "Default Rule" to the output
 #	In Function OutputPubItemFilter
 #		For the Default Rule, add "Enabled", "Default Rule", and the Allow or Deny text to the output
 #	In Function OutputPublishingSettings
@@ -619,11 +618,13 @@ Param(
 #		Fix bug for Word/PDF output for the VDIDesktop published item type
 #		Fix bug in the Text output for Sites
 #		Fix bugs in the handling of preferred routing
-#			In the Information section, only need to show of preferred routing is enabled or disabled
+#			In the Information section, only need to show whether preferred routing is enabled or disabled
 #			In the Routing section, the handling of no preferred routes configured was not handled properly
 #				Moved the "
 #		Add "Routing" to all published item types that have a Routing tab
-#		Remove the Site section from all published item types as that tab no longer exists in the console
+#		Remove the Site section from the published item types that no longer have that tab in the console
+#		For Published Item type of "VDIDesktop", add Published from
+#		Add the published item type to all published items
 #	In Function OutputRASAccounts
 #		Add the Enabled property
 #		Changed "Group or user names" to "Name"
@@ -672,11 +673,13 @@ Param(
 #		Added basic information for Tenant Brokers
 #		Changed "VDI Host" to "Provider"
 #	In Function OutputVDIDetails:
-#		For Host pools properties, add:
+#		For Host pools, add:
 #			Status
 #			Template
 #			Template version
 #			ID
+#		For Host Pool Properties, add
+#			Action tab
 #	In Function ProcessAdministration
 #		Rename variable $RASFeatures to $RASHelpdesk
 #		Add variable $RASSupport
@@ -751,9 +754,9 @@ $ErrorActionPreference    = 'SilentlyContinue'
 $Error.Clear()
 
 $Script:emailCredentials  = $Null
-$script:MyVersion         = '4.00 Beta 15'
+$script:MyVersion         = '4.00 Beta 16'
 $Script:ScriptName        = "RAS_Inventory_V4_0.ps1"
-$tmpdate                  = [datetime] "08/25/2025"
+$tmpdate                  = [datetime] "08/29/2025"
 $Script:ReleaseDate       = $tmpdate.ToUniversalTime().ToShortDateString()
 
 If($MSWord -eq $False -and $PDF -eq $False -and $Text -eq $False -and $HTML -eq $False)
@@ -4294,15 +4297,21 @@ Function OutputFarmSite
 		$ID                     = $Site.Id
 		If($MSWord -or $PDF)
 		{
-			WriteWordLine 0 0 "Unable to retrieve Site Status for Site $Site.Name"
+			WriteWordLine 0 0 ""
+			WriteWordLine 0 0 "Unable to retrieve Site Status for Site $($Site.Name)"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
-			Line 0 "Unable to retrieve Site Status for Site $Site.Name"
+			Line 0 ""
+			Line 0 "Unable to retrieve Site Status for Site $($Site.Name)"
+			Line 0 ""
 		}
 		If($HTML)
 		{
-			WriteHTMLLine 0 0 "Unable to retrieve Site Status for Site $Site.Name"
+			WriteHTMLLine 0 0 ""
+			WriteHTMLLine 0 0 "Unable to retrieve Site Status for Site $($Site.Name)"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	ElseIf($? -and $Null -eq $SiteSettings)
@@ -4324,15 +4333,21 @@ Function OutputFarmSite
 		$ID = $Site.Id
 		If($MSWord -or $PDF)
 		{
-			WriteWordLine 0 0 "No Site Status retrieved for Site $Site.Name"
+			WriteWordLine 0 0 ""
+			WriteWordLine 0 0 "No Site Status retrieved for Site $($Site.Name)"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
-			Line 0 "No Site Status retrieved for Site $Site.Name"
+			Line 0 ""
+			Line 0 "No Site Status retrieved for Site $($Site.Name)"
+			Line 0 ""
 		}
 		If($HTML)
 		{
-			WriteHTMLLine 0 0 "No Site Status retrieved for Site $Site.Name"
+			WriteHTMLLine 0 0 ""
+			WriteHTMLLine 0 0 "No Site Status retrieved for Site $($Site.Name)"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	Else
@@ -4916,15 +4931,21 @@ Function OutputSiteSummary
 		"
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "Unable to retrieve Tenant Brokers for Site $($Site.Name)"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "Unable to retrieve Tenant Brokers for Site $($Site.Name)"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "Unable to retrieve Tenant Brokers for Site $($Site.Name)"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	ElseIf($? -and $Null -eq $TenantBrokers)
@@ -4934,15 +4955,21 @@ Function OutputSiteSummary
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "No Tenant Brokers retrieved for Site $($Site.Name)"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
-			Line 0 "No Tenant Brokers retrieved for Site $($Site.Name)e"
+			Line 0 ""
+			Line 0 "No Tenant Brokers retrieved for Site $($Site.Name)"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "No Tenant Brokers retrieved for Site $($Site.Name)"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	Else
@@ -4965,7 +4992,7 @@ Function OutputSiteSummary
 		{
 			Write-Verbose "$(Get-Date -Format G): `t`t$($TenantBroker.Name)"
 			<#
-			$TenantBrokertatus = Get-RASRDSHostStatus -Id $RDSHost.Id -EA 0 4>$Null
+			$TenantBrokerStatus = Get-RASRDSHostStatus -Id $RDSHost.Id -EA 0 4>$Null
 			
 			If(!$?)
 			{
@@ -5086,15 +5113,21 @@ Function OutputSiteSummary
 		"
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "Unable to retrieve RD Session Hosts for Site $($Site.Name)"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "Unable to retrieve RD Session Hosts for Site $($Site.Name)"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "Unable to retrieve RD Session Hosts for Site $($Site.Name)"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	ElseIf($? -and $Null -eq $RDSHosts)
@@ -5104,15 +5137,21 @@ Function OutputSiteSummary
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "No RD Session Hosts retrieved for Site $($Site.Name)"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
-			Line 0 "No RD Session Hosts retrieved for Site $($Site.Name)e"
+			Line 0 ""
+			Line 0 "No RD Session Hosts retrieved for Site $($Site.Name)"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "No RD Session Hosts retrieved for Site $($Site.Name)"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	Else
@@ -5144,15 +5183,21 @@ Function OutputSiteSummary
 				"
 				If($MSWord -or $PDF)
 				{
+					WriteWordLine 0 0 ""
 					WriteWordLine 0 0 "Unable to retrieve RDS Status for RDS Host $($RDSHost.Server)"
+					WriteWordLine 0 0 ""
 				}
 				If($Text)
 				{
+					Line 0 ""
 					Line 0 "Unable to retrieve RDS Status for RDS Host $($RDSHost.Server)"
+					Line 0 ""
 				}
 				If($HTML)
 				{
+					WriteHTMLLine 0 0 ""
 					WriteHTMLLine 0 0 "Unable to retrieve RDS Status for RDS Host $($RDSHost.Server)"
+					WriteHTMLLine 0 0 ""
 				}
 			}
 			ElseIf($? -and $Null -eq $RDSStatus)
@@ -5162,15 +5207,21 @@ Function OutputSiteSummary
 				" -ForegroundColor White
 				If($MSWord -or $PDF)
 				{
+					WriteWordLine 0 0 ""
 					WriteWordLine 0 0 "No RDS Status retrieved for RDS Host $($RDSHost.Server)"
+					WriteWordLine 0 0 ""
 				}
 				If($Text)
 				{
+					Line 0 ""
 					Line 0 "No RDS Status retrieved for RDS Host $($RDSHost.Server)"
+					Line 0 ""
 				}
 				If($HTML)
 				{
+					WriteHTMLLine 0 0 ""
 					WriteHTMLLine 0 0 "No RDS Status retrieved for RDS Host $($RDSHost.Server)"
+					WriteHTMLLine 0 0 ""
 				}
 			}
 			Else
@@ -5285,15 +5336,21 @@ Function OutputSiteSummary
 		"
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "Unable to retrieve Providers for Site $($Site.Name)"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "Unable to retrieve Providers for Site $($Site.Name)"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "Unable to retrieve Providers for Site $($Site.Name)"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	ElseIf($? -and $Null -eq $Providers)
@@ -5331,15 +5388,21 @@ Function OutputSiteSummary
 					"
 					If($MSWord -or $PDF)
 					{
+						WriteWordLine 0 0 ""
 						WriteWordLine 0 0 "Unable to retrieve Provider Status for Provider $($Provider.Id)"
+						WriteWordLine 0 0 ""
 					}
 					If($Text)
 					{
+						Line 0 ""
 						Line 0 "Unable to retrieve Provider Status for Provider $($Provider.Id)"
+						Line 0 ""
 					}
 					If($HTML)
 					{
+						WriteHTMLLine 0 0 ""
 						WriteHTMLLine 0 0 "Unable to retrieve Provider Status for Provider $($Provider.Id)"
+						WriteHTMLLine 0 0 ""
 					}
 				}
 				ElseIf($? -and $Null -eq $Providerstatus)
@@ -5349,15 +5412,21 @@ Function OutputSiteSummary
 					" -ForegroundColor White
 					If($MSWord -or $PDF)
 					{
+						WriteWordLine 0 0 ""
 						WriteWordLine 0 0 "No Provider Status retrieved for Provider $($Provider.Id)"
+						WriteWordLine 0 0 ""
 					}
 					If($Text)
 					{
+						Line 0 ""
 						Line 0 "No Provider Status retrieved for Provider $($Provider.Id)"
+						Line 0 ""
 					}
 					If($HTML)
 					{
+						WriteHTMLLine 0 0 ""
 						WriteHTMLLine 0 0 "No Provider Status retrieved for Provider $($Provider.Id)"
+						WriteHTMLLine 0 0 ""
 					}
 				}
 				Else
@@ -5469,15 +5538,21 @@ Function OutputSiteSummary
 		"
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "Unable to retrieve Secure Gateways for Site $($Site.Name)"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "Unable to retrieve Secure Gateways for Site $($Site.Name)"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "Unable to retrieve Secure Gateways for Site $($Site.Name)"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	ElseIf($? -and $Null -eq $SecureGateways)
@@ -5487,15 +5562,21 @@ Function OutputSiteSummary
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "No Secure Gateways retrieved for Site $($Site.Name)"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "No Secure Gateways retrieved for Site $($Site.Name)"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "No Secure Gateways retrieved for Site $($Site.Name)"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	Else
@@ -5513,15 +5594,21 @@ Function OutputSiteSummary
 				"
 				If($MSWord -or $PDF)
 				{
+					WriteWordLine 0 0 ""
 					WriteWordLine 0 0 "Unable to retrieve Gateway Status for Secure Gateway $($SecureGateway.Id)"
+					WriteWordLine 0 0 ""
 				}
 				If($Text)
 				{
+					Line 0 ""
 					Line 0 "Unable to retrieve Gateway Status for Secure Gateway $($SecureGateway.Id)"
+					Line 0 ""
 				}
 				If($HTML)
 				{
+					WriteHTMLLine 0 0 ""
 					WriteHTMLLine 0 0 "Unable to retrieve Gateway Status for Secure Gateway $($SecureGateway.Id)"
+					WriteHTMLLine 0 0 ""
 				}
 			}
 			ElseIf($? -and $Null -eq $SecureGatewayStatus)
@@ -5531,15 +5618,21 @@ Function OutputSiteSummary
 				" -ForegroundColor White
 				If($MSWord -or $PDF)
 				{
+					WriteWordLine 0 0 ""
 					WriteWordLine 0 0 "No Gateway Status retrieved for Secure Gateway $($SecureGateway.Id)"
+					WriteWordLine 0 0 ""
 				}
 				If($Text)
 				{
+					Line 0 ""
 					Line 0 "No Gateway Status retrieved for Secure Gateway $($SecureGateway.Id)"
+					Line 0 ""
 				}
 				If($HTML)
 				{
+					WriteHTMLLine 0 0 ""
 					WriteHTMLLine 0 0 "No Gateway Status retrieved for Secure Gateway $($SecureGateway.Id)"
+					WriteHTMLLine 0 0 ""
 				}
 			}
 			Else
@@ -5654,15 +5747,21 @@ Function OutputSiteSummary
 		"
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "Unable to retrieve Connection Brokers for Site $($Site.Name)"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "Unable to retrieve Connection Brokers for Site $($Site.Name)"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "Unable to retrieve Connection Brokers for Site $($Site.Name)"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	ElseIf($? -and $Null -eq $ConnectionBrokers)
@@ -5672,15 +5771,21 @@ Function OutputSiteSummary
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "No Connection Brokers retrieved for Site $($Site.Name)"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "No Connection Brokers retrieved for Site $($Site.Name)"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "No Connection Brokers retrieved for Site $($Site.Name)"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	Else
@@ -5698,15 +5803,21 @@ Function OutputSiteSummary
 				"
 				If($MSWord -or $PDF)
 				{
+					WriteWordLine 0 0 ""
 					WriteWordLine 0 0 "Unable to retrieve Connection Brokers Status for Connection Brokers $($ConnectionBroker.Id)"
+					WriteWordLine 0 0 ""
 				}
 				If($Text)
 				{
+					Line 0 ""
 					Line 0 "Unable to retrieve Connection Brokers Status for Connection Brokers $($ConnectionBroker.Id)"
+					Line 0 ""
 				}
 				If($HTML)
 				{
+					WriteHTMLLine 0 0 ""
 					WriteHTMLLine 0 0 "Unable to retrieve Connection Brokers Status for Connection Brokers $($ConnectionBroker.Id)"
+					WriteHTMLLine 0 0 ""
 				}
 			}
 			ElseIf($? -and $Null -eq $ConnectionBrokerStatus)
@@ -5716,15 +5827,21 @@ Function OutputSiteSummary
 				" -ForegroundColor White
 				If($MSWord -or $PDF)
 				{
+					WriteWordLine 0 0 ""
 					WriteWordLine 0 0 "No Connection Brokers Status retrieved for Connection Brokers $($ConnectionBroker.Id)"
+					WriteWordLine 0 0 ""
 				}
 				If($Text)
 				{
+					Line 0 ""
 					Line 0 "No Connection Brokers Status retrieved for Connection Brokers $($ConnectionBroker.Id)"
+					Line 0 ""
 				}
 				If($HTML)
 				{
+					WriteHTMLLine 0 0 ""
 					WriteHTMLLine 0 0 "No Connection Brokers Status retrieved for Connection Brokers $($ConnectionBroker.Id)"
+					WriteHTMLLine 0 0 ""
 				}
 			}
 			Else
@@ -5844,15 +5961,21 @@ Function OutputSiteSummary
 		"
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "Unable to retrieve Enrollment Servers for Site $($Site.Name)"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "Unable to retrieve Enrollment Servers for Site $($Site.Name)"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "Unable to retrieve Enrollment Servers for Site $($Site.Name)"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	ElseIf($? -and $Null -eq $EnrollmentServers)
@@ -5862,15 +5985,21 @@ Function OutputSiteSummary
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "No Enrollment Servers retrieved for Site $($Site.Name)"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "No Enrollment Servers retrieved for Site $($Site.Name)"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "No Enrollment Servers retrieved for Site $($Site.Name)"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	Else
@@ -5889,15 +6018,21 @@ Function OutputSiteSummary
 				"
 				If($MSWord -or $PDF)
 				{
+					WriteWordLine 0 0 ""
 					WriteWordLine 0 0 "Unable to retrieve Status for Enrollment Server $($EnrollmentServer.Server)"
+					WriteWordLine 0 0 ""
 				}
 				If($Text)
 				{
+					Line 0 ""
 					Line 0 "Unable to retrieve Status for Enrollment Server $($EnrollmentServer.Server)"
+					Line 0 ""
 				}
 				If($HTML)
 				{
+					WriteHTMLLine 0 0 ""
 					WriteHTMLLine 0 0 "Unable to retrieve Status for Enrollment Server $($EnrollmentServer.Server)"
+					WriteHTMLLine 0 0 ""
 				}
 			}
 			ElseIf($? -and $Null -eq $ESStatus)
@@ -5907,15 +6042,21 @@ Function OutputSiteSummary
 				" -ForegroundColor White
 				If($MSWord -or $PDF)
 				{
+					WriteWordLine 0 0 ""
 					WriteWordLine 0 0 "No Status retrieved for Enrollment Server $($EnrollmentServer.Server)"
+					WriteWordLine 0 0 ""
 				}
 				If($Text)
 				{
+					Line 0 ""
 					Line 0 "No Status retrieved for Enrollment Server $($EnrollmentServer.Server)"
+					Line 0 ""
 				}
 				If($HTML)
 				{
+					WriteHTMLLine 0 0 ""
 					WriteHTMLLine 0 0 "No Status retrieved for Enrollment Server $($EnrollmentServer.Server)"
+					WriteHTMLLine 0 0 ""
 				}
 			}
 			Else
@@ -6045,15 +6186,21 @@ Function OutputRDSessionHostsDetails
 		"
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "Unable to retrieve RD Session Hosts for Site $($Site.Name)"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "Unable to retrieve RD Session Hosts for Site $($Site.Name)"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "Unable to retrieve RD Session Hosts for Site $($Site.Name)"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	ElseIf($? -and $Null -eq $RDSHosts)
@@ -6063,15 +6210,21 @@ Function OutputRDSessionHostsDetails
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "No RD Session Hosts retrieved for Site $($Site.Name)"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "No RD Session Hosts retrieved for Site $($Site.Name)"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "No RD Session Hosts retrieved for Site $($Site.Name)"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	Else
@@ -6089,15 +6242,21 @@ Function OutputRDSessionHostsDetails
 				"
 				If($MSWord -or $PDF)
 				{
+					WriteWordLine 0 0 ""
 					WriteWordLine 0 0 "Unable to retrieve RD Session Hosts Status for RD Session Hosts $($RDSHost.Id)"
+					WriteWordLine 0 0 ""
 				}
 				If($Text)
 				{
+					Line 0 ""
 					Line 0 "Unable to retrieve RD Session Hosts Status for RD Session Hosts $($RDSHost.Id)"
+					Line 0 ""
 				}
 				If($HTML)
 				{
+					WriteHTMLLine 0 0 ""
 					WriteHTMLLine 0 0 "Unable to retrieve RD Session Hosts Status for RD Session Hosts $($RDSHost.Id)"
+					WriteHTMLLine 0 0 ""
 				}
 			}
 			ElseIf($? -and $Null -eq $RDSStatus)
@@ -6107,15 +6266,21 @@ Function OutputRDSessionHostsDetails
 				" -ForegroundColor White
 				If($MSWord -or $PDF)
 				{
+					WriteWordLine 0 0 ""
 					WriteWordLine 0 0 "No RD Session Hosts Status retrieved for RD Session Hosts $($RDSHost.Id)"
+					WriteWordLine 0 0 ""
 				}
 				If($Text)
 				{
+					Line 0 ""
 					Line 0 "No RD Session Hosts Status retrieved for RD Session Hosts $($RDSHost.Id)"
+					Line 0 ""
 				}
 				If($HTML)
 				{
+					WriteHTMLLine 0 0 ""
 					WriteHTMLLine 0 0 "No RD Session Hosts Status retrieved for RD Session Hosts $($RDSHost.Id)"
+					WriteHTMLLine 0 0 ""
 				}
 			}
 			Else
@@ -17311,6 +17476,83 @@ Function OutputVDIDetails
 					FindWordDocumentEnd
 					$Table = $Null
 					WriteWordLine 0 0 ""
+
+					#Action
+					WriteWordLine 4 0 "Action"
+					
+					If($VDIPool.InheritDefaultVDIActionSettings)
+					{
+						#do we inherit site defaults?
+						#yes we do, get the default settings for the Site
+						#use the Site default settings
+
+						$VDIDefaults = Get-RASVDIDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
+						
+						If($? -and $Null -ne $VDIDefaults)
+						{
+							Switch ($VDIDefaults.Action.PerformActionAfterSec)
+							{
+								0		{$VDIPoolActionsAfter = "Never"; Break}
+								1		{$VDIPoolActionsAfter = "Immediate"; Break}
+								25		{$VDIPoolActionsAfter = "25 seconds"; Break}
+								60		{$VDIPoolActionsAfter = "1 minute"; Break}
+								300		{$VDIPoolActionsAfter = "5 minutes"; Break}
+								3600	{$VDIPoolActionsAfter = "1 hour"; Break}
+								7200	{$VDIPoolActionsAfter = "2 hours"; Break}
+								Default	{$VDIPoolActionsAfter = "Unable to determine Actions After: $($VDIDefaults.Action.PerformActionAfterSec)"; Break}
+							}
+							$VDIPoolActionsOnSession     = $VDIDefaults.Action.SessionAction.ToString()
+							$VDIPoolActionsPerformAction = $VDIDefaults.Action.PerformAction.ToString()
+						}
+						Else
+						{
+							#unable to retrieve default, use built-in default values
+							$VDIPoolActionsOnSession     = "Disconnect"
+							$VDIPoolActionsPerformAction = "Do nothing"
+							$VDIPoolActionsAfter         = "Never"
+						}
+					}
+					Else
+					{
+						#No, we don't use the VDI host pool settings
+						Switch ($VDIPool.Action.PerformActionAfterSec)
+						{
+							0		{$VDIPoolActionsAfter = "Never"; Break}
+							1		{$VDIPoolActionsAfter = "Immediate"; Break}
+							25		{$VDIPoolActionsAfter = "25 seconds"; Break}
+							60		{$VDIPoolActionsAfter = "1 minute"; Break}
+							300		{$VDIPoolActionsAfter = "5 minutes"; Break}
+							3600	{$VDIPoolActionsAfter = "1 hour"; Break}
+							7200	{$VDIPoolActionsAfter = "2 hours"; Break}
+							Default	{$VDIPoolActionsAfter = "Unable to determine Actions After: $($VDIPool.PerformActionAfterSec)"; Break}
+						}
+						$VDIPoolActionsOnSession     = $VDIPool.Action.SessionAction.ToString()
+						$VDIPoolActionsPerformAction = $VDIPool.Action.PerformAction.ToString()
+					}
+
+					$ScriptInformation = New-Object System.Collections.ArrayList
+					$ScriptInformation.Add(@{Data = "Inherit default settings"; Value = $VDIPool.InheritDefaultVDIActionSettings.ToString(); }) > $Null
+					$ScriptInformation.Add(@{Data = "Action"; Value = ""; }) > $Null
+					$ScriptInformation.Add(@{Data = "     On session"; Value = $VDIPoolActionsOnSession; }) > $Null
+					$ScriptInformation.Add(@{Data = "     Perform action"; Value = $VDIPoolActionsPerformAction; }) > $Null
+					$ScriptInformation.Add(@{Data = "     After"; Value = $VDIPoolActionsAfter; }) > $Null
+
+					$Table = AddWordTable -Hashtable $ScriptInformation `
+					-Columns Data,Value `
+					-List `
+					-Format $wdTableGrid `
+					-AutoFit $wdAutoFitFixed;
+
+					SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+					$Table.Columns.Item(1).Width = 200;
+					$Table.Columns.Item(2).Width = 250;
+
+					$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+					FindWordDocumentEnd
+					$Table = $Null
+					WriteWordLine 0 0 ""
 				}
 			}
 			ElseIf($? -and $Null -eq $VDIPools)
@@ -17397,6 +17639,7 @@ Function OutputVDIDetails
 					If($VDIPool.Members.Members.Count -eq 0)
 					{
 						Line 4 "Members: " "There are no pool members"
+						Line 0 ""
 					}
 					Else
 					{
@@ -17436,6 +17679,66 @@ Function OutputVDIDetails
 							}
 						}
 					}
+
+					#Action
+					Line 3 "Action"
+					
+					If($VDIPool.InheritDefaultVDIActionSettings)
+					{
+						#do we inherit site defaults?
+						#yes we do, get the default settings for the Site
+						#use the Site default settings
+
+						$VDIDefaults = Get-RASVDIDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
+						
+						If($? -and $Null -ne $VDIDefaults)
+						{
+							Switch ($VDIDefaults.Action.PerformActionAfterSec)
+							{
+								0		{$VDIPoolActionsAfter = "Never"; Break}
+								1		{$VDIPoolActionsAfter = "Immediate"; Break}
+								25		{$VDIPoolActionsAfter = "25 seconds"; Break}
+								60		{$VDIPoolActionsAfter = "1 minute"; Break}
+								300		{$VDIPoolActionsAfter = "5 minutes"; Break}
+								3600	{$VDIPoolActionsAfter = "1 hour"; Break}
+								7200	{$VDIPoolActionsAfter = "2 hours"; Break}
+								Default	{$VDIPoolActionsAfter = "Unable to determine Actions After: $($VDIDefaults.Action.PerformActionAfterSec)"; Break}
+							}
+							$VDIPoolActionsOnSession     = $VDIDefaults.Action.SessionAction.ToString()
+							$VDIPoolActionsPerformAction = $VDIDefaults.Action.PerformAction.ToString()
+						}
+						Else
+						{
+							#unable to retrieve default, use built-in default values
+							$VDIPoolActionsOnSession     = "Disconnect"
+							$VDIPoolActionsPerformAction = "Do nothing"
+							$VDIPoolActionsAfter         = "Never"
+						}
+					}
+					Else
+					{
+						#No, we don't use the VDI host pool settings
+						Switch ($VDIPool.Action.PerformActionAfterSec)
+						{
+							0		{$VDIPoolActionsAfter = "Never"; Break}
+							1		{$VDIPoolActionsAfter = "Immediate"; Break}
+							25		{$VDIPoolActionsAfter = "25 seconds"; Break}
+							60		{$VDIPoolActionsAfter = "1 minute"; Break}
+							300		{$VDIPoolActionsAfter = "5 minutes"; Break}
+							3600	{$VDIPoolActionsAfter = "1 hour"; Break}
+							7200	{$VDIPoolActionsAfter = "2 hours"; Break}
+							Default	{$VDIPoolActionsAfter = "Unable to determine Actions After: $($VDIPool.PerformActionAfterSec)"; Break}
+						}
+						$VDIPoolActionsOnSession     = $VDIPool.Action.SessionAction.ToString()
+						$VDIPoolActionsPerformAction = $VDIPool.Action.PerformAction.ToString()
+					}
+
+					Line 4 "Inherit default settings: " $VDIPool.InheritDefaultVDIActionSettings.ToString()
+					Line 4 "Action"
+					Line 5 "On session`t: " $VDIPoolActionsOnSession
+					Line 5 "Perform action`t: " $VDIPoolActionsPerformAction
+					Line 5 "After`t`t: " $VDIPoolActionsAfter
+					Line 0 ""
 				}
 				Line 0 ""
 			}
@@ -17626,6 +17929,71 @@ Function OutputVDIDetails
 					}
 					
 					$msg = "Members"
+					$columnWidths = @("200","275")
+					FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+					WriteHTMLLine 0 0 ""
+
+					#Action
+					
+					If($VDIPool.InheritDefaultVDIActionSettings)
+					{
+						#do we inherit site defaults?
+						#yes we do, get the default settings for the Site
+						#use the Site default settings
+
+						$VDIDefaults = Get-RASVDIDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
+						
+						If($? -and $Null -ne $VDIDefaults)
+						{
+							Switch ($VDIDefaults.Action.PerformActionAfterSec)
+							{
+								0		{$VDIPoolActionsAfter = "Never"; Break}
+								1		{$VDIPoolActionsAfter = "Immediate"; Break}
+								25		{$VDIPoolActionsAfter = "25 seconds"; Break}
+								60		{$VDIPoolActionsAfter = "1 minute"; Break}
+								300		{$VDIPoolActionsAfter = "5 minutes"; Break}
+								3600	{$VDIPoolActionsAfter = "1 hour"; Break}
+								7200	{$VDIPoolActionsAfter = "2 hours"; Break}
+								Default	{$VDIPoolActionsAfter = "Unable to determine Actions After: $($VDIDefaults.Action.PerformActionAfterSec)"; Break}
+							}
+							$VDIPoolActionsOnSession     = $VDIDefaults.Action.SessionAction.ToString()
+							$VDIPoolActionsPerformAction = $VDIDefaults.Action.PerformAction.ToString()
+						}
+						Else
+						{
+							#unable to retrieve default, use built-in default values
+							$VDIPoolActionsOnSession     = "Disconnect"
+							$VDIPoolActionsPerformAction = "Do nothing"
+							$VDIPoolActionsAfter         = "Never"
+						}
+					}
+					Else
+					{
+						#No, we don't use the VDI host pool settings
+						Switch ($VDIPool.Action.PerformActionAfterSec)
+						{
+							0		{$VDIPoolActionsAfter = "Never"; Break}
+							1		{$VDIPoolActionsAfter = "Immediate"; Break}
+							25		{$VDIPoolActionsAfter = "25 seconds"; Break}
+							60		{$VDIPoolActionsAfter = "1 minute"; Break}
+							300		{$VDIPoolActionsAfter = "5 minutes"; Break}
+							3600	{$VDIPoolActionsAfter = "1 hour"; Break}
+							7200	{$VDIPoolActionsAfter = "2 hours"; Break}
+							Default	{$VDIPoolActionsAfter = "Unable to determine Actions After: $($VDIPool.PerformActionAfterSec)"; Break}
+						}
+						$VDIPoolActionsOnSession     = $VDIPool.Action.SessionAction.ToString()
+						$VDIPoolActionsPerformAction = $VDIPool.Action.PerformAction.ToString()
+					}
+
+
+					$rowdata = @()
+					$columnHeaders = @("Inherit default settings",($Script:htmlsb),$VDIPool.InheritDefaultVDIActionSettings.ToString(),$htmlwhite)
+					$rowdata += @(,( "Action",($Script:htmlsb),"",$htmlwhite))
+					$rowdata += @(,( "     On session",($Script:htmlsb),$VDIPoolActionsOnSession,$htmlwhite))
+					$rowdata += @(,( "     Perform action",($Script:htmlsb),$VDIPoolActionsPerformAction,$htmlwhite))
+					$rowdata += @(,( "     After",($Script:htmlsb),$VDIPoolActionsAfter,$htmlwhite))
+
+					$msg = "Action"
 					$columnWidths = @("200","275")
 					FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 					WriteHTMLLine 0 0 ""
@@ -21241,7 +21609,7 @@ Function OutputVDIDetails
 					
 					If($? -and $Null -ne $VDIDefaults)
 					{
-						Switch ($VDIDefaults.SessionResetTimeoutSec)
+						Switch ($VDIDefaults.Action.SessionResetTimeoutSec)
 						{
 							0		{$VDITemplateLogoffActiveSessionAfter = "Never"; Break}
 							1		{$VDITemplateLogoffActiveSessionAfter = "Immediate"; Break}
@@ -21250,10 +21618,10 @@ Function OutputVDIDetails
 							300		{$VDITemplateLogoffActiveSessionAfter = "5 minutes"; Break}
 							3600	{$VDITemplateLogoffActiveSessionAfter = "1 hour"; Break}
 							7200	{$VDITemplateLogoffActiveSessionAfter = "2 hours"; Break}
-							Default	{$VDITemplateLogoffActiveSessionAfter = "Unable to determine Logoff active session after: $($VDIDefaults.SessionResetTimeoutSec)"; Break}
+							Default	{$VDITemplateLogoffActiveSessionAfter = "Unable to determine Logoff active session after: $($VDIDefaults.Action.SessionResetTimeoutSec)"; Break}
 						}
 						
-						Switch ($VDIDefaults.PerformActionAfterSec)
+						Switch ($VDIDefaults.Action.PerformActionAfterSec)
 						{
 							0		{$VDITemplateActionsAfter = "Never"; Break}
 							1		{$VDITemplateActionsAfter = "Immediate"; Break}
@@ -21262,10 +21630,10 @@ Function OutputVDIDetails
 							300		{$VDITemplateActionsAfter = "5 minutes"; Break}
 							3600	{$VDITemplateActionsAfter = "1 hour"; Break}
 							7200	{$VDITemplateActionsAfter = "2 hours"; Break}
-							Default	{$VDITemplateActionsAfter = "Unable to determine Actions After: $($VDIDefaults.PerformActionAfterSec)"; Break}
+							Default	{$VDITemplateActionsAfter = "Unable to determine Actions After: $($VDIDefaults.Action.PerformActionAfterSec)"; Break}
 						}
-						$VDITemplateActionsOnSession         = $VDIDefaults.SessionAction.ToString()
-						$VDITemplateActionsPerformAction     = $VDIDefaults.PerformAction.ToString()
+						$VDITemplateActionsOnSession         = $VDIDefaults.Action.SessionAction.ToString()
+						$VDITemplateActionsPerformAction     = $VDIDefaults.Action.PerformAction.ToString()
 					}
 					Else
 					{
@@ -21347,7 +21715,6 @@ Function OutputVDIDetails
 				}
 				If($HTML)
 				{
-
 					$rowdata = @()
 					$columnHeaders = @("Inherit default settings",($Script:htmlsb),$VDITemplate.InheritDefaultVDIActionSettings.ToString(),$htmlwhite)
 					$rowdata += @(,("Application session lingering",($Script:htmlsb),"",$htmlwhite))
@@ -28808,16 +29175,18 @@ Function OutputPublishingSettings
 	Write-Verbose "$(Get-Date -Format G): `tOutput Publishing"
 	
 	<#
+	From RAS version 20.2
 	AVDApp check
 	AVDDesktop check
 	Folder check
-	LocalApp
+	LocalApp check
 	RDSApp check
 	RDSDesktop check
-	PCDesktop
+	PCDesktop check
 	VDIApp check
 	VDIDesktop check
 	
+	From previous versions of RAS. The script must still handle the ones that no longer exist.
 	PCApp
 	PCDesktop
 	RDSApp
@@ -28953,12 +29322,64 @@ Function OutputPublishingSettings
 				Default		{$WinType = "Unable to determine window Run type: $($PubItem.WinType)"; Break}
 			}
 		}
-			
+		
+		#based on what I see in the RAS 20.2.2 console,	this is how I see a PubItem's EnabledMode status
+		#If the $PubItem.EnabledMode is "Maintenance" or "Disabled", keep its EnabledMode status
+		#If the $PubItem.EnabledMode is "Enabled"
+		#	If the ParentId is 0, keep the published item's EnabledMode
+		#	If the ParentId is not 0, get the ParentId's EnabledMode
+		#		If the ParentId's EnabledMode is "Disabled", set the Puiblished Item's EnabledMode status to "Disabled (Inherited)"
+		#		If the ParentId's EnabledMode is "Maintenance"
+		#			If the Published Item's Type is "Folder" or "LocalApp", keep its EnabledMode
+		#			Otherwise, set the published item's EnabledMode status to "In maintenance (Inherited)"
+		#		If the ParentId's EnabledMode is "Enabled", set the Puiblished Item's EnabledMode status to "Enabled"
 		Switch($PubItem.EnabledMode)
 		{
-			"Disabled"		{$PubItemStatus = "Disabled"; Break}
-			"Enabled"		{$PubItemStatus = "Enabled"; Break}
 			"Maintenance"	{$PubItemStatus = "In maintenance"; Break}
+			"Disabled"		{$PubItemStatus = "Disabled"; Break}
+			"Enabled"		{
+								If($PubItem.ParentId -eq 0)
+								{
+									$PubItemStatus = "Enabled"; Break
+								}
+								Else
+								{
+									$ParentIdEnabledMode = (Get-RASPubItem -Id $Pubitem.ParentId).EnabledMode 4>$Null
+									
+									If($? -and $Null -ne $ParentIdEnabledMode)
+									{
+										If($ParentIdEnabledMode -eq "Disabled")
+										{
+											$PubItemStatus = "Disabled (Inherited)"; Break
+										}
+										ElseIf($ParentIdEnabledMode = "Maintenance")
+										{
+											If($PubItem.Type -eq "Folder" -or $PubItem.Type -eq "LocalApp")
+											{
+												Switch($PubItem.EnabledMode)
+												{
+													"Disabled"		{$PubItemStatus = "Disabled"; Break}
+													"Enabled"		{$PubItemStatus = "Enabled"; Break}
+													"Maintenance"	{$PubItemStatus = "In maintenance"; Break}
+													Default			{$PubItemStatus = "Unable to determine Enabled Mode: $($PubItem.EnabledMode)"; Break}
+												}
+											}
+											Else
+											{
+												$PubItemStatus = "In maintenance (Inherited)"; Break
+											}
+										}
+										Else
+										{
+											$PubItemStatus = "Enabled"; Break
+										}
+									}
+									Else
+									{
+										$PubItemStatus = "Unable to determine Parent's Enabled Mode. Parent Id: $($Pubitem.ParentId)"; Break
+									}
+								}
+							}
 			Default			{$PubItemStatus = "Unable to determine Enabled Mode: $($PubItem.EnabledMode)"; Break}
 		}
 
@@ -28999,6 +29420,7 @@ Function OutputPublishingSettings
 				$ScriptInformation.Add(@{Data = "Modified on"; Value = (Get-Date -UFormat "%c" $PubItem.TimeLastMod); }) > $Null
 				$ScriptInformation.Add(@{Data = "Created by"; Value = $PubItem.AdminCreate; }) > $Null
 				$ScriptInformation.Add(@{Data = "Created on"; Value = (Get-Date -UFormat "%c" $PubItem.TimeCreate); }) > $Null
+				$ScriptInformation.Add(@{Data = "Type"; Value = $PubItem.Type; }) > $Null
 				$ScriptInformation.Add(@{Data = "Status"; Value = $PubItemStatus; }) > $Null
 				
 				If($PubItem.AdminOnly -eq $True)
@@ -29142,6 +29564,7 @@ Function OutputPublishingSettings
 				Line 3 "Modified on`t`t`t`t`t`t: " (Get-Date -UFormat "%c" $PubItem.TimeLastMod)
 				Line 3 "Created by`t`t`t`t`t`t: " $PubItem.AdminCreate
 				Line 3 "Created on`t`t`t`t`t`t: " (Get-Date -UFormat "%c" $PubItem.TimeCreate)
+				Line 3 "Type`t`t`t`t`t`t`t: " $PubItem.Type
 				Line 3 "Status`t`t`t`t`t`t`t: " $PubItemStatus
 				
 				If($PubItem.AdminOnly -eq $True)
@@ -29236,6 +29659,7 @@ Function OutputPublishingSettings
 				$rowdata += @(,("Modified on",($Script:htmlsb),(Get-Date -UFormat "%c" $PubItem.TimeLastMod),$htmlwhite))
 				$rowdata += @(,("Created by",($Script:htmlsb),$PubItem.AdminCreate,$htmlwhite))
 				$rowdata += @(,("Created on",($Script:htmlsb),(Get-Date -UFormat "%c" $PubItem.TimeCreate),$htmlwhite))
+				$rowdata += @(,("Type",($Script:htmlsb),$PubItem.Type,$htmlwhite))
 				$rowdata += @(,("Status",($Script:htmlsb),$PubItemStatus,$htmlwhite))
 				
 				If($PubItem.AdminOnly -eq $True)
@@ -29345,6 +29769,7 @@ Function OutputPublishingSettings
 				$ScriptInformation.Add(@{Data = "Modified on"; Value = (Get-Date -UFormat "%c" $PubItem.TimeLastMod); }) > $Null
 				$ScriptInformation.Add(@{Data = "Created by"; Value = $PubItem.AdminCreate; }) > $Null
 				$ScriptInformation.Add(@{Data = "Created on"; Value = (Get-Date -UFormat "%c" $PubItem.TimeCreate); }) > $Null
+				$ScriptInformation.Add(@{Data = "Type"; Value = $PubItem.Type; }) > $Null
 				$ScriptInformation.Add(@{Data = "Status"; Value = $PubItemStatus; }) > $Null
 				
 				$ScriptInformation.Add(@{Data = "Target"; Value = $PubItem.Target; }) > $Null
@@ -29416,6 +29841,76 @@ Function OutputPublishingSettings
 					$ScriptInformation.Add(@{Data = "Preferred routing is disabled"; Value = ""; }) > $Null
 				}
 				
+				$Table = AddWordTable -Hashtable $ScriptInformation `
+				-Columns Data,Value `
+				-List `
+				-Format $wdTableGrid `
+				-AutoFit $wdAutoFitFixed;
+
+				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+				$Table.Columns.Item(1).Width = 200;
+				$Table.Columns.Item(2).Width = 300;
+
+				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+				FindWordDocumentEnd
+				$Table = $Null
+				WriteWordLine 0 0 ""
+
+				WriteWordLine 3 0 "Publish from"
+				$ScriptInformation = New-Object System.Collections.ArrayList
+				If(validObject $PubItem PublishFrom)
+				{
+					If($PubItem.PublishFrom -eq "Server")
+					{
+						$cnt = -1
+						ForEach($Item in $PubItem.PublishFromServer)
+						{
+							$cnt++
+							
+							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
+							
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "$PublishedFrom"; Value = $ItemName; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = $ItemName; }) > $Null
+							}
+						}
+					}
+					ElseIf($PubItem.PublishFrom -eq "Group")
+					{
+						$cnt = -1
+						ForEach($Item in $PubItem.PublishFromHostPool)
+						{
+							$cnt++
+							
+							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
+							
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "$PublishedFrom"; Value = $ItemName; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = $ItemName; }) > $Null
+							}
+						}
+					}
+					Else
+					{
+						$ScriptInformation.Add(@{Data = "$PublishedFrom"; Value = ""; }) > $Null
+					}
+				}
+				Else
+				{
+					$ScriptInformation.Add(@{Data = "$PublishedFrom"; Value = "N/A"; }) > $Null
+				}
+
 				$Table = AddWordTable -Hashtable $ScriptInformation `
 				-Columns Data,Value `
 				-List `
@@ -29539,6 +30034,7 @@ Function OutputPublishingSettings
 				Line 3 "Modified on`t`t`t`t`t`t: " (Get-Date -UFormat "%c" $PubItem.TimeLastMod)
 				Line 3 "Created by`t`t`t`t`t`t: " $PubItem.AdminCreate
 				Line 3 "Created on`t`t`t`t`t`t: " (Get-Date -UFormat "%c" $PubItem.TimeCreate)
+				Line 3 "Type`t`t`t`t`t`t`t: " $PubItem.Type
 				Line 3 "Status`t`t`t`t`t`t`t: " $PubItemStatus
 				
 				Line 3 "Target`t`t`t`t`t`t`t: " $PubItem.Target
@@ -29611,11 +30107,39 @@ Function OutputPublishingSettings
 				}
 				Line 0 ""
 
+				Line 2 "Publish from"
+				If(validObject $PubItem PublishFrom)
+				{
+					Line 3 $PublishedFrom
+					If($PubItem.PublishFrom -eq "Server")
+					{
+						ForEach($Item in $PubItem.PublishFromServer)
+						{
+							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
+							Line 6 $ItemName
+						}
+					}
+					ElseIf($PubItem.PublishFrom -eq "Group")
+					{
+						ForEach($Item in $PubItem.PublishFromHostPool)
+						{
+							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
+							Line 5 $ItemName
+						}
+					}
+				}
+				Else
+				{
+					Line 3 "N/A"
+				}
+				
+				Line 0 ""
+
 				Line 2 "Application"
 				Line 3 "Application"
 				Line 4 "Name`t`t`t`t`t`t: " $PubItem.Name
 				Line 4 "Description`t`t`t`t`t: " $PubItem.Description
-				Line 4 "Status`t`t`t`t`t`t`t: " $PubItemStatus
+				Line 4 "Status`t`t`t`t`t`t: " $PubItemStatus
 				Line 4 "Run`t`t`t`t`t`t: " $WinType
 				Line 4 "Target`t`t`t`t`t`t: " $PubItem.Target
 				Line 4 "Start In`t`t`t`t`t: " $PubItem.StartIn
@@ -29682,6 +30206,7 @@ Function OutputPublishingSettings
 				$rowdata += @(,("Modified on",($Script:htmlsb), (Get-Date -UFormat "%c" $PubItem.TimeLastMod),$htmlwhite))
 				$rowdata += @(,("Created by",($Script:htmlsb), $PubItem.AdminCreate,$htmlwhite))
 				$rowdata += @(,("Created on",($Script:htmlsb), (Get-Date -UFormat "%c" $PubItem.TimeCreate),$htmlwhite))
+				$rowdata += @(,("Type",($Script:htmlsb),$PubItem.Type,$htmlwhite))
 				$rowdata += @(,("Status",($Script:htmlsb),$PubItemStatus,$htmlwhite))
 				$rowdata += @(,("Target",($Script:htmlsb),$PubItem.Target,$htmlwhite))
 				$rowdata += @(,("Start In",($Script:htmlsb),$PubItem.StartIn,$htmlwhite))
@@ -29750,6 +30275,61 @@ Function OutputPublishingSettings
 				Else
 				{
 					$rowdata += @(,("Preferred routing is disabled",($Script:htmlsb),"",$htmlwhite))
+				}
+
+				$msg = ""
+				$columnWidths = @("200","300")
+				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+				WriteHTMLLine 0 0 ""
+
+				WriteHTMLLine 3 0 "Publish from"
+				$rowdata = @()
+				If(validObject $PubItem PublishFrom)
+				{
+					If($PubItem.PublishFrom -eq "Server")
+					{
+						$cnt = -1
+						ForEach($Item in $PubItem.PublishFromServer)
+						{
+							$cnt++
+							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
+							
+							If($cnt -eq 0)
+							{
+								$columnHeaders = @("$PublishedFrom",($Script:htmlsb),$ItemName,$htmlwhite)
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb),$ItemName,$htmlwhite))
+							}
+						}
+					}
+					ElseIf($PubItem.PublishFrom -eq "Group")
+					{
+						$cnt = -1
+						ForEach($Item in $PubItem.PublishFromHostPool)
+						{
+							$cnt++
+							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
+							
+							If($cnt -eq 0)
+							{
+								$columnHeaders = @("$PublishedFrom",($Script:htmlsb),$ItemName,$htmlwhite)
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb),$ItemName,$htmlwhite))
+							}
+						}
+					}
+					Else
+					{
+						$columnHeaders = @("$PublishedFrom",($Script:htmlsb),"",$htmlwhite)
+					}
+				}
+				Else
+				{
+					$columnHeaders = @("$PublishedFrom",($Script:htmlsb),"N/A",$htmlwhite)
 				}
 
 				$msg = ""
@@ -29864,6 +30444,7 @@ Function OutputPublishingSettings
 				$ScriptInformation.Add(@{Data = "Modified on"; Value = (Get-Date -UFormat "%c" $PubItem.TimeLastMod); }) > $Null
 				$ScriptInformation.Add(@{Data = "Created by"; Value = $PubItem.AdminCreate; }) > $Null
 				$ScriptInformation.Add(@{Data = "Created on"; Value = (Get-Date -UFormat "%c" $PubItem.TimeCreate); }) > $Null
+				$ScriptInformation.Add(@{Data = "Type"; Value = $PubItem.Type; }) > $Null
 				$ScriptInformation.Add(@{Data = "Status"; Value = $PubItemStatus; }) > $Null
 				$ScriptInformation.Add(@{Data = "Desktop Size"; Value = $DesktopSize; }) > $Null
 				If($PubItem.InheritShortcutDefaultSettings)
@@ -29922,6 +30503,76 @@ Function OutputPublishingSettings
 				Else
 				{
 					$rowdata += @(,("Preferred routing is disabled",($Script:htmlsb),"",$htmlwhite))
+				}
+
+				$Table = AddWordTable -Hashtable $ScriptInformation `
+				-Columns Data,Value `
+				-List `
+				-Format $wdTableGrid `
+				-AutoFit $wdAutoFitFixed;
+
+				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+				$Table.Columns.Item(1).Width = 200;
+				$Table.Columns.Item(2).Width = 300;
+
+				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+				FindWordDocumentEnd
+				$Table = $Null
+				WriteWordLine 0 0 ""
+
+				WriteWordLine 3 0 "Publish from"
+				$ScriptInformation = New-Object System.Collections.ArrayList
+				If(validObject $PubItem PublishFrom)
+				{
+					If($PubItem.PublishFrom -eq "Server")
+					{
+						$cnt = -1
+						ForEach($Item in $PubItem.PublishFromServer)
+						{
+							$cnt++
+							
+							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
+							
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "$PublishedFrom"; Value = $ItemName; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = $ItemName; }) > $Null
+							}
+						}
+					}
+					ElseIf($PubItem.PublishFrom -eq "Group")
+					{
+						$cnt = -1
+						ForEach($Item in $PubItem.PublishFromHostPool)
+						{
+							$cnt++
+							
+							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
+							
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "$PublishedFrom"; Value = $ItemName; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = $ItemName; }) > $Null
+							}
+						}
+					}
+					Else
+					{
+						$ScriptInformation.Add(@{Data = "$PublishedFrom"; Value = ""; }) > $Null
+					}
+				}
+				Else
+				{
+					$ScriptInformation.Add(@{Data = "$PublishedFrom"; Value = "N/A"; }) > $Null
 				}
 
 				$Table = AddWordTable -Hashtable $ScriptInformation `
@@ -30067,6 +30718,7 @@ Function OutputPublishingSettings
 				Line 3 "Modified on`t`t`t`t`t`t: " (Get-Date -UFormat "%c" $PubItem.TimeLastMod)
 				Line 3 "Created by`t`t`t`t`t`t: " $PubItem.AdminCreate
 				Line 3 "Created on`t`t`t`t`t`t: " (Get-Date -UFormat "%c" $PubItem.TimeCreate)
+				Line 3 "Type`t`t`t`t`t`t`t: " $PubItem.Type
 				Line 3 "Status`t`t`t`t`t`t`t: " $PubItemStatus
 				Line 3 "Desktop Size`t`t`t`t`t`t: " $DesktopSize
 
@@ -30135,7 +30787,7 @@ Function OutputPublishingSettings
 				Line 3 "Desktop"
 				Line 4 "Name`t`t`t`t`t`t: " $PubItem.Name
 				Line 4 "Description`t`t`t`t`t: " $PubItem.Description
-				Line 4 "Status`t`t`t`t`t`t`t: " $PubItemStatus
+				Line 4 "Status`t`t`t`t`t`t: " $PubItemStatus
 				Line 4 "Start automatically when user logs on`t`t: " $PubItem.StartOnLogon.ToString()
 				Line 4 "Exclude from session prelaunch`t`t`t: " $PubItem.ExcludePrelaunch.ToString()
 				Line 0 ""
@@ -30146,6 +30798,34 @@ Function OutputPublishingSettings
 
 				OutputPubItemFilters $PubItem "Text"
 				
+				Line 2 "Publish from"
+				If(validObject $PubItem PublishFrom)
+				{
+					Line 3 $PublishedFrom
+					If($PubItem.PublishFrom -eq "Server")
+					{
+						ForEach($Item in $PubItem.PublishFromServer)
+						{
+							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
+							Line 6 $ItemName
+						}
+					}
+					ElseIf($PubItem.PublishFrom -eq "Group")
+					{
+						ForEach($Item in $PubItem.PublishFromHostPool)
+						{
+							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
+							Line 5 $ItemName
+						}
+					}
+				}
+				Else
+				{
+					Line 3 "N/A"
+				}
+				
+				Line 0 ""
+
 				Line 2 "Routing"
 				If($PubItem.PreferredRoutingEnabled)
 				{
@@ -30202,6 +30882,7 @@ Function OutputPublishingSettings
 				$rowdata += @(,("Modified on",($Script:htmlsb), (Get-Date -UFormat "%c" $PubItem.TimeLastMod),$htmlwhite))
 				$rowdata += @(,("Created by",($Script:htmlsb), $PubItem.AdminCreate,$htmlwhite))
 				$rowdata += @(,("Created on",($Script:htmlsb), (Get-Date -UFormat "%c" $PubItem.TimeCreate),$htmlwhite))
+				$rowdata += @(,("Type",($Script:htmlsb),$PubItem.Type,$htmlwhite))
 				$rowdata += @(,("Status",($Script:htmlsb),$PubItemStatus,$htmlwhite))
 				
 				$rowdata += @(,("Desktop Size",($Script:htmlsb),$DesktopSize,$htmlwhite))
@@ -30261,6 +30942,61 @@ Function OutputPublishingSettings
 				Else
 				{
 					$rowdata += @(,("Preferred routing is disabled",($Script:htmlsb),"",$htmlwhite))
+				}
+
+				$msg = ""
+				$columnWidths = @("200","300")
+				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+				WriteHTMLLine 0 0 ""
+
+				WriteHTMLLine 3 0 "Publish from"
+				$rowdata = @()
+				If(validObject $PubItem PublishFrom)
+				{
+					If($PubItem.PublishFrom -eq "Server")
+					{
+						$cnt = -1
+						ForEach($Item in $PubItem.PublishFromServer)
+						{
+							$cnt++
+							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
+							
+							If($cnt -eq 0)
+							{
+								$columnHeaders = @("$PublishedFrom",($Script:htmlsb),$ItemName,$htmlwhite)
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb),$ItemName,$htmlwhite))
+							}
+						}
+					}
+					ElseIf($PubItem.PublishFrom -eq "Group")
+					{
+						$cnt = -1
+						ForEach($Item in $PubItem.PublishFromHostPool)
+						{
+							$cnt++
+							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
+							
+							If($cnt -eq 0)
+							{
+								$columnHeaders = @("$PublishedFrom",($Script:htmlsb),$ItemName,$htmlwhite)
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb),$ItemName,$htmlwhite))
+							}
+						}
+					}
+					Else
+					{
+						$columnHeaders = @("$PublishedFrom",($Script:htmlsb),"",$htmlwhite)
+					}
+				}
+				Else
+				{
+					$columnHeaders = @("$PublishedFrom",($Script:htmlsb),"N/A",$htmlwhite)
 				}
 
 				$msg = ""
@@ -30409,6 +31145,7 @@ Function OutputPublishingSettings
 				$ScriptInformation.Add(@{Data = "Modified on"; Value = (Get-Date -UFormat "%c" $PubItem.TimeLastMod); }) > $Null
 				$ScriptInformation.Add(@{Data = "Created by"; Value = $PubItem.AdminCreate; }) > $Null
 				$ScriptInformation.Add(@{Data = "Created on"; Value = (Get-Date -UFormat "%c" $PubItem.TimeCreate); }) > $Null
+				$ScriptInformation.Add(@{Data = "Type"; Value = $PubItem.Type; }) > $Null
 				$ScriptInformation.Add(@{Data = "Status"; Value = $PubItemStatus; }) > $Null
 				$ScriptInformation.Add(@{Data = "Target"; Value = $PubItem.Target; }) > $Null
 				$ScriptInformation.Add(@{Data = "Start In"; Value = $PubItem.StartIn; }) > $Null
@@ -30926,6 +31663,7 @@ Function OutputPublishingSettings
 				Line 3 "Created by`t`t`t`t`t`t: " $PubItem.AdminCreate
 				Line 3 "Created on`t`t`t`t`t`t: " (Get-Date -UFormat "%c" $PubItem.TimeCreate)
 				Line 3 "Status`t`t`t`t`t`t`t: " $PubItemStatus
+				Line 3 "Type`t`t`t`t`t`t`t: " $PubItem.Type
 				Line 3 "Target`t`t`t`t`t`t`t: " $PubItem.Target
 				Line 3 "Start In`t`t`t`t`t`t: " $PubItem.StartIn
 				Line 3 "Start automatically when user logs on`t`t`t: " $PubItem.StartOnLogon.ToString()
@@ -31099,7 +31837,7 @@ Function OutputPublishingSettings
 				Line 4 "Name`t`t`t`t`t`t":  $PubItem.Name
 				Line 4 "Description`t`t`t`t`t: " $PubItem.Description
 				Line 4 "Run`t`t`t`t`t`t: " $WinType
-				Line 4 "Status`t`t`t`t`t`t`t: " $PubItemStatus
+				Line 4 "Status`t`t`t`t`t`t: " $PubItemStatus
 				Line 4 "Start automatically when user logs on`t`t: " $PubItem.StartOnLogon.ToString()
 				Line 4 "Exclude from session prelaunch`t`t`t: " $PubItem.ExcludePrelaunch.ToString()
 				Line 0 ""
@@ -31244,6 +31982,7 @@ Function OutputPublishingSettings
 				$rowdata += @(,("Modified on",($Script:htmlsb), (Get-Date -UFormat "%c" $PubItem.TimeLastMod),$htmlwhite))
 				$rowdata += @(,("Created by",($Script:htmlsb), $PubItem.AdminCreate,$htmlwhite))
 				$rowdata += @(,("Created on",($Script:htmlsb), (Get-Date -UFormat "%c" $PubItem.TimeCreate),$htmlwhite))
+				$rowdata += @(,("Type",($Script:htmlsb),$PubItem.Type,$htmlwhite))
 				$rowdata += @(,("Status",($Script:htmlsb),$PubItemStatus,$htmlwhite))
 				$rowdata += @(,("Target",($Script:htmlsb),$PubItem.Target,$htmlwhite))
 				$rowdata += @(,("Start In",($Script:htmlsb),$PubItem.StartIn,$htmlwhite))
@@ -31690,6 +32429,7 @@ Function OutputPublishingSettings
 				$ScriptInformation.Add(@{Data = "Modified on"; Value = (Get-Date -UFormat "%c" $PubItem.TimeLastMod); }) > $Null
 				$ScriptInformation.Add(@{Data = "Created by"; Value = $PubItem.AdminCreate; }) > $Null
 				$ScriptInformation.Add(@{Data = "Created on"; Value = (Get-Date -UFormat "%c" $PubItem.TimeCreate); }) > $Null
+				$ScriptInformation.Add(@{Data = "Type"; Value = $PubItem.Type; }) > $Null
 				$ScriptInformation.Add(@{Data = "Status"; Value = $PubItemStatus; }) > $Null
 				If(validObject $PubItem ConnectToConsole)
 				{
@@ -32016,6 +32756,7 @@ Function OutputPublishingSettings
 				Line 3 "Modified on`t`t`t`t`t`t: " (Get-Date -UFormat "%c" $PubItem.TimeLastMod)
 				Line 3 "Created by`t`t`t`t`t`t: " $PubItem.AdminCreate
 				Line 3 "Created on`t`t`t`t`t`t: " (Get-Date -UFormat "%c" $PubItem.TimeCreate)
+				Line 3 "Type`t`t`t`t`t`t`t: " $PubItem.Type
 				Line 3 "Status`t`t`t`t`t`t`t: " $PubItemStatus
 				If(validObject $PubItem ConnectToConsole)
 				{
@@ -32229,6 +32970,7 @@ Function OutputPublishingSettings
 				$rowdata += @(,("Modified on",($Script:htmlsb), (Get-Date -UFormat "%c" $PubItem.TimeLastMod),$htmlwhite))
 				$rowdata += @(,("Created by",($Script:htmlsb), $PubItem.AdminCreate,$htmlwhite))
 				$rowdata += @(,("Created on",($Script:htmlsb), (Get-Date -UFormat "%c" $PubItem.TimeCreate),$htmlwhite))
+				$rowdata += @(,("Type",($Script:htmlsb),$PubItem.Type,$htmlwhite))
 				$rowdata += @(,("Status",($Script:htmlsb),$PubItemStatus,$htmlwhite))
 				If(validObject $PubItem ConnectToConsole)
 				{
@@ -32537,6 +33279,7 @@ Function OutputPublishingSettings
 				$ScriptInformation.Add(@{Data = "Modified on"; Value = (Get-Date -UFormat "%c" $PubItem.TimeLastMod); }) > $Null
 				$ScriptInformation.Add(@{Data = "Created by"; Value = $PubItem.AdminCreate; }) > $Null
 				$ScriptInformation.Add(@{Data = "Created on"; Value = (Get-Date -UFormat "%c" $PubItem.TimeCreate); }) > $Null
+				$ScriptInformation.Add(@{Data = "Type"; Value = $PubItem.Type; }) > $Null
 				$ScriptInformation.Add(@{Data = "Status"; Value = $PubItemStatus; }) > $Null
 				$ScriptInformation.Add(@{Data = "Target"; Value = $PubItem.Target; }) > $Null
 				$ScriptInformation.Add(@{Data = "Start In"; Value = $PubItem.StartIn; }) > $Null
@@ -32627,7 +33370,114 @@ Function OutputPublishingSettings
 				$Table = $Null
 				WriteWordLine 0 0 ""
 
-				WriteWordLine 3 0 "Virtual Desktop Application"
+				WriteWordLine 3 0 "Sites"
+				$ScriptInformation = New-Object System.Collections.ArrayList
+
+				$cnt =-1
+				ForEach($Site in $PubItem.PublishToSite)
+				{
+					$cnt++
+					$SiteName = @(Get-RASSite -Id $Site -EA 0 4>$Null).Name
+					
+					If($cnt -eq 0)
+					{
+						$ScriptInformation.Add(@{Data = "This published item will be available from the following Sites"; Value = $SiteName; }) > $Null
+					}
+					Else
+					{
+						$ScriptInformation.Add(@{Data = ""; Value = $SiteName; }) > $Null
+					}
+				}
+
+				$Table = AddWordTable -Hashtable $ScriptInformation `
+				-Columns Data,Value `
+				-List `
+				-Format $wdTableGrid `
+				-AutoFit $wdAutoFitFixed;
+
+				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+				$Table.Columns.Item(1).Width = 200;
+				$Table.Columns.Item(2).Width = 300;
+
+				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+				FindWordDocumentEnd
+				$Table = $Null
+				WriteWordLine 0 0 ""
+
+				WriteWordLine 3 0 "Publish from"
+				$ScriptInformation = New-Object System.Collections.ArrayList
+				If(validObject $PubItem PublishFrom)
+				{
+					If($PubItem.PublishFrom -eq "Server")
+					{
+						$cnt = -1
+						ForEach($Item in $PubItem.PublishFromServer)
+						{
+							$cnt++
+							
+							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
+							
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "$PublishedFrom"; Value = $ItemName; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = $ItemName; }) > $Null
+							}
+						}
+					}
+					ElseIf($PubItem.PublishFrom -eq "Group")
+					{
+						$cnt = -1
+						ForEach($Item in $PubItem.PublishFromHostPool)
+						{
+							$cnt++
+							
+							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
+							
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "$PublishedFrom"; Value = $ItemName; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = $ItemName; }) > $Null
+							}
+						}
+					}
+					Else
+					{
+						$ScriptInformation.Add(@{Data = "$PublishedFrom"; Value = ""; }) > $Null
+					}
+				}
+				Else
+				{
+					$ScriptInformation.Add(@{Data = "$PublishedFrom"; Value = "N/A"; }) > $Null
+				}
+
+				$Table = AddWordTable -Hashtable $ScriptInformation `
+				-Columns Data,Value `
+				-List `
+				-Format $wdTableGrid `
+				-AutoFit $wdAutoFitFixed;
+
+				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+				$Table.Columns.Item(1).Width = 200;
+				$Table.Columns.Item(2).Width = 300;
+
+				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+				FindWordDocumentEnd
+				$Table = $Null
+				WriteWordLine 0 0 ""
+
+				WriteWordLine 3 0 "Application"
 				WriteWordLine 4 0 "Application"
 				$ScriptInformation = New-Object System.Collections.ArrayList
 				$ScriptInformation.Add(@{Data = "Name"; Value = $PubItem.Name; }) > $Null
@@ -32754,6 +33604,7 @@ Function OutputPublishingSettings
 				Line 3 "Modified on`t`t`t`t`t`t: " (Get-Date -UFormat "%c" $PubItem.TimeLastMod)
 				Line 3 "Created by`t`t`t`t`t`t: " $PubItem.AdminCreate
 				Line 3 "Created on`t`t`t`t`t`t: " (Get-Date -UFormat "%c" $PubItem.TimeCreate)
+				Line 3 "Type`t`t`t`t`t`t`t: " $PubItem.Type
 				Line 3 "Status`t`t`t`t`t`t`t: " $PubItemStatus
 				Line 3 "Target`t`t`t`t`t`t`t: " $PubItem.Target
 				Line 3 "Start In`t`t`t`t`t`t: " $PubItem.StartIn
@@ -32827,7 +33678,78 @@ Function OutputPublishingSettings
 				}
 				Line 0 ""
 
-				Line 2 "Virtual Guest settings"
+				Line 2 "Sites"
+
+				$cnt =-1
+				ForEach($Site in $PubItem.PublishToSite)
+				{
+					$cnt++
+					$SiteName = @(Get-RASSite -Id $Site -EA 0 4>$Null).Name
+					
+					If($cnt -eq 0)
+					{
+						Line 3 "This published item will be available from the following Sites: " $SiteName
+					}
+					Else
+					{
+						Line 7 " " $SiteName
+					}
+				}
+				Line 0 ""
+
+				Line 2 0 "Publish from"
+				If(validObject $PubItem PublishFrom)
+				{
+					If($PubItem.PublishFrom -eq "Server")
+					{
+						$cnt = -1
+						ForEach($Item in $PubItem.PublishFromServer)
+						{
+							$cnt++
+							
+							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
+							
+							If($cnt -eq 0)
+							{
+								Line 3 "$($PublishedFrom): " $ItemName
+							}
+							Else
+							{
+								Line 7 " " $ItemName
+							}
+						}
+					}
+					ElseIf($PubItem.PublishFrom -eq "Group")
+					{
+						$cnt = -1
+						ForEach($Item in $PubItem.PublishFromHostPool)
+						{
+							$cnt++
+							
+							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
+							
+							If($cnt -eq 0)
+							{
+								Line 3 "$($PublishedFrom): " $ItemName
+							}
+							Else
+							{
+								Line 7 " " $ItemName
+							}
+						}
+					}
+					Else
+					{
+						Line 3 "$($PublishedFrom)"
+					}
+				}
+				Else
+				{
+					Line 3 "$($PublishedFrom): " "N/A"
+				}
+				Line 0 ""
+
+				Line 2 "Application"
 				Line 3 "Application"
 				Line 4 "Name`t`t`t`t`t`t: " $PubItem.Name
 				Line 4 "Description`t`t`t`t`t: " $PubItem.Description
@@ -32838,13 +33760,11 @@ Function OutputPublishingSettings
 				Line 4 "Start automatically when user logs on`t`t: " $PubItem.StartOnLogon.ToString()
 				Line 0 ""
 				
-				Line 3 "Application"
+				Line 3 "Virtual Guest settings"
 				Line 4 "Connect to`t`t`t`t`t: " $ConnectTo
 				Line 4 "from Pool`t`t`t`t`t: " $FromPool
 				Line 4 "Persistent`t`t`t`t`t: " $PubItem.Persistent.ToString()
 				Line 0 ""
-				
-				OutputPubItemFilters $PubItem "Text"
 				
 				Line 2 "Routing"
 				If($PubItem.PreferredRoutingEnabled)
@@ -32902,6 +33822,7 @@ Function OutputPublishingSettings
 				$rowdata += @(,("Modified on",($Script:htmlsb), (Get-Date -UFormat "%c" $PubItem.TimeLastMod),$htmlwhite))
 				$rowdata += @(,("Created by",($Script:htmlsb), $PubItem.AdminCreate,$htmlwhite))
 				$rowdata += @(,("Created on",($Script:htmlsb), (Get-Date -UFormat "%c" $PubItem.TimeCreate),$htmlwhite))
+				$rowdata += @(,("Type",($Script:htmlsb),$PubItem.Type,$htmlwhite))
 				$rowdata += @(,("Status",($Script:htmlsb),$PubItemStatus,$htmlwhite))
 				$rowdata += @(,("Target",($Script:htmlsb),$PubItem.Target,$htmlwhite))
 				$rowdata += @(,("Start In",($Script:htmlsb),$PubItem.StartIn,$htmlwhite))
@@ -32979,7 +33900,86 @@ Function OutputPublishingSettings
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 
-				WriteHTMLLine 3 0 "Virtual Guest settings"
+				WriteHTMLLine 3 0 "Sites"
+				$rowdata = @()
+
+				$cnt =-1
+				ForEach($Site in $PubItem.PublishToSite)
+				{
+					$cnt++
+					$SiteName = @(Get-RASSite -Id $Site -EA 0 4>$Null).Name
+					
+					If($cnt -eq 0)
+					{
+						$columnHeaders = @("This published item will be available from the following Sites",($Script:htmlsb),$SiteName,$htmlwhite)
+					}
+					Else
+					{
+						$rowdata += @(,("",($Script:htmlsb),$SiteName,$htmlwhite))
+					}
+				}
+
+				$msg = ""
+				$columnWidths = @("200","300")
+				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+				WriteHTMLLine 0 0 ""
+
+				WriteHTMLLine 3 0 "Publish from"
+				$rowdata = @()
+				If(validObject $PubItem PublishFrom)
+				{
+					If($PubItem.PublishFrom -eq "Server")
+					{
+						$cnt = -1
+						ForEach($Item in $PubItem.PublishFromServer)
+						{
+							$cnt++
+							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
+							
+							If($cnt -eq 0)
+							{
+								$columnHeaders = @("$PublishedFrom",($Script:htmlsb),$ItemName,$htmlwhite)
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb),$ItemName,$htmlwhite))
+							}
+						}
+					}
+					ElseIf($PubItem.PublishFrom -eq "Group")
+					{
+						$cnt = -1
+						ForEach($Item in $PubItem.PublishFromHostPool)
+						{
+							$cnt++
+							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
+							
+							If($cnt -eq 0)
+							{
+								$columnHeaders = @("$PublishedFrom",($Script:htmlsb),$ItemName,$htmlwhite)
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb),$ItemName,$htmlwhite))
+							}
+						}
+					}
+					Else
+					{
+						$columnHeaders = @("$PublishedFrom",($Script:htmlsb),"",$htmlwhite)
+					}
+				}
+				Else
+				{
+					$columnHeaders = @("$PublishedFrom",($Script:htmlsb),"N/A",$htmlwhite)
+				}
+
+				$msg = ""
+				$columnWidths = @("200","300")
+				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+				WriteHTMLLine 0 0 ""
+
+				WriteHTMLLine 3 0 "Application"
 				$rowdata = @()
 
 				$columnHeaders = @("Name",($Script:htmlsb),$PubItem.Name,$htmlwhite)
@@ -33101,6 +34101,7 @@ Function OutputPublishingSettings
 				$ScriptInformation.Add(@{Data = "Modified on"; Value = (Get-Date -UFormat "%c" $PubItem.TimeLastMod); }) > $Null
 				$ScriptInformation.Add(@{Data = "Created by"; Value = $PubItem.AdminCreate; }) > $Null
 				$ScriptInformation.Add(@{Data = "Created on"; Value = (Get-Date -UFormat "%c" $PubItem.TimeCreate); }) > $Null
+				$ScriptInformation.Add(@{Data = "Type"; Value = $PubItem.Type; }) > $Null
 				$ScriptInformation.Add(@{Data = "Status"; Value = $PubItemStatus; }) > $Null
 				$ScriptInformation.Add(@{Data = "Settings for Site $xSiteName"; Value = ""; }) > $Null
 				$ScriptInformation.Add(@{Data = "Connect to"; Value = $ConnectTo; }) > $Null
@@ -33225,7 +34226,77 @@ Function OutputPublishingSettings
 				$Table = $Null
 				WriteWordLine 0 0 ""
 
-				WriteWordLine 3 0 "Virtual Desktop"
+				WriteWordLine 3 0 "Publish from"
+				$ScriptInformation = New-Object System.Collections.ArrayList
+				If(validObject $PubItem PublishFrom)
+				{
+					If($PubItem.PublishFrom -eq "Server")
+					{
+						$cnt = -1
+						ForEach($Item in $PubItem.PublishFromServer)
+						{
+							$cnt++
+							
+							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
+							
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "$PublishedFrom"; Value = $ItemName; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = $ItemName; }) > $Null
+							}
+						}
+					}
+					ElseIf($PubItem.PublishFrom -eq "Group")
+					{
+						$cnt = -1
+						ForEach($Item in $PubItem.PublishFromHostPool)
+						{
+							$cnt++
+							
+							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
+							
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "$PublishedFrom"; Value = $ItemName; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = $ItemName; }) > $Null
+							}
+						}
+					}
+					Else
+					{
+						$ScriptInformation.Add(@{Data = "$PublishedFrom"; Value = ""; }) > $Null
+					}
+				}
+				Else
+				{
+					$ScriptInformation.Add(@{Data = "$PublishedFrom"; Value = "N/A"; }) > $Null
+				}
+
+				$Table = AddWordTable -Hashtable $ScriptInformation `
+				-Columns Data,Value `
+				-List `
+				-Format $wdTableGrid `
+				-AutoFit $wdAutoFitFixed;
+
+				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+				$Table.Columns.Item(1).Width = 200;
+				$Table.Columns.Item(2).Width = 300;
+
+				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+				FindWordDocumentEnd
+				$Table = $Null
+				WriteWordLine 0 0 ""
+
+				WriteWordLine 3 0 "Desktop"
 				WriteWordLIune 4 0 "Desktop"
 				$ScriptInformation = New-Object System.Collections.ArrayList
 
@@ -33350,6 +34421,7 @@ Function OutputPublishingSettings
 				Line 3 "Modified on`t`t`t`t`t`t: " (Get-Date -UFormat "%c" $PubItem.TimeLastMod)
 				Line 3 "Created by`t`t`t`t`t`t: " $PubItem.AdminCreate
 				Line 3 "Created on`t`t`t`t`t`t: " (Get-Date -UFormat "%c" $PubItem.TimeCreate)
+				Line 3 "Type`t`t`t`t`t`t`t: " $PubItem.Type
 				Line 3 "Status`t`t`t`t`t`t`t: " $PubItemStatus
 				Line 3 "Settings for Site $xSiteName"
 				Line 3 "Connect to`t`t`t`t`t`t: " $ConnectTo
@@ -33439,8 +34511,36 @@ Function OutputPublishingSettings
 				}
 				Line 0 ""
 
-				Line 2 "Virtual Desktop"
-				Line 3 "Virtual desktop"
+				Line 2 "Publish from"
+				If(validObject $PubItem PublishFrom)
+				{
+					Line 3 $PublishedFrom
+					If($PubItem.PublishFrom -eq "Server")
+					{
+						ForEach($Item in $PubItem.PublishFromServer)
+						{
+							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
+							Line 6 $ItemName
+						}
+					}
+					ElseIf($PubItem.PublishFrom -eq "Group")
+					{
+						ForEach($Item in $PubItem.PublishFromHostPool)
+						{
+							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
+							Line 5 $ItemName
+						}
+					}
+				}
+				Else
+				{
+					Line 3 "N/A"
+				}
+				
+				Line 0 ""
+
+				Line 2 "Desktop"
+				Line 3 "Desktop"
 				Line 4 "Name`t`t`t`t`t`t: " $PubItem.Name
 				Line 4 "Description`t`t`t`t`t: " $PubItem.Description
 				Line 4 "Start automatically when user logs on`t`t: " $PubItem.StartOnLogon.ToString()
@@ -33510,6 +34610,7 @@ Function OutputPublishingSettings
 				$rowdata += @(,("Modified on",($Script:htmlsb), (Get-Date -UFormat "%c" $PubItem.TimeLastMod),$htmlwhite))
 				$rowdata += @(,("Created by",($Script:htmlsb), $PubItem.AdminCreate,$htmlwhite))
 				$rowdata += @(,("Created on",($Script:htmlsb), (Get-Date -UFormat "%c" $PubItem.TimeCreate),$htmlwhite))
+				$rowdata += @(,("Type",($Script:htmlsb),$PubItem.Type,$htmlwhite))
 				$rowdata += @(,("Status",($Script:htmlsb),$PubItemStatus,$htmlwhite))
 				$rowdata += @(,("Settings for Site $xSiteName",($Script:htmlsb),"",$htmlwhite))
 				$rowdata += @(,("Connect to",($Script:htmlsb),$ConnectTo,$htmlwhite))
@@ -33608,7 +34709,62 @@ Function OutputPublishingSettings
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 
-				WriteHTMLLine 3 0 "Virtual Desktop"
+				WriteHTMLLine 3 0 "Publish from"
+				$rowdata = @()
+				If(validObject $PubItem PublishFrom)
+				{
+					If($PubItem.PublishFrom -eq "Server")
+					{
+						$cnt = -1
+						ForEach($Item in $PubItem.PublishFromServer)
+						{
+							$cnt++
+							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
+							
+							If($cnt -eq 0)
+							{
+								$columnHeaders = @("$PublishedFrom",($Script:htmlsb),$ItemName,$htmlwhite)
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb),$ItemName,$htmlwhite))
+							}
+						}
+					}
+					ElseIf($PubItem.PublishFrom -eq "Group")
+					{
+						$cnt = -1
+						ForEach($Item in $PubItem.PublishFromHostPool)
+						{
+							$cnt++
+							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
+							
+							If($cnt -eq 0)
+							{
+								$columnHeaders = @("$PublishedFrom",($Script:htmlsb),$ItemName,$htmlwhite)
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb),$ItemName,$htmlwhite))
+							}
+						}
+					}
+					Else
+					{
+						$columnHeaders = @("$PublishedFrom",($Script:htmlsb),"",$htmlwhite)
+					}
+				}
+				Else
+				{
+					$columnHeaders = @("$PublishedFrom",($Script:htmlsb),"N/A",$htmlwhite)
+				}
+
+				$msg = ""
+				$columnWidths = @("200","300")
+				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+				WriteHTMLLine 0 0 ""
+
+				WriteHTMLLine 3 0 "Desktop"
 				$rowdata = @()
 
 				$columnHeaders = @("Name",($Script:htmlsb),$PubItem.Name,$htmlwhite)
@@ -33747,6 +34903,7 @@ Function OutputPublishingSettings
 				$ScriptInformation.Add(@{Data = "Modified on"; Value = (Get-Date -UFormat "%c" $PubItem.TimeLastMod); }) > $Null
 				$ScriptInformation.Add(@{Data = "Created by"; Value = $PubItem.AdminCreate; }) > $Null
 				$ScriptInformation.Add(@{Data = "Created on"; Value = (Get-Date -UFormat "%c" $PubItem.TimeCreate); }) > $Null
+				$ScriptInformation.Add(@{Data = "Type"; Value = $PubItem.Type; }) > $Null
 				$ScriptInformation.Add(@{Data = "Status"; Value = $PubItemStatus; }) > $Null
 				$ScriptInformation.Add(@{Data = "Target"; Value = $PubItem.Target; }) > $Null
 				$ScriptInformation.Add(@{Data = "Start In"; Value = $PubItem.StartIn; }) > $Null
@@ -33893,15 +35050,6 @@ Function OutputPublishingSettings
 					}
 				}
 
-				If($PubItem.PreferredRoutingEnabled)
-				{
-					$ScriptInformation.Add(@{Data = "Preferred routing is enabled"; Value = ""; }) > $Null
-				}
-				Else
-				{
-					$ScriptInformation.Add(@{Data = "Preferred routing is disabled"; Value = ""; }) > $Null
-				}
-
 				$Table = AddWordTable -Hashtable $ScriptInformation `
 				-Columns Data,Value `
 				-List `
@@ -34021,62 +35169,6 @@ Function OutputPublishingSettings
 				
 				OutputPubItemFilters $PubItem "MSWordPDF"
 				
-				WriteWordLine 3 0 "Routing"
-				$ScriptInformation = New-Object System.Collections.ArrayList
-				If($PubItem.PreferredRoutingEnabled)
-				{
-					$ScriptInformation.Add(@{Data = "Preferred routing is enabled"; Value = ""; }) > $Null
-					$Results = Get-RASPubItemPreferredRoute -Id $PubItem.Id -EA 0 4> $Null
-					
-					If($? -and $Null -ne $Results)
-					{
-						$cnt =-1
-						ForEach($PrefRoute in $Results)
-						{
-							$CustomRoute = Get-RASCustomRoute -Id $PrefRoute.Id -EA 0 4>$Null
-							
-							If($? -and $Null -ne $CustomRoute)
-							{
-								$cnt++
-								If($cnt -eq 0)
-								{
-									$ScriptInformation.Add(@{Data = ""; Value = "$($CustomRoute.Name), custom route on IP $($CustomRoute.PublicAddress)"; }) > $Null
-								}
-								Else
-								{
-									$ScriptInformation.Add(@{Data = ""; Value = "$($CustomRoute.Name), custom route on IP $($CustomRoute.PublicAddress)"; }) > $Null
-								}
-							}
-						}
-					}
-					Else
-					{
-						$ScriptInformation.Add(@{Data = "No preferred routes are configured"; Value = ""; }) > $Null
-					}
-				}
-				Else
-				{
-					$ScriptInformation.Add(@{Data = "Preferred routing is disabled"; Value = ""; }) > $Null
-				}
-
-				$Table = AddWordTable -Hashtable $ScriptInformation `
-				-Columns Data,Value `
-				-List `
-				-Format $wdTableGrid `
-				-AutoFit $wdAutoFitFixed;
-
-				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
-				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
-				$Table.Columns.Item(1).Width = 200;
-				$Table.Columns.Item(2).Width = 300;
-
-				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-				FindWordDocumentEnd
-				$Table = $Null
-				WriteWordLine 0 0 ""
-
 				OutputPubItemShortcuts $PubItem "MSWordPDF" `
 				$DefaultCreateShortcutOnDesktop `
 				$DefaultCreateShortcutInStartFolder `
@@ -34292,12 +35384,13 @@ Function OutputPublishingSettings
 			If($Text)
 			{
 				Line 2 "Information"
-				Line 3 "Windows Virtual Desktop`t`t`t`t: " "#$($PubItem.Id): $($PubItem.Name)"
+				Line 3 "Windows Virtual Desktop`t`t`t`t`t: " "#$($PubItem.Id): $($PubItem.Name)"
 				Line 3 "Description`t`t`t`t`t`t: " $PubItem.Description
 				Line 3 "Last modification by`t`t`t`t`t: " $PubItem.AdminLastMod
 				Line 3 "Modified on`t`t`t`t`t`t: " (Get-Date -UFormat "%c" $PubItem.TimeLastMod)
 				Line 3 "Created by`t`t`t`t`t`t: " $PubItem.AdminCreate
 				Line 3 "Created on`t`t`t`t`t`t: " (Get-Date -UFormat "%c" $PubItem.TimeCreate)
+				Line 3 "Type`t`t`t`t`t`t`t: " $PubItem.Type
 				Line 3 "Status`t`t`t`t`t`t`t: " $PubItemStatus
 				Line 3 "Target`t`t`t`t`t`t`t: " $PubItem.Target
 				Line 3 "Start In`t`t`t`t`t`t: " $PubItem.StartIn
@@ -34429,16 +35522,6 @@ Function OutputPublishingSettings
 					}
 				}
 
-				If($PubItem.PreferredRoutingEnabled)
-				{
-					Line 3 "Preferred routing is enabled"
-				}
-				Else
-				{
-					Line 3 "Preferred routing is disabled"
-				}
-				Line 0 ""
-
 				Line 2 "Publish from"
 				If(validObject $PubItem PublishFrom)
 				{
@@ -34480,44 +35563,6 @@ Function OutputPublishingSettings
 				
 				OutputPubItemFilters $PubItem "Text"
 				
-				Line 2 "Routing"
-				If($PubItem.PreferredRoutingEnabled)
-				{
-					Line 3 "Preferred routing is enabled"
-					$Results = Get-RASPubItemPreferredRoute -Id $PubItem.Id -EA 0 4> $Null
-					
-					If($? -and $Null -ne $Results)
-					{
-						$cnt =-1
-						ForEach($PrefRoute in $Results)
-						{
-							$CustomRoute = Get-RASCustomRoute -Id $PrefRoute.Id -EA 0 4>$Null
-							
-							If($? -and $Null -ne $CustomRoute)
-							{
-								$cnt++
-								If($cnt -eq 0)
-								{
-									Line 7 "$($CustomRoute.Name), custom route on IP $($CustomRoute.PublicAddress)"
-								}
-								Else
-								{
-									Line 7 "$($CustomRoute.Name), custom route on IP $($CustomRoute.PublicAddress)"
-								}
-							}
-						}
-					}
-					Else
-					{
-						Line 3 "No preferred routes are configured"
-					}
-				}
-				Else
-				{
-					Line 3 "Preferred routing is disabled"
-				}
-				Line 0 ""
-
 				OutputPubItemShortcuts $PubItem "Text" `
 				$DefaultCreateShortcutOnDesktop `
 				$DefaultCreateShortcutInStartFolder `
@@ -34611,6 +35656,7 @@ Function OutputPublishingSettings
 				$rowdata += @(,("Modified on",($Script:htmlsb), (Get-Date -UFormat "%c" $PubItem.TimeLastMod),$htmlwhite))
 				$rowdata += @(,("Created by",($Script:htmlsb), $PubItem.AdminCreate,$htmlwhite))
 				$rowdata += @(,("Created on",($Script:htmlsb), (Get-Date -UFormat "%c" $PubItem.TimeCreate),$htmlwhite))
+				$rowdata += @(,("Type",($Script:htmlsb),$PubItem.Type,$htmlwhite))
 				$rowdata += @(,("Status",($Script:htmlsb),$PubItemStatus,$htmlwhite))
 				$rowdata += @(,("Target",($Script:htmlsb),$PubItem.Target,$htmlwhite))
 				$rowdata += @(,("Start In",($Script:htmlsb),$PubItem.StartIn,$htmlwhite))
@@ -34756,39 +35802,6 @@ Function OutputPublishingSettings
 					}
 				}
 			
-				If($PubItem.PreferredRoutingEnabled)
-				{
-					$rowdata += @(,("Preferred routing is enabled",($Script:htmlsb),"",$htmlwhite))
-				}
-				Else
-				{
-					$rowdata += @(,("Preferred routing is disabled",($Script:htmlsb),"",$htmlwhite))
-				}
-
-				$msg = ""
-				$columnWidths = @("200","300")
-				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-				WriteHTMLLine 0 0 ""
-
-				WriteHTMLLine 3 0 "Sites"
-				$rowdata = @()
-
-				$cnt = -1
-				ForEach($Site in $PubItem.PublishToSite)
-				{
-					$cnt++
-					$SiteName = @(Get-RASSite -Id $Site -EA 0 4>$Null).Name
-					
-					If($cnt -eq 0)
-					{
-						$columnHeaders = @("This published item will be available from the following Sites",($Script:htmlsb),$SiteName,$htmlwhite)
-					}
-					Else
-					{
-						$rowdata += @(,("",($Script:htmlsb),$SiteName,$htmlwhite))
-					}
-				}
-
 				$msg = ""
 				$columnWidths = @("200","300")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
@@ -34868,49 +35881,6 @@ Function OutputPublishingSettings
 				
 				OutputPubItemFilters $PubItem "HTML"
 				
-				WriteHTMLLine 3 0 "Routing"
-				$rowdata = @()
-
-				If($PubItem.PreferredRoutingEnabled)
-				{
-					$columnHeaders = @("Preferred routing is enabled",($Script:htmlsb),"",$htmlwhite)
-					$Results = Get-RASPubItemPreferredRoute -Id $PubItem.Id -EA 0 4> $Null
-					
-					If($? -and $Null -ne $Results)
-					{
-						$cnt =-1
-						ForEach($PrefRoute in $Results)
-						{
-							$CustomRoute = Get-RASCustomRoute -Id $PrefRoute.Id -EA 0 4>$Null
-							
-							If($? -and $Null -ne $CustomRoute)
-							{
-								$cnt++
-								If($cnt -eq 0)
-								{
-									$rowdata += @(,("",($Script:htmlsb),"$($CustomRoute.Name), custom route on IP $($CustomRoute.PublicAddress)",$htmlwhite))
-								}
-								Else
-								{
-									$rowdata += @(,("",($Script:htmlsb),"$($CustomRoute.Name), custom route on IP $($CustomRoute.PublicAddress)",$htmlwhite))
-								}
-							}
-						}
-					}
-					Else
-					{
-						$rowdata += @(,("No preferred routes are configured",($Script:htmlsb),"",$htmlwhite))
-					}
-				}
-				Else
-				{
-					$columnHeaders = @("Preferred routing is disabled",($Script:htmlsb),"",$htmlwhite)
-				}
-				$msg = ""
-				$columnWidths = @("200","300")
-				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-				WriteHTMLLine 0 0 ""
-
 				OutputPubItemShortcuts $PubItem "HTML" `
 				$DefaultCreateShortcutOnDesktop `
 				$DefaultCreateShortcutInStartFolder `
@@ -35091,6 +36061,7 @@ Function OutputPublishingSettings
 				$ScriptInformation.Add(@{Data = "Modified on"; Value = (Get-Date -UFormat "%c" $PubItem.TimeLastMod); }) > $Null
 				$ScriptInformation.Add(@{Data = "Created by"; Value = $PubItem.AdminCreate; }) > $Null
 				$ScriptInformation.Add(@{Data = "Created on"; Value = (Get-Date -UFormat "%c" $PubItem.TimeCreate); }) > $Null
+				$ScriptInformation.Add(@{Data = "Type"; Value = $PubItem.Type; }) > $Null
 				$ScriptInformation.Add(@{Data = "Status"; Value = $PubItemStatus; }) > $Null
 				$ScriptInformation.Add(@{Data = "Desktop Size"; Value = $DesktopSize; }) > $Null
 				
@@ -35348,6 +36319,7 @@ Function OutputPublishingSettings
 				Line 3 "Modified on`t`t`t`t`t`t: " (Get-Date -UFormat "%c" $PubItem.TimeLastMod)
 				Line 3 "Created by`t`t`t`t`t`t: " $PubItem.AdminCreate
 				Line 3 "Created on`t`t`t`t`t`t: " (Get-Date -UFormat "%c" $PubItem.TimeCreate)
+				Line 3 "Type`t`t`t`t`t`t`t: " $PubItem.Type
 				Line 3 "Status`t`t`t`t`t`t`t: " $PubItemStatus
 				Line 3 "Desktop Size`t`t`t`t`t`t: " $DesktopSize
 				
@@ -35493,6 +36465,7 @@ Function OutputPublishingSettings
 				$rowdata += @(,("Modified on",($Script:htmlsb), (Get-Date -UFormat "%c" $PubItem.TimeLastMod),$htmlwhite))
 				$rowdata += @(,("Created by",($Script:htmlsb), $PubItem.AdminCreate,$htmlwhite))
 				$rowdata += @(,("Created on",($Script:htmlsb), (Get-Date -UFormat "%c" $PubItem.TimeCreate),$htmlwhite))
+				$rowdata += @(,("Type",($Script:htmlsb),$PubItem.Type,$htmlwhite))
 				$rowdata += @(,("Status",($Script:htmlsb),$PubItemStatus,$htmlwhite))
 				$rowdata += @(,("Desktop Size",($Script:htmlsb),$DesktopSize,$htmlwhite))
 				
@@ -35708,17 +36681,17 @@ Function OutputPublishingSettings
 				Linux                          RASAdminEngine.Core.OutputModels.Publishing.PubLocalApp.Linux
 				Mac                            RASAdminEngine.Core.OutputModels.Publishing.PubLocalApp.Mac
 				Name                           Webster Test
-				ParentId                       0
-				PreviousId                     383
+				ParentId                       386
+				PreviousId                     0
 				PublishToSite                  {1}
 				ReplicateLocalAppSettings      False
 				ReplicateShortcutSettings      False
-				StartOnLogon                   False
+				StartOnLogon                   True
 				StartPath                      RAS Remote Desktops & Applications\%Groups%
 				TimeCreate                     8/13/2025 8:08:31 PM
-				TimeLastMod                    8/13/2025 8:08:31 PM
+				TimeLastMod                    8/22/2025 5:05:24 PM
 				Type                           LocalApp
-				URL
+				URL                            c:\npp.7.8.1.bin
 				UserPortal                     RASAdminEngine.Core.OutputModels.Publishing.PubLocalApp.UserPortal
 				Windows                        RASAdminEngine.Core.OutputModels.Publishing.PubLocalApp.Windows
 				
@@ -35789,7 +36762,9 @@ Function OutputPublishingSettings
 				$ScriptInformation.Add(@{Data = "Modified on"; Value = (Get-Date -UFormat "%c" $PubItem.TimeLastMod); }) > $Null
 				$ScriptInformation.Add(@{Data = "Created by"; Value = $PubItem.AdminCreate; }) > $Null
 				$ScriptInformation.Add(@{Data = "Created on"; Value = (Get-Date -UFormat "%c" $PubItem.TimeCreate); }) > $Null
+				$ScriptInformation.Add(@{Data = "Type"; Value = $PubItem.Type; }) > $Null
 				$ScriptInformation.Add(@{Data = "Status"; Value = $PubItemStatus; }) > $Null
+				$ScriptInformation.Add(@{Data = "URL"; Value = $PubItem.URL; }) > $Null
 				
 				$WeHaveAClient = $False
 				If(!$WeHaveAClient -and $PubItem.Windows.Enabled)
@@ -35931,14 +36906,7 @@ Function OutputPublishingSettings
 				$ScriptInformation = New-Object System.Collections.ArrayList
 				$ScriptInformation.Add(@{Data = "Name"; Value = $PubItem.Name; }) > $Null
 				$ScriptInformation.Add(@{Data = "Description"; Value = $PubItem.Description; }) > $Null
-				If($PubItem.Enabled)
-				{
-					$ScriptInformation.Add(@{Data = "Status"; Value = "Enabled"; }) > $Null
-				}
-				Else
-				{
-					$ScriptInformation.Add(@{Data = "Status"; Value = "Disabled"; }) > $Null
-				}
+				$ScriptInformation.Add(@{Data = "Status"; Value = $PubItemStatus; }) > $Null
 				$ScriptInformation.Add(@{Data = "Run"; Value = $WinType; }) > $Null
 				$ScriptInformation.Add(@{Data = "Target"; Value = $PubItem.Windows.Target; }) > $Null
 				$ScriptInformation.Add(@{Data = "Start automatically when user logs on"; Value = $PubItem.StartOnLogon.ToString(); }) > $Null
@@ -36099,6 +37067,7 @@ Function OutputPublishingSettings
 				Line 3 "Modified on`t`t`t`t`t: " (Get-Date -UFormat "%c" $PubItem.TimeLastMod)
 				Line 3 "Created by`t`t`t`t`t: " $PubItem.AdminCreate
 				Line 3 "Created on`t`t`t`t`t: " (Get-Date -UFormat "%c" $PubItem.TimeCreate)
+				Line 3 "Type`t`t`t`t`t`t: " $PubItem.Type
 				Line 3 "Status`t`t`t`t`t`t: " $PubItemStatus
 				
 				$WeHaveAClient = $False
@@ -36223,14 +37192,7 @@ Function OutputPublishingSettings
 				Line 3 "Application"
 				Line 4 "Name`t`t`t`t`t: " $PubItem.Name
 				Line 4 "Description`t`t`t`t: " $PubItem.Description
-				If($PubItem.Enabled)
-				{
-					Line 4 "Status`t`t`t`t`t: " "Enabled"
-				}
-				Else
-				{
-					Line 4 "Status`t`t`t`t`t: " "Disabled"
-				}
+				Line 4 "Status`t`t`t`t`t: " $PubItemStatus
 				Line 4 "Run`t`t`t`t`t: " $WinType
 				Line 4 "Target`t`t`t`t`t: " $PubItem.Windows.Target
 				Line 4 "Start automatically when user logs on`t`: " $PubItem.StartOnLogon.ToString()
@@ -36341,6 +37303,7 @@ Function OutputPublishingSettings
 				$rowdata += @(,("Modified on",($Script:htmlsb),(Get-Date -UFormat "%c" $PubItem.TimeLastMod),$htmlwhite))
 				$rowdata += @(,("Created by",($Script:htmlsb),$PubItem.AdminCreate,$htmlwhite))
 				$rowdata += @(,("Created on",($Script:htmlsb),(Get-Date -UFormat "%c" $PubItem.TimeCreate),$htmlwhite))
+				$rowdata += @(,("Type",($Script:htmlsb),$PubItem.Type,$htmlwhite))
 				$rowdata += @(,("Status",($Script:htmlsb),$PubItemStatus,$htmlwhite))
 				
 				$WeHaveAClient = $False
@@ -36469,14 +37432,7 @@ Function OutputPublishingSettings
 				$rowdata = @()
 				$columnHeaders = @("Name",($Script:htmlsb),$PubItem.Name,$htmlwhite)
 				$rowdata += @(,("Description",($Script:htmlsb),$PubItem.Description,$htmlwhite))
-				If($PubItem.Enabled)
-				{
-					$rowdata += @(,("Status",($Script:htmlsb),"Enabled",$htmlwhite))
-				}
-				Else
-				{
-					$rowdata += @(,("Status",($Script:htmlsb),"Disabled",$htmlwhite))
-				}
+				$rowdata += @(,("Status",($Script:htmlsb),$PubItemStatus,$htmlwhite))
 				$rowdata += @(,("Run",($Script:htmlsb),$WinType,$htmlwhite))
 				$rowdata += @(,("Target",($Script:htmlsb),$PubItem.Windows.Target,$htmlwhite))
 				$rowdata += @(,("Start automatically when user logs on",($Script:htmlsb),$PubItem.StartOnLogon.ToString(),$htmlwhite))
@@ -36937,9 +37893,6 @@ Function OutputPubItemFilterSummary
 			}
 		}
 		
-		$ScriptInformation.Add(@{Data = "Enabled"; Value = ""; }) > $Null
-		$ScriptInformation.Add(@{Data = "Default Rule *"; Value = ""; }) > $Null
-
 		If($Pubitem.Filter.Default -eq "Allow")
 		{
 			$ScriptInformation.Add(@{Data = "Summary"; Value = "Allow if no other rule matches"; }) > $Null
@@ -37292,9 +38245,6 @@ Function OutputPubItemFilterSummary
 			}
 		}
 		
-		Line 3 "Enabled"
-		Line 3 "Default Rule *"
-
 		If($Pubitem.Filter.Default -eq "Allow")
 		{
 			Line 3 "Summary: " "Allow if no other rule matches"
@@ -37654,9 +38604,6 @@ Function OutputPubItemFilterSummary
 		}
 		
 		#general stuff
-		$rowdata.value += @(,("Enabled",($Script:htmlsb),"",$htmlwhite))
-		$rowdata.value += @(,("Default Rule *",($Script:htmlsb),"",$htmlwhite))
-
 		If($Pubitem.Filter.Default -eq "Allow")
 		{
 			$rowdata.value += @(,("Summary",($Script:htmlsb),"Allow if no other rule matches",$htmlwhite))
@@ -38125,6 +39072,7 @@ Function OutputPubItemFilters
 			}
 		}
 		
+		$ScriptInformation = New-Object System.Collections.ArrayList
 		$ScriptInformation.Add(@{Data = "Enabled"; Value = ""; }) > $Null
 		$ScriptInformation.Add(@{Data = "Default Rule *"; Value = ""; }) > $Null
 
@@ -38137,6 +39085,23 @@ Function OutputPubItemFilters
 			$ScriptInformation.Add(@{Data = "Summary"; Value = "Deny if no other rule matches"; }) > $Null
 		}
 		$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+
+		$Table = AddWordTable -Hashtable $ScriptInformation `
+		-Columns Data,Value `
+		-List `
+		-Format $wdTableGrid `
+		-AutoFit $wdAutoFitFixed;
+
+		SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+		SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+		$Table.Columns.Item(1).Width = 125;
+		$Table.Columns.Item(2).Width = 175;
+
+		$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+		FindWordDocumentEnd
+		$Table = $Null
 	}
 	If($OutputType -eq "Text")
 	{
@@ -38703,18 +39668,25 @@ Function OutputPubItemFilters
 		}
 		
 		#general stuff
-		$rowdata.value += @(,("Enabled",($Script:htmlsb),"",$htmlwhite))
-		$rowdata.value += @(,("Default Rule *",($Script:htmlsb),"",$htmlwhite))
+		$rowdata = @()
+		$columnHeaders = @("Enabled",($Script:htmlsb),"",$htmlwhite)
+		$rowdata += @(,("Enabled",($Script:htmlsb),"",$htmlwhite))
+		$rowdata += @(,("Default Rule *",($Script:htmlsb),"",$htmlwhite))
 
 		If($Pubitem.Filter.Default -eq "Allow")
 		{
-			$rowdata.value += @(,("Summary",($Script:htmlsb),"Allow if no other rule matches",$htmlwhite))
+			$rowdata += @(,("Summary",($Script:htmlsb),"Allow if no other rule matches",$htmlwhite))
 		}
 		Else
 		{
-			$rowdata.value += @(,("Summary",($Script:htmlsb),"Deny if no other rule matches",$htmlwhite))
+			$rowdata += @(,("Summary",($Script:htmlsb),"Deny if no other rule matches",$htmlwhite))
 		}
-		$rowdata.value += @(,("",($Script:htmlsb),"",$htmlwhite))
+		$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+
+		$msg = ""
+		$columnWidths = @("150","200")
+		FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+		WriteHTMLLine 0 0 ""
 	}
 }
 
@@ -50115,8 +51087,8 @@ ProcessScriptEnd
 # SIG # Begin signature block
 # MIIthQYJKoZIhvcNAQcCoIItdjCCLXICAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQU+Yzp+zzkDebm0zpF484xogk9
-# 50SggibfMIIFjTCCBHWgAwIBAgIQDpsYjvnQLefv21DiCEAYWjANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUNmEfGTzAL2Tw+DdIesCXoJE0
+# reWggibfMIIFjTCCBHWgAwIBAgIQDpsYjvnQLefv21DiCEAYWjANBgkqhkiG9w0B
 # AQwFADBlMQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYD
 # VQQLExB3d3cuZGlnaWNlcnQuY29tMSQwIgYDVQQDExtEaWdpQ2VydCBBc3N1cmVk
 # IElEIFJvb3QgQ0EwHhcNMjIwODAxMDAwMDAwWhcNMzExMTA5MjM1OTU5WjBiMQsw
@@ -50327,33 +51299,33 @@ ProcessScriptEnd
 # UzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/BgNVBAMTOERpZ2lDZXJ0IFRy
 # dXN0ZWQgRzQgQ29kZSBTaWduaW5nIFJTQTQwOTYgU0hBMzg0IDIwMjEgQ0ExAhAL
 # bN+2Z4EOKufLWhG6HUlwMAkGBSsOAwIaBQCgQDAZBgkqhkiG9w0BCQMxDAYKKwYB
-# BAGCNwIBBDAjBgkqhkiG9w0BCQQxFgQUGCCQ9qeuq970jl3EbrSavnyNUQowDQYJ
-# KoZIhvcNAQEBBQAEggIAZeJcLvOz5nm0tmUuxoi3XoLJ4M/fDxQsSM+r/db9ob8I
-# C8TDQLVhnpt9ZM90lnjLT7Cqy15HS6eQuKx6uzt9FwIFu/1Z9dm9NfrcZ1dDks/I
-# e8IO+6T8UqxJwaDV5IVBbWKpagD5HThvApLryJdpC2RIjiSMPC7aj2g6cQB1qv9p
-# J6bTXlsVKB9D3yi1u/uMyy60+NbKXW9uX5ZiZIGqn+z0Ytjg54pSr64g/tHNuWCB
-# mXIxsnj5SR4ri76sGe+mm7uuPSA8xebuvfdc+eCjoKaaHKwAMxYevV5GY27En8Ic
-# HjHjUV0z47x4jpkGpcR9WQVanP+YaMlnLcZ3/Xlh4Oc5JPMeo3kUml0HqSQ21prB
-# 3h7HGwUsJjzjr18LHQx4fSNZV7SCF2a6NqVif4+Vgprv6/Ufz8fmWKKEfminVHv6
-# GRXF6mN6P9lIfy1cU04PSYMQe2j8i7fp6Rm9To3Z+BhjTnw8ZnZkdESf8xMfNMm8
-# o1u/tOcigvAREslQLo9Upyx0dsQ505TzmPUXH0LQIPRohAqype+BP0aglE6PNNRT
-# jEumpDNPAxn0WtN+YG4uJhduSAv7SVqPL699Y93xBIwCzA6v+fkSssHout8tBpHs
-# h1N2DWg5bxlgSwsyBeh+bLVzwHf3RqzjRrlEmubEkomwediMenQr29ASLTTrWKGh
+# BAGCNwIBBDAjBgkqhkiG9w0BCQQxFgQUukaRGdUvUrLN21tsOrnD3cJLMGwwDQYJ
+# KoZIhvcNAQEBBQAEggIAdT63h7TOMVZIhxhm47932RxRk+5Va30/oSyodW1ewydH
+# dKFcpGBJ1SyFbAGGC0oHua5B1XGXRHcEkwUnwcEwuY0W1uBQRY9COFo4pAtMUzNN
+# h5BxffgGiOkAQn/mjHrxBxDJlujgBkttorhENFXwiAcj4XJB5KrMJz+6xDIA8W9R
+# kG+ltHnz2tbsNvRqr8r43QFv3ICrSEQjUSjUzNU4OgfvRnley9zlzJV/lVqWvtcA
+# Uhdij4f4HTxqU3LOCFHJEr6xq5jtrYBuYkjnA1QdMuaYnomAQTAQjhJ3mremtkZc
+# K/WEsMRQSkAfuSQkzPylfpHGDC6X5vi+is/soKi6Xq48QUVVzrbepOx54jxmSLNz
+# fPm/KjiBcb3fZ7QSWEDueUfCBwjBWNtecuQGGnSiIamM7D2DBJht57FA8ZBLXn2I
+# CDU00z9RuBJ5h5P4axn2ELp4WUp7hfgo3S8suT2DHNdllpA3PZp4j2FBy/tbaL1+
+# 7sc5nFhEFUtWVvtDLYZER7jq4fHKRgjBT6EzQdXJ7yWSwaDHQkmW4lIIPGqRD9YY
+# coIRDMjhfJsbLT5+RDDxamn+NcY9cyD05E0rKDqodiApJQYQSKo2hZoJjZKH2jHi
+# Ou+6HJnYdJUe5ShT7CQH1wndWDGyCqyIi4mzqTe5O/eGLaybAXuCQ1mxHel03lGh
 # ggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8CAQEwfTBpMQswCQYDVQQGEwJVUzEX
 # MBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/BgNVBAMTOERpZ2lDZXJ0IFRydXN0
 # ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYgU0hBMjU2IDIwMjUgQ0ExAhAKgO8Y
 # S43xBYLRxHanlXRoMA0GCWCGSAFlAwQCAQUAoGkwGAYJKoZIhvcNAQkDMQsGCSqG
-# SIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjUwODI1MTkyNzQ0WjAvBgkqhkiG9w0B
-# CQQxIgQgM05Sf/uNL09go/hkbC8zs9QDyK4N8cxDDCOiNZS5xpMwDQYJKoZIhvcN
-# AQEBBQAEggIAt/6cWu7wSif9fvuXxe7QXFfqG1+vRO371exMNnp5RSa+pjrNhlJY
-# TH7TkJ7fmWki3tEPtCchgwaZk/ssWBa7ag/aTpC/VPGo8EhgnEtzwUJ5e16oVhdw
-# JwMOvB3oaXwSSCa0GWkY7ZXeA0+zzvSib+JnsNdVyGgVK8asEhxuEJGSUKU+Egbv
-# V+33JQXYPlhUQJe+VqyxvDE3wXsXMteJEaUcFJA2D9X1Oat6qV9bi8XPQe+4+tG8
-# lDiRQoLKxoP793fLehe57HriJqX5doMEIYXmxDUbV6q1Iwt78+bB7sCYj7v64rtW
-# Xp5XuU/rVPljcgoea141crsYAeIFzupa/9yD/deW6/UDhRL4jAs+ixo5U+pvj+37
-# g0u0pGq1nrvkWmpLDn3HYZhuKcuVFHU/hLP7JQO1cTo+LARzAH2QpXTbcFt5jaKJ
-# 3/HKYgUKk5PeqYangjawAUpbxh/HHceMiFLby2ev5OZwUt+hdGFJT/2H2VpQLRte
-# XnCZhftZKZLl70BydbtbCGGUkhs6MRC2v3NJ2vzXFAFlw1g1fhJtmA6XJvThU6XM
-# nMD6upuTYPgRLGHhFoqMkf6LZ5sqaPIKq7jYNEDFdCCK1CVzZhe3oqgZTv+rWru3
-# NaGpkV2pRhIaeT7BYWomNy2rQYZ9QbDNUksc2MJFB2iBBa/3Oal6vCg=
+# SIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjUwODI5MTYxNzU5WjAvBgkqhkiG9w0B
+# CQQxIgQg4QTOcql+LoVnI0JR0yBYnL+1+ShjfvpCVBtBy/4Cw+wwDQYJKoZIhvcN
+# AQEBBQAEggIAX0BKSTiHyCUiApm1E27bVYkya9+Ws8L+6UB0dEyV6WUmtkWauITs
+# g+2JK0SVQNweKvAv8xEC03oiZ7pLm83jmP5Z+KTXglG+qftwHpcpzjCWBvX0iOy3
+# YxUlHxbxZL6i38my/IAKek4kGKRWfU/L9Kc5awc+Ulawodmeyh6geDpsWmVL78WG
+# sm4Go5D20ZNiOTVyLTeCRoO7nNmj37wXSM/slvg9j2QMiBZrJo9o5tyMPejuxyhe
+# hoLHkMScd/1f98SftDrhIFS8ZcSrsI1iCsXNiyG8L0p0vm6bXi4T2ToJOxjDmxTW
+# dzvKrTrys1n0nosPChCzm6dJEbAcy1f+tg5y60ODcmWcGXusp0C7qLw9vLFnDScv
+# XQE9KSz/lHj/dSW4AIMjEHkixSdCtc2iLlJEgSj5KXOymCyey2NzbXbdypGRJGuO
+# a8hRlCN+ti1pnuay9+xwjmI7zX1XGBukMw3v4U9tGYgISdcMbhQGWt77sTK1rRhL
+# DZG3nbPqXbG6oPGHAN/8s7d3wqXLPkQFwNd2F8KW5QUyyQjSG4KXghIlkVBjirOW
+# DhCGCU2MUan4yini0o9x9o1UmAnygxH84NAne4ER057G9hPfYBSyo8Vz+iujRLUx
+# cDHXRWJHQrbNTA9SFxv2k1iu1dkFzNFjM9j6GHLGIgsoPfWg62XzW+M=
 # SIG # End signature block

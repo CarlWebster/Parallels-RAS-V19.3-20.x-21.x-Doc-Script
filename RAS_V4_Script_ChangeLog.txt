@@ -48,7 +48,6 @@
 #		Move check for the default filter setting to this function from Function OutputPublishingSettings
 #		Add test for the default filter
 #		For each filter, add Enabled/Disabled
-#		For the Default Rule, add "Enabled" and "Default Rule" to the output
 #	In Function OutputPubItemFilter
 #		For the Default Rule, add "Enabled", "Default Rule", and the Allow or Deny text to the output
 #	In Function OutputPublishingSettings
@@ -59,11 +58,13 @@
 #		Fix bug for Word/PDF output for the VDIDesktop published item type
 #		Fix bug in the Text output for Sites
 #		Fix bugs in the handling of preferred routing
-#			In the Information section, only need to show of preferred routing is enabled or disabled
+#			In the Information section, only need to show whether preferred routing is enabled or disabled
 #			In the Routing section, the handling of no preferred routes configured was not handled properly
 #				Moved the "
 #		Add "Routing" to all published item types that have a Routing tab
-#		Remove the Site section from all published item types as that tab no longer exists in the console
+#		Remove the Site section from the published item types that no longer have that tab in the console
+#		For Published Item type of "VDIDesktop", add Published from
+#		Add the published item type to all published items
 #	In Function OutputRASAccounts
 #		Add the Enabled property
 #		Changed "Group or user names" to "Name"
@@ -112,11 +113,13 @@
 #		Added basic information for Tenant Brokers
 #		Changed "VDI Host" to "Provider"
 #	In Function OutputVDIDetails:
-#		For Host pools properties, add:
+#		For Host pools, add:
 #			Status
 #			Template
 #			Template version
 #			ID
+#		For Host Pool Properties, add
+#			Action tab
 #	In Function ProcessAdministration
 #		Rename variable $RASFeatures to $RASHelpdesk
 #		Add variable $RASSupport
