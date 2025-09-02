@@ -448,9 +448,9 @@
 	text document.
 .NOTES
 	NAME: RAS_Inventory_V4_0.ps1
-	VERSION: 4.00 Beta 16
+	VERSION: 4.00 Beta 17
 	AUTHOR: Carl Webster
-	LASTEDIT: August 29, 2025
+	LASTEDIT: September 2, 2025
 #>
 
 
@@ -754,9 +754,9 @@ $ErrorActionPreference    = 'SilentlyContinue'
 $Error.Clear()
 
 $Script:emailCredentials  = $Null
-$script:MyVersion         = '4.00 Beta 16'
+$script:MyVersion         = '4.00 Beta 17'
 $Script:ScriptName        = "RAS_Inventory_V4_0.ps1"
-$tmpdate                  = [datetime] "08/29/2025"
+$tmpdate                  = [datetime] "09/02/2025"
 $Script:ReleaseDate       = $tmpdate.ToUniversalTime().ToShortDateString()
 
 If($MSWord -eq $False -and $PDF -eq $False -and $Text -eq $False -and $HTML -eq $False)
@@ -17553,6 +17553,9 @@ Function OutputVDIDetails
 					FindWordDocumentEnd
 					$Table = $Null
 					WriteWordLine 0 0 ""
+					
+					#User Profile
+					
 				}
 			}
 			ElseIf($? -and $Null -eq $VDIPools)
@@ -17739,6 +17742,8 @@ Function OutputVDIDetails
 					Line 5 "Perform action`t: " $VDIPoolActionsPerformAction
 					Line 5 "After`t`t: " $VDIPoolActionsAfter
 					Line 0 ""
+
+					#User Profile
 				}
 				Line 0 ""
 			}
@@ -17985,7 +17990,6 @@ Function OutputVDIDetails
 						$VDIPoolActionsPerformAction = $VDIPool.Action.PerformAction.ToString()
 					}
 
-
 					$rowdata = @()
 					$columnHeaders = @("Inherit default settings",($Script:htmlsb),$VDIPool.InheritDefaultVDIActionSettings.ToString(),$htmlwhite)
 					$rowdata += @(,( "Action",($Script:htmlsb),"",$htmlwhite))
@@ -17997,6 +18001,8 @@ Function OutputVDIDetails
 					$columnWidths = @("200","275")
 					FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 					WriteHTMLLine 0 0 ""
+
+					#User Profile
 				}
 			}
 			ElseIf($? -and $Null -eq $VDIPools)
@@ -29330,7 +29336,7 @@ Function OutputPublishingSettings
 		#	If the ParentId is not 0, get the ParentId's EnabledMode
 		#		If the ParentId's EnabledMode is "Disabled", set the Puiblished Item's EnabledMode status to "Disabled (Inherited)"
 		#		If the ParentId's EnabledMode is "Maintenance"
-		#			If the Published Item's Type is "Folder" or "LocalApp", keep its EnabledMode
+		#			If the Published Item's Type is "LocalApp", keep its EnabledMode
 		#			Otherwise, set the published item's EnabledMode status to "In maintenance (Inherited)"
 		#		If the ParentId's EnabledMode is "Enabled", set the Puiblished Item's EnabledMode status to "Enabled"
 		Switch($PubItem.EnabledMode)
@@ -29354,7 +29360,7 @@ Function OutputPublishingSettings
 										}
 										ElseIf($ParentIdEnabledMode = "Maintenance")
 										{
-											If($PubItem.Type -eq "Folder" -or $PubItem.Type -eq "LocalApp")
+											If($PubItem.Type -eq "LocalApp")
 											{
 												Switch($PubItem.EnabledMode)
 												{

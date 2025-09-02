@@ -448,9 +448,9 @@
 	text document.
 .NOTES
 	NAME: RAS_Inventory_V4_0.ps1
-	VERSION: 4.00 Beta 16
+	VERSION: 4.00 Beta 17
 	AUTHOR: Carl Webster
-	LASTEDIT: August 29, 2025
+	LASTEDIT: September 2, 2025
 #>
 
 
@@ -754,9 +754,9 @@ $ErrorActionPreference    = 'SilentlyContinue'
 $Error.Clear()
 
 $Script:emailCredentials  = $Null
-$script:MyVersion         = '4.00 Beta 16'
+$script:MyVersion         = '4.00 Beta 17'
 $Script:ScriptName        = "RAS_Inventory_V4_0.ps1"
-$tmpdate                  = [datetime] "08/29/2025"
+$tmpdate                  = [datetime] "09/02/2025"
 $Script:ReleaseDate       = $tmpdate.ToUniversalTime().ToShortDateString()
 
 If($MSWord -eq $False -and $PDF -eq $False -and $Text -eq $False -and $HTML -eq $False)
@@ -17553,6 +17553,9 @@ Function OutputVDIDetails
 					FindWordDocumentEnd
 					$Table = $Null
 					WriteWordLine 0 0 ""
+					
+					#User Profile
+					
 				}
 			}
 			ElseIf($? -and $Null -eq $VDIPools)
@@ -17739,6 +17742,8 @@ Function OutputVDIDetails
 					Line 5 "Perform action`t: " $VDIPoolActionsPerformAction
 					Line 5 "After`t`t: " $VDIPoolActionsAfter
 					Line 0 ""
+
+					#User Profile
 				}
 				Line 0 ""
 			}
@@ -17985,7 +17990,6 @@ Function OutputVDIDetails
 						$VDIPoolActionsPerformAction = $VDIPool.Action.PerformAction.ToString()
 					}
 
-
 					$rowdata = @()
 					$columnHeaders = @("Inherit default settings",($Script:htmlsb),$VDIPool.InheritDefaultVDIActionSettings.ToString(),$htmlwhite)
 					$rowdata += @(,( "Action",($Script:htmlsb),"",$htmlwhite))
@@ -17997,6 +18001,8 @@ Function OutputVDIDetails
 					$columnWidths = @("200","275")
 					FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 					WriteHTMLLine 0 0 ""
+
+					#User Profile
 				}
 			}
 			ElseIf($? -and $Null -eq $VDIPools)
@@ -29330,7 +29336,7 @@ Function OutputPublishingSettings
 		#	If the ParentId is not 0, get the ParentId's EnabledMode
 		#		If the ParentId's EnabledMode is "Disabled", set the Puiblished Item's EnabledMode status to "Disabled (Inherited)"
 		#		If the ParentId's EnabledMode is "Maintenance"
-		#			If the Published Item's Type is "Folder" or "LocalApp", keep its EnabledMode
+		#			If the Published Item's Type is "LocalApp", keep its EnabledMode
 		#			Otherwise, set the published item's EnabledMode status to "In maintenance (Inherited)"
 		#		If the ParentId's EnabledMode is "Enabled", set the Puiblished Item's EnabledMode status to "Enabled"
 		Switch($PubItem.EnabledMode)
@@ -29354,7 +29360,7 @@ Function OutputPublishingSettings
 										}
 										ElseIf($ParentIdEnabledMode = "Maintenance")
 										{
-											If($PubItem.Type -eq "Folder" -or $PubItem.Type -eq "LocalApp")
+											If($PubItem.Type -eq "LocalApp")
 											{
 												Switch($PubItem.EnabledMode)
 												{
@@ -51087,8 +51093,8 @@ ProcessScriptEnd
 # SIG # Begin signature block
 # MIIthQYJKoZIhvcNAQcCoIItdjCCLXICAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUNmEfGTzAL2Tw+DdIesCXoJE0
-# reWggibfMIIFjTCCBHWgAwIBAgIQDpsYjvnQLefv21DiCEAYWjANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUSZ3oywCMAaMtvDxisIwsOxII
+# psWggibfMIIFjTCCBHWgAwIBAgIQDpsYjvnQLefv21DiCEAYWjANBgkqhkiG9w0B
 # AQwFADBlMQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYD
 # VQQLExB3d3cuZGlnaWNlcnQuY29tMSQwIgYDVQQDExtEaWdpQ2VydCBBc3N1cmVk
 # IElEIFJvb3QgQ0EwHhcNMjIwODAxMDAwMDAwWhcNMzExMTA5MjM1OTU5WjBiMQsw
@@ -51299,33 +51305,33 @@ ProcessScriptEnd
 # UzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/BgNVBAMTOERpZ2lDZXJ0IFRy
 # dXN0ZWQgRzQgQ29kZSBTaWduaW5nIFJTQTQwOTYgU0hBMzg0IDIwMjEgQ0ExAhAL
 # bN+2Z4EOKufLWhG6HUlwMAkGBSsOAwIaBQCgQDAZBgkqhkiG9w0BCQMxDAYKKwYB
-# BAGCNwIBBDAjBgkqhkiG9w0BCQQxFgQUukaRGdUvUrLN21tsOrnD3cJLMGwwDQYJ
-# KoZIhvcNAQEBBQAEggIAdT63h7TOMVZIhxhm47932RxRk+5Va30/oSyodW1ewydH
-# dKFcpGBJ1SyFbAGGC0oHua5B1XGXRHcEkwUnwcEwuY0W1uBQRY9COFo4pAtMUzNN
-# h5BxffgGiOkAQn/mjHrxBxDJlujgBkttorhENFXwiAcj4XJB5KrMJz+6xDIA8W9R
-# kG+ltHnz2tbsNvRqr8r43QFv3ICrSEQjUSjUzNU4OgfvRnley9zlzJV/lVqWvtcA
-# Uhdij4f4HTxqU3LOCFHJEr6xq5jtrYBuYkjnA1QdMuaYnomAQTAQjhJ3mremtkZc
-# K/WEsMRQSkAfuSQkzPylfpHGDC6X5vi+is/soKi6Xq48QUVVzrbepOx54jxmSLNz
-# fPm/KjiBcb3fZ7QSWEDueUfCBwjBWNtecuQGGnSiIamM7D2DBJht57FA8ZBLXn2I
-# CDU00z9RuBJ5h5P4axn2ELp4WUp7hfgo3S8suT2DHNdllpA3PZp4j2FBy/tbaL1+
-# 7sc5nFhEFUtWVvtDLYZER7jq4fHKRgjBT6EzQdXJ7yWSwaDHQkmW4lIIPGqRD9YY
-# coIRDMjhfJsbLT5+RDDxamn+NcY9cyD05E0rKDqodiApJQYQSKo2hZoJjZKH2jHi
-# Ou+6HJnYdJUe5ShT7CQH1wndWDGyCqyIi4mzqTe5O/eGLaybAXuCQ1mxHel03lGh
+# BAGCNwIBBDAjBgkqhkiG9w0BCQQxFgQUszDfwWRmJtwdXm9IRqxrEGnn7DgwDQYJ
+# KoZIhvcNAQEBBQAEggIAmDf1JTmjJ58MA0Bdcy3wty4efEvoPaF6k33s2V66yaNW
+# xCzRk8rIvpmgxGaRfTNioe2NVU0YUBnj+Q6ccsn9Yv6hDA9rrnLj364mlN1T1QsE
+# RYR+aPA8ni83pfxZNeSqAOnlX3iWmr1kexOE6Hwp9suWmAF7a1GcKe+bRqgv6Ea0
+# GHVbNJKZS8XDUNfQJBHe0zmvV65/Qzge6JqAw3NrjBmF8FSv09SRcbOhghZnN86a
+# pPewKAg/LcvP7SpDm1q66IvPGdqhXohtq8AJYB6WX1kwt9f1QOfoSDVRpNdIUzJS
+# NUBhFtFCGFkCI7mmRri9r33xT6iVVw5XpcfwuqeBRitUUmN9dmi6l6Ajajyzt9WW
+# 8+IJuYWyispSuBfqNtC+hpv0lmtxK//Fd6d8kFbasu0aUAuB2gXhNcVxdCVKCdx7
+# KVosubi4RruIz224mkAkV5pC5Ve5lsmOVM/l3yfU1lXlcHTM7fSLOjCOQUN0qyXv
+# P51PPS8MHKUAx+XkPqvOMGXeflHPXclYz+GEH+ltsR/Cv/XQFJY2PCQP8vMRiQ0O
+# JJw05uSGUvTBbhAP1XnkE1WbLXNb1dlNAiNVeyUduwgpX3Nk50zK7YGi447PxkcG
+# EfZ2J6IAqQnG/cWy99trKQY1ERQJkG5KQ9grh9gYrvIysVHvqR4YibzKroT7tbSh
 # ggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8CAQEwfTBpMQswCQYDVQQGEwJVUzEX
 # MBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/BgNVBAMTOERpZ2lDZXJ0IFRydXN0
 # ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYgU0hBMjU2IDIwMjUgQ0ExAhAKgO8Y
 # S43xBYLRxHanlXRoMA0GCWCGSAFlAwQCAQUAoGkwGAYJKoZIhvcNAQkDMQsGCSqG
-# SIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjUwODI5MTYxNzU5WjAvBgkqhkiG9w0B
-# CQQxIgQg4QTOcql+LoVnI0JR0yBYnL+1+ShjfvpCVBtBy/4Cw+wwDQYJKoZIhvcN
-# AQEBBQAEggIAX0BKSTiHyCUiApm1E27bVYkya9+Ws8L+6UB0dEyV6WUmtkWauITs
-# g+2JK0SVQNweKvAv8xEC03oiZ7pLm83jmP5Z+KTXglG+qftwHpcpzjCWBvX0iOy3
-# YxUlHxbxZL6i38my/IAKek4kGKRWfU/L9Kc5awc+Ulawodmeyh6geDpsWmVL78WG
-# sm4Go5D20ZNiOTVyLTeCRoO7nNmj37wXSM/slvg9j2QMiBZrJo9o5tyMPejuxyhe
-# hoLHkMScd/1f98SftDrhIFS8ZcSrsI1iCsXNiyG8L0p0vm6bXi4T2ToJOxjDmxTW
-# dzvKrTrys1n0nosPChCzm6dJEbAcy1f+tg5y60ODcmWcGXusp0C7qLw9vLFnDScv
-# XQE9KSz/lHj/dSW4AIMjEHkixSdCtc2iLlJEgSj5KXOymCyey2NzbXbdypGRJGuO
-# a8hRlCN+ti1pnuay9+xwjmI7zX1XGBukMw3v4U9tGYgISdcMbhQGWt77sTK1rRhL
-# DZG3nbPqXbG6oPGHAN/8s7d3wqXLPkQFwNd2F8KW5QUyyQjSG4KXghIlkVBjirOW
-# DhCGCU2MUan4yini0o9x9o1UmAnygxH84NAne4ER057G9hPfYBSyo8Vz+iujRLUx
-# cDHXRWJHQrbNTA9SFxv2k1iu1dkFzNFjM9j6GHLGIgsoPfWg62XzW+M=
+# SIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjUwOTAyMTkyMjE0WjAvBgkqhkiG9w0B
+# CQQxIgQg7AvAl617ER0lLJVxZjYlbdzet7kCuh9N+PApqTwSTnowDQYJKoZIhvcN
+# AQEBBQAEggIAAmG7Qnzj68oz3WWfhzEBsaz8BB9Ybg8Ed7vm7ZG72zJqhbsU69Y/
+# nvv+QbBTTBbUaifDT5QWPOmlqbcLDVnR41rQGl1N4mscYNKdmYQdPSbjwI6vFIyD
+# OFaznkRc9mnMcRNkvCQ57kllJOXPmfndpFT6PsXZgEPsQ+t1Qi3CNTPdKjsIiysg
+# gV7k3R+US8Oale4/5+cTcHfawAxlr3z8uwkOX54TvHpj2QG38Ozlx1d9enWgRahq
+# OFZ0kVSqflTCNg0td5LP3jokhnvpSZZZvRAMGoFoT0Z2zBZZgr3f7JBHzwdJ1HrT
+# 3OBNPTKUjKk+6rYPCmrdm16eVDkLXWT9VWNSzPnTPVkCru/Nm3r5UeWRv3t5kDMu
+# /SI+nXBImsBeihk6/kJc2oWB4p0Gmoha6MVKohiVl2GWdfGkjPJsNs9weL8fyu1A
+# wm3gX6Vsv+ZCwds+3oR9bGvLp+K8+hZTVofW1XybJW99P+5bXTjOJYVKmLSKheAu
+# fBFhzWS/3C7bElak3mEVbl1IK2tJIwlxO3Ia5lAKmPki0K32Z5fVGEwKJjxXyNd/
+# pqqiVyxnDUE/Vsu5ED1b0KkGixSKqSJFWCWGs+0YDfrFw3aQQ3x/Qurc1/CkPSUm
+# E+A9tkaSiqeYUy1BfLKp+BwO+jgzszD+ixMr+ub6MIU+D+YaWGRpYZg=
 # SIG # End signature block
