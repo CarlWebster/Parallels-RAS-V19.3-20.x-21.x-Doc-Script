@@ -25,11 +25,15 @@
 #			OutputCertificatesDetails
 #			OutputApplicationPackagesDetails
 #			OutputSettingsDetails
+#
 #	Clean up some console output
+#
 #	Fixed and refined the HTML, Text, and MSWord output
+#
 #	In Function OutputFarmSite, 
 #		Add Farm Properties
 #		For RAS V20 and later, add Access addresses
+#
 #	In Function OutputPoliciesDetails:
 #		Update for the Policy changes in 19.3 and later
 #		Handle multiple criteria
@@ -44,15 +48,20 @@
 #		For RAS version 20.2 and later, removed
 #			Client options/Advanced/Printing/Advanced client options - Printing settings/Cache printers hardware information
 #			Client options/Advanced/Printing/Advanced client options - Printing settings/Refresh printer hardware information every 30 days
+#
 #	In Function OutputPubItemFilterSummary
 #		Move check for the default filter setting to this function from Function OutputPublishingSettings
 #		Add test for the default filter
 #		For each filter, add Enabled/Disabled
+#
 #	In Function OutputPubItemFilter
 #		For the Default Rule, add "Enabled", "Default Rule", and the Allow or Deny text to the output
+#
 #	In Function OutputPublishingSettings
+#		Add "Routing" to all published item types that have a Routing tab
 #		Add "Status" of Enabled, Disabled, or In Maintenance to all published item types
 #		Add LocalApp published item type
+#		Add the published item type to all published items
 #		Ensure the output for all sections for all published item types matches the RAS V20.x console
 #		Fix bug where "Allow if no other rule matches" was always the default filter setting. Move this check to Function OutputPubItemFilterSummary
 #		Fix bug for Word/PDF output for the VDIDesktop published item type
@@ -61,10 +70,20 @@
 #			In the Information section, only need to show whether preferred routing is enabled or disabled
 #			In the Routing section, the handling of no preferred routes configured was not handled properly
 #				Moved the "
-#		Add "Routing" to all published item types that have a Routing tab
-#		Remove the Site section from the published item types that no longer have that tab in the console
 #		For Published Item type of "VDIDesktop", add Published from
-#		Add the published item type to all published items
+#		For Published Item type of AVDApp and AVDDesktop, change the name from "Windows Virtual Desktop" to "Azure Virtual Desktop"
+#		For Published Item type of AVDApp, remove the following items from the Information section because they are not shown in the RAS 20 or 21 console:
+#			Start In
+#			Start automatically when user logs on
+#			Parameters
+#			Associate the following file extensions
+#			Allow users to start only 1 instance of this application
+#			Concurrent licenses
+#			If limit is exceeded
+#			Session Sharing 
+#			Settings for Site
+#		Remove the Site section from the published item types that no longer have that tab in the console
+#
 #	In Function OutputRASAccounts
 #		Add the Enabled property
 #		Changed "Group or user names" to "Name"
@@ -77,14 +96,18 @@
 #			Group
 #			Permissions
 #			Receive system notifications
+#
 #	In Function OutputRASFeatures
 #		Rename variable $RASFeatures to $RASHelpdesk
 #		Add variable $RASSupport
 #		Change function to use two parameters: $RASHelpdesk and $RASSupport
 #		Add output for "Overwrite support actions with the following URL"
+#
 #	In Function OutputRASLicense, update output to match the 19.4 console
+#
 #	In Function OutputRASMailboxSettings, 
 #		Add the "Use TLS 1.3 if available" option
+#
 #	In Function OutputRASReportingSettings, add:
 #		Session Counters
 #			Session information
@@ -95,7 +118,9 @@
 #					Track UX Evaluator when change is more than (%)
 #					Track Latency when change is more than (%)
 #					Track Bandwidth when change is more than (%)
+#
 #	In Function OutputRASSettings, add the setting "Check for updates when launching RAS console"
+#
 #	In Function OutputRDSessionHostsDetails:
 #		Changed Get-RASVDIHostStatus -Name $VDIPool.Name to Get-RASVDIHostPoolStatus -Name $VDIPool.Name -SiteId $Site.Id
 #		Fixed bug in processing the variable $AppPackagesAssigned.ApplicationPackagesAssigned with the help of Guy Leech
@@ -103,15 +128,20 @@
 #		Add Application Packages
 #		Only output optimization data if optimization is enabled
 #		Add Auto-upgrade
+#
 #	In Function OutputSAMLSetting, handle multiple SAML items
+#
 #	In Function OutputSettingsDetails, add Azure Virtual Desktop to the Features section
+#
 #	In Function OutputSiteDetails, when processing Themes, Properties, Access:
 #		If the Theme's MFA ID is not 0 and is found, use the MFA name
 #		If the Theme's MFA ID is 0, use "No MFA provider selected for this Theme"
 #		If the Theme's MFA ID is not found, use "Unable to determine MFA provider"
+#
 #	In Function OutputSiteSummary:
 #		Added basic information for Tenant Brokers
 #		Changed "VDI Host" to "Provider"
+#
 #	In Function OutputVDIDetails:
 #		For Host pools, add:
 #			Status
@@ -120,14 +150,24 @@
 #			ID
 #		For Host Pool Properties, add
 #			Action tab
+#
 #	In Function ProcessAdministration
 #		Rename variable $RASFeatures to $RASHelpdesk
 #		Add variable $RASSupport
 #		Add retrieving Get-RASOverwriteSupportActions
 #		Change call to OutputRASFeatures to use two parameters: $RASHelpdesk and $RASSupport
+#
 #	In Function ProcessScriptSetup, change how the RAS version is retrieved and put into variables
+#
 #	Merged functions OutputRASProxySettings and OutputRASMiscSettings into OutputRASSettings
-#	Updated for the PowerShell module changes in RAS 19.3 and later, and 20 and later
+#
+#	Updated for the PowerShell module changes in RAS 19.3 and later, 20 and later, and 21 and later
+#
 #	Updated Function ProcessAdministration to handle merging functions OutputRASProxySettings 
 #		and OutputRASMiscSettings into Function OutputRASSettings
+#
 #	Updated numerous ENUMS throughout the script
+#
+#	Updated the help text
+#
+#	Updated the ReadMe file

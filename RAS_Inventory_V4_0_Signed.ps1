@@ -3,20 +3,22 @@
 
 <#
 .SYNOPSIS
-	Creates a complete inventory of a V19.3/4 or 20 Parallels Remote Application Server.
+	Creates a complete inventory of a V19.3/4, 20, or 21 Parallels Remote Application Server.
 .DESCRIPTION
-	Creates a complete inventory of a V19.3/4 or 20 Parallels Remote Application Server 
+	Creates a complete inventory of a V19.3/4, 20, or 21 Parallels Remote Application Server 
 	(RAS) using Microsoft PowerShell, Word, plain text, or HTML.
 	
-	The script requires at least PowerShell version 3 but runs best in version 5.
+	The script requires at least PowerShell version 3, but runs best in version 5.
 
-	Word is NOT needed to run the script. This script outputs in Text and HTML.
+	The Word application is not required to run the script. This script outputs in both 
+	Text and HTML formats.
+	
 	The default output format is HTML.
 	
 	Creates an output file named Parallels_RAS.<fileextension>.
 	
 	You do NOT have to run this script on a server running RAS. This script was developed 
-	and run from a Windows 10 VM.
+	and run from a Windows 11 VM.
 
 	Word and PDF documents include a Cover Page, Table of Contents, and Footer.
 	Includes support for the following language versions of Microsoft Word:
@@ -80,14 +82,14 @@
 
 	This parameter defaults to All sections.
 	
-	Multiple sections are separated by a comma. -Section admin, licensing
+	A comma separates multiple sections. -Section admin, licensing
 .PARAMETER AddDateTime
 	Adds a date timestamp to the end of the file name.
 	
 	The timestamp is in the format of yyyy-MM-dd_HHmm.
-	June 1, 2024 at 6PM is 2024-06-01_1800.
+	June 1, 2026 at 6PM is 2026-06-01_1800.
 	
-	Output filename will be ReportName_2024-06-01_1800.<ext>.
+	Output filename will be ReportName_2026-06-01_1800.<ext>.
 	
 	This parameter is disabled by default.
 	This parameter has an alias of ADT.
@@ -135,7 +137,7 @@
 .PARAMETER PDF
 	SaveAs PDF file instead of DOCX file.
 	
-	The PDF file is roughly 5X to 10X larger than the DOCX file.
+	The PDF file is roughly 5 to 10 times larger than the DOCX file.
 	
 	This parameter requires Microsoft Word to be installed.
 	This parameter uses Word's SaveAs PDF capability.
@@ -266,13 +268,13 @@
 .EXAMPLE
 	PS C:\PSScript > .\RAS_Inventory_V4_0.ps1
 	
-	Outputs, by default to HTML.
+	Outputs, by default, to HTML.
 	Prompts for credentials for the LocalHost RAS Server.
 .EXAMPLE
 	PS C:\PSScript > .\RAS_Inventory_V4_0.ps1 -RASSite EMEASite
 	
 	Includes only data for the EMEASite.
-	Outputs, by default to HTML.
+	Outputs, by default, to HTML.
 	Prompts for credentials for the LocalHost RAS Server.
 .EXAMPLE
 	PS C:\PSScript .\RAS_Inventory_V4_0.ps1 -MSWord -CompanyName "Carl Webster 
@@ -448,9 +450,9 @@
 	text document.
 .NOTES
 	NAME: RAS_Inventory_V4_0.ps1
-	VERSION: 4.00 Beta 17
+	VERSION: 4.00 Beta 18
 	AUTHOR: Carl Webster
-	LASTEDIT: September 2, 2025
+	LASTEDIT: October 14, 2025
 #>
 
 
@@ -585,11 +587,15 @@ Param(
 #			OutputCertificatesDetails
 #			OutputApplicationPackagesDetails
 #			OutputSettingsDetails
+#
 #	Clean up some console output
+#
 #	Fixed and refined the HTML, Text, and MSWord output
+#
 #	In Function OutputFarmSite, 
 #		Add Farm Properties
 #		For RAS V20 and later, add Access addresses
+#
 #	In Function OutputPoliciesDetails:
 #		Update for the Policy changes in 19.3 and later
 #		Handle multiple criteria
@@ -604,15 +610,20 @@ Param(
 #		For RAS version 20.2 and later, removed
 #			Client options/Advanced/Printing/Advanced client options - Printing settings/Cache printers hardware information
 #			Client options/Advanced/Printing/Advanced client options - Printing settings/Refresh printer hardware information every 30 days
+#
 #	In Function OutputPubItemFilterSummary
 #		Move check for the default filter setting to this function from Function OutputPublishingSettings
 #		Add test for the default filter
 #		For each filter, add Enabled/Disabled
+#
 #	In Function OutputPubItemFilter
 #		For the Default Rule, add "Enabled", "Default Rule", and the Allow or Deny text to the output
+#
 #	In Function OutputPublishingSettings
+#		Add "Routing" to all published item types that have a Routing tab
 #		Add "Status" of Enabled, Disabled, or In Maintenance to all published item types
 #		Add LocalApp published item type
+#		Add the published item type to all published items
 #		Ensure the output for all sections for all published item types matches the RAS V20.x console
 #		Fix bug where "Allow if no other rule matches" was always the default filter setting. Move this check to Function OutputPubItemFilterSummary
 #		Fix bug for Word/PDF output for the VDIDesktop published item type
@@ -621,10 +632,20 @@ Param(
 #			In the Information section, only need to show whether preferred routing is enabled or disabled
 #			In the Routing section, the handling of no preferred routes configured was not handled properly
 #				Moved the "
-#		Add "Routing" to all published item types that have a Routing tab
-#		Remove the Site section from the published item types that no longer have that tab in the console
 #		For Published Item type of "VDIDesktop", add Published from
-#		Add the published item type to all published items
+#		For Published Item type of AVDApp and AVDDesktop, change the name from "Windows Virtual Desktop" to "Azure Virtual Desktop"
+#		For Published Item type of AVDApp, remove the following items from the Information section because they are not shown in the RAS 20 or 21 console:
+#			Start In
+#			Start automatically when user logs on
+#			Parameters
+#			Associate the following file extensions
+#			Allow users to start only 1 instance of this application
+#			Concurrent licenses
+#			If limit is exceeded
+#			Session Sharing 
+#			Settings for Site
+#		Remove the Site section from the published item types that no longer have that tab in the console
+#
 #	In Function OutputRASAccounts
 #		Add the Enabled property
 #		Changed "Group or user names" to "Name"
@@ -637,14 +658,18 @@ Param(
 #			Group
 #			Permissions
 #			Receive system notifications
+#
 #	In Function OutputRASFeatures
 #		Rename variable $RASFeatures to $RASHelpdesk
 #		Add variable $RASSupport
 #		Change function to use two parameters: $RASHelpdesk and $RASSupport
 #		Add output for "Overwrite support actions with the following URL"
+#
 #	In Function OutputRASLicense, update output to match the 19.4 console
+#
 #	In Function OutputRASMailboxSettings, 
 #		Add the "Use TLS 1.3 if available" option
+#
 #	In Function OutputRASReportingSettings, add:
 #		Session Counters
 #			Session information
@@ -655,7 +680,9 @@ Param(
 #					Track UX Evaluator when change is more than (%)
 #					Track Latency when change is more than (%)
 #					Track Bandwidth when change is more than (%)
+#
 #	In Function OutputRASSettings, add the setting "Check for updates when launching RAS console"
+#
 #	In Function OutputRDSessionHostsDetails:
 #		Changed Get-RASVDIHostStatus -Name $VDIPool.Name to Get-RASVDIHostPoolStatus -Name $VDIPool.Name -SiteId $Site.Id
 #		Fixed bug in processing the variable $AppPackagesAssigned.ApplicationPackagesAssigned with the help of Guy Leech
@@ -663,15 +690,20 @@ Param(
 #		Add Application Packages
 #		Only output optimization data if optimization is enabled
 #		Add Auto-upgrade
+#
 #	In Function OutputSAMLSetting, handle multiple SAML items
+#
 #	In Function OutputSettingsDetails, add Azure Virtual Desktop to the Features section
+#
 #	In Function OutputSiteDetails, when processing Themes, Properties, Access:
 #		If the Theme's MFA ID is not 0 and is found, use the MFA name
 #		If the Theme's MFA ID is 0, use "No MFA provider selected for this Theme"
 #		If the Theme's MFA ID is not found, use "Unable to determine MFA provider"
+#
 #	In Function OutputSiteSummary:
 #		Added basic information for Tenant Brokers
 #		Changed "VDI Host" to "Provider"
+#
 #	In Function OutputVDIDetails:
 #		For Host pools, add:
 #			Status
@@ -680,17 +712,27 @@ Param(
 #			ID
 #		For Host Pool Properties, add
 #			Action tab
+#
 #	In Function ProcessAdministration
 #		Rename variable $RASFeatures to $RASHelpdesk
 #		Add variable $RASSupport
 #		Add retrieving Get-RASOverwriteSupportActions
 #		Change call to OutputRASFeatures to use two parameters: $RASHelpdesk and $RASSupport
+#
 #	In Function ProcessScriptSetup, change how the RAS version is retrieved and put into variables
+#
 #	Merged functions OutputRASProxySettings and OutputRASMiscSettings into OutputRASSettings
-#	Updated for the PowerShell module changes in RAS 19.3 and later, and 20 and later
+#
+#	Updated for the PowerShell module changes in RAS 19.3 and later, 20 and later, and 21 and later
+#
 #	Updated Function ProcessAdministration to handle merging functions OutputRASProxySettings 
 #		and OutputRASMiscSettings into Function OutputRASSettings
+#
 #	Updated numerous ENUMS throughout the script
+#
+#	Updated the help text
+#
+#	Updated the ReadMe file
 #
 
 Function AbortScript
@@ -754,9 +796,9 @@ $ErrorActionPreference    = 'SilentlyContinue'
 $Error.Clear()
 
 $Script:emailCredentials  = $Null
-$script:MyVersion         = '4.00 Beta 17'
+$script:MyVersion         = '4.00 Beta 18'
 $Script:ScriptName        = "RAS_Inventory_V4_0.ps1"
-$tmpdate                  = [datetime] "09/02/2025"
+$tmpdate                  = [datetime] "10/14/2025"
 $Script:ReleaseDate       = $tmpdate.ToUniversalTime().ToShortDateString()
 
 If($MSWord -eq $False -and $PDF -eq $False -and $Text -eq $False -and $HTML -eq $False)
@@ -29358,7 +29400,7 @@ Function OutputPublishingSettings
 										{
 											$PubItemStatus = "Disabled (Inherited)"; Break
 										}
-										ElseIf($ParentIdEnabledMode = "Maintenance")
+										ElseIf($ParentIdEnabledMode -eq "Maintenance")
 										{
 											If($PubItem.Type -eq "LocalApp")
 											{
@@ -34903,7 +34945,7 @@ Function OutputPublishingSettings
 			{
 				WriteWordLine 3 0 "Information"
 				$ScriptInformation = New-Object System.Collections.ArrayList
-				$ScriptInformation.Add(@{Data = "Windows Virtual Desktop"; Value = "#$($PubItem.Id): $($PubItem.Name)"; }) > $Null
+				$ScriptInformation.Add(@{Data = "Azure Virtual Desktop"; Value = "#$($PubItem.Id): $($PubItem.Name)"; }) > $Null
 				$ScriptInformation.Add(@{Data = "Description"; Value = $PubItem.Description; }) > $Null
 				$ScriptInformation.Add(@{Data = "Last modification by"; Value = $PubItem.AdminLastMod; }) > $Null
 				$ScriptInformation.Add(@{Data = "Modified on"; Value = (Get-Date -UFormat "%c" $PubItem.TimeLastMod); }) > $Null
@@ -34913,7 +34955,7 @@ Function OutputPublishingSettings
 				$ScriptInformation.Add(@{Data = "Status"; Value = $PubItemStatus; }) > $Null
 				$ScriptInformation.Add(@{Data = "Target"; Value = $PubItem.Target; }) > $Null
 				$ScriptInformation.Add(@{Data = "Start In"; Value = $PubItem.StartIn; }) > $Null
-				$ScriptInformation.Add(@{Data = "Start automatically when user logs on"; Value = $PubItem.StartOnLogon.ToString(); }) > $Null
+				<#$ScriptInformation.Add(@{Data = "Start automatically when user logs on"; Value = $PubItem.StartOnLogon.ToString(); }) > $Null
 
 				If(![String]::IsNullOrEmpty($PubItem.Parameters))
 				{
@@ -34959,7 +35001,7 @@ Function OutputPublishingSettings
 				}
 
 				$ScriptInformation.Add(@{Data = "Settings for Site $xSiteName"; Value = ""; }) > $Null
-				
+				#>
 				If(validObject $PubItem PublishFrom)
 				{
 					If($PubItem.PublishFrom -eq "Server")
@@ -35390,7 +35432,7 @@ Function OutputPublishingSettings
 			If($Text)
 			{
 				Line 2 "Information"
-				Line 3 "Windows Virtual Desktop`t`t`t`t`t: " "#$($PubItem.Id): $($PubItem.Name)"
+				Line 3 "Azure Virtual Desktop`t`t`t`t`t: " "#$($PubItem.Id): $($PubItem.Name)"
 				Line 3 "Description`t`t`t`t`t`t: " $PubItem.Description
 				Line 3 "Last modification by`t`t`t`t`t: " $PubItem.AdminLastMod
 				Line 3 "Modified on`t`t`t`t`t`t: " (Get-Date -UFormat "%c" $PubItem.TimeLastMod)
@@ -35399,7 +35441,7 @@ Function OutputPublishingSettings
 				Line 3 "Type`t`t`t`t`t`t`t: " $PubItem.Type
 				Line 3 "Status`t`t`t`t`t`t`t: " $PubItemStatus
 				Line 3 "Target`t`t`t`t`t`t`t: " $PubItem.Target
-				Line 3 "Start In`t`t`t`t`t`t: " $PubItem.StartIn
+				<#Line 3 "Start In`t`t`t`t`t`t: " $PubItem.StartIn
 				Line 3 "Start automatically when user logs on`t`t`t: " $PubItem.StartOnLogon.ToString()
 				
 				If(![String]::IsNullOrEmpty($PubItem.Parameters))
@@ -35432,7 +35474,7 @@ Function OutputPublishingSettings
 				}
 
 				Line 3 "Settings for Site $xSiteName"
-				
+				#>
 				If(validObject $PubItem PublishFrom)
 				{
 					If($PubItem.PublishFrom -eq "Server")
@@ -35656,7 +35698,7 @@ Function OutputPublishingSettings
 				WriteHTMLLine 3 0 "Information"
 				$rowdata = @()
 
-				$columnHeaders = @("Windows Virtual Desktop",($Script:htmlsb),"#$($PubItem.Id): $($PubItem.Name)",$htmlwhite)
+				$columnHeaders = @("Azure Virtual Desktop",($Script:htmlsb),"#$($PubItem.Id): $($PubItem.Name)",$htmlwhite)
 				$rowdata += @(,("Description",($Script:htmlsb),$PubItem.Description,$htmlwhite))
 				$rowdata += @(,("Last modification by",($Script:htmlsb), $PubItem.AdminLastMod,$htmlwhite))
 				$rowdata += @(,("Modified on",($Script:htmlsb), (Get-Date -UFormat "%c" $PubItem.TimeLastMod),$htmlwhite))
@@ -35666,7 +35708,7 @@ Function OutputPublishingSettings
 				$rowdata += @(,("Status",($Script:htmlsb),$PubItemStatus,$htmlwhite))
 				$rowdata += @(,("Target",($Script:htmlsb),$PubItem.Target,$htmlwhite))
 				$rowdata += @(,("Start In",($Script:htmlsb),$PubItem.StartIn,$htmlwhite))
-				$rowdata += @(,("Start automatically when user logs on",($Script:htmlsb),$PubItem.StartOnLogon.ToString(),$htmlwhite))
+				<#$rowdata += @(,("Start automatically when user logs on",($Script:htmlsb),$PubItem.StartOnLogon.ToString(),$htmlwhite))
 				
 				If(![String]::IsNullOrEmpty($PubItem.Parameters))
 				{
@@ -35712,7 +35754,7 @@ Function OutputPublishingSettings
 				}
 
 				$rowdata += @(,("Settings for Site $xSiteName",($Script:htmlsb),"",$htmlwhite))
-				
+				#>
 				If(validObject $PubItem PublishFrom)
 				{
 					If($PubItem.PublishFrom -eq "Server")
@@ -36061,7 +36103,7 @@ Function OutputPublishingSettings
 			{
 				WriteWordLine 3 0 "Information"
 				$ScriptInformation = New-Object System.Collections.ArrayList
-				$ScriptInformation.Add(@{Data = "Windows Virtual Desktop"; Value = "#$($PubItem.Id): $($PubItem.Name)"; }) > $Null
+				$ScriptInformation.Add(@{Data = "Azure Virtual Desktop"; Value = "#$($PubItem.Id): $($PubItem.Name)"; }) > $Null
 				$ScriptInformation.Add(@{Data = "Description"; Value = $PubItem.Description; }) > $Null
 				$ScriptInformation.Add(@{Data = "Last modification by"; Value = $PubItem.AdminLastMod; }) > $Null
 				$ScriptInformation.Add(@{Data = "Modified on"; Value = (Get-Date -UFormat "%c" $PubItem.TimeLastMod); }) > $Null
@@ -36319,7 +36361,7 @@ Function OutputPublishingSettings
 			If($Text)
 			{
 				Line 2 "Information"
-				Line 3 "Windows Virtual Desktop`t`t`t`t`t: " "#$($PubItem.Id): $($PubItem.Name)"
+				Line 3 "Azure Virtual Desktop`t`t`t`t`t: " "#$($PubItem.Id): $($PubItem.Name)"
 				Line 3 "Description`t`t`t`t`t`t: " $PubItem.Description
 				Line 3 "Last modification by`t`t`t`t`t: " $PubItem.AdminLastMod
 				Line 3 "Modified on`t`t`t`t`t`t: " (Get-Date -UFormat "%c" $PubItem.TimeLastMod)
@@ -36465,7 +36507,7 @@ Function OutputPublishingSettings
 			{
 				WriteHTMLLine 3 0 "Information"
 				$rowdata = @()
-				$columnHeaders = @("Windows Virtual Desktop",($Script:htmlsb),"#$($PubItem.Id): $($PubItem.Name)",$htmlwhite)
+				$columnHeaders = @("Azure Virtual Desktop",($Script:htmlsb),"#$($PubItem.Id): $($PubItem.Name)",$htmlwhite)
 				$rowdata += @(,("Description",($Script:htmlsb),$PubItem.Description,$htmlwhite))
 				$rowdata += @(,("Last modification by",($Script:htmlsb), $PubItem.AdminLastMod,$htmlwhite))
 				$rowdata += @(,("Modified on",($Script:htmlsb), (Get-Date -UFormat "%c" $PubItem.TimeLastMod),$htmlwhite))
@@ -51093,8 +51135,8 @@ ProcessScriptEnd
 # SIG # Begin signature block
 # MIIthQYJKoZIhvcNAQcCoIItdjCCLXICAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUSZ3oywCMAaMtvDxisIwsOxII
-# psWggibfMIIFjTCCBHWgAwIBAgIQDpsYjvnQLefv21DiCEAYWjANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUH0Ky9kd63SdSBMxNDY/b39dj
+# iLWggibfMIIFjTCCBHWgAwIBAgIQDpsYjvnQLefv21DiCEAYWjANBgkqhkiG9w0B
 # AQwFADBlMQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYD
 # VQQLExB3d3cuZGlnaWNlcnQuY29tMSQwIgYDVQQDExtEaWdpQ2VydCBBc3N1cmVk
 # IElEIFJvb3QgQ0EwHhcNMjIwODAxMDAwMDAwWhcNMzExMTA5MjM1OTU5WjBiMQsw
@@ -51305,33 +51347,33 @@ ProcessScriptEnd
 # UzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/BgNVBAMTOERpZ2lDZXJ0IFRy
 # dXN0ZWQgRzQgQ29kZSBTaWduaW5nIFJTQTQwOTYgU0hBMzg0IDIwMjEgQ0ExAhAL
 # bN+2Z4EOKufLWhG6HUlwMAkGBSsOAwIaBQCgQDAZBgkqhkiG9w0BCQMxDAYKKwYB
-# BAGCNwIBBDAjBgkqhkiG9w0BCQQxFgQUszDfwWRmJtwdXm9IRqxrEGnn7DgwDQYJ
-# KoZIhvcNAQEBBQAEggIAmDf1JTmjJ58MA0Bdcy3wty4efEvoPaF6k33s2V66yaNW
-# xCzRk8rIvpmgxGaRfTNioe2NVU0YUBnj+Q6ccsn9Yv6hDA9rrnLj364mlN1T1QsE
-# RYR+aPA8ni83pfxZNeSqAOnlX3iWmr1kexOE6Hwp9suWmAF7a1GcKe+bRqgv6Ea0
-# GHVbNJKZS8XDUNfQJBHe0zmvV65/Qzge6JqAw3NrjBmF8FSv09SRcbOhghZnN86a
-# pPewKAg/LcvP7SpDm1q66IvPGdqhXohtq8AJYB6WX1kwt9f1QOfoSDVRpNdIUzJS
-# NUBhFtFCGFkCI7mmRri9r33xT6iVVw5XpcfwuqeBRitUUmN9dmi6l6Ajajyzt9WW
-# 8+IJuYWyispSuBfqNtC+hpv0lmtxK//Fd6d8kFbasu0aUAuB2gXhNcVxdCVKCdx7
-# KVosubi4RruIz224mkAkV5pC5Ve5lsmOVM/l3yfU1lXlcHTM7fSLOjCOQUN0qyXv
-# P51PPS8MHKUAx+XkPqvOMGXeflHPXclYz+GEH+ltsR/Cv/XQFJY2PCQP8vMRiQ0O
-# JJw05uSGUvTBbhAP1XnkE1WbLXNb1dlNAiNVeyUduwgpX3Nk50zK7YGi447PxkcG
-# EfZ2J6IAqQnG/cWy99trKQY1ERQJkG5KQ9grh9gYrvIysVHvqR4YibzKroT7tbSh
+# BAGCNwIBBDAjBgkqhkiG9w0BCQQxFgQU3+c7Yr0amHFKy/J12/8RMPwEOqwwDQYJ
+# KoZIhvcNAQEBBQAEggIASTz5xKVqhu7lSGB7nkZ9zDPEdMRuY06mw8NyeNaVzMNc
+# nj51sqhDecTwl73IKy6DPA6DGxgMx18mX7wQIkRZkwJXLZ21Qshx00JimhpqLeSV
+# VEo1/tln+0tEUFh1leqnfO5ohRopFsKWBUw2mUdXQ3A7nBnsDnGo3lNHUKVMTLjD
+# XsWH89iPXO2d/n4qjX5v8TD6IELE0JLCL6RNptl7lZzufnPSGyX2hhb33Y6TSOWh
+# KdilM5crW8awzQggHCwWV2Y2k0Flq8k9wZfWAIjw8qMZs7qb5oTlX1OkWN8A6mOf
+# rW5vdU6fbzEimBDZaV+uIeJ2r80JMH2ucgJXKBdX6ZUla7xBWRX/7YEYfRjL2xsq
+# PZaK+PSV+9v+o6SFhNMYKErZrmsVofTRKnjj2t2sxZJJbqMKBqKHqquMX4XFvlUx
+# 8zwZMYhylSTxU2u2qvtnUjG0BYNGMilGFBgQAvAO5XsVqMb1z+9C79wqcu2vMv2P
+# XpzMxPDpTMGMkG4XIWGLRz6R/Bl0G2MxMoQr3Hvv/52yrIObjJALdbV/ldI+n4tw
+# NqtP7YFlusDS33y3Z6oqg1KFusf+pNcRF4RBoK3mb6p7+DXt4sVQT95u8AMD4ASZ
+# eUbtHlD5Uzf4uG8xZnQx1+S1wti5JvCFogidj3wUTC64QFSyeSCrgjv+Hh6AfnOh
 # ggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8CAQEwfTBpMQswCQYDVQQGEwJVUzEX
 # MBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/BgNVBAMTOERpZ2lDZXJ0IFRydXN0
 # ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYgU0hBMjU2IDIwMjUgQ0ExAhAKgO8Y
 # S43xBYLRxHanlXRoMA0GCWCGSAFlAwQCAQUAoGkwGAYJKoZIhvcNAQkDMQsGCSqG
-# SIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjUwOTAyMTkyMjE0WjAvBgkqhkiG9w0B
-# CQQxIgQg7AvAl617ER0lLJVxZjYlbdzet7kCuh9N+PApqTwSTnowDQYJKoZIhvcN
-# AQEBBQAEggIAAmG7Qnzj68oz3WWfhzEBsaz8BB9Ybg8Ed7vm7ZG72zJqhbsU69Y/
-# nvv+QbBTTBbUaifDT5QWPOmlqbcLDVnR41rQGl1N4mscYNKdmYQdPSbjwI6vFIyD
-# OFaznkRc9mnMcRNkvCQ57kllJOXPmfndpFT6PsXZgEPsQ+t1Qi3CNTPdKjsIiysg
-# gV7k3R+US8Oale4/5+cTcHfawAxlr3z8uwkOX54TvHpj2QG38Ozlx1d9enWgRahq
-# OFZ0kVSqflTCNg0td5LP3jokhnvpSZZZvRAMGoFoT0Z2zBZZgr3f7JBHzwdJ1HrT
-# 3OBNPTKUjKk+6rYPCmrdm16eVDkLXWT9VWNSzPnTPVkCru/Nm3r5UeWRv3t5kDMu
-# /SI+nXBImsBeihk6/kJc2oWB4p0Gmoha6MVKohiVl2GWdfGkjPJsNs9weL8fyu1A
-# wm3gX6Vsv+ZCwds+3oR9bGvLp+K8+hZTVofW1XybJW99P+5bXTjOJYVKmLSKheAu
-# fBFhzWS/3C7bElak3mEVbl1IK2tJIwlxO3Ia5lAKmPki0K32Z5fVGEwKJjxXyNd/
-# pqqiVyxnDUE/Vsu5ED1b0KkGixSKqSJFWCWGs+0YDfrFw3aQQ3x/Qurc1/CkPSUm
-# E+A9tkaSiqeYUy1BfLKp+BwO+jgzszD+ixMr+ub6MIU+D+YaWGRpYZg=
+# SIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjUxMDE0MTkwNzM3WjAvBgkqhkiG9w0B
+# CQQxIgQgXwl0okkMK7i4NToYfF/h87hgw0vbE1g/Mn1i517/2p4wDQYJKoZIhvcN
+# AQEBBQAEggIAMWZEUT6fKHabMzYGjNqKeVLeEqSizBEvjWqiiNcoJ5N6PWXDvYH1
+# PHM2Tpr8tPw7KgRmjHehmOFD4yO2DuvC4Fkv79TmK7oI2uC9rein5HOEIef2lS7G
+# 5NZ9YnQE+aNUqGzGJu5H6ylzJ90S7z+Rqt19+F2+zXARDucWTNQHVme/+TLnm0t1
+# RMs77WzCXR1gX+BQovipRQMttygCBpagr1Re1jcXn9Lw8UBN/gsummPQrknfuNRq
+# 9HDfjLtA7IRUFFOO3AhjsLK+Oa34ol85LQEYd2973YKjySRvefrRyapWGFz2wRPS
+# K9az2NPgYZWlEzfylFpfgnYP7hRT1BR2B0NL5bAKOm1ht4OkSG5qEm1YrDAfguWT
+# QusxGEegNQRuM04xAVGlsfx8veMxGHoUfT2h+CtohiXt+tcftPzNjQqziApOmwvo
+# xkBqABknaBNlCbP4NyPEtbUceRrhmtawb2qYW4rp4/HT6W1RPVxowjdEsdt3ezeO
+# C1heHrKNDaNMMxdGlOz3R7e5cVRCP3KH0B/QpgXk++zie9fH7+mKI/uaDYVGtDfa
+# nWxKZkyi9Ne8WZvjg4VSsc+xPMnyrPWTNSBu61KNQCKcGdk/xkSar/9y/ksBQYma
+# OUo2bpSDLR9Q24ptJZfAIeINEZIan+hYrtlN+OzKN7GRAF7x3XNnKeo=
 # SIG # End signature block

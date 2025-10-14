@@ -3,20 +3,22 @@
 
 <#
 .SYNOPSIS
-	Creates a complete inventory of a V19.3/4 or 20 Parallels Remote Application Server.
+	Creates a complete inventory of a V19.3/4, 20, or 21 Parallels Remote Application Server.
 .DESCRIPTION
-	Creates a complete inventory of a V19.3/4 or 20 Parallels Remote Application Server 
+	Creates a complete inventory of a V19.3/4, 20, or 21 Parallels Remote Application Server 
 	(RAS) using Microsoft PowerShell, Word, plain text, or HTML.
 	
-	The script requires at least PowerShell version 3 but runs best in version 5.
+	The script requires at least PowerShell version 3, but runs best in version 5.
 
-	Word is NOT needed to run the script. This script outputs in Text and HTML.
+	The Word application is not required to run the script. This script outputs in both 
+	Text and HTML formats.
+	
 	The default output format is HTML.
 	
 	Creates an output file named Parallels_RAS.<fileextension>.
 	
 	You do NOT have to run this script on a server running RAS. This script was developed 
-	and run from a Windows 10 VM.
+	and run from a Windows 11 VM.
 
 	Word and PDF documents include a Cover Page, Table of Contents, and Footer.
 	Includes support for the following language versions of Microsoft Word:
@@ -80,14 +82,14 @@
 
 	This parameter defaults to All sections.
 	
-	Multiple sections are separated by a comma. -Section admin, licensing
+	A comma separates multiple sections. -Section admin, licensing
 .PARAMETER AddDateTime
 	Adds a date timestamp to the end of the file name.
 	
 	The timestamp is in the format of yyyy-MM-dd_HHmm.
-	June 1, 2024 at 6PM is 2024-06-01_1800.
+	June 1, 2026 at 6PM is 2026-06-01_1800.
 	
-	Output filename will be ReportName_2024-06-01_1800.<ext>.
+	Output filename will be ReportName_2026-06-01_1800.<ext>.
 	
 	This parameter is disabled by default.
 	This parameter has an alias of ADT.
@@ -135,7 +137,7 @@
 .PARAMETER PDF
 	SaveAs PDF file instead of DOCX file.
 	
-	The PDF file is roughly 5X to 10X larger than the DOCX file.
+	The PDF file is roughly 5 to 10 times larger than the DOCX file.
 	
 	This parameter requires Microsoft Word to be installed.
 	This parameter uses Word's SaveAs PDF capability.
@@ -266,13 +268,13 @@
 .EXAMPLE
 	PS C:\PSScript > .\RAS_Inventory_V4_0.ps1
 	
-	Outputs, by default to HTML.
+	Outputs, by default, to HTML.
 	Prompts for credentials for the LocalHost RAS Server.
 .EXAMPLE
 	PS C:\PSScript > .\RAS_Inventory_V4_0.ps1 -RASSite EMEASite
 	
 	Includes only data for the EMEASite.
-	Outputs, by default to HTML.
+	Outputs, by default, to HTML.
 	Prompts for credentials for the LocalHost RAS Server.
 .EXAMPLE
 	PS C:\PSScript .\RAS_Inventory_V4_0.ps1 -MSWord -CompanyName "Carl Webster 
@@ -448,9 +450,9 @@
 	text document.
 .NOTES
 	NAME: RAS_Inventory_V4_0.ps1
-	VERSION: 4.00 Beta 17
+	VERSION: 4.00 Beta 18
 	AUTHOR: Carl Webster
-	LASTEDIT: September 2, 2025
+	LASTEDIT: October 14, 2025
 #>
 
 
@@ -585,11 +587,15 @@ Param(
 #			OutputCertificatesDetails
 #			OutputApplicationPackagesDetails
 #			OutputSettingsDetails
+#
 #	Clean up some console output
+#
 #	Fixed and refined the HTML, Text, and MSWord output
+#
 #	In Function OutputFarmSite, 
 #		Add Farm Properties
 #		For RAS V20 and later, add Access addresses
+#
 #	In Function OutputPoliciesDetails:
 #		Update for the Policy changes in 19.3 and later
 #		Handle multiple criteria
@@ -604,15 +610,20 @@ Param(
 #		For RAS version 20.2 and later, removed
 #			Client options/Advanced/Printing/Advanced client options - Printing settings/Cache printers hardware information
 #			Client options/Advanced/Printing/Advanced client options - Printing settings/Refresh printer hardware information every 30 days
+#
 #	In Function OutputPubItemFilterSummary
 #		Move check for the default filter setting to this function from Function OutputPublishingSettings
 #		Add test for the default filter
 #		For each filter, add Enabled/Disabled
+#
 #	In Function OutputPubItemFilter
 #		For the Default Rule, add "Enabled", "Default Rule", and the Allow or Deny text to the output
+#
 #	In Function OutputPublishingSettings
+#		Add "Routing" to all published item types that have a Routing tab
 #		Add "Status" of Enabled, Disabled, or In Maintenance to all published item types
 #		Add LocalApp published item type
+#		Add the published item type to all published items
 #		Ensure the output for all sections for all published item types matches the RAS V20.x console
 #		Fix bug where "Allow if no other rule matches" was always the default filter setting. Move this check to Function OutputPubItemFilterSummary
 #		Fix bug for Word/PDF output for the VDIDesktop published item type
@@ -621,10 +632,20 @@ Param(
 #			In the Information section, only need to show whether preferred routing is enabled or disabled
 #			In the Routing section, the handling of no preferred routes configured was not handled properly
 #				Moved the "
-#		Add "Routing" to all published item types that have a Routing tab
-#		Remove the Site section from the published item types that no longer have that tab in the console
 #		For Published Item type of "VDIDesktop", add Published from
-#		Add the published item type to all published items
+#		For Published Item type of AVDApp and AVDDesktop, change the name from "Windows Virtual Desktop" to "Azure Virtual Desktop"
+#		For Published Item type of AVDApp, remove the following items from the Information section because they are not shown in the RAS 20 or 21 console:
+#			Start In
+#			Start automatically when user logs on
+#			Parameters
+#			Associate the following file extensions
+#			Allow users to start only 1 instance of this application
+#			Concurrent licenses
+#			If limit is exceeded
+#			Session Sharing 
+#			Settings for Site
+#		Remove the Site section from the published item types that no longer have that tab in the console
+#
 #	In Function OutputRASAccounts
 #		Add the Enabled property
 #		Changed "Group or user names" to "Name"
@@ -637,14 +658,18 @@ Param(
 #			Group
 #			Permissions
 #			Receive system notifications
+#
 #	In Function OutputRASFeatures
 #		Rename variable $RASFeatures to $RASHelpdesk
 #		Add variable $RASSupport
 #		Change function to use two parameters: $RASHelpdesk and $RASSupport
 #		Add output for "Overwrite support actions with the following URL"
+#
 #	In Function OutputRASLicense, update output to match the 19.4 console
+#
 #	In Function OutputRASMailboxSettings, 
 #		Add the "Use TLS 1.3 if available" option
+#
 #	In Function OutputRASReportingSettings, add:
 #		Session Counters
 #			Session information
@@ -655,7 +680,9 @@ Param(
 #					Track UX Evaluator when change is more than (%)
 #					Track Latency when change is more than (%)
 #					Track Bandwidth when change is more than (%)
+#
 #	In Function OutputRASSettings, add the setting "Check for updates when launching RAS console"
+#
 #	In Function OutputRDSessionHostsDetails:
 #		Changed Get-RASVDIHostStatus -Name $VDIPool.Name to Get-RASVDIHostPoolStatus -Name $VDIPool.Name -SiteId $Site.Id
 #		Fixed bug in processing the variable $AppPackagesAssigned.ApplicationPackagesAssigned with the help of Guy Leech
@@ -663,15 +690,20 @@ Param(
 #		Add Application Packages
 #		Only output optimization data if optimization is enabled
 #		Add Auto-upgrade
+#
 #	In Function OutputSAMLSetting, handle multiple SAML items
+#
 #	In Function OutputSettingsDetails, add Azure Virtual Desktop to the Features section
+#
 #	In Function OutputSiteDetails, when processing Themes, Properties, Access:
 #		If the Theme's MFA ID is not 0 and is found, use the MFA name
 #		If the Theme's MFA ID is 0, use "No MFA provider selected for this Theme"
 #		If the Theme's MFA ID is not found, use "Unable to determine MFA provider"
+#
 #	In Function OutputSiteSummary:
 #		Added basic information for Tenant Brokers
 #		Changed "VDI Host" to "Provider"
+#
 #	In Function OutputVDIDetails:
 #		For Host pools, add:
 #			Status
@@ -680,17 +712,27 @@ Param(
 #			ID
 #		For Host Pool Properties, add
 #			Action tab
+#
 #	In Function ProcessAdministration
 #		Rename variable $RASFeatures to $RASHelpdesk
 #		Add variable $RASSupport
 #		Add retrieving Get-RASOverwriteSupportActions
 #		Change call to OutputRASFeatures to use two parameters: $RASHelpdesk and $RASSupport
+#
 #	In Function ProcessScriptSetup, change how the RAS version is retrieved and put into variables
+#
 #	Merged functions OutputRASProxySettings and OutputRASMiscSettings into OutputRASSettings
-#	Updated for the PowerShell module changes in RAS 19.3 and later, and 20 and later
+#
+#	Updated for the PowerShell module changes in RAS 19.3 and later, 20 and later, and 21 and later
+#
 #	Updated Function ProcessAdministration to handle merging functions OutputRASProxySettings 
 #		and OutputRASMiscSettings into Function OutputRASSettings
+#
 #	Updated numerous ENUMS throughout the script
+#
+#	Updated the help text
+#
+#	Updated the ReadMe file
 #
 
 Function AbortScript
@@ -754,9 +796,9 @@ $ErrorActionPreference    = 'SilentlyContinue'
 $Error.Clear()
 
 $Script:emailCredentials  = $Null
-$script:MyVersion         = '4.00 Beta 17'
+$script:MyVersion         = '4.00 Beta 18'
 $Script:ScriptName        = "RAS_Inventory_V4_0.ps1"
-$tmpdate                  = [datetime] "09/02/2025"
+$tmpdate                  = [datetime] "10/14/2025"
 $Script:ReleaseDate       = $tmpdate.ToUniversalTime().ToShortDateString()
 
 If($MSWord -eq $False -and $PDF -eq $False -and $Text -eq $False -and $HTML -eq $False)
@@ -29358,7 +29400,7 @@ Function OutputPublishingSettings
 										{
 											$PubItemStatus = "Disabled (Inherited)"; Break
 										}
-										ElseIf($ParentIdEnabledMode = "Maintenance")
+										ElseIf($ParentIdEnabledMode -eq "Maintenance")
 										{
 											If($PubItem.Type -eq "LocalApp")
 											{
@@ -34903,7 +34945,7 @@ Function OutputPublishingSettings
 			{
 				WriteWordLine 3 0 "Information"
 				$ScriptInformation = New-Object System.Collections.ArrayList
-				$ScriptInformation.Add(@{Data = "Windows Virtual Desktop"; Value = "#$($PubItem.Id): $($PubItem.Name)"; }) > $Null
+				$ScriptInformation.Add(@{Data = "Azure Virtual Desktop"; Value = "#$($PubItem.Id): $($PubItem.Name)"; }) > $Null
 				$ScriptInformation.Add(@{Data = "Description"; Value = $PubItem.Description; }) > $Null
 				$ScriptInformation.Add(@{Data = "Last modification by"; Value = $PubItem.AdminLastMod; }) > $Null
 				$ScriptInformation.Add(@{Data = "Modified on"; Value = (Get-Date -UFormat "%c" $PubItem.TimeLastMod); }) > $Null
@@ -34913,7 +34955,7 @@ Function OutputPublishingSettings
 				$ScriptInformation.Add(@{Data = "Status"; Value = $PubItemStatus; }) > $Null
 				$ScriptInformation.Add(@{Data = "Target"; Value = $PubItem.Target; }) > $Null
 				$ScriptInformation.Add(@{Data = "Start In"; Value = $PubItem.StartIn; }) > $Null
-				$ScriptInformation.Add(@{Data = "Start automatically when user logs on"; Value = $PubItem.StartOnLogon.ToString(); }) > $Null
+				<#$ScriptInformation.Add(@{Data = "Start automatically when user logs on"; Value = $PubItem.StartOnLogon.ToString(); }) > $Null
 
 				If(![String]::IsNullOrEmpty($PubItem.Parameters))
 				{
@@ -34959,7 +35001,7 @@ Function OutputPublishingSettings
 				}
 
 				$ScriptInformation.Add(@{Data = "Settings for Site $xSiteName"; Value = ""; }) > $Null
-				
+				#>
 				If(validObject $PubItem PublishFrom)
 				{
 					If($PubItem.PublishFrom -eq "Server")
@@ -35390,7 +35432,7 @@ Function OutputPublishingSettings
 			If($Text)
 			{
 				Line 2 "Information"
-				Line 3 "Windows Virtual Desktop`t`t`t`t`t: " "#$($PubItem.Id): $($PubItem.Name)"
+				Line 3 "Azure Virtual Desktop`t`t`t`t`t: " "#$($PubItem.Id): $($PubItem.Name)"
 				Line 3 "Description`t`t`t`t`t`t: " $PubItem.Description
 				Line 3 "Last modification by`t`t`t`t`t: " $PubItem.AdminLastMod
 				Line 3 "Modified on`t`t`t`t`t`t: " (Get-Date -UFormat "%c" $PubItem.TimeLastMod)
@@ -35399,7 +35441,7 @@ Function OutputPublishingSettings
 				Line 3 "Type`t`t`t`t`t`t`t: " $PubItem.Type
 				Line 3 "Status`t`t`t`t`t`t`t: " $PubItemStatus
 				Line 3 "Target`t`t`t`t`t`t`t: " $PubItem.Target
-				Line 3 "Start In`t`t`t`t`t`t: " $PubItem.StartIn
+				<#Line 3 "Start In`t`t`t`t`t`t: " $PubItem.StartIn
 				Line 3 "Start automatically when user logs on`t`t`t: " $PubItem.StartOnLogon.ToString()
 				
 				If(![String]::IsNullOrEmpty($PubItem.Parameters))
@@ -35432,7 +35474,7 @@ Function OutputPublishingSettings
 				}
 
 				Line 3 "Settings for Site $xSiteName"
-				
+				#>
 				If(validObject $PubItem PublishFrom)
 				{
 					If($PubItem.PublishFrom -eq "Server")
@@ -35656,7 +35698,7 @@ Function OutputPublishingSettings
 				WriteHTMLLine 3 0 "Information"
 				$rowdata = @()
 
-				$columnHeaders = @("Windows Virtual Desktop",($Script:htmlsb),"#$($PubItem.Id): $($PubItem.Name)",$htmlwhite)
+				$columnHeaders = @("Azure Virtual Desktop",($Script:htmlsb),"#$($PubItem.Id): $($PubItem.Name)",$htmlwhite)
 				$rowdata += @(,("Description",($Script:htmlsb),$PubItem.Description,$htmlwhite))
 				$rowdata += @(,("Last modification by",($Script:htmlsb), $PubItem.AdminLastMod,$htmlwhite))
 				$rowdata += @(,("Modified on",($Script:htmlsb), (Get-Date -UFormat "%c" $PubItem.TimeLastMod),$htmlwhite))
@@ -35666,7 +35708,7 @@ Function OutputPublishingSettings
 				$rowdata += @(,("Status",($Script:htmlsb),$PubItemStatus,$htmlwhite))
 				$rowdata += @(,("Target",($Script:htmlsb),$PubItem.Target,$htmlwhite))
 				$rowdata += @(,("Start In",($Script:htmlsb),$PubItem.StartIn,$htmlwhite))
-				$rowdata += @(,("Start automatically when user logs on",($Script:htmlsb),$PubItem.StartOnLogon.ToString(),$htmlwhite))
+				<#$rowdata += @(,("Start automatically when user logs on",($Script:htmlsb),$PubItem.StartOnLogon.ToString(),$htmlwhite))
 				
 				If(![String]::IsNullOrEmpty($PubItem.Parameters))
 				{
@@ -35712,7 +35754,7 @@ Function OutputPublishingSettings
 				}
 
 				$rowdata += @(,("Settings for Site $xSiteName",($Script:htmlsb),"",$htmlwhite))
-				
+				#>
 				If(validObject $PubItem PublishFrom)
 				{
 					If($PubItem.PublishFrom -eq "Server")
@@ -36061,7 +36103,7 @@ Function OutputPublishingSettings
 			{
 				WriteWordLine 3 0 "Information"
 				$ScriptInformation = New-Object System.Collections.ArrayList
-				$ScriptInformation.Add(@{Data = "Windows Virtual Desktop"; Value = "#$($PubItem.Id): $($PubItem.Name)"; }) > $Null
+				$ScriptInformation.Add(@{Data = "Azure Virtual Desktop"; Value = "#$($PubItem.Id): $($PubItem.Name)"; }) > $Null
 				$ScriptInformation.Add(@{Data = "Description"; Value = $PubItem.Description; }) > $Null
 				$ScriptInformation.Add(@{Data = "Last modification by"; Value = $PubItem.AdminLastMod; }) > $Null
 				$ScriptInformation.Add(@{Data = "Modified on"; Value = (Get-Date -UFormat "%c" $PubItem.TimeLastMod); }) > $Null
@@ -36319,7 +36361,7 @@ Function OutputPublishingSettings
 			If($Text)
 			{
 				Line 2 "Information"
-				Line 3 "Windows Virtual Desktop`t`t`t`t`t: " "#$($PubItem.Id): $($PubItem.Name)"
+				Line 3 "Azure Virtual Desktop`t`t`t`t`t: " "#$($PubItem.Id): $($PubItem.Name)"
 				Line 3 "Description`t`t`t`t`t`t: " $PubItem.Description
 				Line 3 "Last modification by`t`t`t`t`t: " $PubItem.AdminLastMod
 				Line 3 "Modified on`t`t`t`t`t`t: " (Get-Date -UFormat "%c" $PubItem.TimeLastMod)
@@ -36465,7 +36507,7 @@ Function OutputPublishingSettings
 			{
 				WriteHTMLLine 3 0 "Information"
 				$rowdata = @()
-				$columnHeaders = @("Windows Virtual Desktop",($Script:htmlsb),"#$($PubItem.Id): $($PubItem.Name)",$htmlwhite)
+				$columnHeaders = @("Azure Virtual Desktop",($Script:htmlsb),"#$($PubItem.Id): $($PubItem.Name)",$htmlwhite)
 				$rowdata += @(,("Description",($Script:htmlsb),$PubItem.Description,$htmlwhite))
 				$rowdata += @(,("Last modification by",($Script:htmlsb), $PubItem.AdminLastMod,$htmlwhite))
 				$rowdata += @(,("Modified on",($Script:htmlsb), (Get-Date -UFormat "%c" $PubItem.TimeLastMod),$htmlwhite))
