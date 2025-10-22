@@ -171,3 +171,6 @@
 #	Updated the help text
 #
 #	Updated the ReadMe file
+#
+#	Working on updating Function OutputMFASetting
+#		Fixed issues with RADIUS output

@@ -450,9 +450,9 @@
 	text document.
 .NOTES
 	NAME: RAS_Inventory_V4_0.ps1
-	VERSION: 4.00 Beta 18
+	VERSION: 4.00 Beta 19
 	AUTHOR: Carl Webster
-	LASTEDIT: October 14, 2025
+	LASTEDIT: October 22, 2025
 #>
 
 
@@ -734,6 +734,9 @@ Param(
 #
 #	Updated the ReadMe file
 #
+#	Working on updating Function OutputMFASetting
+#		Fixed issues with RADIUS output
+#
 
 Function AbortScript
 {
@@ -796,9 +799,9 @@ $ErrorActionPreference    = 'SilentlyContinue'
 $Error.Clear()
 
 $Script:emailCredentials  = $Null
-$script:MyVersion         = '4.00 Beta 18'
+$script:MyVersion         = '4.00 Beta 19'
 $Script:ScriptName        = "RAS_Inventory_V4_0.ps1"
-$tmpdate                  = [datetime] "10/14/2025"
+$tmpdate                  = [datetime] "10/22/2025"
 $Script:ReleaseDate       = $tmpdate.ToUniversalTime().ToShortDateString()
 
 If($MSWord -eq $False -and $PDF -eq $False -and $Text -eq $False -and $HTML -eq $False)
@@ -17348,53 +17351,64 @@ Function OutputVDIDetails
 		Write-Verbose "$(Get-Date -Format G): `tOutput VDI Host pools"
 		#Host pools
 		
-		If($MSWord -or $PDF)
+		$VDIPools = Get-RASVDIHostPool -SiteId $Site.Id -EA 0 4>$Null
+		If($? -and $Null -ne $VDIPools)
 		{
-			$VDIPools = Get-RASVDIHostPool -SiteId $Site.Id -EA 0 4>$Null
-			If($? -and $Null -ne $VDIPools)
+			ForEach($VDIPool in $VDIPools)
 			{
-				ForEach($VDIPool in $VDIPools)
+				If($MSWord -or $PDF)
 				{
 					WriteWordLine 3 0 "Pool $($VDIPool.Name)"
+				}
+				If($Text)
+				{
+					Line 2 "Pool $($VDIPool.Name)"
+				}
+				If($HTML)
+				{
+					WriteHTMLLine 3 0 "Pool $($VDIPool.Name)"
+				}
 
-					$Status = Get-RASVDIHostPoolStatus -Name $VDIPool.Name -SiteId $Site.Id -EA 0 4>$Null #original
+				$Status = Get-RASVDIHostPoolStatus -Name $VDIPool.Name -SiteId $Site.Id -EA 0 4>$Null #original
 
-					If($? -and $Null -ne $Status)
-					{
-						$PoolStatus = GetRASStatus $Status.AgentState
-					}
-					Else
-					{
-						$PoolStatus = ""
-					}
-						
-					$VDIPoolMembers = Get-RASVDIHostPoolMember -SiteId $Site.Id -VDIHostPoolName $VDIPool.Name -EA 0 4>$Null 
+				If($? -and $Null -ne $Status)
+				{
+					$PoolStatus = GetRASStatus $Status.AgentState
+				}
+				Else
+				{
+					$PoolStatus = ""
+				}
 					
-					If($? -and $Null -ne $VDIPoolMembers)
+				$VDIPoolMembers = Get-RASVDIHostPoolMember -SiteId $Site.Id -VDIHostPoolName $VDIPool.Name -EA 0 4>$Null 
+				
+				If($? -and $Null -ne $VDIPoolMembers)
+				{
+					$VDIPoolMember = $VDIPoolMembers[0]
+					Switch($VDIPoolMember.Type)
 					{
-						$VDIPoolMember = $VDIPoolMembers[0]
-						Switch($VDIPoolMember.Type)
-						{
-							"ALLGUESTINHOST"		{$MemberType = "All desktops in Provider"; Break}
-							"AllDesktopsInProvider"	{$MemberType = "All desktops in Provider"; Break}
-							"Desktop"				{$MemberType = "Guest"; Break}
-							"GUEST"					{$MemberType = "Guest"; Break}
-							"NATIVEPOOL"			{$MemberType = "Native Pool"; Break}
-							"TEMPLATEDesktop"		{$MemberType = "Template Desktop"; Break}
-							"TEMPLATEGUEST"			{$MemberType = "Template Desktop"; Break}
-							"UNKNOWN"				{$MemberType = "Unknown"; Break}
-							Default					{$MemberType = "Unable to determine Pool Member Type: $($VDIPoolMember.Type)"; Break}
-						}
-						$Template        = $VDIPoolMember.Template
-						$TemplateVersion = $VDIPoolMember.TemplateVersion
+						"ALLGUESTINHOST"		{$MemberType = "All desktops in Provider"; Break}
+						"AllDesktopsInProvider"	{$MemberType = "All desktops in Provider"; Break}
+						"Desktop"				{$MemberType = "Guest"; Break}
+						"GUEST"					{$MemberType = "Guest"; Break}
+						"NATIVEPOOL"			{$MemberType = "Native Pool"; Break}
+						"TEMPLATEDesktop"		{$MemberType = "Template Desktop"; Break}
+						"TEMPLATEGUEST"			{$MemberType = "Template Desktop"; Break}
+						"UNKNOWN"				{$MemberType = "Unknown"; Break}
+						Default					{$MemberType = "Unable to determine Pool Member Type: $($VDIPoolMember.Type)"; Break}
 					}
-					Else
-					{
-						$MemberType      = ""
-						$Template        = ""
-						$TemplateVersion = ""
-					}
+					$Template        = $VDIPoolMember.Template
+					$TemplateVersion = $VDIPoolMember.TemplateVersion
+				}
+				Else
+				{
+					$MemberType      = ""
+					$Template        = ""
+					$TemplateVersion = ""
+				}
 
+				If($MSWord -or $PDF)
+				{
 					$ScriptInformation = New-Object System.Collections.ArrayList
 					$ScriptInformation.Add(@{Data = "Name"; Value = $VDIPool.Name; }) > $Null
 					$ScriptInformation.Add(@{Data = "Enabled"; Value = $VDIPool.Enabled.ToString(); }) > $Null
@@ -17426,9 +17440,49 @@ Function OutputVDIDetails
 					FindWordDocumentEnd
 					$Table = $Null
 					WriteWordLine 0 0 ""
-					
-					#General
-					
+				}
+				If($Text)
+				{
+					Line 3 "Name`t`t`t: " $VDIPool.Name
+					Line 3 "Enabled`t`t`t: " $VDIPool.Enabled.ToString()
+					Line 3 "Description`t`t: " $VDIPool.Description
+					Line 3 "Status`t`t`t: " $PoolStatus
+					Line 3 "Members type`t`t: " $MemberType
+					Line 3 "Template`t`t: " $Template
+					Line 3 "Template version`t: " $TemplateVersion
+					Line 3 "Last modification by`t: " $VDIPool.AdminLastMod
+					Line 3 "Modified on`t`t: " (Get-Date -UFormat "%c" $VDIPool.TimeLastMod)
+					Line 3 "Created by`t`t: " $VDIPool.AdminCreate
+					Line 3 "Created on`t`t: " (Get-Date -UFormat "%c" $VDIPool.TimeCreate)
+					Line 3 "ID`t`t`t: " $VDIPool.Id.ToString()
+					Line 0 ""
+				}
+				If($HTML)
+				{
+					$rowdata = @()
+					$columnHeaders = @("Name",($Script:htmlsb),$VDIPool.Name,$htmlwhite)
+					$rowdata += @(,("Enabled",($Script:htmlsb),$VDIPool.Enabled.ToString(),$htmlwhite))
+					$rowdata += @(,("Description",($Script:htmlsb),$VDIPool.Description,$htmlwhite))
+					$rowdata += @(,("Status",($Script:htmlsb),$PoolStatus,$htmlwhite))
+					$rowdata += @(,("Members type",($Script:htmlsb),$MemberType,$htmlwhite))
+					$rowdata += @(,("Template",($Script:htmlsb),$Template,$htmlwhite))
+					$rowdata += @(,("Template version",($Script:htmlsb),$TemplateVersion,$htmlwhite))
+					$rowdata += @(,("Last modification by",($Script:htmlsb),$VDIPool.AdminLastMod,$htmlwhite))
+					$rowdata += @(,("Modified on",($Script:htmlsb),(Get-Date -UFormat "%c" $VDIPool.TimeLastMod),$htmlwhite))
+					$rowdata += @(,("Created by",($Script:htmlsb),$VDIPool.AdminCreate,$htmlwhite))
+					$rowdata += @(,("Created on",($Script:htmlsb),(Get-Date -UFormat "%c" $VDIPool.TimeCreate),$htmlwhite))
+					$rowdata += @(,("ID",($Script:htmlsb),$VDIPool.Id.ToString(),$htmlwhite))
+
+					$msg = ""
+					$columnWidths = @("200","275")
+					FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+					WriteHTMLLine 0 0 ""
+				}
+				
+				#General
+				
+				If($MSWord -or $PDF)
+				{
 					WriteWordLine 4 0 "General"
 
 					$ScriptInformation = New-Object System.Collections.ArrayList
@@ -17452,9 +17506,32 @@ Function OutputVDIDetails
 					FindWordDocumentEnd
 					$Table = $Null
 					WriteWordLine 0 0 ""
+				}
+				If($Text)
+				{
+					Line 3 "General"
+					Line 4 "Enable host pool in site: " $VDIPool.Enabled.ToString()
+					Line 4 "Name`t`t`t: " $VDIPool.Name
+					Line 4 "Description`t`t: " $VDIPool.Description
+					Line 0 ""
+				}
+				If($HTML)
+				{
+					$rowdata = @()
+					$columnHeaders = @("Enable host pool in site",($Script:htmlsb),$VDIPool.Enabled.ToString(),$htmlwhite)
+					$rowdata += @(,("Name",($Script:htmlsb),$VDIPool.Name,$htmlwhite))
+					$rowdata += @(,("Description",($Script:htmlsb),$VDIPool.Description,$htmlwhite))
 					
-					#Members
-					
+					$msg = "General"
+					$columnWidths = @("200","275")
+					FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+					WriteHTMLLine 0 0 ""
+				}
+				
+				#Members
+				
+				If($MSWord -or $PDF)
+				{
 					WriteWordLine 4 0 "Members"
 
 					$ScriptInformation = New-Object System.Collections.ArrayList
@@ -17518,168 +17595,9 @@ Function OutputVDIDetails
 					FindWordDocumentEnd
 					$Table = $Null
 					WriteWordLine 0 0 ""
-
-					#Action
-					WriteWordLine 4 0 "Action"
-					
-					If($VDIPool.InheritDefaultVDIActionSettings)
-					{
-						#do we inherit site defaults?
-						#yes we do, get the default settings for the Site
-						#use the Site default settings
-
-						$VDIDefaults = Get-RASVDIDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
-						
-						If($? -and $Null -ne $VDIDefaults)
-						{
-							Switch ($VDIDefaults.Action.PerformActionAfterSec)
-							{
-								0		{$VDIPoolActionsAfter = "Never"; Break}
-								1		{$VDIPoolActionsAfter = "Immediate"; Break}
-								25		{$VDIPoolActionsAfter = "25 seconds"; Break}
-								60		{$VDIPoolActionsAfter = "1 minute"; Break}
-								300		{$VDIPoolActionsAfter = "5 minutes"; Break}
-								3600	{$VDIPoolActionsAfter = "1 hour"; Break}
-								7200	{$VDIPoolActionsAfter = "2 hours"; Break}
-								Default	{$VDIPoolActionsAfter = "Unable to determine Actions After: $($VDIDefaults.Action.PerformActionAfterSec)"; Break}
-							}
-							$VDIPoolActionsOnSession     = $VDIDefaults.Action.SessionAction.ToString()
-							$VDIPoolActionsPerformAction = $VDIDefaults.Action.PerformAction.ToString()
-						}
-						Else
-						{
-							#unable to retrieve default, use built-in default values
-							$VDIPoolActionsOnSession     = "Disconnect"
-							$VDIPoolActionsPerformAction = "Do nothing"
-							$VDIPoolActionsAfter         = "Never"
-						}
-					}
-					Else
-					{
-						#No, we don't use the VDI host pool settings
-						Switch ($VDIPool.Action.PerformActionAfterSec)
-						{
-							0		{$VDIPoolActionsAfter = "Never"; Break}
-							1		{$VDIPoolActionsAfter = "Immediate"; Break}
-							25		{$VDIPoolActionsAfter = "25 seconds"; Break}
-							60		{$VDIPoolActionsAfter = "1 minute"; Break}
-							300		{$VDIPoolActionsAfter = "5 minutes"; Break}
-							3600	{$VDIPoolActionsAfter = "1 hour"; Break}
-							7200	{$VDIPoolActionsAfter = "2 hours"; Break}
-							Default	{$VDIPoolActionsAfter = "Unable to determine Actions After: $($VDIPool.PerformActionAfterSec)"; Break}
-						}
-						$VDIPoolActionsOnSession     = $VDIPool.Action.SessionAction.ToString()
-						$VDIPoolActionsPerformAction = $VDIPool.Action.PerformAction.ToString()
-					}
-
-					$ScriptInformation = New-Object System.Collections.ArrayList
-					$ScriptInformation.Add(@{Data = "Inherit default settings"; Value = $VDIPool.InheritDefaultVDIActionSettings.ToString(); }) > $Null
-					$ScriptInformation.Add(@{Data = "Action"; Value = ""; }) > $Null
-					$ScriptInformation.Add(@{Data = "     On session"; Value = $VDIPoolActionsOnSession; }) > $Null
-					$ScriptInformation.Add(@{Data = "     Perform action"; Value = $VDIPoolActionsPerformAction; }) > $Null
-					$ScriptInformation.Add(@{Data = "     After"; Value = $VDIPoolActionsAfter; }) > $Null
-
-					$Table = AddWordTable -Hashtable $ScriptInformation `
-					-Columns Data,Value `
-					-List `
-					-Format $wdTableGrid `
-					-AutoFit $wdAutoFitFixed;
-
-					SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
-					$Table.Columns.Item(1).Width = 200;
-					$Table.Columns.Item(2).Width = 250;
-
-					$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-					FindWordDocumentEnd
-					$Table = $Null
-					WriteWordLine 0 0 ""
-					
-					#User Profile
-					
 				}
-			}
-			ElseIf($? -and $Null -eq $VDIPools)
-			{
-				WriteWordLine 0 0 "No VDI Pools found for Site $($Site.Name)"
-			}
-			Else
-			{
-				WriteWordLine 0 0 "Unable to retrieve VDI Pools for Site $($Site.Name)"
-			}
-			WriteWordLine 0 0 ""
-		}
-		If($Text)
-		{
-			$VDIPools = Get-RASVDIHostPool -SiteId $Site.Id -EA 0 4>$Null
-			If($? -and $Null -ne $VDIPools)
-			{
-				ForEach($VDIPool in $VDIPools)
+				If($Text)
 				{
-					Line 2 "Pool $($VDIPool.Name)"
-					
-					$Status = Get-RASVDIHostPoolStatus -Name $VDIPool.Name -SiteId $Site.Id -EA 0 4>$Null #original
-
-					If($? -and $Null -ne $Status)
-					{
-						$PoolStatus = GetRASStatus $Status.AgentState
-					}
-					Else
-					{
-						$PoolStatus = ""
-					}
-						
-					$VDIPoolMembers = Get-RASVDIHostPoolMember -SiteId $Site.Id -VDIHostPoolName $VDIPool.Name -EA 0 4>$Null 
-					
-					If($? -and $Null -ne $VDIPoolMembers)
-					{
-						$VDIPoolMember = $VDIPoolMembers[0]
-						Switch($VDIPoolMember.Type)
-						{
-							"ALLGUESTINHOST"		{$MemberType = "All desktops in Provider"; Break}
-							"AllDesktopsInProvider"	{$MemberType = "All desktops in Provider"; Break}
-							"Desktop"				{$MemberType = "Guest"; Break}
-							"GUEST"					{$MemberType = "Guest"; Break}
-							"NATIVEPOOL"			{$MemberType = "Native Pool"; Break}
-							"TEMPLATEDesktop"		{$MemberType = "Template Desktop"; Break}
-							"TEMPLATEGUEST"			{$MemberType = "Template Desktop"; Break}
-							"UNKNOWN"				{$MemberType = "Unknown"; Break}
-							Default					{$MemberType = "Unable to determine Pool Member Type: $($VDIPoolMember.Type)"; Break}
-						}
-						$Template        = $VDIPoolMember.Template
-						$TemplateVersion = $VDIPoolMember.TemplateVersion
-					}
-					Else
-					{
-						$MemberType      = ""
-						$Template        = ""
-						$TemplateVersion = ""
-					}
-
-					Line 3 "Name`t`t`t: " $VDIPool.Name
-					Line 3 "Enabled`t`t`t: " $VDIPool.Enabled.ToString()
-					Line 3 "Description`t`t: " $VDIPool.Description
-					Line 3 "Status`t`t`t: " $PoolStatus
-					Line 3 "Members type`t`t: " $MemberType
-					Line 3 "Template`t`t: " $Template
-					Line 3 "Template version`t: " $TemplateVersion
-					Line 3 "Last modification by`t: " $VDIPool.AdminLastMod
-					Line 3 "Modified on`t`t: " (Get-Date -UFormat "%c" $VDIPool.TimeLastMod)
-					Line 3 "Created by`t`t: " $VDIPool.AdminCreate
-					Line 3 "Created on`t`t: " (Get-Date -UFormat "%c" $VDIPool.TimeCreate)
-					Line 3 "ID`t`t`t: " $VDIPool.Id.ToString()
-					Line 0 ""
-					
-					#General
-					Line 3 "General"
-					Line 4 "Enable host pool in site: " $VDIPool.Enabled.ToString()
-					Line 4 "Name`t`t`t: " $VDIPool.Name
-					Line 4 "Description`t`t: " $VDIPool.Description
-					Line 0 ""
-					
-					#Members
-					
 					Line 3 "Members"
 					If($VDIPool.Members.Members.Count -eq 0)
 					{
@@ -17717,210 +17635,18 @@ Function OutputVDIDetails
 							ElseIf($? -and $Null -eq $VDIPoolMembers)
 							{
 								Line 4 "Members: " "None found"
+								Line 0 ""
 							}
 							Else
 							{
 								Line 4 "Members: " "Unable to retrieve"
+								Line 0 ""
 							}
 						}
 					}
-
-					#Action
-					Line 3 "Action"
-					
-					If($VDIPool.InheritDefaultVDIActionSettings)
-					{
-						#do we inherit site defaults?
-						#yes we do, get the default settings for the Site
-						#use the Site default settings
-
-						$VDIDefaults = Get-RASVDIDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
-						
-						If($? -and $Null -ne $VDIDefaults)
-						{
-							Switch ($VDIDefaults.Action.PerformActionAfterSec)
-							{
-								0		{$VDIPoolActionsAfter = "Never"; Break}
-								1		{$VDIPoolActionsAfter = "Immediate"; Break}
-								25		{$VDIPoolActionsAfter = "25 seconds"; Break}
-								60		{$VDIPoolActionsAfter = "1 minute"; Break}
-								300		{$VDIPoolActionsAfter = "5 minutes"; Break}
-								3600	{$VDIPoolActionsAfter = "1 hour"; Break}
-								7200	{$VDIPoolActionsAfter = "2 hours"; Break}
-								Default	{$VDIPoolActionsAfter = "Unable to determine Actions After: $($VDIDefaults.Action.PerformActionAfterSec)"; Break}
-							}
-							$VDIPoolActionsOnSession     = $VDIDefaults.Action.SessionAction.ToString()
-							$VDIPoolActionsPerformAction = $VDIDefaults.Action.PerformAction.ToString()
-						}
-						Else
-						{
-							#unable to retrieve default, use built-in default values
-							$VDIPoolActionsOnSession     = "Disconnect"
-							$VDIPoolActionsPerformAction = "Do nothing"
-							$VDIPoolActionsAfter         = "Never"
-						}
-					}
-					Else
-					{
-						#No, we don't use the VDI host pool settings
-						Switch ($VDIPool.Action.PerformActionAfterSec)
-						{
-							0		{$VDIPoolActionsAfter = "Never"; Break}
-							1		{$VDIPoolActionsAfter = "Immediate"; Break}
-							25		{$VDIPoolActionsAfter = "25 seconds"; Break}
-							60		{$VDIPoolActionsAfter = "1 minute"; Break}
-							300		{$VDIPoolActionsAfter = "5 minutes"; Break}
-							3600	{$VDIPoolActionsAfter = "1 hour"; Break}
-							7200	{$VDIPoolActionsAfter = "2 hours"; Break}
-							Default	{$VDIPoolActionsAfter = "Unable to determine Actions After: $($VDIPool.PerformActionAfterSec)"; Break}
-						}
-						$VDIPoolActionsOnSession     = $VDIPool.Action.SessionAction.ToString()
-						$VDIPoolActionsPerformAction = $VDIPool.Action.PerformAction.ToString()
-					}
-
-					Line 4 "Inherit default settings: " $VDIPool.InheritDefaultVDIActionSettings.ToString()
-					Line 4 "Action"
-					Line 5 "On session`t: " $VDIPoolActionsOnSession
-					Line 5 "Perform action`t: " $VDIPoolActionsPerformAction
-					Line 5 "After`t`t: " $VDIPoolActionsAfter
-					Line 0 ""
-
-					#User Profile
 				}
-				Line 0 ""
-			}
-			ElseIf($? -and $Null -eq $VDIPools)
-			{
-				Line 0 "No VDI Pools found for Site $($Site.Name)"
-			}
-			Else
-			{
-				Line 0 "Unable to retrieve VDI Pools for Site $($Site.Name)"
-			}
-			Line 0 ""
-		}
-		If($HTML)
-		{
-			$VDIPools = Get-RASVDIHostPool -SiteId $Site.Id -EA 0 4>$Null
-			If($? -and $Null -ne $VDIPools)
-			{
-				ForEach($VDIPool in $VDIPools)
+				If($HTML)
 				{
-					WriteHTMLLine 3 0 "Pool $($VDIPool.Name)"
-		
-					$Status = Get-RASVDIHostPoolStatus -Name $VDIPool.Name -SiteId $Site.Id -EA 0 4>$Null #original
-
-					If($? -and $Null -ne $Status)
-					{
-						$PoolStatus = GetRASStatus $Status.AgentState
-					}
-					Else
-					{
-						$PoolStatus = ""
-					}
-						
-					$VDIPoolMembers = Get-RASVDIHostPoolMember -SiteId $Site.Id -VDIHostPoolName $VDIPool.Name -EA 0 4>$Null 
-					
-					If($? -and $Null -ne $VDIPoolMembers)
-					{
-						$VDIPoolMember = $VDIPoolMembers[0]
-						Switch($VDIPoolMember.Type)
-						{
-							"ALLGUESTINHOST"		{$MemberType = "All desktops in Provider"; Break}
-							"AllDesktopsInProvider"	{$MemberType = "All desktops in Provider"; Break}
-							"Desktop"				{$MemberType = "Guest"; Break}
-							"GUEST"					{$MemberType = "Guest"; Break}
-							"NATIVEPOOL"			{$MemberType = "Native Pool"; Break}
-							"TEMPLATEDesktop"		{$MemberType = "Template Desktop"; Break}
-							"TEMPLATEGUEST"			{$MemberType = "Template Desktop"; Break}
-							"UNKNOWN"				{$MemberType = "Unknown"; Break}
-							Default					{$MemberType = "Unable to determine Pool Member Type: $($VDIPoolMember.Type)"; Break}
-						}
-						$Template        = $VDIPoolMember.Template
-						$TemplateVersion = $VDIPoolMember.TemplateVersion
-					}
-					Else
-					{
-						$MemberType      = ""
-						$Template        = ""
-						$TemplateVersion = ""
-					}
-					
-					$rowdata = @()
-					$columnHeaders = @("Name",($Script:htmlsb),$VDIPool.Name,$htmlwhite)
-					$rowdata += @(,("Enabled",($Script:htmlsb),$VDIPool.Enabled.ToString(),$htmlwhite))
-					$rowdata += @(,("Description",($Script:htmlsb),$VDIPool.Description,$htmlwhite))
-					$rowdata += @(,("Status",($Script:htmlsb),$PoolStatus,$htmlwhite))
-					$rowdata += @(,("Members type",($Script:htmlsb),$MemberType,$htmlwhite))
-					$rowdata += @(,("Template",($Script:htmlsb),$Template,$htmlwhite))
-					$rowdata += @(,("Template version",($Script:htmlsb),$TemplateVersion,$htmlwhite))
-					$rowdata += @(,("Last modification by",($Script:htmlsb),$VDIPool.AdminLastMod,$htmlwhite))
-					$rowdata += @(,("Modified on",($Script:htmlsb),(Get-Date -UFormat "%c" $VDIPool.TimeLastMod),$htmlwhite))
-					$rowdata += @(,("Created by",($Script:htmlsb),$VDIPool.AdminCreate,$htmlwhite))
-					$rowdata += @(,("Created on",($Script:htmlsb),(Get-Date -UFormat "%c" $VDIPool.TimeCreate),$htmlwhite))
-					$rowdata += @(,("ID",($Script:htmlsb),$VDIPool.Id.ToString(),$htmlwhite))
-					
-					ForEach($Item in $VDIPool.Members.Members)
-					{
-						$VDIPoolMembers = Get-RASVDIHostPoolMember -SiteId $Site.Id -VDIHostPoolName $VDIPool.Name -EA 0 4>$Null
-						
-						If($? -and $Null -ne $VDIPoolMembers)
-						{
-							$cnt = -1
-							ForEach($VDIPoolMember in $VDIPoolMembers)
-							{
-								Switch($VDIPoolMember.Type)
-								{
-									"ALLGUESTINHOST"		{$MemberType = "All desktops in Provider"; Break}
-									"AllDesktopsInProvider"	{$MemberType = "All desktops in Provider"; Break}
-									"Desktop"				{$MemberType = "Guest"; Break}
-									"GUEST"					{$MemberType = "Guest"; Break}
-									"NATIVEPOOL"			{$MemberType = "Native Pool"; Break}
-									"TEMPLATEDesktop"		{$MemberType = "Template Desktop"; Break}
-									"TEMPLATEGUEST"			{$MemberType = "Template Desktop"; Break}
-									"UNKNOWN"				{$MemberType = "Unknown"; Break}
-									Default					{$MemberType = "Unable to determine Pool Member Type: $($VDIPoolMember.Type)"; Break}
-								}
-								$cnt++
-								If($cnt -eq 0)
-								{
-									$rowdata += @(,("    Members",($Script:htmlsb),"Name: $($VDIPoolMember.Name) Type: $MemberType",$htmlwhite))
-								}
-								Else
-								{
-									$rowdata += @(,("",($Script:htmlsb),"Name: $($VDIPoolMember.Name) Type: $MemberType",$htmlwhite))
-								}
-							}
-						}
-						ElseIf($? -and $Null -eq $VDIPoolMembers)
-						{
-							$rowdata += @(,("    Members",($Script:htmlsb),"None found",$htmlwhite))
-						}
-						Else
-						{
-							$rowdata += @(,("    Members",($Script:htmlsb),"Unable to retrieve",$htmlwhite))
-						}
-					}
-
-					$msg = ""
-					$columnWidths = @("200","275")
-					FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-					WriteHTMLLine 0 0 ""
-
-					#General
-				
-					$rowdata = @()
-					$columnHeaders = @("Enable host pool in site",($Script:htmlsb),$VDIPool.Enabled.ToString(),$htmlwhite)
-					$rowdata += @(,("Name",($Script:htmlsb),$VDIPool.Name,$htmlwhite))
-					$rowdata += @(,("Description",($Script:htmlsb),$VDIPool.Description,$htmlwhite))
-					
-					$msg = "General"
-					$columnWidths = @("200","275")
-					FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-					WriteHTMLLine 0 0 ""
-
-					#Members
-			
 					$rowdata = @()
 					If($VDIPool.Members.Members.Count -eq 0)
 					{
@@ -17979,45 +17705,21 @@ Function OutputVDIDetails
 					$columnWidths = @("200","275")
 					FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 					WriteHTMLLine 0 0 ""
+				}
 
-					#Action
+				#Action
+				
+				If($VDIPool.InheritDefaultVDIActionSettings)
+				{
+					#do we inherit site defaults?
+					#yes we do, get the default settings for the Site
+					#use the Site default settings
+
+					$VDIDefaults = Get-RASVDIDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
 					
-					If($VDIPool.InheritDefaultVDIActionSettings)
+					If($? -and $Null -ne $VDIDefaults)
 					{
-						#do we inherit site defaults?
-						#yes we do, get the default settings for the Site
-						#use the Site default settings
-
-						$VDIDefaults = Get-RASVDIDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
-						
-						If($? -and $Null -ne $VDIDefaults)
-						{
-							Switch ($VDIDefaults.Action.PerformActionAfterSec)
-							{
-								0		{$VDIPoolActionsAfter = "Never"; Break}
-								1		{$VDIPoolActionsAfter = "Immediate"; Break}
-								25		{$VDIPoolActionsAfter = "25 seconds"; Break}
-								60		{$VDIPoolActionsAfter = "1 minute"; Break}
-								300		{$VDIPoolActionsAfter = "5 minutes"; Break}
-								3600	{$VDIPoolActionsAfter = "1 hour"; Break}
-								7200	{$VDIPoolActionsAfter = "2 hours"; Break}
-								Default	{$VDIPoolActionsAfter = "Unable to determine Actions After: $($VDIDefaults.Action.PerformActionAfterSec)"; Break}
-							}
-							$VDIPoolActionsOnSession     = $VDIDefaults.Action.SessionAction.ToString()
-							$VDIPoolActionsPerformAction = $VDIDefaults.Action.PerformAction.ToString()
-						}
-						Else
-						{
-							#unable to retrieve default, use built-in default values
-							$VDIPoolActionsOnSession     = "Disconnect"
-							$VDIPoolActionsPerformAction = "Do nothing"
-							$VDIPoolActionsAfter         = "Never"
-						}
-					}
-					Else
-					{
-						#No, we don't use the VDI host pool settings
-						Switch ($VDIPool.Action.PerformActionAfterSec)
+						Switch ($VDIDefaults.Action.PerformActionAfterSec)
 						{
 							0		{$VDIPoolActionsAfter = "Never"; Break}
 							1		{$VDIPoolActionsAfter = "Immediate"; Break}
@@ -18026,12 +17728,76 @@ Function OutputVDIDetails
 							300		{$VDIPoolActionsAfter = "5 minutes"; Break}
 							3600	{$VDIPoolActionsAfter = "1 hour"; Break}
 							7200	{$VDIPoolActionsAfter = "2 hours"; Break}
-							Default	{$VDIPoolActionsAfter = "Unable to determine Actions After: $($VDIPool.PerformActionAfterSec)"; Break}
+							Default	{$VDIPoolActionsAfter = "Unable to determine Actions After: $($VDIDefaults.Action.PerformActionAfterSec)"; Break}
 						}
-						$VDIPoolActionsOnSession     = $VDIPool.Action.SessionAction.ToString()
-						$VDIPoolActionsPerformAction = $VDIPool.Action.PerformAction.ToString()
+						$VDIPoolActionsOnSession     = $VDIDefaults.Action.SessionAction.ToString()
+						$VDIPoolActionsPerformAction = $VDIDefaults.Action.PerformAction.ToString()
 					}
+					Else
+					{
+						#unable to retrieve default, use built-in default values
+						$VDIPoolActionsOnSession     = "Disconnect"
+						$VDIPoolActionsPerformAction = "Do nothing"
+						$VDIPoolActionsAfter         = "Never"
+					}
+				}
+				Else
+				{
+					#No, we don't use the VDI host pool settings
+					Switch ($VDIPool.Action.PerformActionAfterSec)
+					{
+						0		{$VDIPoolActionsAfter = "Never"; Break}
+						1		{$VDIPoolActionsAfter = "Immediate"; Break}
+						25		{$VDIPoolActionsAfter = "25 seconds"; Break}
+						60		{$VDIPoolActionsAfter = "1 minute"; Break}
+						300		{$VDIPoolActionsAfter = "5 minutes"; Break}
+						3600	{$VDIPoolActionsAfter = "1 hour"; Break}
+						7200	{$VDIPoolActionsAfter = "2 hours"; Break}
+						Default	{$VDIPoolActionsAfter = "Unable to determine Actions After: $($VDIPool.PerformActionAfterSec)"; Break}
+					}
+					$VDIPoolActionsOnSession     = $VDIPool.Action.SessionAction.ToString()
+					$VDIPoolActionsPerformAction = $VDIPool.Action.PerformAction.ToString()
+				}
+				
+				If($MSWord -or $PDF)
+				{
+					WriteWordLine 4 0 "Action"
+					$ScriptInformation = New-Object System.Collections.ArrayList
+					$ScriptInformation.Add(@{Data = "Inherit default settings"; Value = $VDIPool.InheritDefaultVDIActionSettings.ToString(); }) > $Null
+					$ScriptInformation.Add(@{Data = "Action"; Value = ""; }) > $Null
+					$ScriptInformation.Add(@{Data = "     On session"; Value = $VDIPoolActionsOnSession; }) > $Null
+					$ScriptInformation.Add(@{Data = "     Perform action"; Value = $VDIPoolActionsPerformAction; }) > $Null
+					$ScriptInformation.Add(@{Data = "     After"; Value = $VDIPoolActionsAfter; }) > $Null
 
+					$Table = AddWordTable -Hashtable $ScriptInformation `
+					-Columns Data,Value `
+					-List `
+					-Format $wdTableGrid `
+					-AutoFit $wdAutoFitFixed;
+
+					SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+					$Table.Columns.Item(1).Width = 200;
+					$Table.Columns.Item(2).Width = 250;
+
+					$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+					FindWordDocumentEnd
+					$Table = $Null
+					WriteWordLine 0 0 ""
+				}
+				If($Text)
+				{
+					Line 3 "Action"
+					Line 4 "Inherit default settings: " $VDIPool.InheritDefaultVDIActionSettings.ToString()
+					Line 4 "Action"
+					Line 5 "On session`t: " $VDIPoolActionsOnSession
+					Line 5 "Perform action`t: " $VDIPoolActionsPerformAction
+					Line 5 "After`t`t: " $VDIPoolActionsAfter
+					Line 0 ""
+				}
+				If($HTML)
+				{
 					$rowdata = @()
 					$columnHeaders = @("Inherit default settings",($Script:htmlsb),$VDIPool.InheritDefaultVDIActionSettings.ToString(),$htmlwhite)
 					$rowdata += @(,( "Action",($Script:htmlsb),"",$htmlwhite))
@@ -18043,18 +17809,51 @@ Function OutputVDIDetails
 					$columnWidths = @("200","275")
 					FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 					WriteHTMLLine 0 0 ""
-
-					#User Profile
 				}
+				
+				#User Profile
 			}
-			ElseIf($? -and $Null -eq $VDIPools)
+		}
+		ElseIf($? -and $Null -eq $VDIPools)
+		{
+			If($MSWord -or $PDF)
+			{
+				WriteWordLine 0 0 "No VDI Pools found for Site $($Site.Name)"
+			}
+			If($Text)
+			{
+				Line 0 "No VDI Pools found for Site $($Site.Name)"
+			}
+			If($HTML)
 			{
 				WriteHTMLLine 0 0 "No VDI Pools found for Site $($Site.Name)"
 			}
-			Else
+		}
+		Else
+		{
+			If($MSWord -or $PDF)
+			{
+				WriteWordLine 0 0 "Unable to retrieve VDI Pools for Site $($Site.Name)"
+			}
+			If($Text)
+			{
+				Line 0 "Unable to retrieve VDI Pools for Site $($Site.Name)"
+			}
+			If($HTML)
 			{
 				WriteHTMLLine 0 0 "Unable to retrieve VDI Pools for Site $($Site.Name)"
 			}
+		}
+		If($MSWord -or $PDF)
+		{
+			WriteWordLine 0 0 ""
+		}
+		If($Text)
+		{
+			Line 0 ""
+		}
+		If($HTML)
+		{
 			WriteHTMLLine 0 0 ""
 		}
 		
@@ -42039,7 +41838,7 @@ Function OutputMFASetting
 				}
 				ElseIf($RASMFASetting.Type -eq "Radius")
 				{
-					$ScriptInformation.Add(@{Data = "          Type Name"; Value = $RASMFASetting.DisplayName; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Display Name"; Value = $RASMFASetting.DisplayName; }) > $Null
 					$ScriptInformation.Add(@{Data = "          Primary server"; Value = $RASMFASetting.Server; }) > $Null
 					$ScriptInformation.Add(@{Data = "          Secondary server"; Value = $RASMFASetting.BackupServer; }) > $Null
 					If($RASMFASetting.HAMode -eq "Parallel")
@@ -42057,15 +41856,14 @@ Function OutputMFASetting
 					$ScriptInformation.Add(@{Data = "          Forward username only to Radius Server"; Value = $RASMFASetting.UsernameOnly.ToString(); }) > $Null
 					$ScriptInformation.Add(@{Data = "          Forward the first password to Windows authentication provider"; Value = $RASMFASetting.ForwardFirstPwdToAD.ToString(); }) > $Null
 					$ScriptInformation.Add(@{Data = "     Attributes"; Value = ""; }) > $Null
-					$ScriptInformation.Add(@{Data = "     Automation"; Value = ""; }) > $Null
-					$ScriptInformation.Add(@{Data = "     Attributes"; Value = ""; }) > $Null
 					$cnt=0
 					ForEach($Item in $RASMFASetting.AttributeInfoList)
 					{
 						$cnt++
 						$ScriptInformation.Add(@{Data = ""; Value = "Attribute $cnt"; }) > $Null
-						$ScriptInformation.Add(@{Data = ""; Value = "     Name: $($Item.Name)"; }) > $Null
+						#$ScriptInformation.Add(@{Data = ""; Value = "     Name: $($Item.Name)"; }) > $Null
 						$ScriptInformation.Add(@{Data = ""; Value = "     Vendor: $($Item.Vendor)"; }) > $Null
+						$ScriptInformation.Add(@{Data = ""; Value = "     Attribute: $($Item.RadiusAttrName)"; }) > $Null
 						$ScriptInformation.Add(@{Data = ""; Value = "     Type: $($Item.AttributeType)"; }) > $Null
 						$ScriptInformation.Add(@{Data = ""; Value = "     Value: $($Item.Value)"; }) > $Null
 						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null #blank separator line
@@ -42526,7 +42324,7 @@ Function OutputMFASetting
 				ElseIf($RASMFASetting.Type -eq "Radius")
 				{
 					Line 4 "Connection"
-					Line 5 "Type Name`t`t`t`t: " $RASMFASetting.DisplayName
+					Line 5 "Display Name`t`t`t`t: " $RASMFASetting.DisplayName
 					Line 5 "Primary Server`t`t`t`t: " $RASMFASetting.Server
 					Line 5 "Secondary server`t`t`t: " $RASMFASetting.BackupServer
 					If($RASMFASetting.HAMode -eq "Parallel")
@@ -42550,8 +42348,9 @@ Function OutputMFASetting
 					{
 						$cnt++
 						Line 5 "Attribute $cnt"
-						Line 6 "Name  : $($Item.Name)"
+						#Line 6 "Name  : $($Item.Name)"
 						Line 6 "Vendor: $($Item.Vendor)"
+						LIne 6 "Attribute: $($Item.RadiusAttrName)"
 						Line 6 "Type  : $($Item.AttributeType)"
 						Line 6 "Value : $($Item.Value)"
 						Line 5 "" #blank separator line
@@ -42951,7 +42750,7 @@ Function OutputMFASetting
 				ElseIf($RASMFASetting.Type -eq "Radius")
 				{
 					$rowdata += @(,( "     Connection",($Script:htmlsb),"",$htmlwhite))
-					$rowdata += @(,("          Type Name",($Script:htmlsb),$RASMFASetting.DisplayName,$htmlwhite))
+					$rowdata += @(,("          Display Name",($Script:htmlsb),$RASMFASetting.DisplayName,$htmlwhite))
 					$rowdata += @(,("          Primary Server",($Script:htmlsb),$RASMFASetting.Server,$htmlwhite))
 					$rowdata += @(,( "          Secondary server",($Script:htmlsb), $RASMFASetting.BackupServer,$htmlwhite))
 					If($RASMFASetting.HAMode -eq "Parallel")
@@ -42974,8 +42773,9 @@ Function OutputMFASetting
 					{
 						$cnt++
 						$rowdata += @(,( "",($Script:htmlsb), "Attribute $cnt",$htmlwhite))
-						$rowdata += @(,( "",($Script:htmlsb), "     Name: $($Item.Name)",$htmlwhite))
+						#$rowdata += @(,( "",($Script:htmlsb), "     Name: $($Item.Name)",$htmlwhite))
 						$rowdata += @(,( "",($Script:htmlsb), "     Vendor: $($Item.Vendor)",$htmlwhite))
+						$rowdata += @(,( "",($Script:htmlsb), "     Attribute: $($Item.RadiusAttrName)",$htmlwhite))
 						$rowdata += @(,( "",($Script:htmlsb), "     Type: $($Item.AttributeType)",$htmlwhite))
 						$rowdata += @(,( "",($Script:htmlsb), "     Value: $($Item.Value)",$htmlwhite))
 						$rowdata += @(,( "",($Script:htmlsb),"",$htmlwhite)) #blank separator line
