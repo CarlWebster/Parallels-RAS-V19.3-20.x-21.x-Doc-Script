@@ -450,9 +450,9 @@
 	text document.
 .NOTES
 	NAME: RAS_Inventory_V4_0.ps1
-	VERSION: 4.00 Beta 19
+	VERSION: 4.00 Beta 20
 	AUTHOR: Carl Webster
-	LASTEDIT: October 22, 2025
+	LASTEDIT: October 28, 2025
 #>
 
 
@@ -728,6 +728,10 @@ Param(
 #	Updated Function ProcessAdministration to handle merging functions OutputRASProxySettings 
 #		and OutputRASMiscSettings into Function OutputRASSettings
 #
+#	Updated Function OutputRASAuthSettings output to match the current console
+#
+#	Updated Function OutputRASSessionSetting output to match the current console
+#
 #	Updated numerous ENUMS throughout the script
 #
 #	Updated the help text
@@ -799,9 +803,9 @@ $ErrorActionPreference    = 'SilentlyContinue'
 $Error.Clear()
 
 $Script:emailCredentials  = $Null
-$script:MyVersion         = '4.00 Beta 19'
+$script:MyVersion         = '4.00 Beta 20'
 $Script:ScriptName        = "RAS_Inventory_V4_0.ps1"
-$tmpdate                  = [datetime] "10/22/2025"
+$tmpdate                  = [datetime] "10/28/2025"
 $Script:ReleaseDate       = $tmpdate.ToUniversalTime().ToShortDateString()
 
 If($MSWord -eq $False -and $PDF -eq $False -and $Text -eq $False -and $HTML -eq $False)
@@ -41267,7 +41271,6 @@ Function ProcessConnection
 		OutputMFASetting $MFA
 	}
 	
-
 	Write-Verbose "$(Get-Date -Format G): `tProcessing SAML"
 	
 	$SAML = Get-RASSAMLIDP -SiteId $Site.Id -EA 0 4>$Null
@@ -41399,31 +41402,42 @@ Function OutputRASAuthSettings
 	
 	Switch ($RASAuthSettings.AuthType)
 	{
-		"UsernamePassword"						{$RASAuthSettingsAuthType = "Credentials"; Break}
-		"SmartCard"								{$RASAuthSettingsAuthType = "Smart Card"; Break}
-		"UsernamePasswordOrSmartCard"			{$RASAuthSettingsAuthType = "Credentials, Smart Card"; Break}
-		"Web"									{$RASAuthSettingsAuthType = "Web (SAML)"; Break}
-		"UsernamePassword, Web"					{$RASAuthSettingsAuthType = "Credentials, Web (SAML)"; Break}
-		"UsernamePassword, Web, WebCredentials"	{$RASAuthSettingsAuthType = "Web + Credentials"; Break}
-		"SmartCard, Web"						{$RASAuthSettingsAuthType = "Smart Card, Web (SAML)"; Break}
-		"UsernamePasswordOrSmartCard, Web"		{$RASAuthSettingsAuthType = "Credentials, Smart Card, Web (SAML)"; Break}
-		Default									{$RASAuthSettingsAuthType = "Unable to determine AuthType: $($RASAuthSettings.AuthType)"; Break}
+		"UsernamePassword"									{$RASAuthSettingsAuthType += "Credentials"; Break}
+		"SmartCard"											{$RASAuthSettingsAuthType += "Smart card"; Break}
+		"Web"												{$RASAuthSettingsAuthType += "Web (SAML)"; Break}
+		"WebCredentials"									{$RASAuthSettingsAuthType += "Web + Credentials"; Break}
+		"Web, WebCredentials"								{$RASAuthSettingsAuthType += "Web (SAML), Web + Credentials"; Break}
+		"SmartCard, WebCredentials"							{$RASAuthSettingsAuthType += "Smart card, Web + Credentials"; Break}
+		"UsernamePassword, WebCredentials"					{$RASAuthSettingsAuthType += "Credentials, Web + Credentials"; Break}
+		"UsernamePasswordOrSmartCard"						{$RASAuthSettingsAuthType += "Credentials, Smart Card"; Break}
+		"UsernamePassword, Web"								{$RASAuthSettingsAuthType += "Credentials, Web (SAML)"; Break}
+		"UsernamePassword, Web, WebCredentials"				{$RASAuthSettingsAuthType += "Credentials, Web (SAML), Web + Credentials"; Break}
+		"UsernamePasswordOrSmartCard, Web, WebCredentials"	{$RASAuthSettingsAuthType += "Credentials, Smart Card, Web (SAML), Web + Credentials"; Break}
+		Default												{$RASAuthSettingsAuthType += "Unable to determine AuthType: $($RASAuthSettings.AuthType)"; Break}
 	}
 	
 	If($MSWord -or $PDF)
 	{
 		$ScriptInformation = New-Object System.Collections.ArrayList
-		$ScriptInformation.Add(@{Data = "Allowed authentication types"; Value = $RASAuthSettingsAuthType; }) > $Null
+		$ScriptInformation.Add(@{Data = "Authentication type"; Value = ""; }) > $Null
+		$ScriptInformation.Add(@{Data = "     Allowed authentication types"; Value = $RASAuthSettingsAuthType; }) > $Null
+		$ScriptInformation.Add(@{Data = "General"; Value = ""; }) > $Null
 		If($RASAuthSettings.AllTrustedDomains)
 		{
-			$ScriptInformation.Add(@{Data = "Authentication domain"; Value = "All Trusted Domains"; }) > $Null
+			$ScriptInformation.Add(@{Data = "     Authentication domain"; Value = "All Trusted Domains"; }) > $Null
 		}
 		Else
 		{
-			$ScriptInformation.Add(@{Data = "Authentication domain"; Value = "Specific: $($RASAuthSettings.Domain)"; }) > $Null
+			$ScriptInformation.Add(@{Data = "     Authentication domain"; Value = "Specific: $($RASAuthSettings.Domain)"; }) > $Null
 		}
-		$ScriptInformation.Add(@{Data = "Use client domain if specified"; Value = $RASAuthSettings.UseClientDomain.ToString(); }) > $Null
-		$ScriptInformation.Add(@{Data = 'Force clients to use NetBIOS credentials'; Value = $RASAuthSettings.ForceNetBIOSCreds.ToString(); }) > $Null
+		$ScriptInformation.Add(@{Data = "     Use client domain if specified"; Value = $RASAuthSettings.UseClientDomain.ToString(); }) > $Null
+		$ScriptInformation.Add(@{Data = '     Force clients to use NetBIOS credentials'; Value = $RASAuthSettings.ForceNetBIOSCreds.ToString(); }) > $Null
+		$ScriptInformation.Add(@{Data = "Change domain password"; Value = ""; }) > $Null
+		$ScriptInformation.Add(@{Data = '     Use a custom URL for the "Change domain password" option'; Value = $RASAuthSettings.UseChangePasswordURL.ToString(); }) > $Null
+		If($RASAuthSettings.UseChangePasswordURL)
+		{
+			$ScriptInformation.Add(@{Data = '     Custom URL'; Value = $RASAuthSettings.ChangePasswordURL; }) > $Null
+		}
 		$ScriptInformation.Add(@{Data = 'Settings are replicated to all Sites'; Value = $RASAuthSettings.ReplicateSettings.ToString(); }) > $Null
 
 		$Table = AddWordTable -Hashtable $ScriptInformation `
@@ -41435,8 +41449,8 @@ Function OutputRASAuthSettings
 		SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 		SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-		$Table.Columns.Item(1).Width = 250;
-		$Table.Columns.Item(2).Width = 175;
+		$Table.Columns.Item(1).Width = 290;
+		$Table.Columns.Item(2).Width = 240;
 
 		$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -41446,38 +41460,54 @@ Function OutputRASAuthSettings
 	}
 	If($Text)
 	{
-		Line 2 "Allowed authentication types`t`t`t: " $RASAuthSettingsAuthType
+		Line 2 "Authentication type"
+		Line 3 "Allowed authentication types: " $RASAuthSettingsAuthType
+		Line 2 "General"
 		If($RASAuthSettings.AllTrustedDomains)
 		{
-			Line 2 "All Trusted Domains" ""
+			Line 3 "Authentication domain`t`t`t: All Trusted Domains"
 		}
 		Else
 		{
-			Line 2 "Domain`t`t`t`t`t`t: " $RASAuthSettings.Domain
+			Line 3 "Authentication domain`t`t`t: Specific: $($RASAuthSettings.Domain)"
 		}
-		Line 2 "Use client domain if specified`t`t`t: " $RASAuthSettings.UseClientDomain.ToString()
-		Line 2 "Force clients to use NetBIOS credentials`t: " $RASAuthSettings.ForceNetBIOSCreds.ToString()
-		Line 2 "Settings are replicated to all Sites`t`t: " $RASAuthSettings.ReplicateSettings.ToString()
+		Line 3 "Use client domain if specified`t`t: " $RASAuthSettings.UseClientDomain.ToString()
+		Line 3 "Force clients to use NetBIOS credentials: " $RASAuthSettings.ForceNetBIOSCreds.ToString()
+		Line 2 "Change domain password"
+		Line 3 'Use a custom URL for the "Change domain password" option: ' $RASAuthSettings.UseChangePasswordURL.ToString()
+		If($RASAuthSettings.UseChangePasswordURL)
+		{
+			Line 3 "Custom URL: " $RASAuthSettings.ChangePasswordURL
+		}
+		Line 2 'Settings are replicated to all Sites: ' $RASAuthSettings.ReplicateSettings.ToString()
 		Line 0 ""
 	}
 	If($HTML)
 	{
 		$rowdata = @()
-		$columnHeaders = @("Allowed authentication types",($Script:htmlsb),$RASAuthSettingsAuthType,$htmlwhite)
+		$columnHeaders = @("Authentication type",($Script:htmlsb),"",$htmlwhite)
+		$rowdata += @(,("     Allowed authentication types",($Script:htmlsb),$RASAuthSettingsAuthType,$htmlwhite))
+		$rowdata += @(,("General",($Script:htmlsb),"",$htmlwhite))
 		If($RASAuthSettings.AllTrustedDomains)
 		{
-			$rowdata += @(,("All Trusted Domains",($Script:htmlsb),"",$htmlwhite))
+			$rowdata += @(,("     Authentication domain",($Script:htmlsb),"All Trusted Domains",$htmlwhite))
 		}
 		Else
 		{
-			$rowdata += @(,("Domain",($Script:htmlsb),$RASAuthSettings.Domain,$htmlwhite))
+			$rowdata += @(,("     Authentication domain",($Script:htmlsb),"Specific: $($RASAuthSettings.Domain)",$htmlwhite))
 		}
-		$rowdata += @(,("Use client domain if specified",($Script:htmlsb),$RASAuthSettings.UseClientDomain.ToString(),$htmlwhite))
-		$rowdata += @(,("Force clients to use NetBIOS credentials",($Script:htmlsb),$RASAuthSettings.ForceNetBIOSCreds.ToString(),$htmlwhite))
-		$rowdata += @(,("Settings are replicated to all Sites",($Script:htmlsb),$RASAuthSettings.ReplicateSettings.ToString(),$htmlwhite))
+		$rowdata += @(,("     Use client domain if specified",($Script:htmlsb),$RASAuthSettings.UseClientDomain.ToString(),$htmlwhite))
+		$rowdata += @(,('     Force clients to use NetBIOS credentials',($Script:htmlsb),$RASAuthSettings.ForceNetBIOSCreds.ToString(),$htmlwhite))
+		$rowdata += @(,("Change domain password",($Script:htmlsb),"",$htmlwhite))
+		$rowdata += @(,('     Use a custom URL for the "Change domain password" option',($Script:htmlsb),$RASAuthSettings.UseChangePasswordURL.ToString(),$htmlwhite))
+		If($RASAuthSettings.UseChangePasswordURL)
+		{
+			$rowdata += @(,('     Custom URL',($Script:htmlsb),$RASAuthSettings.ChangePasswordURL,$htmlwhite))
+		}
+		$rowdata += @(,('Settings are replicated to all Sites',($Script:htmlsb),$RASAuthSettings.ReplicateSettings.ToString(),$htmlwhite))
 
 		$msg = ""
-		$columnWidths = @("300","175")
+		$columnWidths = @("360","275")
 		FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 		WriteHTMLLine 0 0 ""
 	}
@@ -41551,10 +41581,12 @@ Function OutputRASSessionSetting
 	If($MSWord -or $PDF)
 	{
 		$ScriptInformation = New-Object System.Collections.ArrayList
-		$ScriptInformation.Add(@{Data = "Declare remote session idle after"; Value = $RemoteIdleSessionTimeout; }) > $Null
-		$ScriptInformation.Add(@{Data = "Automatic logoff RAS idle session after"; Value = $LogoffIdleSessionTimeout; }) > $Null
-		$ScriptInformation.Add(@{Data = "Cached Session Timeout"; Value = $CachedSessionTimeout; }) > $Null
-		$ScriptInformation.Add(@{Data = 'FIPS 140-2 encryption'; Value = $RASSessionSettings.FIPSMode; }) > $Null
+		$ScriptInformation.Add(@{Data = "General"; Value = ""; }) > $Null
+		$ScriptInformation.Add(@{Data = "     Declare user session idle after"; Value = $RemoteIdleSessionTimeout; }) > $Null
+		$ScriptInformation.Add(@{Data = "     FIPS 140-2 encryption"; Value = $RASSessionSettings.FIPSMode; }) > $Null
+		$ScriptInformation.Add(@{Data = "Parallels Client"; Value = ""; }) > $Null
+		$ScriptInformation.Add(@{Data = "     Automatically log out idle client connection after"; Value = $LogoffIdleSessionTimeout; }) > $Null
+		$ScriptInformation.Add(@{Data = "     Cached authentication token timeout"; Value = $CachedSessionTimeout; }) > $Null
 		$ScriptInformation.Add(@{Data = 'Settings are replicated to all Sites'; Value = $RASSessionSettings.ReplicateSettings.ToString(); }) > $Null
 
 		$Table = AddWordTable -Hashtable $ScriptInformation `
@@ -41577,20 +41609,24 @@ Function OutputRASSessionSetting
 	}
 	If($Text)
 	{
-		Line 2 "Declare remote session idle after`t: " $RemoteIdleSessionTimeout
-		Line 2 "Automatic logoff RAS idle session after`t: " $LogoffIdleSessionTimeout
-		Line 2 "Cached Session Timeout`t`t`t: " $CachedSessionTimeout
-		Line 2 "FIPS 140-2 encryption`t`t`t: " $RASSessionSettings.FIPSMode
-		Line 2 "Settings are replicated to all Sites`t: " $RASSessionSettings.ReplicateSettings.ToString()
+		Line 2 "General"
+		Line 3 "Declare user session idle after : " $RemoteIdleSessionTimeout
+		Line 3 "FIPS 140-2 encryption`t`t: " $RASSessionSettings.FIPSMode
+		Line 2 "Parallels Client"
+		Line 3 "Automatically log out idle client connection after`t: " $LogoffIdleSessionTimeout
+		Line 3 "Cached authentication token timeout`t`t`t: " $CachedSessionTimeout
+		Line 2 "Settings are replicated to all Sites: " $RASSessionSettings.ReplicateSettings.ToString()
 		Line 0 ""
 	}
 	If($HTML)
 	{
 		$rowdata = @()
-		$columnHeaders = @("Declare remote session idle after",($Script:htmlsb),$RemoteIdleSessionTimeout,$htmlwhite)
-		$rowdata += @(,("Automatic logoff RAS idle session after",($Script:htmlsb),$LogoffIdleSessionTimeout,$htmlwhite))
-		$rowdata += @(,("Cached Session Timeout",($Script:htmlsb),$CachedSessionTimeout,$htmlwhite))
-		$rowdata += @(,("FIPS 140-2 encryption",($Script:htmlsb),$RASSessionSettings.FIPSMode.ToString(),$htmlwhite))
+		$columnHeaders = @("General",($Script:htmlsb),"",$htmlwhite)
+		$rowdata += @(,("     Declare user session idle after",($Script:htmlsb),$RemoteIdleSessionTimeout,$htmlwhite))
+		$rowdata += @(,("     FIPS 140-2 encryption",($Script:htmlsb),$RASSessionSettings.FIPSMode.ToString(),$htmlwhite))
+		$rowdata += @(,("Parallels Client",($Script:htmlsb),"",$htmlwhite))
+		$rowdata += @(,("     Automatically log out idle client connection after",($Script:htmlsb),$LogoffIdleSessionTimeout,$htmlwhite))
+		$rowdata += @(,("     Cached authentication token timeout ",($Script:htmlsb),$CachedSessionTimeout,$htmlwhite))
 		$rowdata += @(,("Settings are replicated to all Sites",($Script:htmlsb),$RASSessionSettings.ReplicateSettings.ToString(),$htmlwhite))
 
 		$msg = ""
@@ -41637,6 +41673,9 @@ Function OutputMFASetting
 			"EmailOTP"		{$RASMFASettingProvider = "Email OTP"; Break}
 			Default 		{$RASMFASettingProvider = "Unable to determine MFA Provider: $($RASMFASetting.Type)"; Break}
 		}
+		
+		#Get the themes assigned to the MFA provider
+		$MFAThemes = Get-RASTheme -Siteid $RASMFASetting.SiteId -EA 0 4> $Null | Where-Object {$_.MFAId -eq $RASMFASetting.Id }
 
 		If($MSWord -or $PDF)
 		{
@@ -41655,6 +41694,26 @@ Function OutputMFASetting
 					$ScriptInformation.Add(@{Data = "          Name"; Value = $RASMFASetting.Name; }) > $Null
 					$ScriptInformation.Add(@{Data = "          Description"; Value = $RASMFASetting.Description; }) > $Null
 					$ScriptInformation.Add(@{Data = "          Type"; Value = $RASMFASetting.DisplayName; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Themes"; Value = ""; }) > $Null
+					If($Null -ne $MFAThemes)
+					{
+						ForEach($MFATheme in $MFAThemes)
+						{
+							$ThemeMFAName = (Get-RASMFA -Id $MFATheme.MFAId -ea 0).Name 4>$Null
+							
+							If(!($?) -or $Null -eq $ThemeMFAName)
+							{
+								$ThemeMFAName = "Unable to retrieve the MFA Name"
+							}
+							$ScriptInformation.Add(@{Data = ""; Value = "Theme: $($MFATheme.Name)"; }) > $Null
+							$ScriptInformation.Add(@{Data = ""; Value = "MFA provider: $($ThemeMFAName)"; }) > $Null
+							$ScriptInformation.Add(@{Data = ""; Value = "Description: $($MFATheme.Description)"; }) > $Null
+						}
+					}
+					Else
+					{
+						$ScriptInformation.Add(@{Data = ""; Value = "No theme is selected"; }) > $Null
+					}
 					$ScriptInformation.Add(@{Data = "     Connection"; Value = ""; }) > $Null
 					$ScriptInformation.Add(@{Data = "          Display Name"; Value = $RASMFASetting.DisplayName; }) > $Null
 					$ScriptInformation.Add(@{Data = "          Primary server"; Value = $RASMFASetting.Server; }) > $Null
@@ -50935,8 +50994,8 @@ ProcessScriptEnd
 # SIG # Begin signature block
 # MIIthQYJKoZIhvcNAQcCoIItdjCCLXICAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUJPwGNBKoZJKODK2h7883lJSL
-# o+6ggibfMIIFjTCCBHWgAwIBAgIQDpsYjvnQLefv21DiCEAYWjANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUHqycmFsoZ0xdPrLLAQL5aeI+
+# mU+ggibfMIIFjTCCBHWgAwIBAgIQDpsYjvnQLefv21DiCEAYWjANBgkqhkiG9w0B
 # AQwFADBlMQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYD
 # VQQLExB3d3cuZGlnaWNlcnQuY29tMSQwIgYDVQQDExtEaWdpQ2VydCBBc3N1cmVk
 # IElEIFJvb3QgQ0EwHhcNMjIwODAxMDAwMDAwWhcNMzExMTA5MjM1OTU5WjBiMQsw
@@ -51147,33 +51206,33 @@ ProcessScriptEnd
 # UzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/BgNVBAMTOERpZ2lDZXJ0IFRy
 # dXN0ZWQgRzQgQ29kZSBTaWduaW5nIFJTQTQwOTYgU0hBMzg0IDIwMjEgQ0ExAhAL
 # bN+2Z4EOKufLWhG6HUlwMAkGBSsOAwIaBQCgQDAZBgkqhkiG9w0BCQMxDAYKKwYB
-# BAGCNwIBBDAjBgkqhkiG9w0BCQQxFgQU4iG36UtXwN7YiX5DRK1nWTZkFdIwDQYJ
-# KoZIhvcNAQEBBQAEggIACFul10zn0o8+ODqdRaGJDR0qAN/cqRXkAt+BuT1Y706I
-# rfO38Ua4SpMllcTxDknTeyScmbD/N11xXK7SZzy7RNb4fD4KJtgOyKbyPrAP576G
-# t2YtVXqN8bLYBWqLyFDasct3blL6mzFbPjmmc8Y7x5scECfbdU2sW/ytfJkcDUAn
-# NP3G2rrKlYMuPDpugNr8EwAjcORyEQHXxlPx2RrP9wP1lHOyxfHRTyEBYpt3eqXD
-# W2ECCGGOUp3LXW82kYJ4L3DY7NBE6m6XjrGcLi0xRH0Fk8bL//wBWdarJ2pmtQTN
-# PhZid+W90Qj7hBzz7qV9wInUUx7r18qNK0qJfpxbZzDOEaxJUIB8UQ8MESBjBuYA
-# voRNOU6L9uBLO4p8Vo8a7L4AX84oL2AXBsfrB3I/oo0juJngF/UyPzkUFCpRMxlQ
-# bcAQ95BCsNAP9C5uYpWpa9bf9gc0AkmbWMr5ihTx77OqIuKVOsU9TYf60xuIX81L
-# uXhQappcu8w5slr6hnPMdv7wAcggprQAtobvtajAuUoA7eZMwsqCgXvQXPvR1jH0
-# y+4rBYF178BjqwLB5HydVwtlSyxKcowb3qVnlv0zgnuhqUbwp5jTTF5GW2AGfn+1
-# aDIV3oPm+PtX0V/s3hVmluZWEv0z3EGCMtuP+UyVAu2EIYyoCFz6H7+Rv9054meh
+# BAGCNwIBBDAjBgkqhkiG9w0BCQQxFgQUZeFJ6HZYWfyAdJniPS+zaGcsyJswDQYJ
+# KoZIhvcNAQEBBQAEggIAWRH4PB8xJZ3VVx+W76hTLr7YH1ejhjBHFkNRnQYtT3D9
+# Q/uBDq9+QRC6qbXerIxhvi1uDD1PKVWYGi5uQO742jlPPO6/pZnl8weah2QN3ycj
+# luyK/UXMgHv+EKWo2ZrWMo6dNGNwMCrN+ABT3pPB0ikgwKtrr+d0bx/T0Ul5kkah
+# DiclaSAsBQGklNANOnTbsV5ROZxuAie2XoleuzgGBOUUXUqsC6Xv+jYtoCJQ33P8
+# sRVg7xZrOFlem4xtNVIlorn06sVBfA/uwv/0aFX58l+gH7Xv7d5wtjtGbwm0Hruk
+# sPkohYf60tG2o4UcxlVy/8i+p0Pn/+bs/xPW0ZCJ6e4K3T5Nxvnp4fuluOFo/zYa
+# KQGc39sSYK300GKrB7H/nN/dJ3uG3DU7Kta/aRZ6KMpJIlvUwKGQogA9YJTlvZAc
+# V2ycd2VL0Hc0Rlsmw3Y3oMixxT7VKlvEAPCglD32toHZD8nLz6z0q9R/71wv3Oxu
+# Pn9mAkt+rytY5s/PfFdRGHMrj535AqeSiGD0JPSEbYNDo22Zb9/g61NRic0l4YCh
+# HQoqbfgJAX9UjHLp26VZB0gb7ctHDUiUv/7FQXyi51sG9cgkNbmhjU+Lz100Klh1
+# Gc95Npu9OGXHfztfDcGDmtmdG80TqSoL/GTbOjLLBvNNc5Q4nsXSwYkYJALhSWSh
 # ggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8CAQEwfTBpMQswCQYDVQQGEwJVUzEX
 # MBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/BgNVBAMTOERpZ2lDZXJ0IFRydXN0
 # ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYgU0hBMjU2IDIwMjUgQ0ExAhAKgO8Y
 # S43xBYLRxHanlXRoMA0GCWCGSAFlAwQCAQUAoGkwGAYJKoZIhvcNAQkDMQsGCSqG
-# SIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjUxMDIyMTgxNzEzWjAvBgkqhkiG9w0B
-# CQQxIgQgPChGJJXg0OiwqKmpkq+rlbmhpx3n/T+PR4U8liJGRDcwDQYJKoZIhvcN
-# AQEBBQAEggIAx4/2d5LcZCepy9e82FfrIckB25aLa2I1gZ076nu2oPd3ggJAvK7y
-# bytc1d0Z766/h564omhwTWejQUCUvM4rgTXSKitMCJbxcNzsrUfo9tdtiZrtnotM
-# ZAS2hML2+oL4pAKOznL1TS0kZ7dn5x6qWLgyTw+vqUePZ7EkdupBYBrUM0BgMrRd
-# sv0w+k9cy7fV4GpCvD73sIKey5UV/ADBZBRSirCEzBD7M7uloXPZjnaz0CNN/o4J
-# NPa7JqytR+31VKBZGbXat2Kg9mE/udWptxyXk93xEoGwx6lvqlEYVBm2Mg4DPtw+
-# e4dT8kAJjucz+iljcp3HHzDvpqWErd2WmpZ+UXBbDseX77trG3bbD7WzihH0ss2b
-# GI0f5YBX8kyNuA4zBhUlQPpEfen4fU1tHWrh39h+PKL8elRac6FD16qOTQ9WDHcw
-# b6j7gOS4z22IapExJ5nkTbBCqOAABMC2aRuuZBM80XjgMsfg12bNvjjf+BF9JmFO
-# KYwLVcX3C2TiocuW6vscUuAk1pyaQOX4TNrLfJe5yGOOFUsi7HCJH2HYQXWBRIVN
-# clvMCxwqEI+WjSMXTIa59DbQdBQKFdCn973AayUmYLOezZ7hI6LiMRTzqgH8dqXZ
-# 5HaczGZzbfj9I8VhTGf+OoSE66qRTUYKzuGoMnEm/57azi4fQqAa2Fk=
+# SIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjUxMDI4MTkzOTUyWjAvBgkqhkiG9w0B
+# CQQxIgQgAq1dUq5+3ACgpYV1Vp9NjvRMXd36TjzXcxRefYKbNO8wDQYJKoZIhvcN
+# AQEBBQAEggIAd0SQ7gBy5w3tZSfMq+FoDVBAn8NwD10gb6b6GNeKRnMwUVoQg/fm
+# XeMJOe1BDkpXYJXpBzKUEFtGNt3nw7oxuLjo6ga7TAetdFKY1FH82FgDbpCBrUPz
+# 6XoJBlj7L3y/zco1aCqeTg2ougkRX1tp8KLFG6nIrK7l6PJvFA9hNz9oa1o3Yi+/
+# mhDUnixBynNft9dIKJjFfR6tN1uyigZ7j5rBOk1Qrjffv3L/1B48Jle2K2h1w92I
+# BgqC/4n9QamPc5LSrRfTsBNWun6rAAgG2nakcSKvrwSVuBAGgRt/RbmG7Q3S15vT
+# s3u9q7QHUPQa5hq8qvCqn92HoaQr/PE9oU5X8wG+7HHRCpMGyRvQq53eGRGCCZkA
+# w3bPaNEihSdTpBSaqk8e7c+MpEra3vlvA1CeIcVGsqehYKHXrJQScDKq5mVY0MdX
+# MLtsZTFZkZfea6PfwF91LFHzHRYy/zqf8W54Q59/+LVyndZV1njZx1XZnYNR4X7T
+# OA92NYYjStk0Kn2WEhbydxywfjBEZj/MDku9JoL/gUmiOi7icSubZNWHPO0T10Ko
+# PZX/eqxjuaH4auwdq3yihgnSF6oAweNBBLnMg5348SO3Ohr4YSD2X/l9W2RulwZo
+# jDsynNcZE1El+DTv92zQNxsN+gDOsbS2FEGXfk96QQuSSWdnFuq+ZsI=
 # SIG # End signature block

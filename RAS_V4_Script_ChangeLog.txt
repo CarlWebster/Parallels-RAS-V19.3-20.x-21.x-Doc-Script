@@ -166,6 +166,10 @@
 #	Updated Function ProcessAdministration to handle merging functions OutputRASProxySettings 
 #		and OutputRASMiscSettings into Function OutputRASSettings
 #
+#	Updated Function OutputRASAuthSettings output to match the current console
+#
+#	Updated Function OutputRASSessionSetting output to match the current console
+#
 #	Updated numerous ENUMS throughout the script
 #
 #	Updated the help text
