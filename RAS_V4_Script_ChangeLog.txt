@@ -25,6 +25,7 @@
 #			OutputCertificatesDetails
 #			OutputApplicationPackagesDetails
 #			OutputSettingsDetails
+#		OutputLogonHours
 #
 #	Clean up some console output
 #
@@ -33,6 +34,9 @@
 #	In Function OutputFarmSite, 
 #		Add Farm Properties
 #		For RAS V20 and later, add Access addresses
+#
+#	In Function OutputLogonHours
+#		Add General data
 #
 #	In Function OutputPoliciesDetails:
 #		Update for the Policy changes in 19.3 and later
@@ -156,6 +160,8 @@
 #		Add variable $RASSupport
 #		Add retrieving Get-RASOverwriteSupportActions
 #		Change call to OutputRASFeatures to use two parameters: $RASHelpdesk and $RASSupport
+#
+#	In Function ProcessConnection, add call to new LogonHours function
 #
 #	In Function ProcessScriptSetup, change how the RAS version is retrieved and put into variables
 #

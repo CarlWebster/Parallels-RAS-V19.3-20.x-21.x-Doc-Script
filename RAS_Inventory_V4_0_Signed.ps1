@@ -450,9 +450,9 @@
 	text document.
 .NOTES
 	NAME: RAS_Inventory_V4_0.ps1
-	VERSION: 4.00 Beta 20
+	VERSION: 4.00 Beta 21
 	AUTHOR: Carl Webster
-	LASTEDIT: October 28, 2025
+	LASTEDIT: November 3, 2025
 #>
 
 
@@ -587,6 +587,7 @@ Param(
 #			OutputCertificatesDetails
 #			OutputApplicationPackagesDetails
 #			OutputSettingsDetails
+#		OutputLogonHours
 #
 #	Clean up some console output
 #
@@ -595,6 +596,9 @@ Param(
 #	In Function OutputFarmSite, 
 #		Add Farm Properties
 #		For RAS V20 and later, add Access addresses
+#
+#	In Function OutputLogonHours
+#		Add General data
 #
 #	In Function OutputPoliciesDetails:
 #		Update for the Policy changes in 19.3 and later
@@ -719,6 +723,8 @@ Param(
 #		Add retrieving Get-RASOverwriteSupportActions
 #		Change call to OutputRASFeatures to use two parameters: $RASHelpdesk and $RASSupport
 #
+#	In Function ProcessConnection, add call to new LogonHours function
+#
 #	In Function ProcessScriptSetup, change how the RAS version is retrieved and put into variables
 #
 #	Merged functions OutputRASProxySettings and OutputRASMiscSettings into OutputRASSettings
@@ -803,9 +809,9 @@ $ErrorActionPreference    = 'SilentlyContinue'
 $Error.Clear()
 
 $Script:emailCredentials  = $Null
-$script:MyVersion         = '4.00 Beta 20'
+$script:MyVersion         = '4.00 Beta 21'
 $Script:ScriptName        = "RAS_Inventory_V4_0.ps1"
-$tmpdate                  = [datetime] "10/28/2025"
+$tmpdate                  = [datetime] "11/03/2025"
 $Script:ReleaseDate       = $tmpdate.ToUniversalTime().ToShortDateString()
 
 If($MSWord -eq $False -and $PDF -eq $False -and $Text -eq $False -and $HTML -eq $False)
@@ -41225,6 +41231,52 @@ Function ProcessConnection
 		OutputRASSessionSetting $results
 	}
 
+	Write-Verbose "$(Get-Date -Format G): `tProcessing Logon hours"
+	
+	$results = Get-RASLogonHours -SiteId $Site.Id -EA 0 4>$Null
+	
+	If(!($?))
+	{
+		Write-Warning "
+		`n
+		Unable to retrieve Logon hours information
+		"
+		If($MSWord -or $PDF)
+		{
+			WriteWordLine 0 0 "Unable to retrieve Logon hours information"
+		}
+		If($Text)
+		{
+			Line 0 "Unable to retrieve Logon hours information"
+		}
+		If($HTML)
+		{
+			WriteHTMLLine 0 0 "Unable to retrieve Logon hours information"
+		}
+	}
+	ElseIf($? -and $null -eq $results)
+	{
+		Write-Host "
+		No Logon hours information was found
+		" -ForegroundColor White
+		If($MSWord -or $PDF)
+		{
+			WriteWordLine 0 0 "No Logon hours information was found"
+		}
+		If($Text)
+		{
+			Line 0 "No Logon hours information was found"
+		}
+		If($HTML)
+		{
+			WriteHTMLLine 0 0 "No Logon hours information was found"
+		}
+	}
+	Else
+	{
+		OutputLogonHours $results
+	}
+
 	Write-Verbose "$(Get-Date -Format G): `tProcessing Multi-Factor authentication"
 	
 	$MFA = Get-RASMFA -SiteId $Site.Id -EA 0 4>$Null
@@ -41633,6 +41685,89 @@ Function OutputRASSessionSetting
 		$columnWidths = @("300","175")
 		FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 		WriteHTMLLine 0 0 ""
+	}
+}
+
+Function OutputLogonHours
+{
+	Param([object] $LogonHours)
+	
+	Write-Verbose "$(Get-Date -Format G): `t`tOutput Logon hours"
+	
+	If($MSWord -or $PDF)
+	{
+		WriteWordLine 2 0 "Logon hours"
+	}
+	If($Text)
+	{
+		Line 1 "Logon hours"
+	}
+	If($HTML)
+	{
+		WriteHTMLLine 2 0 "Logon hours"
+	}
+	
+	ForEach($LogonHour in $LogonHours)
+	{
+		If($MSWord -or $PDF)
+		{
+			$ScriptInformation = New-Object System.Collections.ArrayList
+			$ScriptInformation.Add(@{Data = "Enabled"; Value = $LogonHour.Enabled.ToString(); }) > $Null
+			$ScriptInformation.Add(@{Data = "Name"; Value = $LogonHour.Name; }) > $Null
+			$ScriptInformation.Add(@{Data = "Description"; Value = $LogonHour.Description; }) > $Null
+			$ScriptInformation.Add(@{Data = "Last modification by"; Value = $LogonHour.AdminLastMod; }) > $Null
+			$ScriptInformation.Add(@{Data = "Modified on"; Value = (Get-Date -UFormat "%c" $LogonHour.TimeLastMod); }) > $Null
+			$ScriptInformation.Add(@{Data = "Created by"; Value = $LogonHour.AdminCreate; }) > $Null
+			$ScriptInformation.Add(@{Data = "Created on"; Value = (Get-Date -UFormat "%c" $LogonHour.TimeCreate); }) > $Null
+			$ScriptInformation.Add(@{Data = "ID"; Value = $LogonHour.ID.ToString(); }) > $Null
+
+			$Table = AddWordTable -Hashtable $ScriptInformation `
+			-Columns Data,Value `
+			-List `
+			-Format $wdTableGrid `
+			-AutoFit $wdAutoFitFixed;
+
+			SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+			SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+			$Table.Columns.Item(1).Width = 250;
+			$Table.Columns.Item(2).Width = 175;
+
+			$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+			FindWordDocumentEnd
+			$Table = $Null
+			WriteWordLine 0 0 ""
+		}
+		If($Text)
+		{
+			Line 2 "Enabled `t`t: " $LogonHour.Enabled.ToString()
+			Line 2 "Name `t`t`t: " $LogonHour.Name
+			Line 2 "Description `t`t: " $LogonHour.Description
+			Line 2 "Last modification by `t: " $LogonHour.AdminLastMod
+			Line 2 "Modified on `t`t: " (Get-Date -UFormat "%c" $LogonHour.TimeLastMod)
+			Line 2 "Created by `t`t: " $LogonHour.AdminCreate
+			Line 2 "Created on `t`t: " (Get-Date -UFormat "%c" $LogonHour.TimeCreate)
+			Line 2 "ID `t`t`t: " $LogonHour.ID.ToString()
+			Line 0 ""
+		}
+		If($HTML)
+		{
+			$rowdata = @()
+			$columnHeaders = @("Enabled",($Script:htmlsb),$LogonHour.Enabled.ToString(),$htmlwhite)
+			$rowdata += @(,("Name",($Script:htmlsb),$LogonHour.Name,$htmlwhite))
+			$rowdata += @(,("Description",($Script:htmlsb),$LogonHour.Description,$htmlwhite))
+			$rowdata += @(,("Last modification by",($Script:htmlsb), $LogonHour.AdminLastMod,$htmlwhite))
+			$rowdata += @(,("Modified on",($Script:htmlsb), (Get-Date -UFormat "%c" $LogonHour.TimeLastMod),$htmlwhite))
+			$rowdata += @(,("Created by",($Script:htmlsb), $LogonHour.AdminCreate,$htmlwhite))
+			$rowdata += @(,("Created on",($Script:htmlsb), (Get-Date -UFormat "%c" $LogonHour.TimeCreate),$htmlwhite))
+			$rowdata += @(,("ID",($Script:htmlsb),$LogonHour.ID.ToString(),$htmlwhite))
+
+			$msg = ""
+			$columnWidths = @("300","175")
+			FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+			WriteHTMLLine 0 0 ""
+		}
 	}
 }
 
@@ -50994,8 +51129,8 @@ ProcessScriptEnd
 # SIG # Begin signature block
 # MIIthQYJKoZIhvcNAQcCoIItdjCCLXICAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUHqycmFsoZ0xdPrLLAQL5aeI+
-# mU+ggibfMIIFjTCCBHWgAwIBAgIQDpsYjvnQLefv21DiCEAYWjANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQU6xJBjSU8mFK2Oyv5ouoyJvpE
+# QyKggibfMIIFjTCCBHWgAwIBAgIQDpsYjvnQLefv21DiCEAYWjANBgkqhkiG9w0B
 # AQwFADBlMQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYD
 # VQQLExB3d3cuZGlnaWNlcnQuY29tMSQwIgYDVQQDExtEaWdpQ2VydCBBc3N1cmVk
 # IElEIFJvb3QgQ0EwHhcNMjIwODAxMDAwMDAwWhcNMzExMTA5MjM1OTU5WjBiMQsw
@@ -51206,33 +51341,33 @@ ProcessScriptEnd
 # UzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/BgNVBAMTOERpZ2lDZXJ0IFRy
 # dXN0ZWQgRzQgQ29kZSBTaWduaW5nIFJTQTQwOTYgU0hBMzg0IDIwMjEgQ0ExAhAL
 # bN+2Z4EOKufLWhG6HUlwMAkGBSsOAwIaBQCgQDAZBgkqhkiG9w0BCQMxDAYKKwYB
-# BAGCNwIBBDAjBgkqhkiG9w0BCQQxFgQUZeFJ6HZYWfyAdJniPS+zaGcsyJswDQYJ
-# KoZIhvcNAQEBBQAEggIAWRH4PB8xJZ3VVx+W76hTLr7YH1ejhjBHFkNRnQYtT3D9
-# Q/uBDq9+QRC6qbXerIxhvi1uDD1PKVWYGi5uQO742jlPPO6/pZnl8weah2QN3ycj
-# luyK/UXMgHv+EKWo2ZrWMo6dNGNwMCrN+ABT3pPB0ikgwKtrr+d0bx/T0Ul5kkah
-# DiclaSAsBQGklNANOnTbsV5ROZxuAie2XoleuzgGBOUUXUqsC6Xv+jYtoCJQ33P8
-# sRVg7xZrOFlem4xtNVIlorn06sVBfA/uwv/0aFX58l+gH7Xv7d5wtjtGbwm0Hruk
-# sPkohYf60tG2o4UcxlVy/8i+p0Pn/+bs/xPW0ZCJ6e4K3T5Nxvnp4fuluOFo/zYa
-# KQGc39sSYK300GKrB7H/nN/dJ3uG3DU7Kta/aRZ6KMpJIlvUwKGQogA9YJTlvZAc
-# V2ycd2VL0Hc0Rlsmw3Y3oMixxT7VKlvEAPCglD32toHZD8nLz6z0q9R/71wv3Oxu
-# Pn9mAkt+rytY5s/PfFdRGHMrj535AqeSiGD0JPSEbYNDo22Zb9/g61NRic0l4YCh
-# HQoqbfgJAX9UjHLp26VZB0gb7ctHDUiUv/7FQXyi51sG9cgkNbmhjU+Lz100Klh1
-# Gc95Npu9OGXHfztfDcGDmtmdG80TqSoL/GTbOjLLBvNNc5Q4nsXSwYkYJALhSWSh
+# BAGCNwIBBDAjBgkqhkiG9w0BCQQxFgQU9aqFdCzq6H8q57sfMoFq5cbTQvswDQYJ
+# KoZIhvcNAQEBBQAEggIAmzD+b7/BhE/UvgC3DP7FFdEoU3UYzzZslpQB5hQ98B1k
+# Dq8MKcXSrXn/YyVRQk1pk4lwAtNA9x5iHOYB2niqnDKip1LvqLbr6GYXQX32vXsL
+# gkIdsZZEGlXaV6mAjV1joIv3WA8ynQstMEQ5yO2XmC5U5oQXjOqg/nouldeCpO2n
+# dEUrYciCP7Q9EPEoS5loYZdNGaGPEGpHk7tb4qZRiKPRItyt2BdBOd1XMtU71KgG
+# FMQGqLA+Uh2QZoPBmQ2welFbv8vYO8ucr0rGKNH53eQ5V3PdJCR6uQQ+tmUm5gNq
+# ngG4cRfPMJiZ7mIRuDpB8pLvDCpvYN+Fj2HjrCcfoNZF4dHwPLNt6ZTjLLgCpaSK
+# jDaRdWh4AnSVHJv/e7bQEwm60NU02BB7OtQMHKXROe4qTfNdx1ZQNiP0ZjEYl+Ot
+# +mlLLzy4iOWMdVhjZtEC3bdlSTdrahnPCXiA1m6QyC6HeMK3/AwL2RoQmwv0oC+a
+# kaRTTvqSf3VDl39lzhmcqep3WrkfjMKEXFEnzkqt3n6/JG0e6v/68FOYpsj1SiIc
+# rn3dBA0nkw/yk+kDQsPRw84pH6OJxHlj1VCUeRMpfLiVimjrA86zP0eqwMTGfhvu
+# cTh5EVlq/t7LGm1M4hCpevxPq+I9SYlBSf55o7BudyLvq7yTib/v+mIV1nH+X3eh
 # ggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8CAQEwfTBpMQswCQYDVQQGEwJVUzEX
 # MBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/BgNVBAMTOERpZ2lDZXJ0IFRydXN0
 # ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYgU0hBMjU2IDIwMjUgQ0ExAhAKgO8Y
 # S43xBYLRxHanlXRoMA0GCWCGSAFlAwQCAQUAoGkwGAYJKoZIhvcNAQkDMQsGCSqG
-# SIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjUxMDI4MTkzOTUyWjAvBgkqhkiG9w0B
-# CQQxIgQgAq1dUq5+3ACgpYV1Vp9NjvRMXd36TjzXcxRefYKbNO8wDQYJKoZIhvcN
-# AQEBBQAEggIAd0SQ7gBy5w3tZSfMq+FoDVBAn8NwD10gb6b6GNeKRnMwUVoQg/fm
-# XeMJOe1BDkpXYJXpBzKUEFtGNt3nw7oxuLjo6ga7TAetdFKY1FH82FgDbpCBrUPz
-# 6XoJBlj7L3y/zco1aCqeTg2ougkRX1tp8KLFG6nIrK7l6PJvFA9hNz9oa1o3Yi+/
-# mhDUnixBynNft9dIKJjFfR6tN1uyigZ7j5rBOk1Qrjffv3L/1B48Jle2K2h1w92I
-# BgqC/4n9QamPc5LSrRfTsBNWun6rAAgG2nakcSKvrwSVuBAGgRt/RbmG7Q3S15vT
-# s3u9q7QHUPQa5hq8qvCqn92HoaQr/PE9oU5X8wG+7HHRCpMGyRvQq53eGRGCCZkA
-# w3bPaNEihSdTpBSaqk8e7c+MpEra3vlvA1CeIcVGsqehYKHXrJQScDKq5mVY0MdX
-# MLtsZTFZkZfea6PfwF91LFHzHRYy/zqf8W54Q59/+LVyndZV1njZx1XZnYNR4X7T
-# OA92NYYjStk0Kn2WEhbydxywfjBEZj/MDku9JoL/gUmiOi7icSubZNWHPO0T10Ko
-# PZX/eqxjuaH4auwdq3yihgnSF6oAweNBBLnMg5348SO3Ohr4YSD2X/l9W2RulwZo
-# jDsynNcZE1El+DTv92zQNxsN+gDOsbS2FEGXfk96QQuSSWdnFuq+ZsI=
+# SIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjUxMTAzMTg0MjQ5WjAvBgkqhkiG9w0B
+# CQQxIgQgxbUOsE09GXoBSqJ4XjEZa8zPGHPQbO/XE+jiD8a+FO0wDQYJKoZIhvcN
+# AQEBBQAEggIAXx6CXSynJzoO1D9f9RmsCkHhiih85BiCiIAxNbp21f4JjBKoQ1Pr
+# ExxQiWY3JfIIBuP68U80Po1HS5HvjV8ToBge8STmvULirK4nughnJGAdSi3grg8D
+# C4C/rNVZc7E1nv0gJCMbmwMpYLZcY5S9mz70ZkyKSwZJrYEs1OiR1+tR9Fk8JQfb
+# CkI43CNz7v7VG/MGoP5tAl+2ikDlfPPn+NnMxaoZwMJrqhyCMJk3EJQMsrnEyijf
+# CnB4G/PURWrS3u+MrjB7goGseFS4rymewKhA3xfgheodcXxtsPhpiTSo/7kRl4o1
+# GE6JBi6WFEZAYRbk7NZy6AI4vmJd8c2VVQBqujMFpJ7c3D/hoHafUwrzjt+OOYTF
+# qFlFpr9RtIKGg5LqBBzk26ys2Mgnu55PAxLZgyoTQMLFM0In2pppiEEfrI5uvDGD
+# jUqqgj6/dE37902lnsAfdoY13jv01hur8mEMsEZVxsBiCyjlo6q3qx8FkNetuKK9
+# zaL4kTQU0+AdKesIOD+s+BFhx5eCZSKalNI1G8d9eDkMdGcB2b4gQCrGLuvbO8R0
+# iojOYvs58ExeZfi0/bzQ5GR+o5WqzL1iG+R3nmFvam3+rVjaVn8E6iEBK3hlUJXZ
+# sSfsfapX/drd1FjuU8Xoi93SqU9Y/xyr2kuIn9D/USAq6NY5AEfvvMc=
 # SIG # End signature block

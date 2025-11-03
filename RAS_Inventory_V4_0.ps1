@@ -450,9 +450,9 @@
 	text document.
 .NOTES
 	NAME: RAS_Inventory_V4_0.ps1
-	VERSION: 4.00 Beta 20
+	VERSION: 4.00 Beta 21
 	AUTHOR: Carl Webster
-	LASTEDIT: October 28, 2025
+	LASTEDIT: November 3, 2025
 #>
 
 
@@ -587,6 +587,7 @@ Param(
 #			OutputCertificatesDetails
 #			OutputApplicationPackagesDetails
 #			OutputSettingsDetails
+#		OutputLogonHours
 #
 #	Clean up some console output
 #
@@ -595,6 +596,9 @@ Param(
 #	In Function OutputFarmSite, 
 #		Add Farm Properties
 #		For RAS V20 and later, add Access addresses
+#
+#	In Function OutputLogonHours
+#		Add General data
 #
 #	In Function OutputPoliciesDetails:
 #		Update for the Policy changes in 19.3 and later
@@ -719,6 +723,8 @@ Param(
 #		Add retrieving Get-RASOverwriteSupportActions
 #		Change call to OutputRASFeatures to use two parameters: $RASHelpdesk and $RASSupport
 #
+#	In Function ProcessConnection, add call to new LogonHours function
+#
 #	In Function ProcessScriptSetup, change how the RAS version is retrieved and put into variables
 #
 #	Merged functions OutputRASProxySettings and OutputRASMiscSettings into OutputRASSettings
@@ -803,9 +809,9 @@ $ErrorActionPreference    = 'SilentlyContinue'
 $Error.Clear()
 
 $Script:emailCredentials  = $Null
-$script:MyVersion         = '4.00 Beta 20'
+$script:MyVersion         = '4.00 Beta 21'
 $Script:ScriptName        = "RAS_Inventory_V4_0.ps1"
-$tmpdate                  = [datetime] "10/28/2025"
+$tmpdate                  = [datetime] "11/03/2025"
 $Script:ReleaseDate       = $tmpdate.ToUniversalTime().ToShortDateString()
 
 If($MSWord -eq $False -and $PDF -eq $False -and $Text -eq $False -and $HTML -eq $False)
@@ -41225,6 +41231,52 @@ Function ProcessConnection
 		OutputRASSessionSetting $results
 	}
 
+	Write-Verbose "$(Get-Date -Format G): `tProcessing Logon hours"
+	
+	$results = Get-RASLogonHours -SiteId $Site.Id -EA 0 4>$Null
+	
+	If(!($?))
+	{
+		Write-Warning "
+		`n
+		Unable to retrieve Logon hours information
+		"
+		If($MSWord -or $PDF)
+		{
+			WriteWordLine 0 0 "Unable to retrieve Logon hours information"
+		}
+		If($Text)
+		{
+			Line 0 "Unable to retrieve Logon hours information"
+		}
+		If($HTML)
+		{
+			WriteHTMLLine 0 0 "Unable to retrieve Logon hours information"
+		}
+	}
+	ElseIf($? -and $null -eq $results)
+	{
+		Write-Host "
+		No Logon hours information was found
+		" -ForegroundColor White
+		If($MSWord -or $PDF)
+		{
+			WriteWordLine 0 0 "No Logon hours information was found"
+		}
+		If($Text)
+		{
+			Line 0 "No Logon hours information was found"
+		}
+		If($HTML)
+		{
+			WriteHTMLLine 0 0 "No Logon hours information was found"
+		}
+	}
+	Else
+	{
+		OutputLogonHours $results
+	}
+
 	Write-Verbose "$(Get-Date -Format G): `tProcessing Multi-Factor authentication"
 	
 	$MFA = Get-RASMFA -SiteId $Site.Id -EA 0 4>$Null
@@ -41633,6 +41685,89 @@ Function OutputRASSessionSetting
 		$columnWidths = @("300","175")
 		FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 		WriteHTMLLine 0 0 ""
+	}
+}
+
+Function OutputLogonHours
+{
+	Param([object] $LogonHours)
+	
+	Write-Verbose "$(Get-Date -Format G): `t`tOutput Logon hours"
+	
+	If($MSWord -or $PDF)
+	{
+		WriteWordLine 2 0 "Logon hours"
+	}
+	If($Text)
+	{
+		Line 1 "Logon hours"
+	}
+	If($HTML)
+	{
+		WriteHTMLLine 2 0 "Logon hours"
+	}
+	
+	ForEach($LogonHour in $LogonHours)
+	{
+		If($MSWord -or $PDF)
+		{
+			$ScriptInformation = New-Object System.Collections.ArrayList
+			$ScriptInformation.Add(@{Data = "Enabled"; Value = $LogonHour.Enabled.ToString(); }) > $Null
+			$ScriptInformation.Add(@{Data = "Name"; Value = $LogonHour.Name; }) > $Null
+			$ScriptInformation.Add(@{Data = "Description"; Value = $LogonHour.Description; }) > $Null
+			$ScriptInformation.Add(@{Data = "Last modification by"; Value = $LogonHour.AdminLastMod; }) > $Null
+			$ScriptInformation.Add(@{Data = "Modified on"; Value = (Get-Date -UFormat "%c" $LogonHour.TimeLastMod); }) > $Null
+			$ScriptInformation.Add(@{Data = "Created by"; Value = $LogonHour.AdminCreate; }) > $Null
+			$ScriptInformation.Add(@{Data = "Created on"; Value = (Get-Date -UFormat "%c" $LogonHour.TimeCreate); }) > $Null
+			$ScriptInformation.Add(@{Data = "ID"; Value = $LogonHour.ID.ToString(); }) > $Null
+
+			$Table = AddWordTable -Hashtable $ScriptInformation `
+			-Columns Data,Value `
+			-List `
+			-Format $wdTableGrid `
+			-AutoFit $wdAutoFitFixed;
+
+			SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+			SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+			$Table.Columns.Item(1).Width = 250;
+			$Table.Columns.Item(2).Width = 175;
+
+			$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+			FindWordDocumentEnd
+			$Table = $Null
+			WriteWordLine 0 0 ""
+		}
+		If($Text)
+		{
+			Line 2 "Enabled `t`t: " $LogonHour.Enabled.ToString()
+			Line 2 "Name `t`t`t: " $LogonHour.Name
+			Line 2 "Description `t`t: " $LogonHour.Description
+			Line 2 "Last modification by `t: " $LogonHour.AdminLastMod
+			Line 2 "Modified on `t`t: " (Get-Date -UFormat "%c" $LogonHour.TimeLastMod)
+			Line 2 "Created by `t`t: " $LogonHour.AdminCreate
+			Line 2 "Created on `t`t: " (Get-Date -UFormat "%c" $LogonHour.TimeCreate)
+			Line 2 "ID `t`t`t: " $LogonHour.ID.ToString()
+			Line 0 ""
+		}
+		If($HTML)
+		{
+			$rowdata = @()
+			$columnHeaders = @("Enabled",($Script:htmlsb),$LogonHour.Enabled.ToString(),$htmlwhite)
+			$rowdata += @(,("Name",($Script:htmlsb),$LogonHour.Name,$htmlwhite))
+			$rowdata += @(,("Description",($Script:htmlsb),$LogonHour.Description,$htmlwhite))
+			$rowdata += @(,("Last modification by",($Script:htmlsb), $LogonHour.AdminLastMod,$htmlwhite))
+			$rowdata += @(,("Modified on",($Script:htmlsb), (Get-Date -UFormat "%c" $LogonHour.TimeLastMod),$htmlwhite))
+			$rowdata += @(,("Created by",($Script:htmlsb), $LogonHour.AdminCreate,$htmlwhite))
+			$rowdata += @(,("Created on",($Script:htmlsb), (Get-Date -UFormat "%c" $LogonHour.TimeCreate),$htmlwhite))
+			$rowdata += @(,("ID",($Script:htmlsb),$LogonHour.ID.ToString(),$htmlwhite))
+
+			$msg = ""
+			$columnWidths = @("300","175")
+			FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+			WriteHTMLLine 0 0 ""
+		}
 	}
 }
 
