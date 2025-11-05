@@ -450,9 +450,9 @@
 	text document.
 .NOTES
 	NAME: RAS_Inventory_V4_0.ps1
-	VERSION: 4.00 Beta 21
+	VERSION: 4.00 Beta 22
 	AUTHOR: Carl Webster
-	LASTEDIT: November 3, 2025
+	LASTEDIT: November 5, 2025
 #>
 
 
@@ -599,6 +599,7 @@ Param(
 #
 #	In Function OutputLogonHours
 #		Add General data
+#		Add logon hours schedule's criteria
 #
 #	In Function OutputPoliciesDetails:
 #		Update for the Policy changes in 19.3 and later
@@ -809,9 +810,9 @@ $ErrorActionPreference    = 'SilentlyContinue'
 $Error.Clear()
 
 $Script:emailCredentials  = $Null
-$script:MyVersion         = '4.00 Beta 21'
+$script:MyVersion         = '4.00 Beta 22'
 $Script:ScriptName        = "RAS_Inventory_V4_0.ps1"
-$tmpdate                  = [datetime] "11/03/2025"
+$tmpdate                  = [datetime] "11/05/2025"
 $Script:ReleaseDate       = $tmpdate.ToUniversalTime().ToShortDateString()
 
 If($MSWord -eq $False -and $PDF -eq $False -and $Text -eq $False -and $HTML -eq $False)
@@ -821,7 +822,7 @@ If($MSWord -eq $False -and $PDF -eq $False -and $Text -eq $False -and $HTML -eq 
 
 If($MSWord)
 {
-	Write-Verbose "$(Get-Date): MSWord is set"
+	Write-Verbose "$(Get-Date -Format G): MSWord is set"
 }
 If($PDF)
 {
@@ -41711,6 +41712,7 @@ Function OutputLogonHours
 	{
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 3 0 "$($LogonHour.Name)"
 			$ScriptInformation = New-Object System.Collections.ArrayList
 			$ScriptInformation.Add(@{Data = "Enabled"; Value = $LogonHour.Enabled.ToString(); }) > $Null
 			$ScriptInformation.Add(@{Data = "Name"; Value = $LogonHour.Name; }) > $Null
@@ -41741,18 +41743,20 @@ Function OutputLogonHours
 		}
 		If($Text)
 		{
-			Line 2 "Enabled `t`t: " $LogonHour.Enabled.ToString()
-			Line 2 "Name `t`t`t: " $LogonHour.Name
-			Line 2 "Description `t`t: " $LogonHour.Description
-			Line 2 "Last modification by `t: " $LogonHour.AdminLastMod
-			Line 2 "Modified on `t`t: " (Get-Date -UFormat "%c" $LogonHour.TimeLastMod)
-			Line 2 "Created by `t`t: " $LogonHour.AdminCreate
-			Line 2 "Created on `t`t: " (Get-Date -UFormat "%c" $LogonHour.TimeCreate)
-			Line 2 "ID `t`t`t: " $LogonHour.ID.ToString()
+			Line 2 "$($LogonHour.Name)"
+			Line 3 "Enabled `t`t: " $LogonHour.Enabled.ToString()
+			Line 3 "Name `t`t`t: " $LogonHour.Name
+			Line 3 "Description `t`t: " $LogonHour.Description
+			Line 3 "Last modification by `t: " $LogonHour.AdminLastMod
+			Line 3 "Modified on `t`t: " (Get-Date -UFormat "%c" $LogonHour.TimeLastMod)
+			Line 3 "Created by `t`t: " $LogonHour.AdminCreate
+			Line 3 "Created on `t`t: " (Get-Date -UFormat "%c" $LogonHour.TimeCreate)
+			Line 3 "ID `t`t`t: " $LogonHour.ID.ToString()
 			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 3 0 "$($LogonHour.Name)"
 			$rowdata = @()
 			$columnHeaders = @("Enabled",($Script:htmlsb),$LogonHour.Enabled.ToString(),$htmlwhite)
 			$rowdata += @(,("Name",($Script:htmlsb),$LogonHour.Name,$htmlwhite))
@@ -41762,6 +41766,1170 @@ Function OutputLogonHours
 			$rowdata += @(,("Created by",($Script:htmlsb), $LogonHour.AdminCreate,$htmlwhite))
 			$rowdata += @(,("Created on",($Script:htmlsb), (Get-Date -UFormat "%c" $LogonHour.TimeCreate),$htmlwhite))
 			$rowdata += @(,("ID",($Script:htmlsb),$LogonHour.ID.ToString(),$htmlwhite))
+
+			$msg = ""
+			$columnWidths = @("300","175")
+			FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+			WriteHTMLLine 0 0 ""
+		}
+		
+		#criteria
+		If($MSWord -or $PDF)
+		{
+			WriteWordLine 4 0 "$($LogonHour.Name) Properties"
+			$ScriptInformation = New-Object System.Collections.ArrayList
+			$ScriptInformation.Add(@{Data = "Enable logon hours restriction"; Value = $LogonHour.Enabled.ToString(); }) > $Null
+			$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+			$ScriptInformation.Add(@{Data = "General"; Value = ""; }) > $Null
+			$ScriptInformation.Add(@{Data = "     Name"; Value = $LogonHour.Name; }) > $Null
+			$ScriptInformation.Add(@{Data = "     Description"; Value = $LogonHour.Description; }) > $Null
+			$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+			$ScriptInformation.Add(@{Data = "Criteria"; Value = ""; }) > $Null
+
+			#users and groups
+			If($LogonHour.Criteria.SecurityPrincipals.Enabled)
+			{
+				If($LogonHour.criteria.SecurityPrincipals.MatchingMode -eq "IsOneOfTheFollowing")
+				{
+					$ScriptInformation.Add(@{Data = "     is one of the following"; Value = ""; }) > $Null
+				}
+				Else
+				{
+					$ScriptInformation.Add(@{Data = "     is not one of the following"; Value = ""; }) > $Null
+				}
+				
+				$cnt = -1
+				
+				ForEach($Item in $LogonHour.Criteria.SecurityPrincipals.members)
+				{
+					$cnt++
+					If($cnt -eq 0)
+					{
+						$ScriptInformation.Add(@{Data = "          User or group is "; Value = "$($Item.Account)"; }) > $Null
+					}
+					Else
+					{
+						$ScriptInformation.Add(@{Data = ""; Value = "$($Item.Account)"; }) > $Null
+					}
+				}
+				$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+			}
+
+			#themes
+			If($LogonHour.Criteria.Themes.Enabled)
+			{
+				If($LogonHour.criteria.Themes.MatchingMode -eq "IsOneOfTheFollowing")
+				{
+					$ScriptInformation.Add(@{Data = "     is one of the following"; Value = ""; }) > $Null
+				}
+				Else
+				{
+					$ScriptInformation.Add(@{Data = "     is not one of the following"; Value = ""; }) > $Null
+				}
+				
+				$cnt = -1
+				ForEach($item in $LogonHour.Criteria.Themes)
+				{
+					If($Item.Ids.Count -ne 0)
+					{
+						
+						ForEach($ThemeID in $Item.Ids)
+						{
+							$xTheme = Get-RASTheme -Id $ThemeID -EA 0 4> $Null
+				
+							If(!$? -or $Null -eq $xTheme)
+							{
+								$FilterTheme = "not used"
+							}
+							Else
+							{
+								$FilterTheme = $xTheme.Name
+							}
+							$cnt++
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "          Theme is "; Value = "$FilterTheme"; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "$FilterTheme"; }) > $Null
+							}
+						}
+					}
+					Else
+					{
+						$ScriptInformation.Add(@{Data = "          Theme is "; Value = "not used"; }) > $Null
+					}
+
+				}
+				$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+			}
+
+			#client device name
+			If($LogonHour.Criteria.Devices.Enabled)
+			{
+				If($LogonHour.criteria.Devices.MatchingMode -eq "IsOneOfTheFollowing")
+				{
+					$ScriptInformation.Add(@{Data = "     is one of the following"; Value = ""; }) > $Null
+				}
+				Else
+				{
+					$ScriptInformation.Add(@{Data = "     is not one of the following"; Value = ""; }) > $Null
+				}
+				
+				$cnt = -1
+				ForEach($item in $LogonHour.Criteria.Devices.Members)
+				{
+					$cnt++
+					
+					If($cnt -eq 0)
+					{
+						$ScriptInformation.Add(@{Data = "          Device is "; Value = "$($Item.Client)"; }) > $Null
+					}
+					Else
+					{
+						$ScriptInformation.Add(@{Data = ""; Value = "$($Item.Client)"; }) > $Null
+					}
+				}
+				$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+			}
+
+			#gateways
+			If($LogonHour.Criteria.Gateways.Enabled)
+			{
+				If($LogonHour.criteria.Gateways.MatchingMode -eq "IsOneOfTheFollowing")
+				{
+					$ScriptInformation.Add(@{Data = "     is one of the following"; Value = ""; }) > $Null
+				}
+				Else
+				{
+					$ScriptInformation.Add(@{Data = "     is not one of the following"; Value = ""; }) > $Null
+				}
+				
+				$cnt = -1
+				ForEach($item in $LogonHour.Criteria.Gateways.Members)
+				{
+					$cnt++
+					If($cnt -eq 0)
+					{
+						$ScriptInformation.Add(@{Data = "          Secure gateway is "; Value = "$($Item.GatewayIP)"; }) > $Null
+					}
+					Else
+					{
+						$ScriptInformation.Add(@{Data = ""; Value = "$($Item.GatewayIP)"; }) > $Null
+					}
+				}
+				$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+			}
+
+			#client device operating system
+			If($LogonHour.Criteria.OSs.Enabled)
+			{
+				If($LogonHour.criteria.OSs.MatchingMode -eq "IsOneOfTheFollowing")
+				{
+					$ScriptInformation.Add(@{Data = "     is one of the following"; Value = ""; }) > $Null
+				}
+				Else
+				{
+					$ScriptInformation.Add(@{Data = "     is not one of the following"; Value = ""; }) > $Null
+				}
+				
+				$cnt = -1
+				If($LogonHour.Criteria.OSs.AllowedOSes.Windows)
+				{
+					$cnt++
+					
+					If($cnt -eq 0)
+					{
+						$ScriptInformation.Add(@{Data = "          Operating system is "; Value = "Windows"; }) > $Null
+					}
+					Else
+					{
+						$ScriptInformation.Add(@{Data = ""; Value = "Windows"; }) > $Null
+					}
+				}
+				
+				If($LogonHour.Criteria.OSs.AllowedOSes.WebClient)
+				{
+					$cnt++
+					
+					If($cnt -eq 0)
+					{
+						$ScriptInformation.Add(@{Data = "          Operating system is "; Value = "User Portal (Web Client)"; }) > $Null
+					}
+					Else
+					{
+						$ScriptInformation.Add(@{Data = ""; Value = "User Portal (Web Client)"; }) > $Null
+					}
+				}
+				
+				If($LogonHour.Criteria.OSs.AllowedOSes.Mac)
+				{
+					$cnt++
+					
+					If($cnt -eq 0)
+					{
+						$ScriptInformation.Add(@{Data = "          Operating system is "; Value = "macOS"; }) > $Null
+					}
+					Else
+					{
+						$ScriptInformation.Add(@{Data = ""; Value = "macOS"; }) > $Null
+					}
+				}
+				
+				If($LogonHour.Criteria.OSs.AllowedOSes.Linux)
+				{
+					$cnt++
+					
+					If($cnt -eq 0)
+					{
+						$ScriptInformation.Add(@{Data = "          Operating system is "; Value = "Linux"; }) > $Null
+					}
+					Else
+					{
+						$ScriptInformation.Add(@{Data = ""; Value = "Linux"; }) > $Null
+					}
+				}
+				
+				If($LogonHour.Criteria.OSs.AllowedOSes.iOS)
+				{
+					$cnt++
+					
+					If($cnt -eq 0)
+					{
+						$ScriptInformation.Add(@{Data = "          Operating system is "; Value = "iOS/iPadOS"; }) > $Null
+					}
+					Else
+					{
+						$ScriptInformation.Add(@{Data = ""; Value = "iOS/iPadOS"; }) > $Null
+					}
+				}
+				
+				If($LogonHour.Criteria.OSs.AllowedOSes.Android)
+				{
+					$cnt++
+					
+					If($cnt -eq 0)
+					{
+						$ScriptInformation.Add(@{Data = "          Operating system is "; Value = "Android"; }) > $Null
+					}
+					Else
+					{
+						$ScriptInformation.Add(@{Data = ""; Value = "Android"; }) > $Null
+					}
+				}
+				
+				If($LogonHour.Criteria.OSs.AllowedOSes.Chrome)
+				{
+					$cnt++
+					
+					If($cnt -eq 0)
+					{
+						$ScriptInformation.Add(@{Data = "          Operating system is "; Value = "Chrome OS"; }) > $Null
+					}
+					Else
+					{
+						$ScriptInformation.Add(@{Data = ""; Value = "Chrome OS"; }) > $Null
+					}
+				}
+				
+				If($LogonHour.Criteria.OSs.AllowedOSes.Wyse)
+				{
+					$cnt++
+					
+					If($cnt -eq 0)
+					{
+						$ScriptInformation.Add(@{Data = "          Operating system is "; Value = "Wyse"; }) > $Null
+					}
+					Else
+					{
+						$ScriptInformation.Add(@{Data = ""; Value = "Wyse"; }) > $Null
+					}
+				}
+				$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+			}
+
+			#IPs
+			If( $LogonHour.Criteria.IPs.Enabled)
+			{
+				If($LogonHour.criteria.IPs.MatchingMode -eq "IsOneOfTheFollowing")
+				{
+					$ScriptInformation.Add(@{Data = "     is one of the following"; Value = ""; }) > $Null
+				}
+				Else
+				{
+					$ScriptInformation.Add(@{Data = "     is not one of the following"; Value = ""; }) > $Null
+				}
+				
+				$cnt = -1
+				
+				If($LogonHour.Criteria.IPs.AllowedIPs.IPv4s.Count -gt 0)
+				{
+					ForEach($item in $LogonHour.Criteria.IPs.AllowedIPs.IPv4s)
+					{
+						$cnt++
+						If($cnt -eq 0)
+						{
+							If(($item.From -eq $item.To) -or ($item.To -eq ""))
+							{
+								$ScriptInformation.Add(@{Data = "          IP is"; Value = $item.From; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = "          IP is"; Value = "$($item.From) - $($item.To)"; }) > $Null
+							}
+						}
+						Else
+						{
+							If(($item.From -eq $item.To) -or ($item.To -eq ""))
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = $item.From; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "$($item.From) - $($item.To)"; }) > $Null
+							}
+						}
+					}
+				}
+
+				If($LogonHour.Criteria.IPs.AllowedIPs.IPv6s.Count -gt 0)
+				{
+					ForEach($item in $LogonHour.Criteria.IPs.AllowedIPs.IPv6s)
+					{
+						$cnt++
+						If($cnt -eq 0)
+						{
+							If(($item.From -eq $item.To) -or ($item.To -eq ""))
+							{
+								$ScriptInformation.Add(@{Data = "         IP is"; Value = $item.From; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = "          IP is"; Value = "$($item.From) - $($item.To)"; }) > $Null
+							}
+						}
+						Else
+						{
+							If(($item.From -eq $item.To) -or ($item.To -eq ""))
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = $item.From; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "$($item.From) - $($item.To)"; }) > $Null
+							}
+						}
+					}
+				}
+				$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+			}
+			
+			#MAC addresses
+			If($LogonHour.Criteria.HardwareIDs.Enabled)
+			{
+				If($LogonHour.criteria.HardwareIDs.MatchingMode -eq "IsOneOfTheFollowing")
+				{
+					$ScriptInformation.Add(@{Data = "     is one of the following"; Value = ""; }) > $Null
+				}
+				Else
+				{
+					$ScriptInformation.Add(@{Data = "     is not one of the following"; Value = ""; }) > $Null
+				}
+				
+				$cnt = -1
+				ForEach($item in $LogonHour.Criteria.HardwareIDs.Members)
+				{
+					$cnt++
+					
+					If($cnt -eq 0)
+					{
+						$ScriptInformation.Add(@{Data = "          Hardware ID is "; Value = "$($Item.HardwareID)"; }) > $Null
+					}
+					Else
+					{
+						$ScriptInformation.Add(@{Data = ""; Value = "$($Item.HardwareID)"; }) > $Null
+					}
+				}
+				$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+			}
+
+			$Table = AddWordTable -Hashtable $ScriptInformation `
+			-Columns Data,Value `
+			-List `
+			-Format $wdTableGrid `
+			-AutoFit $wdAutoFitFixed;
+
+			SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+			SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+			$Table.Columns.Item(1).Width = 250;
+			$Table.Columns.Item(2).Width = 175;
+
+			$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+			FindWordDocumentEnd
+			$Table = $Null
+			WriteWordLine 0 0 ""
+		}
+		If($Text)
+		{
+			Line 3 "$($LogonHour.Name) Properties"
+			Line 4 "Enable logon hours restriction: " $LogonHour.Enabled.ToString()
+			Line 3 ""
+			Line 4 "General"
+			Line 5 "Name`t`t: " $LogonHour.Name
+			Line 5 "Description`t: " $LogonHour.Description
+			Line 3 ""
+			Line 4 "Criteria"
+
+			#users and groups
+			If($LogonHour.Criteria.SecurityPrincipals.Enabled)
+			{
+				If($LogonHour.criteria.SecurityPrincipals.MatchingMode -eq "IsOneOfTheFollowing")
+				{
+					Line 5 "is one of the following"
+				}
+				Else
+				{
+					Line 5 "is not one of the following"
+				}
+				
+				$cnt = -1
+				ForEach($Item in $LogonHour.Criteria.SecurityPrincipals.members)
+				{
+					$cnt++
+					If($cnt -eq 0)
+					{
+						Line 6   "User or group is: " "$($Item.Account)"
+					}
+					Else
+					{
+						Line 9  "  $($Item.Account)"
+					}
+				}
+				Line 0 ""
+			}
+
+			#themes
+			If($LogonHour.Criteria.Themes.Enabled)
+			{
+				If($LogonHour.criteria.Themes.MatchingMode -eq "IsOneOfTheFollowing")
+				{
+					Line 5  "is one of the following"
+				}
+				Else
+				{
+					Line 5  "is not one of the following"
+				}
+				
+				$cnt = -1
+				ForEach($item in $LogonHour.Criteria.Themes)
+				{
+					If($Item.Ids.Count -ne 0)
+					{
+						
+						ForEach($ThemeID in $Item.Ids)
+						{
+							$xTheme = Get-RASTheme -Id $ThemeID -EA 0 4> $Null
+				
+							If(!$? -or $Null -eq $xTheme)
+							{
+								$FilterTheme = "not used"
+							}
+							Else
+							{
+								$FilterTheme = $xTheme.Name
+							}
+							$cnt++
+							If($cnt -eq 0)
+							{
+								Line 6   "Theme is: " "$FilterTheme"
+							}
+							Else
+							{
+								Line 9  "$FilterTheme"
+							}
+						}
+					}
+					Else
+					{
+						Line 6   "Theme is: " "not used"
+					}
+
+				}
+				Line 0 ""
+			}
+
+			#client device name
+			If($LogonHour.Criteria.Devices.Enabled)
+			{
+				If($LogonHour.criteria.Devices.MatchingMode -eq "IsOneOfTheFollowing")
+				{
+					Line 5  "is one of the following"
+				}
+				Else
+				{
+					Line 5  "is not one of the following"
+				}
+				
+				$cnt = -1
+				ForEach($item in $LogonHour.Criteria.Devices.Members)
+				{
+					$cnt++
+					
+					If($cnt -eq 0)
+					{
+						Line 6   "Device is: " "$($Item.Client)"
+					}
+					Else
+					{
+						Line 9  "$($Item.Client)"
+					}
+				}
+				Line 0 ""
+			}
+
+			#gateways
+			If($LogonHour.Criteria.Gateways.Enabled)
+			{
+				If($LogonHour.criteria.Gateways.MatchingMode -eq "IsOneOfTheFollowing")
+				{
+					Line 5  "is one of the following"
+				}
+				Else
+				{
+					Line 5  "is not one of the following"
+				}
+				
+				$cnt = -1
+				ForEach($item in $LogonHour.Criteria.Gateways.Members)
+				{
+					$cnt++
+					If($cnt -eq 0)
+					{
+						Line 6   "Secure gateway is: " "$($Item.GatewayIP)"
+					}
+					Else
+					{
+						Line 8  "   $($Item.GatewayIP)"
+					}
+				}
+				Line 0 ""
+			}
+
+			#client device operating system
+			If($LogonHour.Criteria.OSs.Enabled)
+			{
+				If($LogonHour.criteria.OSs.MatchingMode -eq "IsOneOfTheFollowing")
+				{
+					Line 5  "is one of the following"
+				}
+				Else
+				{
+					Line 5  "is not one of the following"
+				}
+				
+				$cnt = -1
+				If($LogonHour.Criteria.OSs.AllowedOSes.Windows)
+				{
+					$cnt++
+					
+					If($cnt -eq 0)
+					{
+						Line 6   "Operating system is: " "Windows"
+					}
+					Else
+					{
+						Line 8  "     Windows"
+					}
+				}
+				
+				If($LogonHour.Criteria.OSs.AllowedOSes.WebClient)
+				{
+					$cnt++
+					
+					If($cnt -eq 0)
+					{
+						Line 6   "Operating system is: " "User Portal (Web Client)"
+					}
+					Else
+					{
+						Line 8  "     User Portal (Web Client)"
+					}
+				}
+				
+				If($LogonHour.Criteria.OSs.AllowedOSes.Mac)
+				{
+					$cnt++
+					
+					If($cnt -eq 0)
+					{
+						Line 6   "Operating system is: " "macOS"
+					}
+					Else
+					{
+						Line 8  "     macOS"
+					}
+				}
+				
+				If($LogonHour.Criteria.OSs.AllowedOSes.Linux)
+				{
+					$cnt++
+					
+					If($cnt -eq 0)
+					{
+						Line 6   "Operating system is: " "Linux"
+					}
+					Else
+					{
+						Line 8  "     Linux"
+					}
+				}
+				
+				If($LogonHour.Criteria.OSs.AllowedOSes.iOS)
+				{
+					$cnt++
+					
+					If($cnt -eq 0)
+					{
+						Line 6   "Operating system is: " "iOS/iPadOS"
+					}
+					Else
+					{
+						Line 8  "     iOS/iPadOS"
+					}
+				}
+				
+				If($LogonHour.Criteria.OSs.AllowedOSes.Android)
+				{
+					$cnt++
+					
+					If($cnt -eq 0)
+					{
+						Line 6   "Operating system is: " "Android"
+					}
+					Else
+					{
+						Line 8  "     Android"
+					}
+				}
+				
+				If($LogonHour.Criteria.OSs.AllowedOSes.Chrome)
+				{
+					$cnt++
+					
+					If($cnt -eq 0)
+					{
+						Line 6   "Operating system is: " "Chrome OS"
+					}
+					Else
+					{
+						Line 8  "     Chrome OS"
+					}
+				}
+				
+				If($LogonHour.Criteria.OSs.AllowedOSes.Wyse)
+				{
+					$cnt++
+					
+					If($cnt -eq 0)
+					{
+						Line 6   "Operating system is: " "Wyse"
+					}
+					Else
+					{
+						Line 8  "     Wyse"
+					}
+				}
+				Line 0 ""
+			}
+
+			#IPs
+			If( $LogonHour.Criteria.IPs.Enabled)
+			{
+				If($LogonHour.criteria.IPs.MatchingMode -eq "IsOneOfTheFollowing")
+				{
+					Line 5  "is one of the following"
+				}
+				Else
+				{
+					Line 5  "is not one of the following"
+				}
+				
+				$cnt = -1
+				If($LogonHour.Criteria.IPs.AllowedIPs.IPv4s.Count -gt 0)
+				{
+					ForEach($item in $LogonHour.Criteria.IPs.AllowedIPs.IPv4s)
+					{
+						$cnt++
+						If($cnt -eq 0)
+						{
+							If(($item.From -eq $item.To) -or ($item.To -eq ""))
+							{
+								Line 6   "IP is: " $item.From
+							}
+							Else
+							{
+								Line 6   "IP is: " "$($item.From) - $($item.To)"
+							}
+						}
+						Else
+						{
+							If(($item.From -eq $item.To) -or ($item.To -eq ""))
+							{
+								Line 6   "       " $item.From
+							}
+							Else
+							{
+								Line 6   "       $($item.From) - $($item.To)"
+							}
+						}
+					}
+				}
+
+				If($LogonHour.Criteria.IPs.AllowedIPs.IPv6s.Count -gt 0)
+				{
+					ForEach($item in $LogonHour.Criteria.IPs.AllowedIPs.IPv6s)
+					{
+						$cnt++
+						If($cnt -eq 0)
+						{
+							If(($item.From -eq $item.To) -or ($item.To -eq ""))
+							{
+								Line 6   "IP is: " $item.From
+							}
+							Else
+							{
+								Line 6   "IP is: " "$($item.From) - $($item.To)"
+							}
+						}
+						Else
+						{
+							If(($item.From -eq $item.To) -or ($item.To -eq ""))
+							{
+								Line 6   "       " $item.From
+							}
+							Else
+							{
+								Line 6   "       $($item.From) - $($item.To)"
+							}
+						}
+					}
+				}
+				Line 0 ""
+			}
+			
+			#MAC addresses
+			If($LogonHour.Criteria.HardwareIDs.Enabled)
+			{
+				If($LogonHour.criteria.HardwareIDs.MatchingMode -eq "IsOneOfTheFollowing")
+				{
+					Line 5  "is one of the following"
+				}
+				Else
+				{
+					Line 5  "is not one of the following"
+				}
+				
+				$cnt = -1
+				ForEach($item in $LogonHour.Criteria.HardwareIDs.Members)
+				{
+					$cnt++
+					
+					If($cnt -eq 0)
+					{
+						Line 6   "Hardware ID is: " "$($Item.HardwareID)"
+					}
+					Else
+					{
+						Line 9  "$($Item.HardwareID)"
+					}
+				}
+				Line 0 ""
+			}
+			Line 0 ""
+		}
+		If($HTML)
+		{
+			WriteHTMLLine 4 0 "$($LogonHour.Name) Properties"
+			$rowdata = @()
+			$columnHeaders = @("Enable logon hours restriction",($Script:htmlsb),$LogonHour.Enabled.ToString(),$htmlwhite)
+			$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+			$rowdata += @(,("General",($Script:htmlsb),"",$htmlwhite))
+			$rowdata += @(,("     Name",($Script:htmlsb),$LogonHour.Name,$htmlwhite))
+			$rowdata += @(,("     Description",($Script:htmlsb),$LogonHour.Description,$htmlwhite))
+			$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+			$rowdata += @(,("Criteria",($Script:htmlsb),"",$htmlwhite))
+
+			#users and groups
+			If($LogonHour.Criteria.SecurityPrincipals.Enabled)
+			{
+				If($LogonHour.criteria.SecurityPrincipals.MatchingMode -eq "IsOneOfTheFollowing")
+				{
+					$rowdata += @(,("     is one of the following",($Script:htmlsb),"",$htmlwhite))
+				}
+				Else
+				{
+					$rowdata += @(,("     is not one of the following",($Script:htmlsb),"",$htmlwhite))
+				}
+				
+				$cnt = -1
+				
+				ForEach($Item in $LogonHour.Criteria.SecurityPrincipals.members)
+				{
+					$cnt++
+					If($cnt -eq 0)
+					{
+						$rowdata += @(,("          User or group is ",($Script:htmlsb), "$($Item.Account)",$htmlwhite))
+					}
+					Else
+					{
+						$rowdata += @(,("",($Script:htmlsb), "$($Item.Account)",$htmlwhite))
+					}
+				}
+				$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+			}
+
+			#themes
+			If($LogonHour.Criteria.Themes.Enabled)
+			{
+				If($LogonHour.criteria.Themes.MatchingMode -eq "IsOneOfTheFollowing")
+				{
+					$rowdata += @(,("     is one of the following",($Script:htmlsb),"",$htmlwhite))
+				}
+				Else
+				{
+					$rowdata += @(,("     is not one of the following",($Script:htmlsb),"",$htmlwhite))
+				}
+				
+				$cnt = -1
+				ForEach($item in $LogonHour.Criteria.Themes)
+				{
+					If($Item.Ids.Count -ne 0)
+					{
+						
+						ForEach($ThemeID in $Item.Ids)
+						{
+							$xTheme = Get-RASTheme -Id $ThemeID -EA 0 4> $Null
+				
+							If(!$? -or $Null -eq $xTheme)
+							{
+								$FilterTheme = "not used"
+							}
+							Else
+							{
+								#remove the < and > 
+								$FilterTheme = $xTheme.Name.Trim("<",">")
+							}
+							$cnt++
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,("          Theme is ",($Script:htmlsb), "$FilterTheme",$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb), "$FilterTheme",$htmlwhite))
+							}
+						}
+					}
+					Else
+					{
+						$rowdata += @(,("          Theme is ",($Script:htmlsb), "not used",$htmlwhite))
+					}
+
+				}
+				$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+			}
+
+			#client device name
+			If($LogonHour.Criteria.Devices.Enabled)
+			{
+				If($LogonHour.criteria.Devices.MatchingMode -eq "IsOneOfTheFollowing")
+				{
+					$rowdata += @(,("     is one of the following",($Script:htmlsb),"",$htmlwhite))
+				}
+				Else
+				{
+					$rowdata += @(,("     is not one of the following",($Script:htmlsb),"",$htmlwhite))
+				}
+				
+				$cnt = -1
+				ForEach($item in $LogonHour.Criteria.Devices.Members)
+				{
+					$cnt++
+					
+					If($cnt -eq 0)
+					{
+						$rowdata += @(,("          Device is ",($Script:htmlsb), "$($Item.Client)",$htmlwhite))
+					}
+					Else
+					{
+						$rowdata += @(,("",($Script:htmlsb), "$($Item.Client)",$htmlwhite))
+					}
+				}
+				$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+			}
+
+			#gateways
+			If($LogonHour.Criteria.Gateways.Enabled)
+			{
+				If($LogonHour.criteria.Gateways.MatchingMode -eq "IsOneOfTheFollowing")
+				{
+					$rowdata += @(,("     is one of the following",($Script:htmlsb),"",$htmlwhite))
+				}
+				Else
+				{
+					$rowdata += @(,("     is not one of the following",($Script:htmlsb),"",$htmlwhite))
+				}
+				
+				$cnt = -1
+				ForEach($item in $LogonHour.Criteria.Gateways.Members)
+				{
+					$cnt++
+					If($cnt -eq 0)
+					{
+						$rowdata += @(,("          Secure gateway is ",($Script:htmlsb), "$($Item.GatewayIP)",$htmlwhite))
+					}
+					Else
+					{
+						$rowdata += @(,("",($Script:htmlsb), "$($Item.GatewayIP)",$htmlwhite))
+					}
+				}
+				$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+			}
+
+			#client device operating system
+			If($LogonHour.Criteria.OSs.Enabled)
+			{
+				If($LogonHour.criteria.OSs.MatchingMode -eq "IsOneOfTheFollowing")
+				{
+					$rowdata += @(,("     is one of the following",($Script:htmlsb),"",$htmlwhite))
+				}
+				Else
+				{
+					$rowdata += @(,("     is not one of the following",($Script:htmlsb),"",$htmlwhite))
+				}
+				
+				$cnt = -1
+				If($LogonHour.Criteria.OSs.AllowedOSes.Windows)
+				{
+					$cnt++
+					
+					If($cnt -eq 0)
+					{
+						$rowdata += @(,("          Operating system is",($Script:htmlsb), "Windows",$htmlwhite))
+					}
+					Else
+					{
+						$rowdata += @(,("",($Script:htmlsb), "Windows",$htmlwhite))
+					}
+				}
+				
+				If($LogonHour.Criteria.OSs.AllowedOSes.WebClient)
+				{
+					$cnt++
+					
+					If($cnt -eq 0)
+					{
+						$rowdata += @(,("          Operating system is",($Script:htmlsb), "User Portal (Web Client)",$htmlwhite))
+					}
+					Else
+					{
+						$rowdata += @(,("",($Script:htmlsb), "User Portal (Web Client)",$htmlwhite))
+					}
+				}
+				
+				If($LogonHour.Criteria.OSs.AllowedOSes.Mac)
+				{
+					$cnt++
+					
+					If($cnt -eq 0)
+					{
+						$rowdata += @(,("          Operating system is",($Script:htmlsb), "macOS",$htmlwhite))
+					}
+					Else
+					{
+						$rowdata += @(,("",($Script:htmlsb), "macOS",$htmlwhite))
+					}
+				}
+				
+				If($LogonHour.Criteria.OSs.AllowedOSes.Linux)
+				{
+					$cnt++
+					
+					If($cnt -eq 0)
+					{
+						$rowdata += @(,("          Operating system is",($Script:htmlsb), "Linux",$htmlwhite))
+					}
+					Else
+					{
+						$rowdata += @(,("",($Script:htmlsb), "Linux",$htmlwhite))
+					}
+				}
+				
+				If($LogonHour.Criteria.OSs.AllowedOSes.iOS)
+				{
+					$cnt++
+					
+					If($cnt -eq 0)
+					{
+						$rowdata += @(,("          Operating system is",($Script:htmlsb), "iOS/iPadOS",$htmlwhite))
+					}
+					Else
+					{
+						$rowdata += @(,("",($Script:htmlsb), "iOS/iPadOS",$htmlwhite))
+					}
+				}
+				
+				If($LogonHour.Criteria.OSs.AllowedOSes.Android)
+				{
+					$cnt++
+					
+					If($cnt -eq 0)
+					{
+						$rowdata += @(,("          Operating system is",($Script:htmlsb), "Android",$htmlwhite))
+					}
+					Else
+					{
+						$rowdata += @(,("",($Script:htmlsb), "Android",$htmlwhite))
+					}
+				}
+				
+				If($LogonHour.Criteria.OSs.AllowedOSes.Chrome)
+				{
+					$cnt++
+					
+					If($cnt -eq 0)
+					{
+						$rowdata += @(,("          Operating system is",($Script:htmlsb), "Chrome OS",$htmlwhite))
+					}
+					Else
+					{
+						$rowdata += @(,("",($Script:htmlsb), "Chrome OS",$htmlwhite))
+					}
+				}
+				
+				If($LogonHour.Criteria.OSs.AllowedOSes.Wyse)
+				{
+					$cnt++
+					
+					If($cnt -eq 0)
+					{
+						$rowdata += @(,("          Operating system is",($Script:htmlsb), "Wyse",$htmlwhite))
+					}
+					Else
+					{
+						$rowdata += @(,("",($Script:htmlsb), "Wyse",$htmlwhite))
+					}
+				}
+				$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+			}
+
+			#IPs
+			If( $LogonHour.Criteria.IPs.Enabled)
+			{
+				If($LogonHour.criteria.IPs.MatchingMode -eq "IsOneOfTheFollowing")
+				{
+					$rowdata += @(,("     is one of the following",($Script:htmlsb),"",$htmlwhite))
+				}
+				Else
+				{
+					$rowdata += @(,("     is not one of the following",($Script:htmlsb),"",$htmlwhite))
+				}
+				
+				$cnt = -1
+				
+				If($LogonHour.Criteria.IPs.AllowedIPs.IPv4s.Count -gt 0)
+				{
+					ForEach($item in $LogonHour.Criteria.IPs.AllowedIPs.IPv4s)
+					{
+						$cnt++
+						If($cnt -eq 0)
+						{
+							If(($item.From -eq $item.To) -or ($item.To -eq ""))
+							{
+								$rowdata += @(,("          IP is",($Script:htmlsb), $item.From,$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("          IP is",($Script:htmlsb), "$($item.From) - $($item.To)",$htmlwhite))
+							}
+						}
+						Else
+						{
+							If(($item.From -eq $item.To) -or ($item.To -eq ""))
+							{
+								$rowdata += @(,("",($Script:htmlsb), $item.From,$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb), "$($item.From) - $($item.To)",$htmlwhite))
+							}
+						}
+					}
+				}
+
+				If($LogonHour.Criteria.IPs.AllowedIPs.IPv6s.Count -gt 0)
+				{
+					ForEach($item in $LogonHour.Criteria.IPs.AllowedIPs.IPv6s)
+					{
+						$cnt++
+						If($cnt -eq 0)
+						{
+							If(($item.From -eq $item.To) -or ($item.To -eq ""))
+							{
+								$rowdata += @(,("          IP is",($Script:htmlsb), $item.From,$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("         IP is",($Script:htmlsb), "$($item.From) - $($item.To)",$htmlwhite))
+							}
+						}
+						Else
+						{
+							If(($item.From -eq $item.To) -or ($item.To -eq ""))
+							{
+								$rowdata += @(,("",($Script:htmlsb), $item.From,$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb), "$($item.From) - $($item.To)",$htmlwhite))
+							}
+						}
+					}
+				}
+				$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+			}
+			
+			#MAC addresses
+			If($LogonHour.Criteria.HardwareIDs.Enabled)
+			{
+				If($LogonHour.criteria.HardwareIDs.MatchingMode -eq "IsOneOfTheFollowing")
+				{
+					$rowdata += @(,("     is one of the following",($Script:htmlsb),"",$htmlwhite))
+				}
+				Else
+				{
+					$rowdata += @(,("     is not one of the following",($Script:htmlsb),"",$htmlwhite))
+				}
+				
+				$cnt = -1
+				ForEach($item in $LogonHour.Criteria.HardwareIDs.Members)
+				{
+					$cnt++
+					
+					If($cnt -eq 0)
+					{
+						$rowdata += @(,("          Hardware ID is ",($Script:htmlsb), "$($Item.HardwareID)",$htmlwhite))
+					}
+					Else
+					{
+						$rowdata += @(,("",($Script:htmlsb), "$($Item.HardwareID)",$htmlwhite))
+					}
+				}
+				$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+			}
 
 			$msg = ""
 			$columnWidths = @("300","175")
