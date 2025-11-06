@@ -450,9 +450,9 @@
 	text document.
 .NOTES
 	NAME: RAS_Inventory_V4_0.ps1
-	VERSION: 4.00 Beta 22
+	VERSION: 4.00 Beta 23
 	AUTHOR: Carl Webster
-	LASTEDIT: November 5, 2025
+	LASTEDIT: November 6, 2025
 #>
 
 
@@ -600,6 +600,7 @@ Param(
 #	In Function OutputLogonHours
 #		Add General data
 #		Add logon hours schedule's criteria
+#		Add logon hours schedule for Permitted and Denied hours
 #
 #	In Function OutputPoliciesDetails:
 #		Update for the Policy changes in 19.3 and later
@@ -810,9 +811,9 @@ $ErrorActionPreference    = 'SilentlyContinue'
 $Error.Clear()
 
 $Script:emailCredentials  = $Null
-$script:MyVersion         = '4.00 Beta 22'
+$script:MyVersion         = '4.00 Beta 23'
 $Script:ScriptName        = "RAS_Inventory_V4_0.ps1"
-$tmpdate                  = [datetime] "11/05/2025"
+$tmpdate                  = [datetime] "11/06/2025"
 $Script:ReleaseDate       = $tmpdate.ToUniversalTime().ToShortDateString()
 
 If($MSWord -eq $False -and $PDF -eq $False -and $Text -eq $False -and $HTML -eq $False)
@@ -42153,24 +42154,6 @@ Function OutputLogonHours
 				}
 				$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
 			}
-
-			$Table = AddWordTable -Hashtable $ScriptInformation `
-			-Columns Data,Value `
-			-List `
-			-Format $wdTableGrid `
-			-AutoFit $wdAutoFitFixed;
-
-			SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
-			SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
-			$Table.Columns.Item(1).Width = 250;
-			$Table.Columns.Item(2).Width = 175;
-
-			$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-			FindWordDocumentEnd
-			$Table = $Null
-			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
@@ -42930,7 +42913,4630 @@ Function OutputLogonHours
 				}
 				$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 			}
+		}
+		
+		#logon hours
+		
+		#Gather logon hour data
+		#I am sure there is a more efficient way to do this, but I can't figure one out
+		$PermittedPlan = $LogonHour.PermittedHourPlan
 
+		[array]$tmp = $PermittedPlan.Sunday -replace(" ","")
+		[array]$SundayHours = $tmp.split(",")
+
+		[array]$tmp = $PermittedPlan.Monday -replace(" ","")
+		[array]$MondayHours = $tmp.split(",")
+
+		[array]$tmp = $PermittedPlan.Tuesday -replace(" ","")
+		[array]$TuesdayHours = $tmp.split(",")
+
+		[array]$tmp = $PermittedPlan.Wednesday -replace(" ","")
+		[array]$WednesdayHours = $tmp.split(",")
+
+		[array]$tmp = $PermittedPlan.Thursday -replace(" ","")
+		[array]$ThursdayHours = $tmp.split(",")
+
+		[array]$tmp = $PermittedPlan.Friday -replace(" ","")
+		[array]$FridayHours = $tmp.split(",")
+
+		[array]$tmp = $PermittedPlan.Saturday -replace(" ","")
+		[array]$SaturdayHours = $tmp.split(",")
+
+		If($MSWord -or $PDF)
+		{
+			$ScriptInformation.Add(@{Data = "Logon hours"; Value = ""; }) > $Null
+
+			$ScriptInformation.Add(@{Data = "     Sunday"; Value = ""; }) > $Null
+			If($SundayHours -Contains "h00")
+			{
+				$ScriptInformation.Add(@{ Data = "          12 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          12 AM"; Value = "Denied"; }) > $Null
+			}
+
+			If($SundayHours -Contains "h01")
+			{
+				$ScriptInformation.Add(@{ Data = "          1 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          1 AM"; Value = "Denied"; }) > $Null
+			}
+
+			If($SundayHours -Contains "h02")
+			{
+				$ScriptInformation.Add(@{ Data = "          2 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          2 AM"; Value = "Denied"; }) > $Null
+			}
+
+			If($SundayHours -Contains "h03")
+			{
+				$ScriptInformation.Add(@{ Data = "          3 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          3 AM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($SundayHours -Contains "h04")
+			{
+				$ScriptInformation.Add(@{ Data = "          4 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          4 AM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($SundayHours -Contains "h05")
+			{
+				$ScriptInformation.Add(@{ Data = "          5 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          5 AM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($SundayHours -Contains "h06")
+			{
+				$ScriptInformation.Add(@{ Data = "          6 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          6 AM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($SundayHours -Contains "h07")
+			{
+				$ScriptInformation.Add(@{ Data = "          7 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          7 AM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($SundayHours -Contains "h08")
+			{
+				$ScriptInformation.Add(@{ Data = "          8 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          8 AM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($SundayHours -Contains "h09")
+			{
+				$ScriptInformation.Add(@{ Data = "          9 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          9 AM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($SundayHours -Contains "h10")
+			{
+				$ScriptInformation.Add(@{ Data = "          10 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          10 AM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($SundayHours -Contains "h11")
+			{
+				$ScriptInformation.Add(@{ Data = "          11 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          11 AM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($SundayHours -Contains "h12")
+			{
+				$ScriptInformation.Add(@{ Data = "          12 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          12 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($SundayHours -Contains "h13")
+			{
+				$ScriptInformation.Add(@{ Data = "          1 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          1 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($SundayHours -Contains "h14")
+			{
+				$ScriptInformation.Add(@{ Data = "          2 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          2 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($SundayHours -Contains "h15")
+			{
+				$ScriptInformation.Add(@{ Data = "          3 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          3 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($SundayHours -Contains "h16")
+			{
+				$ScriptInformation.Add(@{ Data = "          4 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          4 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($SundayHours -Contains "h17")
+			{
+				$ScriptInformation.Add(@{ Data = "          5 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          5 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($SundayHours -Contains "h18")
+			{
+				$ScriptInformation.Add(@{ Data = "          6 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          6 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($SundayHours -Contains "h19")
+			{
+				$ScriptInformation.Add(@{ Data = "          7 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          7 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($SundayHours -Contains "h20")
+			{
+				$ScriptInformation.Add(@{ Data = "          8 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          8 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($SundayHours -Contains "h21")
+			{
+				$ScriptInformation.Add(@{ Data = "          9 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          9 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($SundayHours -Contains "h22")
+			{
+				$ScriptInformation.Add(@{ Data = "          10 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          10 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($SundayHours -Contains "h23")
+			{
+				$ScriptInformation.Add(@{ Data = "          11 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          11 PM"; Value = "Denied"; }) > $Null
+			}
+
+			$ScriptInformation.Add(@{Data = "     Monday"; Value = ""; }) > $Null
+			If($MondayHours -Contains "h00")
+			{
+				$ScriptInformation.Add(@{ Data = "          12 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          12 AM"; Value = "Denied"; }) > $Null
+			}
+
+			If($MondayHours -Contains "h01")
+			{
+				$ScriptInformation.Add(@{ Data = "          1 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          1 AM"; Value = "Denied"; }) > $Null
+			}
+
+			If($MondayHours -Contains "h02")
+			{
+				$ScriptInformation.Add(@{ Data = "          2 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          2 AM"; Value = "Denied"; }) > $Null
+			}
+
+			If($MondayHours -Contains "h03")
+			{
+				$ScriptInformation.Add(@{ Data = "          3 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          3 AM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($MondayHours -Contains "h04")
+			{
+				$ScriptInformation.Add(@{ Data = "          4 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          4 AM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($MondayHours -Contains "h05")
+			{
+				$ScriptInformation.Add(@{ Data = "          5 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          5 AM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($MondayHours -Contains "h06")
+			{
+				$ScriptInformation.Add(@{ Data = "          6 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          6 AM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($MondayHours -Contains "h07")
+			{
+				$ScriptInformation.Add(@{ Data = "          7 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          7 AM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($MondayHours -Contains "h08")
+			{
+				$ScriptInformation.Add(@{ Data = "          8 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          8 AM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($MondayHours -Contains "h09")
+			{
+				$ScriptInformation.Add(@{ Data = "          9 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          9 AM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($MondayHours -Contains "h10")
+			{
+				$ScriptInformation.Add(@{ Data = "          10 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          10 AM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($MondayHours -Contains "h11")
+			{
+				$ScriptInformation.Add(@{ Data = "          11 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          11 AM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($MondayHours -Contains "h12")
+			{
+				$ScriptInformation.Add(@{ Data = "          12 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          12 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($MondayHours -Contains "h13")
+			{
+				$ScriptInformation.Add(@{ Data = "          1 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          1 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($MondayHours -Contains "h14")
+			{
+				$ScriptInformation.Add(@{ Data = "          2 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          2 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($MondayHours -Contains "h15")
+			{
+				$ScriptInformation.Add(@{ Data = "          3 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          3 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($MondayHours -Contains "h16")
+			{
+				$ScriptInformation.Add(@{ Data = "          4 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          4 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($MondayHours -Contains "h17")
+			{
+				$ScriptInformation.Add(@{ Data = "          5 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          5 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($MondayHours -Contains "h18")
+			{
+				$ScriptInformation.Add(@{ Data = "          6 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          6 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($MondayHours -Contains "h19")
+			{
+				$ScriptInformation.Add(@{ Data = "          7 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          7 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($MondayHours -Contains "h20")
+			{
+				$ScriptInformation.Add(@{ Data = "          8 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          8 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($MondayHours -Contains "h21")
+			{
+				$ScriptInformation.Add(@{ Data = "          9 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          9 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($MondayHours -Contains "h22")
+			{
+				$ScriptInformation.Add(@{ Data = "          10 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          10 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($MondayHours -Contains "h23")
+			{
+				$ScriptInformation.Add(@{ Data = "          11 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          11 PM"; Value = "Denied"; }) > $Null
+			}
+
+			$ScriptInformation.Add(@{Data = "     Tuesday"; Value = ""; }) > $Null
+			If($TuesdayHours -Contains "h00")
+			{
+				$ScriptInformation.Add(@{ Data = "          12 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          12 AM"; Value = "Denied"; }) > $Null
+			}
+
+			If($TuesdayHours -Contains "h01")
+			{
+				$ScriptInformation.Add(@{ Data = "          1 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          1 AM"; Value = "Denied"; }) > $Null
+			}
+
+			If($TuesdayHours -Contains "h02")
+			{
+				$ScriptInformation.Add(@{ Data = "          2 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          2 AM"; Value = "Denied"; }) > $Null
+			}
+
+			If($TuesdayHours -Contains "h03")
+			{
+				$ScriptInformation.Add(@{ Data = "          3 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          3 AM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($TuesdayHours -Contains "h04")
+			{
+				$ScriptInformation.Add(@{ Data = "          4 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          4 AM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($TuesdayHours -Contains "h05")
+			{
+				$ScriptInformation.Add(@{ Data = "          5 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          5 AM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($TuesdayHours -Contains "h06")
+			{
+				$ScriptInformation.Add(@{ Data = "          6 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          6 AM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($TuesdayHours -Contains "h07")
+			{
+				$ScriptInformation.Add(@{ Data = "          7 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          7 AM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($TuesdayHours -Contains "h08")
+			{
+				$ScriptInformation.Add(@{ Data = "          8 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          8 AM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($TuesdayHours -Contains "h09")
+			{
+				$ScriptInformation.Add(@{ Data = "          9 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          9 AM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($TuesdayHours -Contains "h10")
+			{
+				$ScriptInformation.Add(@{ Data = "          10 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          10 AM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($TuesdayHours -Contains "h11")
+			{
+				$ScriptInformation.Add(@{ Data = "          11 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          11 AM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($TuesdayHours -Contains "h12")
+			{
+				$ScriptInformation.Add(@{ Data = "          12 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          12 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($TuesdayHours -Contains "h13")
+			{
+				$ScriptInformation.Add(@{ Data = "          1 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          1 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($TuesdayHours -Contains "h14")
+			{
+				$ScriptInformation.Add(@{ Data = "          2 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          2 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($TuesdayHours -Contains "h15")
+			{
+				$ScriptInformation.Add(@{ Data = "          3 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          3 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($TuesdayHours -Contains "h16")
+			{
+				$ScriptInformation.Add(@{ Data = "          4 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          4 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($TuesdayHours -Contains "h17")
+			{
+				$ScriptInformation.Add(@{ Data = "          5 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          5 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($TuesdayHours -Contains "h18")
+			{
+				$ScriptInformation.Add(@{ Data = "          6 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          6 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($TuesdayHours -Contains "h19")
+			{
+				$ScriptInformation.Add(@{ Data = "          7 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          7 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($TuesdayHours -Contains "h20")
+			{
+				$ScriptInformation.Add(@{ Data = "          8 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          8 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($TuesdayHours -Contains "h21")
+			{
+				$ScriptInformation.Add(@{ Data = "          9 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          9 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($TuesdayHours -Contains "h22")
+			{
+				$ScriptInformation.Add(@{ Data = "          10 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          10 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($TuesdayHours -Contains "h23")
+			{
+				$ScriptInformation.Add(@{ Data = "          11 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          11 PM"; Value = "Denied"; }) > $Null
+			}
+
+			$ScriptInformation.Add(@{Data = "     Wednesday"; Value = ""; }) > $Null
+			If($WednesdayHours -Contains "h00")
+			{
+				$ScriptInformation.Add(@{ Data = "          12 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          12 AM"; Value = "Denied"; }) > $Null
+			}
+
+			If($WednesdayHours -Contains "h01")
+			{
+				$ScriptInformation.Add(@{ Data = "          1 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          1 AM"; Value = "Denied"; }) > $Null
+			}
+
+			If($WednesdayHours -Contains "h02")
+			{
+				$ScriptInformation.Add(@{ Data = "          2 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          2 AM"; Value = "Denied"; }) > $Null
+			}
+
+			If($WednesdayHours -Contains "h03")
+			{
+				$ScriptInformation.Add(@{ Data = "          3 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          3 AM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($WednesdayHours -Contains "h04")
+			{
+				$ScriptInformation.Add(@{ Data = "          4 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          4 AM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($WednesdayHours -Contains "h05")
+			{
+				$ScriptInformation.Add(@{ Data = "          5 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          5 AM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($WednesdayHours -Contains "h06")
+			{
+				$ScriptInformation.Add(@{ Data = "          6 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          6 AM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($WednesdayHours -Contains "h07")
+			{
+				$ScriptInformation.Add(@{ Data = "          7 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          7 AM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($WednesdayHours -Contains "h08")
+			{
+				$ScriptInformation.Add(@{ Data = "          8 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          8 AM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($WednesdayHours -Contains "h09")
+			{
+				$ScriptInformation.Add(@{ Data = "          9 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          9 AM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($WednesdayHours -Contains "h10")
+			{
+				$ScriptInformation.Add(@{ Data = "          10 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          10 AM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($WednesdayHours -Contains "h11")
+			{
+				$ScriptInformation.Add(@{ Data = "          11 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          11 AM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($WednesdayHours -Contains "h12")
+			{
+				$ScriptInformation.Add(@{ Data = "          12 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          12 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($WednesdayHours -Contains "h13")
+			{
+				$ScriptInformation.Add(@{ Data = "          1 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          1 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($WednesdayHours -Contains "h14")
+			{
+				$ScriptInformation.Add(@{ Data = "          2 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          2 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($WednesdayHours -Contains "h15")
+			{
+				$ScriptInformation.Add(@{ Data = "          3 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          3 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($WednesdayHours -Contains "h16")
+			{
+				$ScriptInformation.Add(@{ Data = "          4 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          4 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($WednesdayHours -Contains "h17")
+			{
+				$ScriptInformation.Add(@{ Data = "          5 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          5 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($WednesdayHours -Contains "h18")
+			{
+				$ScriptInformation.Add(@{ Data = "          6 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          6 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($WednesdayHours -Contains "h19")
+			{
+				$ScriptInformation.Add(@{ Data = "          7 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          7 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($WednesdayHours -Contains "h20")
+			{
+				$ScriptInformation.Add(@{ Data = "          8 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          8 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($WednesdayHours -Contains "h21")
+			{
+				$ScriptInformation.Add(@{ Data = "          9 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          9 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($WednesdayHours -Contains "h22")
+			{
+				$ScriptInformation.Add(@{ Data = "          10 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          10 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($WednesdayHours -Contains "h23")
+			{
+				$ScriptInformation.Add(@{ Data = "          11 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          11 PM"; Value = "Denied"; }) > $Null
+			}
+
+			$ScriptInformation.Add(@{Data = "     Thursday"; Value = ""; }) > $Null
+			If($ThursdayHours -Contains "h00")
+			{
+				$ScriptInformation.Add(@{ Data = "          12 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          12 AM"; Value = "Denied"; }) > $Null
+			}
+
+			If($ThursdayHours -Contains "h01")
+			{
+				$ScriptInformation.Add(@{ Data = "          1 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          1 AM"; Value = "Denied"; }) > $Null
+			}
+
+			If($ThursdayHours -Contains "h02")
+			{
+				$ScriptInformation.Add(@{ Data = "          2 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          2 AM"; Value = "Denied"; }) > $Null
+			}
+
+			If($ThursdayHours -Contains "h03")
+			{
+				$ScriptInformation.Add(@{ Data = "          3 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          3 AM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($ThursdayHours -Contains "h04")
+			{
+				$ScriptInformation.Add(@{ Data = "          4 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          4 AM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($ThursdayHours -Contains "h05")
+			{
+				$ScriptInformation.Add(@{ Data = "          5 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          5 AM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($ThursdayHours -Contains "h06")
+			{
+				$ScriptInformation.Add(@{ Data = "          6 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          6 AM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($ThursdayHours -Contains "h07")
+			{
+				$ScriptInformation.Add(@{ Data = "          7 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          7 AM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($ThursdayHours -Contains "h08")
+			{
+				$ScriptInformation.Add(@{ Data = "          8 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          8 AM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($ThursdayHours -Contains "h09")
+			{
+				$ScriptInformation.Add(@{ Data = "          9 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          9 AM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($ThursdayHours -Contains "h10")
+			{
+				$ScriptInformation.Add(@{ Data = "          10 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          10 AM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($ThursdayHours -Contains "h11")
+			{
+				$ScriptInformation.Add(@{ Data = "          11 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          11 AM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($ThursdayHours -Contains "h12")
+			{
+				$ScriptInformation.Add(@{ Data = "          12 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          12 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($ThursdayHours -Contains "h13")
+			{
+				$ScriptInformation.Add(@{ Data = "          1 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          1 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($ThursdayHours -Contains "h14")
+			{
+				$ScriptInformation.Add(@{ Data = "          2 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          2 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($ThursdayHours -Contains "h15")
+			{
+				$ScriptInformation.Add(@{ Data = "          3 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          3 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($ThursdayHours -Contains "h16")
+			{
+				$ScriptInformation.Add(@{ Data = "          4 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          4 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($ThursdayHours -Contains "h17")
+			{
+				$ScriptInformation.Add(@{ Data = "          5 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          5 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($ThursdayHours -Contains "h18")
+			{
+				$ScriptInformation.Add(@{ Data = "          6 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          6 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($ThursdayHours -Contains "h19")
+			{
+				$ScriptInformation.Add(@{ Data = "          7 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          7 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($ThursdayHours -Contains "h20")
+			{
+				$ScriptInformation.Add(@{ Data = "          8 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          8 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($ThursdayHours -Contains "h21")
+			{
+				$ScriptInformation.Add(@{ Data = "          9 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          9 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($ThursdayHours -Contains "h22")
+			{
+				$ScriptInformation.Add(@{ Data = "          10 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          10 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($ThursdayHours -Contains "h23")
+			{
+				$ScriptInformation.Add(@{ Data = "          11 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          11 PM"; Value = "Denied"; }) > $Null
+			}
+
+			$ScriptInformation.Add(@{Data = "     Friday"; Value = ""; }) > $Null
+			If($FridayHours -Contains "h00")
+			{
+				$ScriptInformation.Add(@{ Data = "          12 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          12 AM"; Value = "Denied"; }) > $Null
+			}
+
+			If($FridayHours -Contains "h01")
+			{
+				$ScriptInformation.Add(@{ Data = "          1 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          1 AM"; Value = "Denied"; }) > $Null
+			}
+
+			If($FridayHours -Contains "h02")
+			{
+				$ScriptInformation.Add(@{ Data = "          2 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          2 AM"; Value = "Denied"; }) > $Null
+			}
+
+			If($FridayHours -Contains "h03")
+			{
+				$ScriptInformation.Add(@{ Data = "          3 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          3 AM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($FridayHours -Contains "h04")
+			{
+				$ScriptInformation.Add(@{ Data = "          4 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          4 AM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($FridayHours -Contains "h05")
+			{
+				$ScriptInformation.Add(@{ Data = "          5 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          5 AM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($FridayHours -Contains "h06")
+			{
+				$ScriptInformation.Add(@{ Data = "          6 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          6 AM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($FridayHours -Contains "h07")
+			{
+				$ScriptInformation.Add(@{ Data = "          7 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          7 AM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($FridayHours -Contains "h08")
+			{
+				$ScriptInformation.Add(@{ Data = "          8 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          8 AM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($FridayHours -Contains "h09")
+			{
+				$ScriptInformation.Add(@{ Data = "          9 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          9 AM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($FridayHours -Contains "h10")
+			{
+				$ScriptInformation.Add(@{ Data = "          10 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          10 AM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($FridayHours -Contains "h11")
+			{
+				$ScriptInformation.Add(@{ Data = "          11 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          11 AM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($FridayHours -Contains "h12")
+			{
+				$ScriptInformation.Add(@{ Data = "          12 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          12 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($FridayHours -Contains "h13")
+			{
+				$ScriptInformation.Add(@{ Data = "          1 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          1 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($FridayHours -Contains "h14")
+			{
+				$ScriptInformation.Add(@{ Data = "          2 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          2 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($FridayHours -Contains "h15")
+			{
+				$ScriptInformation.Add(@{ Data = "          3 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          3 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($FridayHours -Contains "h16")
+			{
+				$ScriptInformation.Add(@{ Data = "          4 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          4 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($FridayHours -Contains "h17")
+			{
+				$ScriptInformation.Add(@{ Data = "          5 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          5 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($FridayHours -Contains "h18")
+			{
+				$ScriptInformation.Add(@{ Data = "          6 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          6 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($FridayHours -Contains "h19")
+			{
+				$ScriptInformation.Add(@{ Data = "          7 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          7 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($FridayHours -Contains "h20")
+			{
+				$ScriptInformation.Add(@{ Data = "          8 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          8 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($FridayHours -Contains "h21")
+			{
+				$ScriptInformation.Add(@{ Data = "          9 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          9 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($FridayHours -Contains "h22")
+			{
+				$ScriptInformation.Add(@{ Data = "          10 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          10 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($FridayHours -Contains "h23")
+			{
+				$ScriptInformation.Add(@{ Data = "          11 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          11 PM"; Value = "Denied"; }) > $Null
+			}
+
+			$ScriptInformation.Add(@{Data = "     Saturday"; Value = ""; }) > $Null
+			If($SaturdayHours -Contains "h00")
+			{
+				$ScriptInformation.Add(@{ Data = "          12 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          12 AM"; Value = "Denied"; }) > $Null
+			}
+
+			If($SaturdayHours -Contains "h01")
+			{
+				$ScriptInformation.Add(@{ Data = "          1 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          1 AM"; Value = "Denied"; }) > $Null
+			}
+
+			If($SaturdayHours -Contains "h02")
+			{
+				$ScriptInformation.Add(@{ Data = "          2 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          2 AM"; Value = "Denied"; }) > $Null
+			}
+
+			If($SaturdayHours -Contains "h03")
+			{
+				$ScriptInformation.Add(@{ Data = "          3 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          3 AM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($SaturdayHours -Contains "h04")
+			{
+				$ScriptInformation.Add(@{ Data = "          4 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          4 AM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($SaturdayHours -Contains "h05")
+			{
+				$ScriptInformation.Add(@{ Data = "          5 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          5 AM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($SaturdayHours -Contains "h06")
+			{
+				$ScriptInformation.Add(@{ Data = "          6 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          6 AM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($SaturdayHours -Contains "h07")
+			{
+				$ScriptInformation.Add(@{ Data = "          7 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          7 AM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($SaturdayHours -Contains "h08")
+			{
+				$ScriptInformation.Add(@{ Data = "          8 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          8 AM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($SaturdayHours -Contains "h09")
+			{
+				$ScriptInformation.Add(@{ Data = "          9 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          9 AM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($SaturdayHours -Contains "h10")
+			{
+				$ScriptInformation.Add(@{ Data = "          10 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          10 AM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($SaturdayHours -Contains "h11")
+			{
+				$ScriptInformation.Add(@{ Data = "          11 AM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          11 AM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($SaturdayHours -Contains "h12")
+			{
+				$ScriptInformation.Add(@{ Data = "          12 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          12 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($SaturdayHours -Contains "h13")
+			{
+				$ScriptInformation.Add(@{ Data = "          1 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          1 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($SaturdayHours -Contains "h14")
+			{
+				$ScriptInformation.Add(@{ Data = "          2 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          2 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($SaturdayHours -Contains "h15")
+			{
+				$ScriptInformation.Add(@{ Data = "          3 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          3 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($SaturdayHours -Contains "h16")
+			{
+				$ScriptInformation.Add(@{ Data = "          4 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          4 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($SaturdayHours -Contains "h17")
+			{
+				$ScriptInformation.Add(@{ Data = "          5 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          5 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($SaturdayHours -Contains "h18")
+			{
+				$ScriptInformation.Add(@{ Data = "          6 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          6 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($SaturdayHours -Contains "h19")
+			{
+				$ScriptInformation.Add(@{ Data = "          7 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          7 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($SaturdayHours -Contains "h20")
+			{
+				$ScriptInformation.Add(@{ Data = "          8 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          8 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($SaturdayHours -Contains "h21")
+			{
+				$ScriptInformation.Add(@{ Data = "          9 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          9 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($SaturdayHours -Contains "h22")
+			{
+				$ScriptInformation.Add(@{ Data = "          10 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          10 PM"; Value = "Denied"; }) > $Null
+			}
+			
+			If($SaturdayHours -Contains "h23")
+			{
+				$ScriptInformation.Add(@{ Data = "          11 PM"; Value = "Permitted"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{ Data = "          11 PM"; Value = "Denied"; }) > $Null
+			}
+		}
+		If($Text)
+		{
+			Line 4 "Logon hours"
+
+			Line 5 "Sunday"
+			If($SundayHours -Contains "h00")
+			{
+				Line 6 "12 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "12 AM`t: " "Denied"
+			}
+
+			If($SundayHours -Contains "h01")
+			{
+				Line 6 "1 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "1 AM`t: " "Denied"
+			}
+
+			If($SundayHours -Contains "h02")
+			{
+				Line 6 "2 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "2 AM`t: " "Denied"
+			}
+
+			If($SundayHours -Contains "h03")
+			{
+				Line 6 "3 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "3 AM`t: " "Denied"
+			}
+			
+			If($SundayHours -Contains "h04")
+			{
+				Line 6 "4 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "4 AM`t: " "Denied"
+			}
+			
+			If($SundayHours -Contains "h05")
+			{
+				Line 6 "5 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "5 AM`t: " "Denied"
+			}
+			
+			If($SundayHours -Contains "h06")
+			{
+				Line 6 "6 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "6 AM`t: " "Denied"
+			}
+			
+			If($SundayHours -Contains "h07")
+			{
+				Line 6 "7 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "7 AM`t: " "Denied"
+			}
+			
+			If($SundayHours -Contains "h08")
+			{
+				Line 6 "8 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "8 AM`t: " "Denied"
+			}
+			
+			If($SundayHours -Contains "h09")
+			{
+				Line 6 "9 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "9 AM`t: " "Denied"
+			}
+			
+			If($SundayHours -Contains "h10")
+			{
+				Line 6 "10 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "10 AM`t: " "Denied"
+			}
+			
+			If($SundayHours -Contains "h11")
+			{
+				Line 6 "11 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "11 AM`t: " "Denied"
+			}
+			
+			If($SundayHours -Contains "h12")
+			{
+				Line 6 "12 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "12 PM`t: " "Denied"
+			}
+			
+			If($SundayHours -Contains "h13")
+			{
+				Line 6 "1 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "1 PM`t: " "Denied"
+			}
+			
+			If($SundayHours -Contains "h14")
+			{
+				Line 6 "2 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "2 PM`t: " "Denied"
+			}
+			
+			If($SundayHours -Contains "h15")
+			{
+				Line 6 "3 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "3 PM`t: " "Denied"
+			}
+			
+			If($SundayHours -Contains "h16")
+			{
+				Line 6 "4 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "4 PM`t: " "Denied"
+			}
+			
+			If($SundayHours -Contains "h17")
+			{
+				Line 6 "5 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "5 PM`t: " "Denied"
+			}
+			
+			If($SundayHours -Contains "h18")
+			{
+				Line 6 "6 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "6 PM`t: " "Denied"
+			}
+			
+			If($SundayHours -Contains "h19")
+			{
+				Line 6 "7 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "7 PM`t: " "Denied"
+			}
+			
+			If($SundayHours -Contains "h20")
+			{
+				Line 6 "8 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "8 PM`t: " "Denied"
+			}
+			
+			If($SundayHours -Contains "h21")
+			{
+				Line 6 "9 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "9 PM`t: " "Denied"
+			}
+			
+			If($SundayHours -Contains "h22")
+			{
+				Line 6 "10 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "10 PM`t: " "Denied"
+			}
+			
+			If($SundayHours -Contains "h23")
+			{
+				Line 6 "11 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "11 PM`t: " "Denied"
+			}
+
+			Line 5 "Monday"
+			If($MondayHours -Contains "h00")
+			{
+				Line 6 "12 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "12 AM`t: " "Denied"
+			}
+
+			If($MondayHours -Contains "h01")
+			{
+				Line 6 "1 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "1 AM`t: " "Denied"
+			}
+
+			If($MondayHours -Contains "h02")
+			{
+				Line 6 "2 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "2 AM`t: " "Denied"
+			}
+
+			If($MondayHours -Contains "h03")
+			{
+				Line 6 "3 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "3 AM`t: " "Denied"
+			}
+			
+			If($MondayHours -Contains "h04")
+			{
+				Line 6 "4 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "4 AM`t: " "Denied"
+			}
+			
+			If($MondayHours -Contains "h05")
+			{
+				Line 6 "5 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "5 AM`t: " "Denied"
+			}
+			
+			If($MondayHours -Contains "h06")
+			{
+				Line 6 "6 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "6 AM`t: " "Denied"
+			}
+			
+			If($MondayHours -Contains "h07")
+			{
+				Line 6 "7 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "7 AM`t: " "Denied"
+			}
+			
+			If($MondayHours -Contains "h08")
+			{
+				Line 6 "8 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "8 AM`t: " "Denied"
+			}
+			
+			If($MondayHours -Contains "h09")
+			{
+				Line 6 "9 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "9 AM`t: " "Denied"
+			}
+			
+			If($MondayHours -Contains "h10")
+			{
+				Line 6 "10 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "10 AM`t: " "Denied"
+			}
+			
+			If($MondayHours -Contains "h11")
+			{
+				Line 6 "11 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "11 AM`t: " "Denied"
+			}
+			
+			If($MondayHours -Contains "h12")
+			{
+				Line 6 "12 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "12 PM`t: " "Denied"
+			}
+			
+			If($MondayHours -Contains "h13")
+			{
+				Line 6 "1 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "1 PM`t: " "Denied"
+			}
+			
+			If($MondayHours -Contains "h14")
+			{
+				Line 6 "2 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "2 PM`t: " "Denied"
+			}
+			
+			If($MondayHours -Contains "h15")
+			{
+				Line 6 "3 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "3 PM`t: " "Denied"
+			}
+			
+			If($MondayHours -Contains "h16")
+			{
+				Line 6 "4 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "4 PM`t: " "Denied"
+			}
+			
+			If($MondayHours -Contains "h17")
+			{
+				Line 6 "5 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "5 PM`t: " "Denied"
+			}
+			
+			If($MondayHours -Contains "h18")
+			{
+				Line 6 "6 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "6 PM`t: " "Denied"
+			}
+			
+			If($MondayHours -Contains "h19")
+			{
+				Line 6 "7 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "7 PM`t: " "Denied"
+			}
+			
+			If($MondayHours -Contains "h20")
+			{
+				Line 6 "8 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "8 PM`t: " "Denied"
+			}
+			
+			If($MondayHours -Contains "h21")
+			{
+				Line 6 "9 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "9 PM`t: " "Denied"
+			}
+			
+			If($MondayHours -Contains "h22")
+			{
+				Line 6 "10 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "10 PM`t: " "Denied"
+			}
+			
+			If($MondayHours -Contains "h23")
+			{
+				Line 6 "11 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "11 PM`t: " "Denied"
+			}
+
+			Line 5 "Tuesday"
+			If($TuesdayHours -Contains "h00")
+			{
+				Line 6 "12 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "12 AM`t: " "Denied"
+			}
+
+			If($TuesdayHours -Contains "h01")
+			{
+				Line 6 "1 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "1 AM`t: " "Denied"
+			}
+
+			If($TuesdayHours -Contains "h02")
+			{
+				Line 6 "2 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "2 AM`t: " "Denied"
+			}
+
+			If($TuesdayHours -Contains "h03")
+			{
+				Line 6 "3 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "3 AM`t: " "Denied"
+			}
+			
+			If($TuesdayHours -Contains "h04")
+			{
+				Line 6 "4 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "4 AM`t: " "Denied"
+			}
+			
+			If($TuesdayHours -Contains "h05")
+			{
+				Line 6 "5 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "5 AM`t: " "Denied"
+			}
+			
+			If($TuesdayHours -Contains "h06")
+			{
+				Line 6 "6 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "6 AM`t: " "Denied"
+			}
+			
+			If($TuesdayHours -Contains "h07")
+			{
+				Line 6 "7 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "7 AM`t: " "Denied"
+			}
+			
+			If($TuesdayHours -Contains "h08")
+			{
+				Line 6 "8 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "8 AM`t: " "Denied"
+			}
+			
+			If($TuesdayHours -Contains "h09")
+			{
+				Line 6 "9 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "9 AM`t: " "Denied"
+			}
+			
+			If($TuesdayHours -Contains "h10")
+			{
+				Line 6 "10 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "10 AM`t: " "Denied"
+			}
+			
+			If($TuesdayHours -Contains "h11")
+			{
+				Line 6 "11 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "11 AM`t: " "Denied"
+			}
+			
+			If($TuesdayHours -Contains "h12")
+			{
+				Line 6 "12 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "12 PM`t: " "Denied"
+			}
+			
+			If($TuesdayHours -Contains "h13")
+			{
+				Line 6 "1 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "1 PM`t: " "Denied"
+			}
+			
+			If($TuesdayHours -Contains "h14")
+			{
+				Line 6 "2 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "2 PM`t: " "Denied"
+			}
+			
+			If($TuesdayHours -Contains "h15")
+			{
+				Line 6 "3 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "3 PM`t: " "Denied"
+			}
+			
+			If($TuesdayHours -Contains "h16")
+			{
+				Line 6 "4 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "4 PM`t: " "Denied"
+			}
+			
+			If($TuesdayHours -Contains "h17")
+			{
+				Line 6 "5 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "5 PM`t: " "Denied"
+			}
+			
+			If($TuesdayHours -Contains "h18")
+			{
+				Line 6 "6 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "6 PM`t: " "Denied"
+			}
+			
+			If($TuesdayHours -Contains "h19")
+			{
+				Line 6 "7 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "7 PM`t: " "Denied"
+			}
+			
+			If($TuesdayHours -Contains "h20")
+			{
+				Line 6 "8 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "8 PM`t: " "Denied"
+			}
+			
+			If($TuesdayHours -Contains "h21")
+			{
+				Line 6 "9 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "9 PM`t: " "Denied"
+			}
+			
+			If($TuesdayHours -Contains "h22")
+			{
+				Line 6 "10 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "10 PM`t: " "Denied"
+			}
+			
+			If($TuesdayHours -Contains "h23")
+			{
+				Line 6 "11 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "11 PM`t: " "Denied"
+			}
+
+			Line 5 "Wednesday"
+			If($WednesdayHours -Contains "h00")
+			{
+				Line 6 "12 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "12 AM`t: " "Denied"
+			}
+
+			If($WednesdayHours -Contains "h01")
+			{
+				Line 6 "1 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "1 AM`t: " "Denied"
+			}
+
+			If($WednesdayHours -Contains "h02")
+			{
+				Line 6 "2 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "2 AM`t: " "Denied"
+			}
+
+			If($WednesdayHours -Contains "h03")
+			{
+				Line 6 "3 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "3 AM`t: " "Denied"
+			}
+			
+			If($WednesdayHours -Contains "h04")
+			{
+				Line 6 "4 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "4 AM`t: " "Denied"
+			}
+			
+			If($WednesdayHours -Contains "h05")
+			{
+				Line 6 "5 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "5 AM`t: " "Denied"
+			}
+			
+			If($WednesdayHours -Contains "h06")
+			{
+				Line 6 "6 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "6 AM`t: " "Denied"
+			}
+			
+			If($WednesdayHours -Contains "h07")
+			{
+				Line 6 "7 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "7 AM`t: " "Denied"
+			}
+			
+			If($WednesdayHours -Contains "h08")
+			{
+				Line 6 "8 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "8 AM`t: " "Denied"
+			}
+			
+			If($WednesdayHours -Contains "h09")
+			{
+				Line 6 "9 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "9 AM`t: " "Denied"
+			}
+			
+			If($WednesdayHours -Contains "h10")
+			{
+				Line 6 "10 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "10 AM`t: " "Denied"
+			}
+			
+			If($WednesdayHours -Contains "h11")
+			{
+				Line 6 "11 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "11 AM`t: " "Denied"
+			}
+			
+			If($WednesdayHours -Contains "h12")
+			{
+				Line 6 "12 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "12 PM`t: " "Denied"
+			}
+			
+			If($WednesdayHours -Contains "h13")
+			{
+				Line 6 "1 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "1 PM`t: " "Denied"
+			}
+			
+			If($WednesdayHours -Contains "h14")
+			{
+				Line 6 "2 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "2 PM`t: " "Denied"
+			}
+			
+			If($WednesdayHours -Contains "h15")
+			{
+				Line 6 "3 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "3 PM`t: " "Denied"
+			}
+			
+			If($WednesdayHours -Contains "h16")
+			{
+				Line 6 "4 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "4 PM`t: " "Denied"
+			}
+			
+			If($WednesdayHours -Contains "h17")
+			{
+				Line 6 "5 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "5 PM`t: " "Denied"
+			}
+			
+			If($WednesdayHours -Contains "h18")
+			{
+				Line 6 "6 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "6 PM`t: " "Denied"
+			}
+			
+			If($WednesdayHours -Contains "h19")
+			{
+				Line 6 "7 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "7 PM`t: " "Denied"
+			}
+			
+			If($WednesdayHours -Contains "h20")
+			{
+				Line 6 "8 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "8 PM`t: " "Denied"
+			}
+			
+			If($WednesdayHours -Contains "h21")
+			{
+				Line 6 "9 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "9 PM`t: " "Denied"
+			}
+			
+			If($WednesdayHours -Contains "h22")
+			{
+				Line 6 "10 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "10 PM`t: " "Denied"
+			}
+			
+			If($WednesdayHours -Contains "h23")
+			{
+				Line 6 "11 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "11 PM`t: " "Denied"
+			}
+
+			Line 5 "Thursday"
+			If($ThursdayHours -Contains "h00")
+			{
+				Line 6 "12 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "12 AM`t: " "Denied"
+			}
+
+			If($ThursdayHours -Contains "h01")
+			{
+				Line 6 "1 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "1 AM`t: " "Denied"
+			}
+
+			If($ThursdayHours -Contains "h02")
+			{
+				Line 6 "2 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "2 AM`t: " "Denied"
+			}
+
+			If($ThursdayHours -Contains "h03")
+			{
+				Line 6 "3 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "3 AM`t: " "Denied"
+			}
+			
+			If($ThursdayHours -Contains "h04")
+			{
+				Line 6 "4 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "4 AM`t: " "Denied"
+			}
+			
+			If($ThursdayHours -Contains "h05")
+			{
+				Line 6 "5 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "5 AM`t: " "Denied"
+			}
+			
+			If($ThursdayHours -Contains "h06")
+			{
+				Line 6 "6 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "6 AM`t: " "Denied"
+			}
+			
+			If($ThursdayHours -Contains "h07")
+			{
+				Line 6 "7 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "7 AM`t: " "Denied"
+			}
+			
+			If($ThursdayHours -Contains "h08")
+			{
+				Line 6 "8 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "8 AM`t: " "Denied"
+			}
+			
+			If($ThursdayHours -Contains "h09")
+			{
+				Line 6 "9 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "9 AM`t: " "Denied"
+			}
+			
+			If($ThursdayHours -Contains "h10")
+			{
+				Line 6 "10 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "10 AM`t: " "Denied"
+			}
+			
+			If($ThursdayHours -Contains "h11")
+			{
+				Line 6 "11 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "11 AM`t: " "Denied"
+			}
+			
+			If($ThursdayHours -Contains "h12")
+			{
+				Line 6 "12 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "12 PM`t: " "Denied"
+			}
+			
+			If($ThursdayHours -Contains "h13")
+			{
+				Line 6 "1 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "1 PM`t: " "Denied"
+			}
+			
+			If($ThursdayHours -Contains "h14")
+			{
+				Line 6 "2 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "2 PM`t: " "Denied"
+			}
+			
+			If($ThursdayHours -Contains "h15")
+			{
+				Line 6 "3 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "3 PM`t: " "Denied"
+			}
+			
+			If($ThursdayHours -Contains "h16")
+			{
+				Line 6 "4 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "4 PM`t: " "Denied"
+			}
+			
+			If($ThursdayHours -Contains "h17")
+			{
+				Line 6 "5 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "5 PM`t: " "Denied"
+			}
+			
+			If($ThursdayHours -Contains "h18")
+			{
+				Line 6 "6 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "6 PM`t: " "Denied"
+			}
+			
+			If($ThursdayHours -Contains "h19")
+			{
+				Line 6 "7 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "7 PM`t: " "Denied"
+			}
+			
+			If($ThursdayHours -Contains "h20")
+			{
+				Line 6 "8 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "8 PM`t: " "Denied"
+			}
+			
+			If($ThursdayHours -Contains "h21")
+			{
+				Line 6 "9 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "9 PM`t: " "Denied"
+			}
+			
+			If($ThursdayHours -Contains "h22")
+			{
+				Line 6 "10 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "10 PM`t: " "Denied"
+			}
+			
+			If($ThursdayHours -Contains "h23")
+			{
+				Line 6 "11 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "11 PM`t: " "Denied"
+			}
+
+			Line 5 "Friday"
+			If($FridayHours -Contains "h00")
+			{
+				Line 6 "12 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "12 AM`t: " "Denied"
+			}
+
+			If($FridayHours -Contains "h01")
+			{
+				Line 6 "1 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "1 AM`t: " "Denied"
+			}
+
+			If($FridayHours -Contains "h02")
+			{
+				Line 6 "2 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "2 AM`t: " "Denied"
+			}
+
+			If($FridayHours -Contains "h03")
+			{
+				Line 6 "3 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "3 AM`t: " "Denied"
+			}
+			
+			If($FridayHours -Contains "h04")
+			{
+				Line 6 "4 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "4 AM`t: " "Denied"
+			}
+			
+			If($FridayHours -Contains "h05")
+			{
+				Line 6 "5 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "5 AM`t: " "Denied"
+			}
+			
+			If($FridayHours -Contains "h06")
+			{
+				Line 6 "6 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "6 AM`t: " "Denied"
+			}
+			
+			If($FridayHours -Contains "h07")
+			{
+				Line 6 "7 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "7 AM`t: " "Denied"
+			}
+			
+			If($FridayHours -Contains "h08")
+			{
+				Line 6 "8 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "8 AM`t: " "Denied"
+			}
+			
+			If($FridayHours -Contains "h09")
+			{
+				Line 6 "9 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "9 AM`t: " "Denied"
+			}
+			
+			If($FridayHours -Contains "h10")
+			{
+				Line 6 "10 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "10 AM`t: " "Denied"
+			}
+			
+			If($FridayHours -Contains "h11")
+			{
+				Line 6 "11 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "11 AM`t: " "Denied"
+			}
+			
+			If($FridayHours -Contains "h12")
+			{
+				Line 6 "12 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "12 PM`t: " "Denied"
+			}
+			
+			If($FridayHours -Contains "h13")
+			{
+				Line 6 "1 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "1 PM`t: " "Denied"
+			}
+			
+			If($FridayHours -Contains "h14")
+			{
+				Line 6 "2 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "2 PM`t: " "Denied"
+			}
+			
+			If($FridayHours -Contains "h15")
+			{
+				Line 6 "3 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "3 PM`t: " "Denied"
+			}
+			
+			If($FridayHours -Contains "h16")
+			{
+				Line 6 "4 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "4 PM`t: " "Denied"
+			}
+			
+			If($FridayHours -Contains "h17")
+			{
+				Line 6 "5 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "5 PM`t: " "Denied"
+			}
+			
+			If($FridayHours -Contains "h18")
+			{
+				Line 6 "6 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "6 PM`t: " "Denied"
+			}
+			
+			If($FridayHours -Contains "h19")
+			{
+				Line 6 "7 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "7 PM`t: " "Denied"
+			}
+			
+			If($FridayHours -Contains "h20")
+			{
+				Line 6 "8 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "8 PM`t: " "Denied"
+			}
+			
+			If($FridayHours -Contains "h21")
+			{
+				Line 6 "9 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "9 PM`t: " "Denied"
+			}
+			
+			If($FridayHours -Contains "h22")
+			{
+				Line 6 "10 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "10 PM`t: " "Denied"
+			}
+			
+			If($FridayHours -Contains "h23")
+			{
+				Line 6 "11 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "11 PM`t: " "Denied"
+			}
+
+			Line 5 "Saturday"
+			If($SaturdayHours -Contains "h00")
+			{
+				Line 6 "12 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "12 AM`t: " "Denied"
+			}
+
+			If($SaturdayHours -Contains "h01")
+			{
+				Line 6 "1 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "1 AM`t: " "Denied"
+			}
+
+			If($SaturdayHours -Contains "h02")
+			{
+				Line 6 "2 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "2 AM`t: " "Denied"
+			}
+
+			If($SaturdayHours -Contains "h03")
+			{
+				Line 6 "3 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "3 AM`t: " "Denied"
+			}
+			
+			If($SaturdayHours -Contains "h04")
+			{
+				Line 6 "4 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "4 AM`t: " "Denied"
+			}
+			
+			If($SaturdayHours -Contains "h05")
+			{
+				Line 6 "5 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "5 AM`t: " "Denied"
+			}
+			
+			If($SaturdayHours -Contains "h06")
+			{
+				Line 6 "6 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "6 AM`t: " "Denied"
+			}
+			
+			If($SaturdayHours -Contains "h07")
+			{
+				Line 6 "7 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "7 AM`t: " "Denied"
+			}
+			
+			If($SaturdayHours -Contains "h08")
+			{
+				Line 6 "8 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "8 AM`t: " "Denied"
+			}
+			
+			If($SaturdayHours -Contains "h09")
+			{
+				Line 6 "9 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "9 AM`t: " "Denied"
+			}
+			
+			If($SaturdayHours -Contains "h10")
+			{
+				Line 6 "10 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "10 AM`t: " "Denied"
+			}
+			
+			If($SaturdayHours -Contains "h11")
+			{
+				Line 6 "11 AM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "11 AM`t: " "Denied"
+			}
+			
+			If($SaturdayHours -Contains "h12")
+			{
+				Line 6 "12 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "12 PM`t: " "Denied"
+			}
+			
+			If($SaturdayHours -Contains "h13")
+			{
+				Line 6 "1 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "1 PM`t: " "Denied"
+			}
+			
+			If($SaturdayHours -Contains "h14")
+			{
+				Line 6 "2 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "2 PM`t: " "Denied"
+			}
+			
+			If($SaturdayHours -Contains "h15")
+			{
+				Line 6 "3 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "3 PM`t: " "Denied"
+			}
+			
+			If($SaturdayHours -Contains "h16")
+			{
+				Line 6 "4 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "4 PM`t: " "Denied"
+			}
+			
+			If($SaturdayHours -Contains "h17")
+			{
+				Line 6 "5 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "5 PM`t: " "Denied"
+			}
+			
+			If($SaturdayHours -Contains "h18")
+			{
+				Line 6 "6 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "6 PM`t: " "Denied"
+			}
+			
+			If($SaturdayHours -Contains "h19")
+			{
+				Line 6 "7 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "7 PM`t: " "Denied"
+			}
+			
+			If($SaturdayHours -Contains "h20")
+			{
+				Line 6 "8 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "8 PM`t: " "Denied"
+			}
+			
+			If($SaturdayHours -Contains "h21")
+			{
+				Line 6 "9 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "9 PM`t: " "Denied"
+			}
+			
+			If($SaturdayHours -Contains "h22")
+			{
+				Line 6 "10 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "10 PM`t: " "Denied"
+			}
+			
+			If($SaturdayHours -Contains "h23")
+			{
+				Line 6 "11 PM`t: " "Permitted"
+			}
+			Else
+			{
+				Line 6 "11 PM`t: " "Denied"
+			}
+		}
+		If($HTML)
+		{
+			$rowdata += @(,("Logon hours",($Script:htmlsb),"",$htmlwhite))
+			$rowdata += @(,("     Sunday",($Script:htmlsb),"",$htmlwhite))
+			If($SundayHours -Contains "h00")
+			{
+				$rowdata += @(,("          12 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          12 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+
+			If($SundayHours -Contains "h01")
+			{
+				$rowdata += @(,("          1 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          1 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+
+			If($SundayHours -Contains "h02")
+			{
+				$rowdata += @(,("          2 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          2 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+
+			If($SundayHours -Contains "h03")
+			{
+				$rowdata += @(,("          3 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          3 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($SundayHours -Contains "h04")
+			{
+				$rowdata += @(,("          4 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          4 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($SundayHours -Contains "h05")
+			{
+				$rowdata += @(,("          5 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          5 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($SundayHours -Contains "h06")
+			{
+				$rowdata += @(,("          6 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          6 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($SundayHours -Contains "h07")
+			{
+				$rowdata += @(,("          7 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          7 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($SundayHours -Contains "h08")
+			{
+				$rowdata += @(,("          8 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          8 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($SundayHours -Contains "h09")
+			{
+				$rowdata += @(,("          9 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          9 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($SundayHours -Contains "h10")
+			{
+				$rowdata += @(,("          10 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          10 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($SundayHours -Contains "h11")
+			{
+				$rowdata += @(,("          11 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          11 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($SundayHours -Contains "h12")
+			{
+				$rowdata += @(,("          12 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          12 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($SundayHours -Contains "h13")
+			{
+				$rowdata += @(,("          1 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          1 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($SundayHours -Contains "h14")
+			{
+				$rowdata += @(,("          2 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          2 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($SundayHours -Contains "h15")
+			{
+				$rowdata += @(,("          3 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          3 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($SundayHours -Contains "h16")
+			{
+				$rowdata += @(,("          4 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          4 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($SundayHours -Contains "h17")
+			{
+				$rowdata += @(,("          5 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          5 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($SundayHours -Contains "h18")
+			{
+				$rowdata += @(,("          6 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          6 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($SundayHours -Contains "h19")
+			{
+				$rowdata += @(,("          7 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          7 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($SundayHours -Contains "h20")
+			{
+				$rowdata += @(,("          8 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          8 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($SundayHours -Contains "h21")
+			{
+				$rowdata += @(,("          9 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          9 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($SundayHours -Contains "h22")
+			{
+				$rowdata += @(,("          10 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          10 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($SundayHours -Contains "h23")
+			{
+				$rowdata += @(,("          11 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          11 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+
+			$rowdata += @(,("     Monday",($Script:htmlsb),"",$htmlwhite))
+			If($MondayHours -Contains "h00")
+			{
+				$rowdata += @(,("          12 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          12 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+
+			If($MondayHours -Contains "h01")
+			{
+				$rowdata += @(,("          1 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          1 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+
+			If($MondayHours -Contains "h02")
+			{
+				$rowdata += @(,("          2 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          2 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+
+			If($MondayHours -Contains "h03")
+			{
+				$rowdata += @(,("          3 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          3 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($MondayHours -Contains "h04")
+			{
+				$rowdata += @(,("          4 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          4 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($MondayHours -Contains "h05")
+			{
+				$rowdata += @(,("          5 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          5 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($MondayHours -Contains "h06")
+			{
+				$rowdata += @(,("          6 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          6 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($MondayHours -Contains "h07")
+			{
+				$rowdata += @(,("          7 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          7 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($MondayHours -Contains "h08")
+			{
+				$rowdata += @(,("          8 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          8 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($MondayHours -Contains "h09")
+			{
+				$rowdata += @(,("          9 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          9 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($MondayHours -Contains "h10")
+			{
+				$rowdata += @(,("          10 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          10 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($MondayHours -Contains "h11")
+			{
+				$rowdata += @(,("          11 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          11 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($MondayHours -Contains "h12")
+			{
+				$rowdata += @(,("          12 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          12 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($MondayHours -Contains "h13")
+			{
+				$rowdata += @(,("          1 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          1 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($MondayHours -Contains "h14")
+			{
+				$rowdata += @(,("          2 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          2 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($MondayHours -Contains "h15")
+			{
+				$rowdata += @(,("          3 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          3 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($MondayHours -Contains "h16")
+			{
+				$rowdata += @(,("          4 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          4 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($MondayHours -Contains "h17")
+			{
+				$rowdata += @(,("          5 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          5 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($MondayHours -Contains "h18")
+			{
+				$rowdata += @(,("          6 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          6 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($MondayHours -Contains "h19")
+			{
+				$rowdata += @(,("          7 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          7 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($MondayHours -Contains "h20")
+			{
+				$rowdata += @(,("          8 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          8 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($MondayHours -Contains "h21")
+			{
+				$rowdata += @(,("          9 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          9 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($MondayHours -Contains "h22")
+			{
+				$rowdata += @(,("          10 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          10 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($MondayHours -Contains "h23")
+			{
+				$rowdata += @(,("          11 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          11 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+
+			$rowdata += @(,("     Tuesday",($Script:htmlsb),"",$htmlwhite))
+			If($TuesdayHours -Contains "h00")
+			{
+				$rowdata += @(,("          12 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          12 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+
+			If($TuesdayHours -Contains "h01")
+			{
+				$rowdata += @(,("          1 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          1 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+
+			If($TuesdayHours -Contains "h02")
+			{
+				$rowdata += @(,("          2 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          2 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+
+			If($TuesdayHours -Contains "h03")
+			{
+				$rowdata += @(,("          3 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          3 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($TuesdayHours -Contains "h04")
+			{
+				$rowdata += @(,("          4 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          4 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($TuesdayHours -Contains "h05")
+			{
+				$rowdata += @(,("          5 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          5 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($TuesdayHours -Contains "h06")
+			{
+				$rowdata += @(,("          6 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          6 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($TuesdayHours -Contains "h07")
+			{
+				$rowdata += @(,("          7 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          7 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($TuesdayHours -Contains "h08")
+			{
+				$rowdata += @(,("          8 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          8 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($TuesdayHours -Contains "h09")
+			{
+				$rowdata += @(,("          9 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          9 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($TuesdayHours -Contains "h10")
+			{
+				$rowdata += @(,("          10 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          10 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($TuesdayHours -Contains "h11")
+			{
+				$rowdata += @(,("          11 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          11 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($TuesdayHours -Contains "h12")
+			{
+				$rowdata += @(,("          12 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          12 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($TuesdayHours -Contains "h13")
+			{
+				$rowdata += @(,("          1 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          1 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($TuesdayHours -Contains "h14")
+			{
+				$rowdata += @(,("          2 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          2 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($TuesdayHours -Contains "h15")
+			{
+				$rowdata += @(,("          3 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          3 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($TuesdayHours -Contains "h16")
+			{
+				$rowdata += @(,("          4 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          4 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($TuesdayHours -Contains "h17")
+			{
+				$rowdata += @(,("          5 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          5 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($TuesdayHours -Contains "h18")
+			{
+				$rowdata += @(,("          6 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          6 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($TuesdayHours -Contains "h19")
+			{
+				$rowdata += @(,("          7 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          7 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($TuesdayHours -Contains "h20")
+			{
+				$rowdata += @(,("          8 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          8 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($TuesdayHours -Contains "h21")
+			{
+				$rowdata += @(,("          9 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          9 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($TuesdayHours -Contains "h22")
+			{
+				$rowdata += @(,("          10 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          10 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($TuesdayHours -Contains "h23")
+			{
+				$rowdata += @(,("          11 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          11 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+
+			$rowdata += @(,("     Wednesday",($Script:htmlsb),"",$htmlwhite))
+			If($WednesdayHours -Contains "h00")
+			{
+				$rowdata += @(,("          12 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          12 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+
+			If($WednesdayHours -Contains "h01")
+			{
+				$rowdata += @(,("          1 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          1 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+
+			If($WednesdayHours -Contains "h02")
+			{
+				$rowdata += @(,("          2 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          2 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+
+			If($WednesdayHours -Contains "h03")
+			{
+				$rowdata += @(,("          3 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          3 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($WednesdayHours -Contains "h04")
+			{
+				$rowdata += @(,("          4 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          4 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($WednesdayHours -Contains "h05")
+			{
+				$rowdata += @(,("          5 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          5 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($WednesdayHours -Contains "h06")
+			{
+				$rowdata += @(,("          6 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          6 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($WednesdayHours -Contains "h07")
+			{
+				$rowdata += @(,("          7 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          7 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($WednesdayHours -Contains "h08")
+			{
+				$rowdata += @(,("          8 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          8 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($WednesdayHours -Contains "h09")
+			{
+				$rowdata += @(,("          9 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          9 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($WednesdayHours -Contains "h10")
+			{
+				$rowdata += @(,("          10 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          10 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($WednesdayHours -Contains "h11")
+			{
+				$rowdata += @(,("          11 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          11 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($WednesdayHours -Contains "h12")
+			{
+				$rowdata += @(,("          12 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          12 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($WednesdayHours -Contains "h13")
+			{
+				$rowdata += @(,("          1 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          1 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($WednesdayHours -Contains "h14")
+			{
+				$rowdata += @(,("          2 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          2 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($WednesdayHours -Contains "h15")
+			{
+				$rowdata += @(,("          3 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          3 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($WednesdayHours -Contains "h16")
+			{
+				$rowdata += @(,("          4 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          4 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($WednesdayHours -Contains "h17")
+			{
+				$rowdata += @(,("          5 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          5 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($WednesdayHours -Contains "h18")
+			{
+				$rowdata += @(,("          6 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          6 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($WednesdayHours -Contains "h19")
+			{
+				$rowdata += @(,("          7 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          7 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($WednesdayHours -Contains "h20")
+			{
+				$rowdata += @(,("          8 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          8 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($WednesdayHours -Contains "h21")
+			{
+				$rowdata += @(,("          9 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          9 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($WednesdayHours -Contains "h22")
+			{
+				$rowdata += @(,("          10 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          10 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($WednesdayHours -Contains "h23")
+			{
+				$rowdata += @(,("          11 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          11 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+
+			$rowdata += @(,("     Thursday",($Script:htmlsb),"",$htmlwhite))
+			If($ThursdayHours -Contains "h00")
+			{
+				$rowdata += @(,("          12 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          12 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+
+			If($ThursdayHours -Contains "h01")
+			{
+				$rowdata += @(,("          1 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          1 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+
+			If($ThursdayHours -Contains "h02")
+			{
+				$rowdata += @(,("          2 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          2 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+
+			If($ThursdayHours -Contains "h03")
+			{
+				$rowdata += @(,("          3 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          3 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($ThursdayHours -Contains "h04")
+			{
+				$rowdata += @(,("          4 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          4 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($ThursdayHours -Contains "h05")
+			{
+				$rowdata += @(,("          5 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          5 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($ThursdayHours -Contains "h06")
+			{
+				$rowdata += @(,("          6 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          6 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($ThursdayHours -Contains "h07")
+			{
+				$rowdata += @(,("          7 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          7 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($ThursdayHours -Contains "h08")
+			{
+				$rowdata += @(,("          8 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          8 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($ThursdayHours -Contains "h09")
+			{
+				$rowdata += @(,("          9 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          9 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($ThursdayHours -Contains "h10")
+			{
+				$rowdata += @(,("          10 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          10 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($ThursdayHours -Contains "h11")
+			{
+				$rowdata += @(,("          11 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          11 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($ThursdayHours -Contains "h12")
+			{
+				$rowdata += @(,("          12 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          12 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($ThursdayHours -Contains "h13")
+			{
+				$rowdata += @(,("          1 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          1 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($ThursdayHours -Contains "h14")
+			{
+				$rowdata += @(,("          2 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          2 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($ThursdayHours -Contains "h15")
+			{
+				$rowdata += @(,("          3 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          3 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($ThursdayHours -Contains "h16")
+			{
+				$rowdata += @(,("          4 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          4 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($ThursdayHours -Contains "h17")
+			{
+				$rowdata += @(,("          5 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          5 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($ThursdayHours -Contains "h18")
+			{
+				$rowdata += @(,("          6 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          6 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($ThursdayHours -Contains "h19")
+			{
+				$rowdata += @(,("          7 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          7 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($ThursdayHours -Contains "h20")
+			{
+				$rowdata += @(,("          8 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          8 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($ThursdayHours -Contains "h21")
+			{
+				$rowdata += @(,("          9 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          9 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($ThursdayHours -Contains "h22")
+			{
+				$rowdata += @(,("          10 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          10 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($ThursdayHours -Contains "h23")
+			{
+				$rowdata += @(,("          11 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          11 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+
+			$rowdata += @(,("     Friday",($Script:htmlsb),"",$htmlwhite))
+			If($FridayHours -Contains "h00")
+			{
+				$rowdata += @(,("          12 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          12 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+
+			If($FridayHours -Contains "h01")
+			{
+				$rowdata += @(,("          1 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          1 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+
+			If($FridayHours -Contains "h02")
+			{
+				$rowdata += @(,("          2 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          2 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+
+			If($FridayHours -Contains "h03")
+			{
+				$rowdata += @(,("          3 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          3 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($FridayHours -Contains "h04")
+			{
+				$rowdata += @(,("          4 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          4 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($FridayHours -Contains "h05")
+			{
+				$rowdata += @(,("          5 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          5 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($FridayHours -Contains "h06")
+			{
+				$rowdata += @(,("          6 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          6 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($FridayHours -Contains "h07")
+			{
+				$rowdata += @(,("          7 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          7 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($FridayHours -Contains "h08")
+			{
+				$rowdata += @(,("          8 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          8 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($FridayHours -Contains "h09")
+			{
+				$rowdata += @(,("          9 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          9 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($FridayHours -Contains "h10")
+			{
+				$rowdata += @(,("          10 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          10 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($FridayHours -Contains "h11")
+			{
+				$rowdata += @(,("          11 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          11 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($FridayHours -Contains "h12")
+			{
+				$rowdata += @(,("          12 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          12 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($FridayHours -Contains "h13")
+			{
+				$rowdata += @(,("          1 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          1 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($FridayHours -Contains "h14")
+			{
+				$rowdata += @(,("          2 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          2 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($FridayHours -Contains "h15")
+			{
+				$rowdata += @(,("          3 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          3 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($FridayHours -Contains "h16")
+			{
+				$rowdata += @(,("          4 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          4 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($FridayHours -Contains "h17")
+			{
+				$rowdata += @(,("          5 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          5 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($FridayHours -Contains "h18")
+			{
+				$rowdata += @(,("          6 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          6 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($FridayHours -Contains "h19")
+			{
+				$rowdata += @(,("          7 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          7 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($FridayHours -Contains "h20")
+			{
+				$rowdata += @(,("          8 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          8 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($FridayHours -Contains "h21")
+			{
+				$rowdata += @(,("          9 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          9 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($FridayHours -Contains "h22")
+			{
+				$rowdata += @(,("          10 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          10 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($FridayHours -Contains "h23")
+			{
+				$rowdata += @(,("          11 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          11 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+
+			$rowdata += @(,("     Saturday",($Script:htmlsb),"",$htmlwhite))
+			If($SaturdayHours -Contains "h00")
+			{
+				$rowdata += @(,("          12 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          12 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+
+			If($SaturdayHours -Contains "h01")
+			{
+				$rowdata += @(,("          1 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          1 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+
+			If($SaturdayHours -Contains "h02")
+			{
+				$rowdata += @(,("          2 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          2 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+
+			If($SaturdayHours -Contains "h03")
+			{
+				$rowdata += @(,("          3 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          3 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($SaturdayHours -Contains "h04")
+			{
+				$rowdata += @(,("          4 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          4 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($SaturdayHours -Contains "h05")
+			{
+				$rowdata += @(,("          5 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          5 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($SaturdayHours -Contains "h06")
+			{
+				$rowdata += @(,("          6 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          6 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($SaturdayHours -Contains "h07")
+			{
+				$rowdata += @(,("          7 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          7 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($SaturdayHours -Contains "h08")
+			{
+				$rowdata += @(,("          8 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          8 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($SaturdayHours -Contains "h09")
+			{
+				$rowdata += @(,("          9 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          9 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($SaturdayHours -Contains "h10")
+			{
+				$rowdata += @(,("          10 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          10 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($SaturdayHours -Contains "h11")
+			{
+				$rowdata += @(,("          11 AM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          11 AM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($SaturdayHours -Contains "h12")
+			{
+				$rowdata += @(,("          12 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          12 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($SaturdayHours -Contains "h13")
+			{
+				$rowdata += @(,("          1 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          1 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($SaturdayHours -Contains "h14")
+			{
+				$rowdata += @(,("          2 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          2 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($SaturdayHours -Contains "h15")
+			{
+				$rowdata += @(,("          3 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          3 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($SaturdayHours -Contains "h16")
+			{
+				$rowdata += @(,("          4 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          4 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($SaturdayHours -Contains "h17")
+			{
+				$rowdata += @(,("          5 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          5 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($SaturdayHours -Contains "h18")
+			{
+				$rowdata += @(,("          6 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          6 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($SaturdayHours -Contains "h19")
+			{
+				$rowdata += @(,("          7 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          7 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($SaturdayHours -Contains "h20")
+			{
+				$rowdata += @(,("          8 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          8 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($SaturdayHours -Contains "h21")
+			{
+				$rowdata += @(,("          9 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          9 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($SaturdayHours -Contains "h22")
+			{
+				$rowdata += @(,("          10 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          10 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+			
+			If($SaturdayHours -Contains "h23")
+			{
+				$rowdata += @(,("          11 PM",($Script:htmlsb),"Permitted",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("          11 PM",($Script:htmlsb),"Denied",$htmlwhite))
+			}
+		}
+		
+		If($MSWord -or $PDF)
+		{
+			$Table = AddWordTable -Hashtable $ScriptInformation `
+			-Columns Data,Value `
+			-List `
+			-Format $wdTableGrid `
+			-AutoFit $wdAutoFitFixed;
+
+			SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+			SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+			$Table.Columns.Item(1).Width = 250;
+			$Table.Columns.Item(2).Width = 175;
+
+			$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+			FindWordDocumentEnd
+			$Table = $Null
+			WriteWordLine 0 0 ""
+		}
+		If($Text)
+		{
+			Line 0 ""
+		}
+		If($HTML)
+		{
 			$msg = ""
 			$columnWidths = @("300","175")
 			FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
@@ -52297,8 +56903,8 @@ ProcessScriptEnd
 # SIG # Begin signature block
 # MIIthQYJKoZIhvcNAQcCoIItdjCCLXICAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUydVFcKA5mJH6LuFH2zlH4LdA
-# 3/uggibfMIIFjTCCBHWgAwIBAgIQDpsYjvnQLefv21DiCEAYWjANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUZYFxqfaDEAGG9xAVoUEuigZo
+# oRKggibfMIIFjTCCBHWgAwIBAgIQDpsYjvnQLefv21DiCEAYWjANBgkqhkiG9w0B
 # AQwFADBlMQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYD
 # VQQLExB3d3cuZGlnaWNlcnQuY29tMSQwIgYDVQQDExtEaWdpQ2VydCBBc3N1cmVk
 # IElEIFJvb3QgQ0EwHhcNMjIwODAxMDAwMDAwWhcNMzExMTA5MjM1OTU5WjBiMQsw
@@ -52509,33 +57115,33 @@ ProcessScriptEnd
 # UzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/BgNVBAMTOERpZ2lDZXJ0IFRy
 # dXN0ZWQgRzQgQ29kZSBTaWduaW5nIFJTQTQwOTYgU0hBMzg0IDIwMjEgQ0ExAhAL
 # bN+2Z4EOKufLWhG6HUlwMAkGBSsOAwIaBQCgQDAZBgkqhkiG9w0BCQMxDAYKKwYB
-# BAGCNwIBBDAjBgkqhkiG9w0BCQQxFgQUpWQw86pMH9eBGHT+7HLjKDO+7sYwDQYJ
-# KoZIhvcNAQEBBQAEggIAF+eIwhONDuvUxiZ9Iv5eOg8TbJEWPxqnpFgHZmvBmlgF
-# ro9Kq7NIMJWt7RF6v9wwPRxsKMVqHAinPbqHok3dUNFEVUMLi7B2WJzrcpnf4aij
-# C0f+wSJwqrRaFJgX8449XtYyaIaopyQr/wHwXQR0xpvpaEXejlt0RjgAv342QFJq
-# C16q2fIGLMijn1NuaZ8i28/7mEB4Rdiwg5WifCJkHD2W6jKc+ybzozJ11FF+uf4F
-# yu/UJI5kp4e8ro2++TAImhSOzEqU7xpQ3zKenBJJMqCONYRRfgqb8jfxjQks6oKt
-# V8qPuiEseb4C3BpZTLItQGy3/8GCzPwMT2MRBJ2bwumiA+fXMyGjWoeNdrY5iRjF
-# lxtAFFnKm+284c1sdz60chKIJ5fO8OXDjEgoqq4rssQkdgofuehH1Jn2d1lQs70x
-# klIF4XPA1S2Tu5Lsz/b5wVxs3Qb4PHkslX58XbOAaVCfG+QCF+klIc1b/C1rWZSI
-# lubL4VhIQRYFALae8HYAoWdBd+m8ti9p9Fyt+J8XIh4dbZySYHQMevM3AN3UE+s3
-# e+lLhdSiZFaQlVLjX6syhtjA4VcMH/eHog6GxKVO2KsbPrAmAwxYi9ARAkBgSgZJ
-# PzZ7Wojn2z6MzJCQH79+AmlA2jrFssCo4RnVtHbjGviEQfPKi7HDeCLcugoJbmCh
+# BAGCNwIBBDAjBgkqhkiG9w0BCQQxFgQUB6sRrL0xJYTrqt7FP7ifU+w0YzswDQYJ
+# KoZIhvcNAQEBBQAEggIAk4VUJvzI6ZygQNa/HsCRqBfiA3H0JF6sibxaJylEQNLC
+# HP5s1ye3x2PT4Z9ceFWGTy6Z7uwi0DjyxWHDnhlYmJ+RAY9PPllOTLkKKA28PO2/
+# p4u1/NL05gwc0o7+CMKSrwdMu56F82fTktr+LzGUMdbuR2Dz8KmhWUybYPoQ5Juf
+# xHK8lW2v63SINQCRyOTuO9pmhKaMmtLJweDWvIuTWUcAM7Sm134G2QPh523HEFXq
+# srhGIjso2ZyIoe/PC35/zIDpAZsVcMq5VFienhqlsGByaWwUnV1JSFrR7klGa8fP
+# IfHU0rWs8JR/QvHooPmk438HEGv4Ml0QQUz93pHozHadR9yodu+Xe1M6glULb0u0
+# EzcEv4F5b2BC7F6xAQ7/XTeMxdSzzo4eeP0O19OJl1sDo5ZUQ/RG2JtAStv3yzP0
+# 3cOQm8dxSey2gs09ig5S6Y5pskGKV8lC9j2/rF7bpf1x3bumM0ypTfpKBb47DIXV
+# +dcIGRKNgZywxr7H2aYWAsQTx2Z0TK0Jazw/NibmNVqd7xoOh+QKQ/KACdNwdM21
+# QxYXs7AmWzt2Ayg7SQMGlnr8zbEO611ccF84LBLlcqT4oBdiBfdlA4Lnvymiz2y9
+# Yqwp0YAsd4b+83jGYG0f4LRruDfNYV4FOvPHnR8qNYeSRmcjjTurSwpiUA4uNc6h
 # ggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8CAQEwfTBpMQswCQYDVQQGEwJVUzEX
 # MBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/BgNVBAMTOERpZ2lDZXJ0IFRydXN0
 # ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYgU0hBMjU2IDIwMjUgQ0ExAhAKgO8Y
 # S43xBYLRxHanlXRoMA0GCWCGSAFlAwQCAQUAoGkwGAYJKoZIhvcNAQkDMQsGCSqG
-# SIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjUxMTA1MTk0MTQ4WjAvBgkqhkiG9w0B
-# CQQxIgQgjgIDXEakwISip51Xwah2yU30ECL0wFZPKYZbIw+TuCgwDQYJKoZIhvcN
-# AQEBBQAEggIAZz/ZBLX+JdHNhcdBSQMAiZtyYH+Of1JG3bHz/uss0YJx8zo5yFGl
-# SoPbyDKjXesQRDJnrbe6j+7WSKY3uTYpZVHoUMRZiPkBD7sNfny82vRyO+Isgj+i
-# 7WZBF54PTZVlQycSbjJjR0aDP4X2KJV4J8r9D95PtKFw+bJbWi7jdXGRIUaFe+nE
-# 8kkdTRwdZkgnL4jdor8ttdalXqh+QPN8CMeLS9SbwIBVbsKIxGBJRj9pgfco/B0h
-# GGJlNgkZ9KDzRobSbsc2eUhr4zrexpCcd1Fq8zppx1xBqDrz6q4qGEeoX7hIbzyx
-# lxrDplYih9s+9gCTFYB5C2AZKI9i62fEQXSMQ+g2oUdbxbrZuDHCslf/eD54E313
-# fD4BmL/9RLCs6PSDV+MJPAkaifn09CNYZofiYt+cHs29w86kbb4j1W9GlOHrRrPP
-# hK3NJl76qdOCoxbDpJwDeSoRjWWF0U6kTYv7w2QdUO3ROBtWWmicOo71ymAphIEi
-# mxdRQY07+zfwGlX7xmURwCL8uiFbfc+oS+RM2SsrXzUjj5vGH7S5MxX9028+FBtp
-# 8w0M1CnhoRqhVvNvf4Hl5gFdZLx9YdAaCCUthJnm6SfEhRyklw7J9YhKtA/qhQm6
-# gIrHsNDdzhpDusoS96Vg4o+G58+eQm1FGWK8hIqi3lhKnzlzUcN0Wyw=
+# SIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjUxMTA2MTk1MDA3WjAvBgkqhkiG9w0B
+# CQQxIgQgL0EQ3hzF+Dz7vzWK+2+qcsVFlUL1HB9K+Fug8+G+GpEwDQYJKoZIhvcN
+# AQEBBQAEggIAEsU6tNyuc9QqYQV4Y+GgPR0nUcL1jgoxeodugd3CkwLQyyIXzwkp
+# aOHh/DIBwijv/vfbQEXf5hSshs9MngZd9/DCC3cDh/ioqxNxPJhjLduz8VHKNgYG
+# lhDdGl1yP2Hyi9T2AQO7HTnteYuKCmDjzaGtQlc3n/5FDAOnQrL0PnQgSikPpvtI
+# yp0a1HxFc7HAXrBaWm9Zz3HIlDOp7JfIrZE+UoQsuswI+v9FL8q4CvDcu1y++5Wz
+# 2TX4rmTO2otUYFnsY9fGloPPq2FDhpp10JIV4klv8xUIdgkq23bVvRa0GbLKMP7Z
+# aizmX3fz7KusGyNjka6O1FXtgewNw53KufPhPp/x8kXbLuwGmYpJMppUNWug7AgH
+# HNVzZiavs8AV5nBLxd/KjzpUi0Y/AbGVM74iBBq8d1rBM4eCjaU5FUBOlOLPvnWt
+# BPciJ8HyCc0fFKR8pwoxI0QS9BSgpWVnl+zWKs78TMVk5LxHcvEF1whRmnMtt3i2
+# TvcmgFt1jcW47w79Y979cQSOqXUM0qaBpTo2FE0A7XrmyDZdCjxp3PEQPnXDGs1t
+# DhkNDG4NkbxJQxTS0JyOxwJw31Jpkd4SgPHycWz1rQ3CJZQAFUayT4HIHJsbMNjX
+# 7gbuPBX8k1HDADft9CNwssXVmeXdDxlBgpCkF/ANSfgijWJKCXQmT0I=
 # SIG # End signature block

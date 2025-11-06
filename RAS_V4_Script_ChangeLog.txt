@@ -37,6 +37,8 @@
 #
 #	In Function OutputLogonHours
 #		Add General data
+#		Add logon hours schedule's criteria
+#		Add logon hours schedule for Permitted and Denied hours
 #
 #	In Function OutputPoliciesDetails:
 #		Update for the Policy changes in 19.3 and later
