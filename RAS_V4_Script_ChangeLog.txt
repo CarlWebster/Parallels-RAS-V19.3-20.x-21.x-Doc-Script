@@ -128,12 +128,13 @@
 #	In Function OutputRASSettings, add the setting "Check for updates when launching RAS console"
 #
 #	In Function OutputRDSessionHostsDetails:
+#		Add Application Packages
+#		Add Auto-upgrade
+#		Add User profile
 #		Changed Get-RASVDIHostStatus -Name $VDIPool.Name to Get-RASVDIHostPoolStatus -Name $VDIPool.Name -SiteId $Site.Id
 #		Fixed bug in processing the variable $AppPackagesAssigned.ApplicationPackagesAssigned with the help of Guy Leech
 #		For RDS Hosts details, rename "Agent settings" to "Settings, and move to after Desktop access
-#		Add Application Packages
 #		Only output optimization data if optimization is enabled
-#		Add Auto-upgrade
 #
 #	In Function OutputSAMLSetting, handle multiple SAML items
 #
