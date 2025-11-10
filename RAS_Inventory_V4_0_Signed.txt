@@ -450,7 +450,7 @@
 	text document.
 .NOTES
 	NAME: RAS_Inventory_V4_0.ps1
-	VERSION: 4.00 Beta 24
+	VERSION: 4.00 Beta 25
 	AUTHOR: Carl Webster
 	LASTEDIT: November 10, 2025
 #>
@@ -692,7 +692,6 @@ Param(
 #	In Function OutputRDSessionHostsDetails:
 #		Add Application Packages
 #		Add Auto-upgrade
-#		Add User profile
 #		Changed Get-RASVDIHostStatus -Name $VDIPool.Name to Get-RASVDIHostPoolStatus -Name $VDIPool.Name -SiteId $Site.Id
 #		Fixed bug in processing the variable $AppPackagesAssigned.ApplicationPackagesAssigned with the help of Guy Leech
 #		For RDS Hosts details, rename "Agent settings" to "Settings, and move to after Desktop access
@@ -719,6 +718,8 @@ Param(
 #			ID
 #		For Host Pool Properties, add
 #			Action tab
+#			User profile tab
+#			Application Packages
 #
 #	In Function ProcessAdministration
 #		Rename variable $RASFeatures to $RASHelpdesk
@@ -812,7 +813,7 @@ $ErrorActionPreference    = 'SilentlyContinue'
 $Error.Clear()
 
 $Script:emailCredentials  = $Null
-$script:MyVersion         = '4.00 Beta 24'
+$script:MyVersion         = '4.00 Beta 25'
 $Script:ScriptName        = "RAS_Inventory_V4_0.ps1"
 $tmpdate                  = [datetime] "11/10/2025"
 $Script:ReleaseDate       = $tmpdate.ToUniversalTime().ToShortDateString()
@@ -8567,7 +8568,7 @@ Function OutputRDSessionHostsDetails
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 			}
-
+			
 			#Application Packages
 			If($MSWord -or $PDF)
 			{
@@ -17846,7 +17847,7 @@ Function OutputVDIDetails
 					#yes we do, get the default settings for the Site
 					#use the Site default settings
 					
-					#Template technology settings do not include UPD, only FSLogix
+					#VDI host pool settings do not include UPD, only FSLogix
 					$VDIPoolDefaults = Get-RASVDIDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
 					
 					If($? -and $Null -ne $VDIPoolDefaults)
@@ -19033,6 +19034,149 @@ Function OutputVDIDetails
 					FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 					WriteHTMLLine 0 0 ""
 				}
+				
+				#Application Packages
+				If($MSWord -or $PDF)
+				{
+					WriteWordLine 4 0 "Application Packages"
+				}
+				If($Text)
+				{
+					Line 3 "Application Packages"
+				}
+				If($HTML)
+				{
+					#Nothing
+				}
+
+				If($VDIPool.InheritDefaultAppPackageSettings)
+				{
+					#do we inherit site defaults?
+					#yes we do, get the default settings for the Site
+					#use the Site default settings
+					$VDIPoolDefaults = Get-RASVDIDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
+					
+					If($? -and $Null -ne $VDIPoolDefaults)
+					{
+						[array]$AppPackagesAssigned = $VDIPoolDefaults.AppPackagesAssigned
+					}
+				}
+				Else
+				{
+					#we don't inherit
+					#get the settings for the vdi host
+					[array]$AppPackagesAssigned = $VDIPool.AppPackagesAssigned
+				}
+
+				If($MSWord -or $PDF)
+				{
+					$ScriptInformation = New-Object System.Collections.ArrayList
+					$ScriptInformation.Add(@{Data = "Inherit default settings"; Value = $VDIPool.InheritDefaultAppPackageSettings.ToString(); }) > $Null
+					$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+
+					ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
+					{
+						$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4>$Null
+						
+						If($? -and $Null -ne $Result)
+						{
+							$ScriptInformation.Add(@{Data = "Name"; Value = $Result.PackageName; }) > $Null
+							$ScriptInformation.Add(@{Data = "Status"; Value = ""; }) > $Null
+							$ScriptInformation.Add(@{Data = "Version"; Value = $Result.Version; }) > $Null
+							$ScriptInformation.Add(@{Data = "Display name"; Value = $Result.DisplayName; }) > $Null
+							$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+						}
+						Else
+						{
+							$ScriptInformation.Add(@{Data = "Unable to retrieve data for"; Value = $Result.PackageName; }) > $Null
+						}
+					}
+
+					$Table = AddWordTable -Hashtable $ScriptInformation `
+					-Columns Data,Value `
+					-List `
+					-Format $wdTableGrid `
+					-AutoFit $wdAutoFitFixed
+
+					SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+					$Table.Columns.Item(1).Width = 200;
+					$Table.Columns.Item(2).Width = 250;
+
+					$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+					FindWordDocumentEnd
+					$Table = $Null
+					WriteWordLine 0 0 ""
+				}
+				If($Text)
+				{
+					Line 4 "Inherit default settings`t: " $VDIPool.InheritDefaultAppPackageSettings.ToString()
+					Line 5 ""
+
+					ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
+					{
+						$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4>$Null
+						
+						If($? -and $Null -ne $Result)
+						{
+							Line 4 "Name`t`t: " $Result.PackageName
+							Line 4 "Status`t`t: "
+							Line 4 "Version`t`t: " $Result.Version
+							Line 4 "Display name`t: " $Result.DisplayName
+							Line 4 ""
+						}
+						Else
+						{
+							Line 4 "Unable to retrieve data for: " $Result.PackageName
+						}
+					}
+				}
+				If($HTML)
+				{
+					$rowdata = @()
+					$columnHeaders = @("Inherit default settings",($Script:htmlsb),$VDIPool.InheritDefaultAppPackageSettings.ToString(),$htmlwhite)
+					$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+
+					ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
+					{
+						$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4>$Null
+						
+						If($? -and $Null -ne $Result)
+						{
+							$rowdata += @(,("Name",($Script:htmlsb),$Result.PackageName,$htmlwhite))
+							$rowdata += @(,("Status",($Script:htmlsb),"",$htmlwhite))
+							$rowdata += @(,("Version",($Script:htmlsb),$Result.Version,$htmlwhite))
+							$rowdata += @(,("Display name",($Script:htmlsb),$Result.DisplayName,$htmlwhite))
+							$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+						}
+						Else
+						{
+							$rowdata += @(,("Unable to retrieve data for",($Script:htmlsb),$Result.PackageName,$htmlwhite))
+						}
+					}
+
+					$msg = "Application Packages"
+					$columnWidths = @("200","275")
+					FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+					WriteHTMLLine 0 0 ""
+				}
+				
+				#Optimization
+				
+				If($MSWord -or $PDF)
+				{
+					WriteWordLine 4 0 "Optimization"
+				}
+				If($Text)
+				{
+					Line 3 "Optimization"
+				}
+				If($HTML)
+				{
+					#Nothing
+				}
+
 			}
 		}
 		ElseIf($? -and $Null -eq $VDIPools)
@@ -58112,8 +58256,8 @@ ProcessScriptEnd
 # SIG # Begin signature block
 # MIIthQYJKoZIhvcNAQcCoIItdjCCLXICAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUw9XmaXT7L85W2DgfmdlLK2kl
-# 1u+ggibfMIIFjTCCBHWgAwIBAgIQDpsYjvnQLefv21DiCEAYWjANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUzUP22wi+UKU7r8jbWJ5LnV9a
+# 46aggibfMIIFjTCCBHWgAwIBAgIQDpsYjvnQLefv21DiCEAYWjANBgkqhkiG9w0B
 # AQwFADBlMQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYD
 # VQQLExB3d3cuZGlnaWNlcnQuY29tMSQwIgYDVQQDExtEaWdpQ2VydCBBc3N1cmVk
 # IElEIFJvb3QgQ0EwHhcNMjIwODAxMDAwMDAwWhcNMzExMTA5MjM1OTU5WjBiMQsw
@@ -58324,33 +58468,33 @@ ProcessScriptEnd
 # UzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/BgNVBAMTOERpZ2lDZXJ0IFRy
 # dXN0ZWQgRzQgQ29kZSBTaWduaW5nIFJTQTQwOTYgU0hBMzg0IDIwMjEgQ0ExAhAL
 # bN+2Z4EOKufLWhG6HUlwMAkGBSsOAwIaBQCgQDAZBgkqhkiG9w0BCQMxDAYKKwYB
-# BAGCNwIBBDAjBgkqhkiG9w0BCQQxFgQUqmI9Jj4SFvTsXIkyyd/jBz38AfQwDQYJ
-# KoZIhvcNAQEBBQAEggIASvnZMemybiRBW6WylpidMV5pV51MiMJuvCbKAlwy4t2z
-# +Qti1Y8YKvHdWaYXi4BzZ9w1qyCKcDExBMutzlAcEentM0/TJmrEPwaFyz0lLtRB
-# 95Q5UiQdY7o3OeeMzrZBLkTs97evRJ7+kuWoAhgVLQLWaQ1HZ7mBdlmGN7Z9ABZB
-# hd0IzMmGVEeyDTN9jWt/z2TmRbOLHkd05Nrpw0aaLO9vBmjDPoMvjAi1sJCdHqNY
-# 4xFtN2W/5nnaHhwKqlnrMoV6CxnvP/280iqAqsiPJFF+pKgdvyGVnteyje+MTcF9
-# O/odBEmzOmV5U3Nmjie4aVyYFgIUzKlW67fEVknyobXoKTD6vI8Tz/cKX0Q6CHht
-# zVm1o7WDac23vcPDWqsVUGBN45iih/ArleiHpZssuXfR90d8lOF8QRypQ7usTenj
-# MJW2Ak2oWOKC5F/RVM41ERnOBp7wZTKHnTxD/XWRQM3kYZ04skJ3aCnjG1023SMv
-# WPvxVHYMyafXKBXb7HJErIV/AUQ9rLrlECM6P7lvl73LtxlEswW083wvXkcp+tMa
-# Y6+GCr6ITHmONEuZuXuWiE3BHCSaqgKdGy+IlAdFvRNrPovDcCHCSAeLN4jxw0Fv
-# +QGkh9ppBGPAvWhgIoTW0qfqPzce7toefzF9FrEc0ielbXlNQElALt6RLRdOoIuh
+# BAGCNwIBBDAjBgkqhkiG9w0BCQQxFgQUJS1iPnbqEE4vAf+0cQJNVGuCPjAwDQYJ
+# KoZIhvcNAQEBBQAEggIAx1yVwL6/PIA4FrzxRKLlKUxlevJ65z9eQnXmxhQnmSe9
+# eIVhldHVcQGr53fHvShKStOI4oHJ+ZXQC7+2u5DF7BWpwBA1E9Yo33z9uM48uc8v
+# Be/JvTvcYK0DFleJvGeGYC6ArTTucy3Tr3lnykX5ckGTBCaIdVLfXvLfDF3RW8P8
+# zT2kWf9Pk7ZVGoevURAhiVJvkSXVy0qwLOlFOwaGYK/6y30ITcUbY3sRk1ji38X/
+# DblBADuq5UmmHfgkHuKMVb+wI8ISEQ+hifdYDCCvHXilfVFAdPMjjo0C9QuGQTu7
+# xW+mqgJk3ny2RSFMz+HEIN63stQ5HA3y7BPxk0ohVWA95H5OGRylrhM3POPtfDX7
+# RGT8kWNq3atM4gcIpE5tPtf6EqPqFyrbGfGWi970T2PZVNzDqM4bCOWYDEk9+BpY
+# ld+fL0tBxzvo2ShUoNLJb7kad3nfr9pxz3YZGphegPZ4oW8rl6B3i/yj1A8CJbc/
+# DAvygQp7Mor/2kyJPuLD/E2shoF3QD6DXbzm3O6pXYjgTuAQ7ueXvmzUj/3aQ+Yy
+# TlzD0aSksoMv9LArhpBLq9qArFg/x9Yk2FUvdhIdJQSM+eBeaFtOKQELcjkvdaRy
+# Gl4CSpkaeWeMo8UVTeJ9Dpwmo3ssUu43twmJ70LXcWr4KpwRQxJ6JFf7vBQdxFqh
 # ggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8CAQEwfTBpMQswCQYDVQQGEwJVUzEX
 # MBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/BgNVBAMTOERpZ2lDZXJ0IFRydXN0
 # ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYgU0hBMjU2IDIwMjUgQ0ExAhAKgO8Y
 # S43xBYLRxHanlXRoMA0GCWCGSAFlAwQCAQUAoGkwGAYJKoZIhvcNAQkDMQsGCSqG
-# SIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjUxMTEwMTI1NTExWjAvBgkqhkiG9w0B
-# CQQxIgQgOf/7L7RPAFf6aUuszmfOGDce2xFq7cLpVMXKRFE7cOYwDQYJKoZIhvcN
-# AQEBBQAEggIAZQGzapY3KyUjbU8Ll+FbOkuFWg6CLwrrlKhGMZH6CkN9YKomJE5a
-# cvkvsJZYSMcZQ48emWiBgTOVcS37BcNMm+M3QSs2SfoQvON9ZYMdp1+WyoQo/a8l
-# Ix3XaJqBYKNnxPLiIVSWYFwnWHlOLAo9pL3s+JELwbo9kt7UkBCT7KXIpbJsunq7
-# 8L8497wja5Z+t0VwFXIT0kiB+SV/YFZIJdYlya3Qg70i99qIH2rXIjpEGfd7sp4W
-# Nb+uG6etzEjbDWNfhJMkgQeo0dnjPVQOURE/edEf4LNVb3h1cMnZDCH92RIGH8vl
-# 2yJYulvsrBpagn9EJtHI6jgEkovSvNuI306YjL/uRPMWyg1b1Z8WYp6kS/j2DnoD
-# cpnG3kY1nXBaYYg7jRNsfDU9JU7Z+W/yjWl3AytM+K44ohyNHYC4CrJP6QpYpf4b
-# Zzl51YqFkY8dCdCSlc1c9HPZ0JCOg09z8YhRYTn6FAjmcrEeIdannZCNH7B/gx0f
-# 676voNZjmc++zUBvwGsy6t13XDIXFAqCNzKjQ4ZAX1XQMs4nju+XgWffkWokdjSJ
-# rrKlSaVDU4dUFiYJ0hBDUHuurktpkdNV0m9RDVFk4dNv6u2Ju3Uzr2ceeSUYWhxA
-# NXFax/BbWSsmlCFn92Y5/YKmt69NjwLMxbWEpbKbXBIyuH5Pgr9nF2E=
+# SIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjUxMTEwMjA0NTUwWjAvBgkqhkiG9w0B
+# CQQxIgQgN6kcM11VbiTFjIgf6fjGvCUaAm+YM5CnHuz4Ns1O9H8wDQYJKoZIhvcN
+# AQEBBQAEggIASYuYgeNbhKefYIt8avR/uf/ER1+ABO2ZRg/M4g6GlLBE2YqAP6Cn
+# QkF8OOnPT2eu0RBBtMDcVXHDIlkPUT4QZFDqvxbIqYXbtcWc0d1ou/dOZWmhxnmD
+# RP5QWvyUtiacoT4Xa+A4ZWcbwDp244DI1hEzgJ1FsFxbQmNNaYITU1Kx4eD4rkmP
+# qnbFabgqPYyMb1xxCSadPfbktdKg1eLYa+4aoRA5mEBr1yt7xHSYkEjQ+RyEJLKC
+# /gp0IkAUhhhUSzIUuEMwTTI6HIznFAPTIYUleZOhuIkfGiu3hB98XrZ/uc6S6Ais
+# qPkdEyFIe6lCazE7DQ6p8qFlOJ9+4oB7fsd5uOPgFWQS0ZnNj1gbYBPKTg+KnejQ
+# NiSV90f2aiAxYd81UYHp4/pZO/KEASk1zRwAT4VTgiaM4c4Ax09s7tsjn+jzsfdz
+# ZOV9SSC7w/+056lBfa4WpF53+9pmh9jPPzNvvLkADJwzcfK9J84PRZLN4kynAY+V
+# IeF93zTwQk5XxESg6zdJfe3q3pHeIWuzbIAqe3sw816zAh5ifSa4sqjM52HazcZq
+# UTnHmVY6BcnouxJT9LdsSkGTlp7Y+xA8SbKPZRxiXh72XnE0ow/o+95i4iUwkhyM
+# TygwgIcXTLOI7LRYjfhgz/ArA01y/ozmXStGpldL0i2T+hQbicDsqZE=
 # SIG # End signature block

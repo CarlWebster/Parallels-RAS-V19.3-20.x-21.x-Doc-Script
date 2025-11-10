@@ -450,7 +450,7 @@
 	text document.
 .NOTES
 	NAME: RAS_Inventory_V4_0.ps1
-	VERSION: 4.00 Beta 24
+	VERSION: 4.00 Beta 25
 	AUTHOR: Carl Webster
 	LASTEDIT: November 10, 2025
 #>
@@ -692,7 +692,6 @@ Param(
 #	In Function OutputRDSessionHostsDetails:
 #		Add Application Packages
 #		Add Auto-upgrade
-#		Add User profile
 #		Changed Get-RASVDIHostStatus -Name $VDIPool.Name to Get-RASVDIHostPoolStatus -Name $VDIPool.Name -SiteId $Site.Id
 #		Fixed bug in processing the variable $AppPackagesAssigned.ApplicationPackagesAssigned with the help of Guy Leech
 #		For RDS Hosts details, rename "Agent settings" to "Settings, and move to after Desktop access
@@ -719,6 +718,8 @@ Param(
 #			ID
 #		For Host Pool Properties, add
 #			Action tab
+#			User profile tab
+#			Application Packages
 #
 #	In Function ProcessAdministration
 #		Rename variable $RASFeatures to $RASHelpdesk
@@ -812,7 +813,7 @@ $ErrorActionPreference    = 'SilentlyContinue'
 $Error.Clear()
 
 $Script:emailCredentials  = $Null
-$script:MyVersion         = '4.00 Beta 24'
+$script:MyVersion         = '4.00 Beta 25'
 $Script:ScriptName        = "RAS_Inventory_V4_0.ps1"
 $tmpdate                  = [datetime] "11/10/2025"
 $Script:ReleaseDate       = $tmpdate.ToUniversalTime().ToShortDateString()
@@ -8567,7 +8568,7 @@ Function OutputRDSessionHostsDetails
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 			}
-
+			
 			#Application Packages
 			If($MSWord -or $PDF)
 			{
@@ -17846,7 +17847,7 @@ Function OutputVDIDetails
 					#yes we do, get the default settings for the Site
 					#use the Site default settings
 					
-					#Template technology settings do not include UPD, only FSLogix
+					#VDI host pool settings do not include UPD, only FSLogix
 					$VDIPoolDefaults = Get-RASVDIDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
 					
 					If($? -and $Null -ne $VDIPoolDefaults)
@@ -19033,6 +19034,149 @@ Function OutputVDIDetails
 					FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 					WriteHTMLLine 0 0 ""
 				}
+				
+				#Application Packages
+				If($MSWord -or $PDF)
+				{
+					WriteWordLine 4 0 "Application Packages"
+				}
+				If($Text)
+				{
+					Line 3 "Application Packages"
+				}
+				If($HTML)
+				{
+					#Nothing
+				}
+
+				If($VDIPool.InheritDefaultAppPackageSettings)
+				{
+					#do we inherit site defaults?
+					#yes we do, get the default settings for the Site
+					#use the Site default settings
+					$VDIPoolDefaults = Get-RASVDIDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
+					
+					If($? -and $Null -ne $VDIPoolDefaults)
+					{
+						[array]$AppPackagesAssigned = $VDIPoolDefaults.AppPackagesAssigned
+					}
+				}
+				Else
+				{
+					#we don't inherit
+					#get the settings for the vdi host
+					[array]$AppPackagesAssigned = $VDIPool.AppPackagesAssigned
+				}
+
+				If($MSWord -or $PDF)
+				{
+					$ScriptInformation = New-Object System.Collections.ArrayList
+					$ScriptInformation.Add(@{Data = "Inherit default settings"; Value = $VDIPool.InheritDefaultAppPackageSettings.ToString(); }) > $Null
+					$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+
+					ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
+					{
+						$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4>$Null
+						
+						If($? -and $Null -ne $Result)
+						{
+							$ScriptInformation.Add(@{Data = "Name"; Value = $Result.PackageName; }) > $Null
+							$ScriptInformation.Add(@{Data = "Status"; Value = ""; }) > $Null
+							$ScriptInformation.Add(@{Data = "Version"; Value = $Result.Version; }) > $Null
+							$ScriptInformation.Add(@{Data = "Display name"; Value = $Result.DisplayName; }) > $Null
+							$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+						}
+						Else
+						{
+							$ScriptInformation.Add(@{Data = "Unable to retrieve data for"; Value = $Result.PackageName; }) > $Null
+						}
+					}
+
+					$Table = AddWordTable -Hashtable $ScriptInformation `
+					-Columns Data,Value `
+					-List `
+					-Format $wdTableGrid `
+					-AutoFit $wdAutoFitFixed
+
+					SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+					$Table.Columns.Item(1).Width = 200;
+					$Table.Columns.Item(2).Width = 250;
+
+					$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+					FindWordDocumentEnd
+					$Table = $Null
+					WriteWordLine 0 0 ""
+				}
+				If($Text)
+				{
+					Line 4 "Inherit default settings`t: " $VDIPool.InheritDefaultAppPackageSettings.ToString()
+					Line 5 ""
+
+					ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
+					{
+						$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4>$Null
+						
+						If($? -and $Null -ne $Result)
+						{
+							Line 4 "Name`t`t: " $Result.PackageName
+							Line 4 "Status`t`t: "
+							Line 4 "Version`t`t: " $Result.Version
+							Line 4 "Display name`t: " $Result.DisplayName
+							Line 4 ""
+						}
+						Else
+						{
+							Line 4 "Unable to retrieve data for: " $Result.PackageName
+						}
+					}
+				}
+				If($HTML)
+				{
+					$rowdata = @()
+					$columnHeaders = @("Inherit default settings",($Script:htmlsb),$VDIPool.InheritDefaultAppPackageSettings.ToString(),$htmlwhite)
+					$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+
+					ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
+					{
+						$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4>$Null
+						
+						If($? -and $Null -ne $Result)
+						{
+							$rowdata += @(,("Name",($Script:htmlsb),$Result.PackageName,$htmlwhite))
+							$rowdata += @(,("Status",($Script:htmlsb),"",$htmlwhite))
+							$rowdata += @(,("Version",($Script:htmlsb),$Result.Version,$htmlwhite))
+							$rowdata += @(,("Display name",($Script:htmlsb),$Result.DisplayName,$htmlwhite))
+							$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+						}
+						Else
+						{
+							$rowdata += @(,("Unable to retrieve data for",($Script:htmlsb),$Result.PackageName,$htmlwhite))
+						}
+					}
+
+					$msg = "Application Packages"
+					$columnWidths = @("200","275")
+					FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+					WriteHTMLLine 0 0 ""
+				}
+				
+				#Optimization
+				
+				If($MSWord -or $PDF)
+				{
+					WriteWordLine 4 0 "Optimization"
+				}
+				If($Text)
+				{
+					Line 3 "Optimization"
+				}
+				If($HTML)
+				{
+					#Nothing
+				}
+
 			}
 		}
 		ElseIf($? -and $Null -eq $VDIPools)

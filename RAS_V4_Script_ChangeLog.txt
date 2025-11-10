@@ -130,7 +130,6 @@
 #	In Function OutputRDSessionHostsDetails:
 #		Add Application Packages
 #		Add Auto-upgrade
-#		Add User profile
 #		Changed Get-RASVDIHostStatus -Name $VDIPool.Name to Get-RASVDIHostPoolStatus -Name $VDIPool.Name -SiteId $Site.Id
 #		Fixed bug in processing the variable $AppPackagesAssigned.ApplicationPackagesAssigned with the help of Guy Leech
 #		For RDS Hosts details, rename "Agent settings" to "Settings, and move to after Desktop access
@@ -157,6 +156,8 @@
 #			ID
 #		For Host Pool Properties, add
 #			Action tab
+#			User profile tab
+#			Application Packages
 #
 #	In Function ProcessAdministration
 #		Rename variable $RASFeatures to $RASHelpdesk
