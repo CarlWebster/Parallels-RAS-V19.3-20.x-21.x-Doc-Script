@@ -450,9 +450,9 @@
 	text document.
 .NOTES
 	NAME: RAS_Inventory_V4_0.ps1
-	VERSION: 4.00 Beta 25
+	VERSION: 4.00 Beta 26
 	AUTHOR: Carl Webster
-	LASTEDIT: November 10, 2025
+	LASTEDIT: November 14, 2025
 #>
 
 
@@ -695,6 +695,11 @@ Param(
 #		Changed Get-RASVDIHostStatus -Name $VDIPool.Name to Get-RASVDIHostPoolStatus -Name $VDIPool.Name -SiteId $Site.Id
 #		Fixed bug in processing the variable $AppPackagesAssigned.ApplicationPackagesAssigned with the help of Guy Leech
 #		For RDS Hosts details, rename "Agent settings" to "Settings, and move to after Desktop access
+#		In Optimization, for Windows Services, 
+#			Add a call to Get-Service to get the Display Name
+#				The Display Name is retrieved from the computer running the script.
+#				That means a Server OS will not find a service named "Fax"
+#			Make the code consistent with all three output formats
 #		Only output optimization data if optimization is enabled
 #
 #	In Function OutputSAMLSetting, handle multiple SAML items
@@ -716,10 +721,17 @@ Param(
 #			Template
 #			Template version
 #			ID
-#		For Host Pool Properties, add
+#		For Host Pool Properties, add:
 #			Action tab
 #			User profile tab
 #			Application Packages
+#			Optimization
+#				For Windows Services, 
+#					Add a call to Get-Service to get the Display Name
+#						The Display Name is retrieved from the computer running the script.
+#						That means a Server OS will not find a service named "Fax"
+#					Make the code consistent with all three output formats
+#			Settings
 #
 #	In Function ProcessAdministration
 #		Rename variable $RASFeatures to $RASHelpdesk
@@ -813,9 +825,9 @@ $ErrorActionPreference    = 'SilentlyContinue'
 $Error.Clear()
 
 $Script:emailCredentials  = $Null
-$script:MyVersion         = '4.00 Beta 25'
+$script:MyVersion         = '4.00 Beta 26'
 $Script:ScriptName        = "RAS_Inventory_V4_0.ps1"
-$tmpdate                  = [datetime] "11/10/2025"
+$tmpdate                  = [datetime] "11/14/2025"
 $Script:ReleaseDate       = $tmpdate.ToUniversalTime().ToShortDateString()
 
 If($MSWord -eq $False -and $PDF -eq $False -and $Text -eq $False -and $HTML -eq $False)
@@ -8634,10 +8646,10 @@ Function OutputRDSessionHostsDetails
 				$ScriptInformation.Add(@{Data = "Inherit default settings"; Value = $RDSHost.InheritDefaultAppPackageSettings.ToString(); }) > $Null
 				$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
 
-				If( $AppPackagesAssigned.PSObject.Properties[ 'ApplicationPackagesAssigned' ] -and 
-					$AppPackagesAssigned.ApplicationPackagesAssigned -is [array] -and 
-					$AppPackagesAssigned.ApplicationPackagesAssigned.Count ) #Guy Leech fixed this			
-				{
+				#If( $AppPackagesAssigned.PSObject.Properties[ 'ApplicationPackagesAssigned' ] -and 
+				#	$AppPackagesAssigned.ApplicationPackagesAssigned -is [array] -and 
+				#	$AppPackagesAssigned.ApplicationPackagesAssigned.Count ) #Guy Leech fixed this                                               
+				#{
 					ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
 					{
 						$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4>$Null
@@ -8650,8 +8662,12 @@ Function OutputRDSessionHostsDetails
 							$ScriptInformation.Add(@{Data = "Display name"; Value = $Result.DisplayName; }) > $Null
 							$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
 						}
+						Else
+						{
+							$ScriptInformation.Add(@{Data = "Unable to retrieve data for"; Value = $Result.PackageName; }) > $Null
+						}
 					}
-				}
+				#}
 
 				$Table = AddWordTable -Hashtable $ScriptInformation `
 				-Columns Data,Value `
@@ -8675,10 +8691,10 @@ Function OutputRDSessionHostsDetails
 				Line 4 "Inherit default settings`t: " $RDSHost.InheritDefaultAppPackageSettings.ToString()
 				Line 5 ""
 
-				If( $AppPackagesAssigned.PSObject.Properties[ 'ApplicationPackagesAssigned' ] -and 
-					$AppPackagesAssigned.ApplicationPackagesAssigned -is [array] -and 
-					$AppPackagesAssigned.ApplicationPackagesAssigned.Count ) #Guy Leech fixed this				
-				{
+				#If( $AppPackagesAssigned.PSObject.Properties[ 'ApplicationPackagesAssigned' ] -and 
+				#	$AppPackagesAssigned.ApplicationPackagesAssigned -is [array] -and 
+				#	$AppPackagesAssigned.ApplicationPackagesAssigned.Count ) #Guy Leech fixed this                                               
+				#{
 					ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
 					{
 						$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4>$Null
@@ -8691,8 +8707,12 @@ Function OutputRDSessionHostsDetails
 							Line 4 "Display name`t: " $Result.DisplayName
 							Line 4 ""
 						}
+						Else
+						{
+							Line 4 "Unable to retrieve data for: " $Result.PackageName
+						}
 					}
-				}
+				#}
 			}
 			If($HTML)
 			{
@@ -8700,10 +8720,10 @@ Function OutputRDSessionHostsDetails
 				$columnHeaders = @("Inherit default settings",($Script:htmlsb),$RDSHost.InheritDefaultAppPackageSettings.ToString(),$htmlwhite)
 				$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 
-				If( $AppPackagesAssigned.PSObject.Properties[ 'ApplicationPackagesAssigned' ] -and 
-					$AppPackagesAssigned.ApplicationPackagesAssigned -is [array] -and 
-					$AppPackagesAssigned.ApplicationPackagesAssigned.Count ) #Guy Leech fixed this				
-				{
+				#If( $AppPackagesAssigned.PSObject.Properties[ 'ApplicationPackagesAssigned' ] -and 
+				#	$AppPackagesAssigned.ApplicationPackagesAssigned -is [array] -and 
+				#	$AppPackagesAssigned.ApplicationPackagesAssigned.Count ) #Guy Leech fixed this                                               
+				#{
 					ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
 					{
 						$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4>$Null
@@ -8716,8 +8736,12 @@ Function OutputRDSessionHostsDetails
 							$rowdata += @(,("Display name",($Script:htmlsb),$Result.DisplayName,$htmlwhite))
 							$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 						}
+						Else
+						{
+							$rowdata += @(,("Unable to retrieve data for",($Script:htmlsb),$Result.PackageName,$htmlwhite))
+						}
 					}
-				}
+				#}
 
 				$msg = "Application Packages"
 				$columnWidths = @("200","275")
@@ -9032,30 +9056,38 @@ Function OutputRDSessionHostsDetails
 			
 						ForEach($item in $RDSHost.Optimization.WindowsServices.WindowsServicesList)
 						{
-								If($Null -eq $item.DisplayName)
+							If($Null -eq $item.DisplayName)
+							{
+								$DispName = Get-Service -Name $item.ServiceName -EA 0
+								If($? -and $Null -ne $DispName)
+								{
+									$DisplayName = $DispName.DisplayName
+								}
+								Else
 								{
 									$DisplayName = ""
 								}
-								Else
-								{
-									$DisplayName = $item.DisplayName
-								}
-								If($Null -eq $item.ServiceName)
-								{
-									$Service = ""
-								}
-								Else
-								{
-									$Service = $item.ServiceName
-								}
-								If($Null -eq $item.Aliases)
-								{
-									$Aliases = ""
-								}
-								Else
-								{
-									$Aliases = $item.Aliases
-								}
+							}
+							Else
+							{
+								$DisplayName = $item.DisplayName
+							}
+							If($Null -eq $item.ServiceName)
+							{
+								$Service = ""
+							}
+							Else
+							{
+								$Service = $item.ServiceName
+							}
+							If($Null -eq $item.Aliases)
+							{
+								$Aliases = ""
+							}
+							Else
+							{
+								$Aliases = $item.Aliases
+							}
 							$OptimizationTable += @{
 								DisplayName = $DisplayName
 								Service     = $Service
@@ -9808,7 +9840,39 @@ Function OutputRDSessionHostsDetails
 						#>
 						ForEach($item in $RDSHost.Optimization.WindowsServices.WindowsServicesList)
 						{
-							Line 7 ( "{0,-50}  {1,-30}  {2,-20}" -f $item.DisplayName, $item.ServiceName, $item.Aliases)
+							If($Null -eq $item.DisplayName)
+							{
+								$DispName = Get-Service -Name $item.ServiceName -EA 0
+								If($? -and $Null -ne $DispName)
+								{
+									$DisplayName = $DispName.DisplayName
+								}
+								Else
+								{
+									$DisplayName = ""
+								}
+							}
+							Else
+							{
+								$DisplayName = $item.DisplayName
+							}
+							If($Null -eq $item.ServiceName)
+							{
+								$Service = ""
+							}
+							Else
+							{
+								$Service = $item.ServiceName
+							}
+							If($Null -eq $item.Aliases)
+							{
+								$Aliases = ""
+							}
+							Else
+							{
+								$Aliases = $item.Aliases
+							}
+							Line 7 ( "{0,-50}  {1,-30}  {2,-20}" -f $DisplayName, $ServiceName, $Aliases)
 						}
 						Line 0 ""
 					}
@@ -10354,10 +10418,42 @@ Function OutputRDSessionHostsDetails
 
 						ForEach($item in $RDSHost.Optimization.WindowsServices.WindowsServicesList)
 						{
+							If($Null -eq $item.DisplayName)
+							{
+								$DispName = Get-Service -Name $item.ServiceName -EA 0
+								If($? -and $Null -ne $DispName)
+								{
+									$DisplayName = $DispName.DisplayName
+								}
+								Else
+								{
+									$DisplayName = ""
+								}
+							}
+							Else
+							{
+								$DisplayName = $item.DisplayName
+							}
+							If($Null -eq $item.ServiceName)
+							{
+								$Service = ""
+							}
+							Else
+							{
+								$Service = $item.ServiceName
+							}
+							If($Null -eq $item.Aliases)
+							{
+								$Aliases = ""
+							}
+							Else
+							{
+								$Aliases = $item.Aliases
+							}
 							$rowdata += @(,(
-								$item.DisplayName,$htmlwhite,
-								$item.ServiceName,$htmlwhite,
-								$item.Aliases,$htmlwhite)
+								$DisplayName,$htmlwhite,
+								$ServiceName,$htmlwhite,
+								$Aliases,$htmlwhite)
 							)
 						}
 
@@ -15035,7 +15131,15 @@ Function OutputRDSessionHostsDetails
 					{
 							If($Null -eq $item.DisplayName)
 							{
-								$DisplayName = ""
+								$DispName = Get-Service -Name $item.ServiceName -EA 0
+								If($? -and $Null -ne $DispName)
+								{
+									$DisplayName = $DispName.DisplayName
+								}
+								Else
+								{
+									$DisplayName = ""
+								}
 							}
 							Else
 							{
@@ -15057,10 +15161,10 @@ Function OutputRDSessionHostsDetails
 							{
 								$Aliases = $item.Aliases
 							}
-						$OptimizationTable += @{
-							DisplayName = $DisplayName
-							Service     = $Service
-							Aliases     = $Aliases
+							$OptimizationTable += @{
+								DisplayName = $DisplayName
+								Service     = $Service
+								Aliases     = $Aliases
 						}
 					}
 
@@ -15748,7 +15852,39 @@ Function OutputRDSessionHostsDetails
 					#		Windows Media Player Network Sharing Service        TabletInputService              Superfecth
 					ForEach($item in $RDSTemplate.Optimization.WindowsServices.WindowsServicesList)
 					{
-						Line 6 ( "{0,-50}  {1,-30}  {2,-20}" -f $item.DisplayName, $item.ServiceName, $item.Aliases)
+						If($Null -eq $item.DisplayName)
+						{
+							$DispName = Get-Service -Name $item.ServiceName -EA 0
+							If($? -and $Null -ne $DispName)
+							{
+								$DisplayName = $DispName.DisplayName
+							}
+							Else
+							{
+								$DisplayName = ""
+							}
+						}
+						Else
+						{
+							$DisplayName = $item.DisplayName
+						}
+						If($Null -eq $item.ServiceName)
+						{
+							$Service = ""
+						}
+						Else
+						{
+							$Service = $item.ServiceName
+						}
+						If($Null -eq $item.Aliases)
+						{
+							$Aliases = ""
+						}
+						Else
+						{
+							$Aliases = $item.Aliases
+						}
+						Line 6 ( "{0,-50}  {1,-30}  {2,-20}" -f $DisplayName, $ServiceName, $Aliases)
 					}
 					Line 0 ""
 				}
@@ -16189,10 +16325,42 @@ Function OutputRDSessionHostsDetails
 
 					ForEach($item in $RDSTemplate.Optimization.WindowsServices.WindowsServicesList)
 					{
-						$rowdata += @(,(
-							$item.DisplayName,$htmlwhite,
-							$item.ServiceName,$htmlwhite,
-							$item.Aliases,$htmlwhite)
+							If($Null -eq $item.DisplayName)
+							{
+								$DispName = Get-Service -Name $item.ServiceName -EA 0
+								If($? -and $Null -ne $DispName)
+								{
+									$DisplayName = $DispName.DisplayName
+								}
+								Else
+								{
+									$DisplayName = ""
+								}
+							}
+							Else
+							{
+								$DisplayName = $item.DisplayName
+							}
+							If($Null -eq $item.ServiceName)
+							{
+								$Service = ""
+							}
+							Else
+							{
+								$Service = $item.ServiceName
+							}
+							If($Null -eq $item.Aliases)
+							{
+								$Aliases = ""
+							}
+							Else
+							{
+								$Aliases = $item.Aliases
+							}
+							$rowdata += @(,(
+								$DisplayName,$htmlwhite,
+								$ServiceName,$htmlwhite,
+								$Aliases,$htmlwhite)
 						)
 					}
 
@@ -19074,23 +19242,28 @@ Function OutputVDIDetails
 					$ScriptInformation.Add(@{Data = "Inherit default settings"; Value = $VDIPool.InheritDefaultAppPackageSettings.ToString(); }) > $Null
 					$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
 
-					ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
-					{
-						$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4>$Null
-						
-						If($? -and $Null -ne $Result)
+					#If( $AppPackagesAssigned.PSObject.Properties[ 'ApplicationPackagesAssigned' ] -and 
+					#	$AppPackagesAssigned.ApplicationPackagesAssigned -is [array] -and 
+					#	$AppPackagesAssigned.ApplicationPackagesAssigned.Count ) #Guy Leech fixed this                                               
+					#{
+						ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
 						{
-							$ScriptInformation.Add(@{Data = "Name"; Value = $Result.PackageName; }) > $Null
-							$ScriptInformation.Add(@{Data = "Status"; Value = ""; }) > $Null
-							$ScriptInformation.Add(@{Data = "Version"; Value = $Result.Version; }) > $Null
-							$ScriptInformation.Add(@{Data = "Display name"; Value = $Result.DisplayName; }) > $Null
-							$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+							$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4>$Null
+							
+							If($? -and $Null -ne $Result)
+							{
+								$ScriptInformation.Add(@{Data = "Name"; Value = $Result.PackageName; }) > $Null
+								$ScriptInformation.Add(@{Data = "Status"; Value = ""; }) > $Null
+								$ScriptInformation.Add(@{Data = "Version"; Value = $Result.Version; }) > $Null
+								$ScriptInformation.Add(@{Data = "Display name"; Value = $Result.DisplayName; }) > $Null
+								$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = "Unable to retrieve data for"; Value = $Result.PackageName; }) > $Null
+							}
 						}
-						Else
-						{
-							$ScriptInformation.Add(@{Data = "Unable to retrieve data for"; Value = $Result.PackageName; }) > $Null
-						}
-					}
+					#}
 
 					$Table = AddWordTable -Hashtable $ScriptInformation `
 					-Columns Data,Value `
@@ -19114,23 +19287,28 @@ Function OutputVDIDetails
 					Line 4 "Inherit default settings`t: " $VDIPool.InheritDefaultAppPackageSettings.ToString()
 					Line 5 ""
 
-					ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
-					{
-						$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4>$Null
-						
-						If($? -and $Null -ne $Result)
+					#If( $AppPackagesAssigned.PSObject.Properties[ 'ApplicationPackagesAssigned' ] -and 
+					#	$AppPackagesAssigned.ApplicationPackagesAssigned -is [array] -and 
+					#	$AppPackagesAssigned.ApplicationPackagesAssigned.Count ) #Guy Leech fixed this                                               
+					#{
+						ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
 						{
-							Line 4 "Name`t`t: " $Result.PackageName
-							Line 4 "Status`t`t: "
-							Line 4 "Version`t`t: " $Result.Version
-							Line 4 "Display name`t: " $Result.DisplayName
-							Line 4 ""
+							$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4>$Null
+							
+							If($? -and $Null -ne $Result)
+							{
+								Line 4 "Name`t`t: " $Result.PackageName
+								Line 4 "Status`t`t: "
+								Line 4 "Version`t`t: " $Result.Version
+								Line 4 "Display name`t: " $Result.DisplayName
+								Line 4 ""
+							}
+							Else
+							{
+								Line 4 "Unable to retrieve data for: " $Result.PackageName
+							}
 						}
-						Else
-						{
-							Line 4 "Unable to retrieve data for: " $Result.PackageName
-						}
-					}
+					#}
 				}
 				If($HTML)
 				{
@@ -19138,23 +19316,28 @@ Function OutputVDIDetails
 					$columnHeaders = @("Inherit default settings",($Script:htmlsb),$VDIPool.InheritDefaultAppPackageSettings.ToString(),$htmlwhite)
 					$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 
-					ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
-					{
-						$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4>$Null
-						
-						If($? -and $Null -ne $Result)
+					#If( $AppPackagesAssigned.PSObject.Properties[ 'ApplicationPackagesAssigned' ] -and 
+					#	$AppPackagesAssigned.ApplicationPackagesAssigned -is [array] -and 
+					#	$AppPackagesAssigned.ApplicationPackagesAssigned.Count ) #Guy Leech fixed this                                               
+					#{
+						ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
 						{
-							$rowdata += @(,("Name",($Script:htmlsb),$Result.PackageName,$htmlwhite))
-							$rowdata += @(,("Status",($Script:htmlsb),"",$htmlwhite))
-							$rowdata += @(,("Version",($Script:htmlsb),$Result.Version,$htmlwhite))
-							$rowdata += @(,("Display name",($Script:htmlsb),$Result.DisplayName,$htmlwhite))
-							$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+							$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4>$Null
+							
+							If($? -and $Null -ne $Result)
+							{
+								$rowdata += @(,("Name",($Script:htmlsb),$Result.PackageName,$htmlwhite))
+								$rowdata += @(,("Status",($Script:htmlsb),"",$htmlwhite))
+								$rowdata += @(,("Version",($Script:htmlsb),$Result.Version,$htmlwhite))
+								$rowdata += @(,("Display name",($Script:htmlsb),$Result.DisplayName,$htmlwhite))
+								$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("Unable to retrieve data for",($Script:htmlsb),$Result.PackageName,$htmlwhite))
+							}
 						}
-						Else
-						{
-							$rowdata += @(,("Unable to retrieve data for",($Script:htmlsb),$Result.PackageName,$htmlwhite))
-						}
-					}
+					#}
 
 					$msg = "Application Packages"
 					$columnWidths = @("200","275")
@@ -19177,6 +19360,2507 @@ Function OutputVDIDetails
 					#Nothing
 				}
 
+				<#
+				Get-RASImageOptimization -Id 4 -ObjType VDIHostPool
+
+				Name                               Value
+				----                               -----
+				Action                             RASAdminEngine.Core.OutputModels.HostPool.ActionSettings
+				AdminCreate                        rasadmin
+				AdminLastMod                       carl.webster@parallelslabus
+				Agent                              RASAdminEngine.Core.OutputModels.HostPool.AgentSettings
+				AppPackagesAssigned                RASAdminEngine.Core.OutputModels.AppPackagesAssigned
+				AutoUpgrade                        RASAdminEngine.Core.OutputModels.HostPool.AutoUpgradeSettings
+				Description                        Pool description
+				Enabled                            True
+				Id                                 4
+				InheritDefaultAgentSettings        True
+				InheritDefaultAppPackageSettings   False
+				InheritDefaultAutoUpgradeSettings  True
+				InheritDefaultOptimizationSettings False
+				InheritDefaultRDPPrinterSettings   True
+				InheritDefaultUserProfileSettings  False
+				InheritDefaultVDIActionSettings    False
+				InheritDefaultVDISecuritySettings  True
+				Members                            RASAdminEngine.Core.OutputModels.HostPool.MembersSettings
+				Name                               Pool
+				Optimization                       RASAdminEngine.Core.OutputModels.ImagesOptimization.ImageOptimization
+				ProviderSettings
+				Provisioning                       RASAdminEngine.Core.OutputModels.HostPool.VDIProvisioningSettings
+				ProvisioningType
+				RDPPrinter                         RASAdminEngine.Core.OutputModels.HostPool.RDPPrinterSettings
+				Security                           RASAdminEngine.Core.OutputModels.VDISecuritySettings
+				SiteId                             1
+				Template
+				TimeCreate                         2/27/2020 11:18:44 AM
+				TimeLastMod                        11/11/2025 4:31:10 PM
+				UserProfile                        RASAdminEngine.Core.OutputModels.UserProfile.UserProfileSettings
+				#>
+
+				If($VDIPool.InheritDefaultOptimizationSettings)
+				{
+					#http://woshub.com/hot-to-convert-sid-to-username-and-vice-versa/
+					#for translating the User SID to the AD user name
+					#get the VDI host pool default settings
+					
+					$VDIPoolDefaults = Get-RASVDIDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
+					
+					If($? -and $Null -ne $VDIPoolDefaults)
+					{
+						$OPTEnableOptimization            = $VDIPoolDefaults.Optimization.EnableOptimization.ToString()
+						$OPTOptimizationType              = $VDIPoolDefaults.Optimization.OptimizationType.ToString()
+						$OPTWindowsDefenderATPEnabled     = $VDIPoolDefaults.Optimization.WindowsDefenderATPEnabled.ToString()    
+						$OPTWindowsComponentsEnabled      = $VDIPoolDefaults.Optimization.WindowsComponentsEnabled.ToString()
+						$OPTWindowsServicesEnabled        = $VDIPoolDefaults.Optimization.WindowsServicesEnabled.ToString()
+						$OPTWinodwsScheduledTasksEnabled  = $VDIPoolDefaults.Optimization.WindowsScheduledTasksEnabled.ToString()
+						$OPTWindowsAdvancedOptionsEnabled = $VDIPoolDefaults.Optimization.WindowsAdvancedOptionsEnabled.ToString()
+						$OPTNetworkPerformanceEnabled     = $VDIPoolDefaults.Optimization.NetworkPerformanceEnabled.ToString()
+						$OPTRegistryEnabled               = $VDIPoolDefaults.Optimization.RegistryEnabled.ToString()
+						$OPTVisualEffectsEnabled          = $VDIPoolDefaults.Optimization.VisualEffectsEnabled.ToString()   
+						$OPTDiskCleanupEnabled            = $VDIPoolDefaults.Optimization.DiskCleanupEnabled.ToString()
+						$OPTCustomScriptEnabled           = $VDIPoolDefaults.Optimization.CustomScriptEnabled.ToString()
+					}
+					Else
+					{
+						$OPTEnableOptimization            = "False"
+						$OPTOptimizationType              = "Automatic"
+						$OPTWindowsDefenderATPEnabled     = "False"
+						$OPTWindowsComponentsEnabled      = "False"
+						$OPTWindowsServicesEnabled        = "False"
+						$OPTWinodwsScheduledTasksEnabled  = "False"
+						$OPTWindowsAdvancedOptionsEnabled = "False"
+						$OPTNetworkPerformanceEnabled     = "False"
+						$OPTRegistryEnabled               = "False"
+						$OPTVisualEffectsEnabled          = "False"
+						$OPTDiskCleanupEnabled            = "False"
+						$OPTCustomScriptEnabled           = "False"
+					}
+				}
+				Else
+				{
+					#we don't inherit
+					#get the settings for the host
+					
+					$OPTEnableOptimization            = $VDIPool.Optimization.EnableOptimization.ToString()
+					$OPTOptimizationType              = $VDIPool.Optimization.OptimizationType.ToString()
+					$OPTWindowsDefenderATPEnabled     = $VDIPool.Optimization.WindowsDefenderATPEnabled.ToString()    
+					$OPTWindowsComponentsEnabled      = $VDIPool.Optimization.WindowsComponentsEnabled.ToString()
+					$OPTWindowsServicesEnabled        = $VDIPool.Optimization.WindowsServicesEnabled.ToString()
+					$OPTWinodwsScheduledTasksEnabled  = $VDIPool.Optimization.WindowsScheduledTasksEnabled.ToString()
+					$OPTWindowsAdvancedOptionsEnabled = $VDIPool.Optimization.WindowsAdvancedOptionsEnabled.ToString()
+					$OPTNetworkPerformanceEnabled     = $VDIPool.Optimization.NetworkPerformanceEnabled.ToString()
+					$OPTRegistryEnabled               = $VDIPool.Optimization.RegistryEnabled.ToString()
+					$OPTVisualEffectsEnabled          = $VDIPool.Optimization.VisualEffectsEnabled.ToString()   
+					$OPTDiskCleanupEnabled            = $VDIPool.Optimization.DiskCleanupEnabled.ToString()
+					$OPTCustomScriptEnabled           = $VDIPool.Optimization.CustomScriptEnabled.ToString()
+				}
+
+				If($MSWord -or $PDF)
+				{
+					$ScriptInformation = New-Object System.Collections.ArrayList
+					$ScriptInformation.Add(@{Data = "Inherit default settings"; Value = $VDIPool.InheritDefaultUserProfileSettings.ToString(); }) > $Null
+					$ScriptInformation.Add(@{Data = "Enable optimization"; Value = $OPTEnableOptimization; }) > $Null
+					$ScriptInformation.Add(@{Data = "Optimization type"; Value = $OPTOptimizationType; }) > $Null
+
+					$Table = AddWordTable -Hashtable $ScriptInformation `
+					-Columns Data,Value `
+					-List `
+					-Format $wdTableGrid `
+					-AutoFit $wdAutoFitFixed;
+
+					#SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+					SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+					$Table.Columns.Item(1).Width = 250;
+					$Table.Columns.Item(2).Width = 250;
+
+					$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+					FindWordDocumentEnd
+					$Table = $Null
+					WriteWordLine 0 0 ""
+
+					If($OPTEnableOptimization -eq "True")
+					{
+						WriteWordLine 5 0 "Windows Defender ATP:" $OPTWindowsDefenderATPEnabled
+						If($OPTWindowsDefenderATPEnabled -eq "True")
+						{
+							$ScriptInformation = New-Object System.Collections.ArrayList
+
+							If($VDIPool.Optimization.WindowsDefenderATP.WinDefATPTurnOffOn.ToString() -eq "TurnOffWindowsDefenderATP")
+							{
+								$ScriptInformation.Add(@{Data = "Windows Defender ATP Optimizations"; Value = "Turn off Windows Defender ATP (I use my own ATP solution)"; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = "Windows Defender ATP Optimizations"; Value = "Turn on Windows Defender ATP and set process and folder exclusions"; }) > $Null
+								$ScriptInformation.Add(@{Data = "     Disable real-time protection"; Value = $VDIPool.Optimization.WindowsDefenderATP.DisableRealTimeProtection.ToString(); }) > $Null
+								$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+								
+								$cnt = -1
+								ForEach($item in $VDIPool.Optimization.WindowsDefenderATP.ExcludeFolders)
+								{
+									$cnt++
+									If($cnt -eq 0)
+									{
+										$ScriptInformation.Add(@{Data = "     Exclude files and folders"; Value = $item; }) > $Null
+									}
+									Else
+									{
+										$ScriptInformation.Add(@{Data = ""; Value = $item; }) > $Null
+									}
+								}
+
+								$cnt = -1
+								ForEach($item in $VDIPool.Optimization.WindowsDefenderATP.ExcludeProcesses)
+								{
+									$cnt++
+									If($cnt -eq 0)
+									{
+										$ScriptInformation.Add(@{Data = "     Exclude processes"; Value = $item; }) > $Null
+									}
+									Else
+									{
+										$ScriptInformation.Add(@{Data = ""; Value = $item; }) > $Null
+									}
+								}
+								
+								$cnt = -1
+								ForEach($item in $VDIPool.Optimization.WindowsDefenderATP.ExcludeExtension)
+								{
+									$cnt++
+									If($cnt -eq 0)
+									{
+										$ScriptInformation.Add(@{Data = "     Exclude extensions"; Value = $item; }) > $Null
+									}
+									Else
+									{
+										$ScriptInformation.Add(@{Data = ""; Value = $item; }) > $Null
+									}
+								}
+							}
+
+							$Table = AddWordTable -Hashtable $ScriptInformation `
+							-Columns Data,Value `
+							-List `
+							-Format $wdTableGrid `
+							-AutoFit $wdAutoFitFixed;
+
+							#SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+							SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+							$Table.Columns.Item(1).Width = 250;
+							$Table.Columns.Item(2).Width = 250;
+
+							$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+							FindWordDocumentEnd
+							$Table = $Null
+							WriteWordLine 0 0 ""
+						}
+
+						WriteWordLine 5 0 "Windows Components:" $OPTWindowsComponentsEnabled
+						If($OPTWindowsComponentsEnabled -eq "True")
+						{
+							$ScriptInformation = New-Object System.Collections.ArrayList
+							$ScriptInformation.Add(@{Data = "Windows Components Optimizations"; Value = ""; }) > $Null
+							$ScriptInformation.Add(@{Data = "Disable (remove) components:"; Value = ""; }) > $Null
+
+							$Table = AddWordTable -Hashtable $ScriptInformation `
+							-Columns Data,Value `
+							-List `
+							-Format $wdTableGrid `
+							-AutoFit $wdAutoFitFixed;
+
+							#SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+							SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+							$Table.Columns.Item(1).Width = 200;
+							$Table.Columns.Item(2).Width = 15;
+
+							$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+							FindWordDocumentEnd
+							$Table = $Null
+							WriteWordLine 0 0 ""
+
+							$ScriptInformation = New-Object System.Collections.ArrayList
+							$OptimizationTable = @()
+				
+							ForEach($item in $VDIPool.Optimization.WindowsComponents.WindowsComponentsList)
+							{
+								If($Null -eq $item.DisplayName)
+								{
+									$DisplayName = ""
+								}
+								Else
+								{
+									$DisplayName = $item.DisplayName
+								}
+								If($Null -eq $item.ComponentName)
+								{
+									$ComponentName = ""
+								}
+								Else
+								{
+									$ComponentName = $item.ComponentName
+								}
+								$OptimizationTable += @{
+									DisplayName = $DisplayName
+									ComponentName = $ComponentName
+								}
+							}
+
+							If($OptimizationTable.Count -gt 0)
+							{
+								$Table = AddWordTable -Hashtable $OptimizationTable `
+								-Columns DisplayName, ComponentName `
+								-Headers "Display name", "Component" `
+								-Format $wdTableGrid `
+								-AutoFit $wdAutoFitFixed;
+
+								SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+								$Table.Columns.Item(1).Width = 200;
+								$Table.Columns.Item(2).Width = 200;
+								
+								$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+								FindWordDocumentEnd
+								$Table = $Null
+								WriteWordLine 0 0 ""
+							}
+						}
+
+						WriteWordLine 5 0 "Windows Services: " $OPTWindowsServicesEnabled       
+						If($OPTWindowsServicesEnabled -eq "True")
+						{
+							$ScriptInformation = New-Object System.Collections.ArrayList
+							$ScriptInformation.Add(@{Data = "Windows Services Optimizations"; Value = ""; }) > $Null
+							$ScriptInformation.Add(@{Data = "Disable services:"; Value = ""; }) > $Null
+
+							$Table = AddWordTable -Hashtable $ScriptInformation `
+							-Columns Data,Value `
+							-List `
+							-Format $wdTableGrid `
+							-AutoFit $wdAutoFitFixed;
+
+							#SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+							SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+							$Table.Columns.Item(1).Width = 200;
+							$Table.Columns.Item(2).Width = 15;
+
+							$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+							FindWordDocumentEnd
+							$Table = $Null
+							WriteWordLine 0 0 ""
+
+							$ScriptInformation = New-Object System.Collections.ArrayList
+							$OptimizationTable = @()
+				
+							ForEach($item in $VDIPool.Optimization.WindowsServices.WindowsServicesList)
+							{
+								If($Null -eq $item.DisplayName)
+								{
+									Try
+									{
+										$DispName = Get-Service -Name $item.ServiceName -EA 0
+										$DisplayName = $DispName.DisplayName
+									}
+
+									Catch
+									{
+										$DisplayName = ""
+									}
+								}
+								Else
+								{
+									$DisplayName = $item.DisplayName
+								}
+								If($Null -eq $item.ServiceName)
+								{
+									$Service = ""
+								}
+								Else
+								{
+									$Service = $item.ServiceName
+								}
+								If($Null -eq $item.Aliases)
+								{
+									$Aliases = ""
+								}
+								Else
+								{
+									$Aliases = $item.Aliases
+								}
+								$OptimizationTable += @{
+									DisplayName = $DisplayName
+									Service     = $Service
+									Aliases     = $Aliases
+								}
+							}
+
+							If($OptimizationTable.Count -gt 0)
+							{
+								$Table = AddWordTable -Hashtable $OptimizationTable `
+								-Columns DisplayName, Service, Aliases `
+								-Headers "Display name", "Service", "Aliases" `
+								-Format $wdTableGrid `
+								-AutoFit $wdAutoFitFixed;
+
+								SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+								$Table.Columns.Item(1).Width = 200;
+								$Table.Columns.Item(2).Width = 100;
+								$Table.Columns.Item(3).Width = 50;
+								
+								$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+								FindWordDocumentEnd
+								$Table = $Null
+								WriteWordLine 0 0 ""
+							}
+						}
+						
+						WriteWordLine 5 0 "Windows Scheduled Tasks: " $OPTWinodwsScheduledTasksEnabled 
+						If($OPTWinodwsScheduledTasksEnabled -eq "True")
+						{
+							$ScriptInformation = New-Object System.Collections.ArrayList
+							$ScriptInformation.Add(@{Data = "Windows Scheduled Tasks Optimizations"; Value = ""; }) > $Null
+							$ScriptInformation.Add(@{Data = "Disable tasks:"; Value = ""; }) > $Null
+
+							$Table = AddWordTable -Hashtable $ScriptInformation `
+							-Columns Data,Value `
+							-List `
+							-Format $wdTableGrid `
+							-AutoFit $wdAutoFitFixed;
+
+							#SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+							SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+							$Table.Columns.Item(1).Width = 200;
+							$Table.Columns.Item(2).Width = 15;
+
+							$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+							FindWordDocumentEnd
+							$Table = $Null
+							WriteWordLine 0 0 ""
+
+							$ScriptInformation = New-Object System.Collections.ArrayList
+							$OptimizationTable = @()
+				
+							ForEach($item in $VDIPool.Optimization.WindowsScheduledTasks.WindowsScheduledTasksList)
+							{
+									If($Null -eq $item.Task)
+									{
+										$Task = ""
+									}
+									Else
+									{
+										$Task = $item.Task
+									}
+									If($Null -eq $item.Type)
+									{
+										$Type = ""
+									}
+									Else
+									{
+										$Type = $item.Type.ToString()
+									}
+									If($Null -eq $item.Location)
+									{
+										$Location = ""
+									}
+									Else
+									{
+										$Location = $item.Location
+									}
+								$OptimizationTable += @{
+									Task     = $Task
+									Type     = $Type
+									Location = $Location
+								}
+							}
+
+							If($OptimizationTable.Count -gt 0)
+							{
+								$Table = AddWordTable -Hashtable $OptimizationTable `
+								-Columns Task, Type, Location `
+								-Headers "Task", "Type", "Location" `
+								-Format $wdTableGrid `
+								-AutoFit $wdAutoFitFixed;
+
+								SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+								$Table.Columns.Item(1).Width = 200;
+								$Table.Columns.Item(2).Width = 50;
+								$Table.Columns.Item(3).Width = 250;
+								
+								$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+								FindWordDocumentEnd
+								$Table = $Null
+								WriteWordLine 0 0 ""
+							}
+						}
+						
+						WriteWordLine 5 0 "Windows advanced options: " $OPTWindowsAdvancedOptionsEnabled
+						If($OPTWindowsAdvancedOptionsEnabled -eq "True")
+						{
+							$ScriptInformation = New-Object System.Collections.ArrayList
+							$ScriptInformation.Add(@{Data = "Windows Advanced Options"; Value = ""; }) > $Null
+
+							$Table = AddWordTable -Hashtable $ScriptInformation `
+							-Columns Data,Value `
+							-List `
+							-Format $wdTableGrid `
+							-AutoFit $wdAutoFitFixed;
+
+							#SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+							SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+							$Table.Columns.Item(1).Width = 200;
+							$Table.Columns.Item(2).Width = 15;
+
+							$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+							FindWordDocumentEnd
+							$Table = $Null
+							WriteWordLine 0 0 ""
+
+							$ScriptInformation = New-Object System.Collections.ArrayList
+							$OptimizationTable = @()
+				
+							$OptimizationTable += @{
+								Setting = "Disable Hibernate"
+								Enabled = $VDIPool.Optimization.WindowsAdvancedOptions.Hibernate.ToString()
+								Value   = ""
+							}
+
+							$OptimizationTable += @{
+								Setting = "Disable Telemetry collection"
+								Enabled = $VDIPool.Optimization.WindowsAdvancedOptions.TeleCollection.ToString()
+								Value   = ""
+							}
+
+							$OptimizationTable += @{
+								Setting = "Disable System Restore"
+								Enabled = $VDIPool.Optimization.WindowsAdvancedOptions.SystemRestore.ToString()
+								Value   = ""
+							}
+
+							$OptimizationTable += @{
+								Setting = "Disable error reporting to send additional data"
+								Enabled = $VDIPool.Optimization.WindowsAdvancedOptions.AdditionalErrorReport.ToString()
+								Value   = ""
+							}
+
+							$OptimizationTable += @{
+								Setting = "Disable Tiles"
+								Enabled = $VDIPool.Optimization.WindowsAdvancedOptions.Tiles.ToString()
+								Value   = ""
+							}
+
+							$OptimizationTable += @{
+								Setting = "Disable Cortana digital assistant"
+								Enabled = $VDIPool.Optimization.WindowsAdvancedOptions.Cortana.ToString()
+								Value   = ""
+							}
+
+							$OptimizationTable += @{
+								Setting = "Turn off Microsoft consumer experience"
+								Enabled = $VDIPool.Optimization.WindowsAdvancedOptions.MicrosoftConsumerExperience.ToString()
+								Value   = ""
+							}
+
+							$OptimizationTable += @{
+								Setting = "Do not show Windows tips"
+								Enabled = $VDIPool.Optimization.WindowsAdvancedOptions.WindowsTips.ToString()
+								Value   = ""
+							}
+
+							$OptimizationTable += @{
+								Setting = "Remove Common program groups from the Start Menu"
+								Enabled = $VDIPool.Optimization.WindowsAdvancedOptions.CommonProgramGroups.ToString()
+								Value   = ""
+							}
+
+							$OptimizationTable += @{
+								Setting = "Partial Start Menu layout"
+								Enabled = $VDIPool.Optimization.WindowsAdvancedOptions.PartialStartMenu.ToString()
+								Value   = $VDIPool.Optimization.WindowsAdvancedOptions.PartialStartLayoutContent
+							}
+
+							If($OptimizationTable.Count -gt 0)
+							{
+								$Table = AddWordTable -Hashtable $OptimizationTable `
+								-Columns Setting, Enabled, Value `
+								-Headers "Setting", "Enabled", "Value" `
+								-Format $wdTableGrid `
+								-AutoFit $wdAutoFitFixed;
+
+								SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+								$Table.Columns.Item(1).Width = 275;
+								$Table.Columns.Item(2).Width = 50;
+								$Table.Columns.Item(3).Width = 175;
+								
+								$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+								FindWordDocumentEnd
+								$Table = $Null
+								WriteWordLine 0 0 ""
+							}
+						}
+						
+						WriteWordLine 5 0 "Network performance: " $OPTNetworkPerformanceEnabled
+						If($OPTNetworkPerformanceEnabled -eq "True")
+						{
+							$ScriptInformation = New-Object System.Collections.ArrayList
+							$ScriptInformation.Add(@{Data = "Network Performance Optimizations"; Value = ""; }) > $Null
+
+							$Table = AddWordTable -Hashtable $ScriptInformation `
+							-Columns Data,Value `
+							-List `
+							-Format $wdTableGrid `
+							-AutoFit $wdAutoFitFixed;
+
+							#SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+							SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+							$Table.Columns.Item(1).Width = 200;
+							$Table.Columns.Item(2).Width = 15;
+
+							$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+							FindWordDocumentEnd
+							$Table = $Null
+							WriteWordLine 0 0 ""
+
+							$ScriptInformation = New-Object System.Collections.ArrayList
+							$OptimizationTable = @()
+				
+							$OptimizationTable += @{
+								Setting = "FileInfoCacheEntriesMax"
+								Enabled = $VDIPool.Optimization.NetworkPerformance.FileInfoCacheEnable.ToString()
+								Value   = $VDIPool.Optimization.NetworkPerformance.FileInfoCache
+							}
+
+							$OptimizationTable += @{
+								Setting = "DirectoryCacheEntriesMax"
+								Enabled = $VDIPool.Optimization.NetworkPerformance.DirectoryCacheEnable.ToString()
+								Value   = $VDIPool.Optimization.NetworkPerformance.DirCacheMax
+							}
+
+							$OptimizationTable += @{
+								Setting = "FileNotFoundCacheEntriesMax"
+								Enabled = $VDIPool.Optimization.NetworkPerformance.FileNotFoundCacheEnable.ToString()
+								Value   = $VDIPool.Optimization.NetworkPerformance.FileNotFoundCache
+							}
+
+							$OptimizationTable += @{
+								Setting = "DormantFileLimit"
+								Enabled = $VDIPool.Optimization.NetworkPerformance.DormantFileLimitEnable.ToString()
+								Value   = $VDIPool.Optimization.NetworkPerformance.DormantFileLimit
+							}
+
+							$OptimizationTable += @{
+								Setting = "Disable TCP/IP Task Offload"
+								Enabled = $VDIPool.Optimization.NetworkPerformance.DisableTCP.ToString()
+								Value   = ""
+							}
+
+							$OptimizationTable += @{
+								Setting = "Disable IPv6 Components"
+								Enabled = $VDIPool.Optimization.NetworkPerformance.DisableIPv6CompEnable.ToString()
+								Value   = ""
+							}
+
+							$OptimizationTable += @{
+								Setting = "Disable IPv6 to IPv4"
+								Enabled = $VDIPool.Optimization.NetworkPerformance.DisableIPv6ToIPv4.ToString()
+								Value   = ""
+							}
+
+							$OptimizationTable += @{
+								Setting = "Disables isatap for IPv6"
+								Enabled = $VDIPool.Optimization.NetworkPerformance.DisableIsaTap.ToString()
+								Value   = ""
+							}
+
+							If($OptimizationTable.Count -gt 0)
+							{
+								$Table = AddWordTable -Hashtable $OptimizationTable `
+								-Columns Setting, Enabled, Value `
+								-Headers "Setting", "Enabled", "Value" `
+								-Format $wdTableGrid `
+								-AutoFit $wdAutoFitFixed;
+
+								SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+								$Table.Columns.Item(1).Width = 150;
+								$Table.Columns.Item(2).Width = 50;
+								$Table.Columns.Item(3).Width = 50;
+								
+								$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+								FindWordDocumentEnd
+								$Table = $Null
+								WriteWordLine 0 0 ""
+							}
+						}
+
+						WriteWordLine 5 0 "Registry: " $OPTRegistryEnabled
+						If($OPTRegistryEnabled -eq "True")
+						{
+							$ScriptInformation = New-Object System.Collections.ArrayList
+							$ScriptInformation.Add(@{Data = "Registry Optimizations"; Value = ""; }) > $Null
+							$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+
+							ForEach($item in $VDIPool.Optimization.Registry.RegistryList)
+							{
+								If($item.RegType.ToString() -eq "REG_SZ" -or $item.RegType.ToString() -eq "REG_EXPAND_SZ")
+								{
+									$ScriptInformation.Add(@{Data = "Registry"; Value = $item.DisplayName; }) > $Null
+									$ScriptInformation.Add(@{Data = "Action"; Value = $item.Action; }) > $Null
+									$ScriptInformation.Add(@{Data = "Value"; Value = $item.RegistryName; }) > $Null
+									$ScriptInformation.Add(@{Data = "Type"; Value = $item.RegType.ToString(); }) > $Null
+									$ScriptInformation.Add(@{Data = "Data"; Value = $item.StringValue; }) > $Null
+									$ScriptInformation.Add(@{Data = "Path"; Value = "$($item.HiveType)\$($item.Path)"; }) > $Null
+									$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+								}
+								ElseIf($item.RegType.ToString() -eq "REG_DWORD" -or $item.RegType.ToString() -eq "REG_QWORD")
+								{
+									$ScriptInformation.Add(@{Data = "Registry"; Value = $item.DisplayName; }) > $Null
+									$ScriptInformation.Add(@{Data = "Action"; Value = $item.Action; }) > $Null
+									$ScriptInformation.Add(@{Data = "Value"; Value = $item.RegistryName; }) > $Null
+									$ScriptInformation.Add(@{Data = "Type"; Value = $item.RegType.ToString(); }) > $Null
+									$ScriptInformation.Add(@{Data = "Data"; Value = $item.DWORDValue; }) > $Null
+									$ScriptInformation.Add(@{Data = "Path"; Value = "$($item.HiveType)\$($item.Path)"; }) > $Null
+									$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+								}
+								ElseIf($item.RegType.ToString() -eq "REG_MULTI_SZ")
+								{
+									$ScriptInformation.Add(@{Data = "Registry"; Value = $item.DisplayName; }) > $Null
+									$ScriptInformation.Add(@{Data = "Action"; Value = $item.Action; }) > $Null
+									$ScriptInformation.Add(@{Data = "Value"; Value = $item.RegistryName; }) > $Null
+									$cnt = -1
+									$TmpArray = $item.StringValue.Split("`r")
+									ForEach($SubItem in $TmpArray)
+									{
+										$cnt++
+										
+										If($cnt -eq 0)
+										{
+											$ScriptInformation.Add(@{Data = "Type"; Value = $SubItem; }) > $Null
+										}
+										Else
+										{
+											$ScriptInformation.Add(@{Data = ""; Value = $SubItem; }) > $Null
+										}
+									}
+									$ScriptInformation.Add(@{Data = "Path"; Value = "$($item.HiveType)\$($item.Path)"; }) > $Null
+									$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+								}
+							}
+
+							$Table = AddWordTable -Hashtable $ScriptInformation `
+							-Columns Data,Value `
+							-List `
+							-Format $wdTableGrid `
+							-AutoFit $wdAutoFitFixed;
+
+							SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+							$Table.Columns.Item(1).Width = 125;
+							$Table.Columns.Item(2).Width = 375;
+
+							$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+							FindWordDocumentEnd
+							$Table = $Null
+							WriteWordLine 0 0 ""
+						}
+						
+						WriteWordLine 5 0 "Visual Effects: " $OPTVisualEffectsEnabled
+						If($OPTVisualEffectsEnabled -eq "True")
+						{
+							$ScriptInformation = New-Object System.Collections.ArrayList
+							$ScriptInformation.Add(@{Data = "Visual Effects Optimizations"; Value = ""; }) > $Null
+
+							$Table = AddWordTable -Hashtable $ScriptInformation `
+							-Columns Data,Value `
+							-List `
+							-Format $wdTableGrid `
+							-AutoFit $wdAutoFitFixed;
+
+							#SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+							SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+							$Table.Columns.Item(1).Width = 200;
+							$Table.Columns.Item(2).Width = 15;
+
+							$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+							FindWordDocumentEnd
+							$Table = $Null
+							WriteWordLine 0 0 ""
+
+							$ScriptInformation = New-Object System.Collections.ArrayList
+							$OptimizationTable = @()
+				
+							$OptimizationTable += @{
+								Setting = "Animate controls and elements inside windows"
+								Enabled = $VDIPool.Optimization.VisualEffects.AnimateControlSelectElements.ToString()
+							}
+
+							$OptimizationTable += @{
+								Setting = "Animate windows when minimizing and maximizing"
+								Enabled = $VDIPool.Optimization.VisualEffects.AnimateWindowsWhenMinimizingMaximizing.ToString()
+							}
+
+							$OptimizationTable += @{
+								Setting = "Animations in the taskbar"
+								Enabled = $VDIPool.Optimization.VisualEffects.AnimateTaskbar.ToString()
+							}
+
+							$OptimizationTable += @{
+								Setting = "Enable Peek"
+								Enabled = $VDIPool.Optimization.VisualEffects.EnablePeek.ToString()
+							}
+
+							$OptimizationTable += @{
+								Setting = "Fade or slide menus into view"
+								Enabled = $VDIPool.Optimization.VisualEffects.FadeSlideMenus.ToString()
+							}
+
+							$OptimizationTable += @{
+								Setting = "Fade or slide Tooltips into view"
+								Enabled = $VDIPool.Optimization.VisualEffects.FadeSlideToolTips.ToString()
+							}
+
+							$OptimizationTable += @{
+								Setting = "Fade out menu items after clicking"
+								Enabled = $VDIPool.Optimization.VisualEffects.FadeOutMenuItems.ToString()
+							}
+
+							$OptimizationTable += @{
+								Setting = "Save taskbar thumbnail previews"
+								Enabled = $VDIPool.Optimization.VisualEffects.SaveTaskbarThumbnail.ToString()
+							}
+
+							$OptimizationTable += @{
+								Setting = "Show shadows under mouse pointer"
+								Enabled = $VDIPool.Optimization.VisualEffects.ShowShadowUnderMouse.ToString()
+							}
+
+							$OptimizationTable += @{
+								Setting = "Show shadows under windows"
+								Enabled = $VDIPool.Optimization.VisualEffects.ShadowUnderWindows.ToString()
+							}
+
+							$OptimizationTable += @{
+								Setting = "Show thumbnails instead of icons"
+								Enabled = $VDIPool.Optimization.VisualEffects.ThumbnailsInsteadOfIcons.ToString()
+							}
+
+							$OptimizationTable += @{
+								Setting = "Show translucent selection rectangle"
+								Enabled = $VDIPool.Optimization.VisualEffects.ShowTranslucentSelection.ToString()
+							}
+
+							$OptimizationTable += @{
+								Setting = "Show window contents while dragging"
+								Enabled = $VDIPool.Optimization.VisualEffects.ShowWindowsContentWhilstDragging.ToString()
+							}
+
+							$OptimizationTable += @{
+								Setting = "Slide open combo boxes"
+								Enabled = $VDIPool.Optimization.VisualEffects.SlideOpenComboBoxes.ToString()
+							}
+
+							$OptimizationTable += @{
+								Setting = "Smooth edges of screen fonts"
+								Enabled = $VDIPool.Optimization.VisualEffects.SmoothEdgesScreenFonts.ToString()
+							}
+
+							$OptimizationTable += @{
+								Setting = "Smooth-scroll list boxes"
+								Enabled = $VDIPool.Optimization.VisualEffects.SmoothScrollListBoxes.ToString()
+							}
+
+							$OptimizationTable += @{
+								Setting = "Use drop shadows for icon labels on the desktop"
+								Enabled = $VDIPool.Optimization.VisualEffects.DropShadowsIcon.ToString()
+							}
+
+							If($OptimizationTable.Count -gt 0)
+							{
+								$Table = AddWordTable -Hashtable $OptimizationTable `
+								-Columns Setting, Enabled `
+								-Headers "Setting", "Enabled" `
+								-Format $wdTableGrid `
+								-AutoFit $wdAutoFitFixed;
+
+								SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+								$Table.Columns.Item(1).Width = 250;
+								$Table.Columns.Item(2).Width = 50;
+								
+								$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+								FindWordDocumentEnd
+								$Table = $Null
+								WriteWordLine 0 0 ""
+							}
+						}
+						
+						WriteWordLine 5 0 "Disk cleanup: " $OPTDiskCleanupEnabled
+						If($OPTDiskCleanupEnabled -eq "True")
+						{
+							$ScriptInformation = New-Object System.Collections.ArrayList
+							$ScriptInformation.Add(@{Data = "Disk Cleanup Optimizations"; Value = ""; }) > $Null
+
+							$Table = AddWordTable -Hashtable $ScriptInformation `
+							-Columns Data,Value `
+							-List `
+							-Format $wdTableGrid `
+							-AutoFit $wdAutoFitFixed;
+
+							SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+							$Table.Columns.Item(1).Width = 200;
+							$Table.Columns.Item(2).Width = 15;
+
+							$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+							FindWordDocumentEnd
+							$Table = $Null
+							WriteWordLine 0 0 ""
+
+							$ScriptInformation = New-Object System.Collections.ArrayList
+							$OptimizationTable = @()
+				
+							$OptimizationTable += @{
+								Setting = "Clean up redundant system files"
+								Enabled = $VDIPool.Optimization.DiskCleanup.CleanupSystemFiles.ToString()
+							}
+
+							$OptimizationTable += @{
+								Setting = "Clean up the WinSxS Folder"
+								Enabled = $VDIPool.Optimization.DiskCleanup.CleanupWinSxSFolder.ToString()
+							}
+
+							$OptimizationTable += @{
+								Setting = "Clean up temporary files and logs"
+								Enabled = $VDIPool.Optimization.DiskCleanup.CleanupTemporaryFileLogs.ToString()
+							}
+
+							$OptimizationTable += @{
+								Setting = "Remove OneDrive"
+								Enabled = $VDIPool.Optimization.DiskCleanup.RemoveOneDrive.ToString()
+							}
+
+							$OptimizationTable += @{
+								Setting = "Delete users' profiles"
+								Enabled = $VDIPool.Optimization.DiskCleanup.DeleteUserProfiles.ToString()
+							}
+
+							If($OptimizationTable.Count -gt 0)
+							{
+								$Table = AddWordTable -Hashtable $OptimizationTable `
+								-Columns Setting, Enabled `
+								-Headers "Setting", "Enabled" `
+								-Format $wdTableGrid `
+								-AutoFit $wdAutoFitFixed;
+
+								SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+								$Table.Columns.Item(1).Width = 175;
+								$Table.Columns.Item(2).Width = 50;
+								
+								$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+								FindWordDocumentEnd
+								$Table = $Null
+								WriteWordLine 0 0 ""
+							}
+						}
+
+						WriteWordLine 5 0 "Custom script: " $OPTCustomScriptEnabled
+						If($OPTCustomScriptEnabled -eq "True")
+						{
+							$ScriptInformation = New-Object System.Collections.ArrayList
+							$ScriptInformation.Add(@{Data = "Custom Script"; Value = ""; }) > $Null
+							$ScriptInformation.Add(@{Data = "     Command"; Value = $VDIPool.Optimization.CustomScript.Command; }) > $Null
+							$ScriptInformation.Add(@{Data = "     Arguments"; Value = $VDIPool.Optimization.CustomScript.Arguments; }) > $Null
+							$ScriptInformation.Add(@{Data = "     Initial directory"; Value = $VDIPool.Optimization.CustomScript.InitDir; }) > $Null
+							$ScriptInformation.Add(@{Data = "     Username"; Value = $VDIPool.Optimization.CustomScript.User; }) > $Null
+
+							$Table = AddWordTable -Hashtable $ScriptInformation `
+							-Columns Data,Value `
+							-List `
+							-Format $wdTableGrid `
+							-AutoFit $wdAutoFitFixed;
+
+							#SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+							SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+							$Table.Columns.Item(1).Width = 100;
+							$Table.Columns.Item(2).Width = 200;
+
+							$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+							FindWordDocumentEnd
+							$Table = $Null
+							WriteWordLine 0 0 ""
+						}
+					}
+				}
+				If($Text)
+				{
+					Line 4 "Inherit default settings`t: " $VDIPool.InheritDefaultOptimizationSettings.ToString()
+					Line 4 "Enable optimization`t`t: " $OPTEnableOptimization
+					Line 4 "Optimization type`t`t: " $OPTOptimizationType
+					Line 4 "Category"
+					
+					If($OPTEnableOptimization -eq "True")
+					{
+						Line 5 "Windows Defender ATP: " $OPTWindowsDefenderATPEnabled
+						If($OPTWindowsDefenderATPEnabled -eq "True")
+						{
+							<#
+								WinDefATPTurnOffOn        : TurnOnWindowsDefenderATP
+								DisableRealTimeProtection : False
+								ExcludeFolders            : {%ProgramData%\Parallels\RASLogs\, %ProgramFiles(x86)%\Parallels\,
+															%ProgramFiles%\Parallels\, %WINDOWS%\system32\config\...}
+								ExcludeProcesses          : {csrss.exe, winlogon.exe, rdpclip.exe, rdpinit.exe...}
+								ExcludeExtension          : {.vhd, .vhdx}					
+							#>
+							If($VDIPool.Optimization.WindowsDefenderATP.WinDefATPTurnOffOn.ToString() -eq "TurnOffWindowsDefenderATP")
+							{
+								Line 6 "Windows Defender ATP Optimizations: Turn off Windows Defender ATP (I use my own ATP solution)"
+							}
+							Else
+							{
+								Line 6 "Windows Defender ATP Optimizations: Turn on Windows Defender ATP and set process and folder exclusions"
+								Line 7 "Disable real-time protection: " $VDIPool.Optimization.WindowsDefenderATP.DisableRealTimeProtection.ToString()
+								Line 0 ""
+								Line 7 "Exclude files and folders:"
+								ForEach($item in $VDIPool.Optimization.WindowsDefenderATP.ExcludeFolders)
+								{
+									Line 8 $item
+								}
+
+								Line 7 "Exclude processes:"
+								ForEach($item in $VDIPool.Optimization.WindowsDefenderATP.ExcludeProcesses)
+								{
+									Line 8 $item
+								}
+								
+								Line 7 "Exclude extensions:"
+								ForEach($item in $VDIPool.Optimization.WindowsDefenderATP.ExcludeExtension)
+								{
+									Line 8 $item
+								}
+							}
+							
+							Line 0 ""
+						}
+						
+						Line 5 "Windows Components: " $OPTWindowsComponentsEnabled
+						If($OPTWindowsComponentsEnabled -eq "True")
+						{
+							Line 6 "Windows Components Optimizations"
+							Line 7 "Disable (remove) components:"
+							Line 0 ""
+							Line 7 "Display name                                        Component                                         "
+							Line 7 "======================================================================================================"
+							#		12345678901234567890123456789012345678901234567890SS12345678901234567890123456789012345678901234567890
+							#		Printing-XPSServices-Features                       SMB 1.0/CIFS File sharing support component
+							<#
+									  Type ComponentName                 DisplayName Aliases
+									  ---- -------------                 ----------- -------
+								Predefined MSRDC-Infrastructure
+								Predefined MediaPlayback
+								Predefined WindowsMediaPlayer
+								Predefined Printing-XPSServices-Features
+								Predefined SMB1Protocol
+								Predefined SearchEngine-Client-Package
+								Predefined Xps-Foundation-Xps-Viewer					
+							#>
+							ForEach($item in $VDIPool.Optimization.WindowsComponents.WindowsComponentsList)
+							{
+								Line 7 ( "{0,-50}  {1,-50}" -f $item.DisplayName, $item.ComponentName)
+							}
+							Line 0 ""
+						}
+						
+						Line 5 "Windows Services: " $OPTWindowsServicesEnabled       
+						If($OPTWindowsServicesEnabled -eq "True")
+						{
+							Line 6 "Windows Services Optimizations"
+							Line 7 "Disable services:"
+							Line 0 ""
+							Line 7 "Display name                                        Service                         Aliases             "
+							Line 7 "========================================================================================================"
+							#		12345678901234567890123456789012345678901234567890SS123456789012345678901234567890SS12345678901234567890
+							#		Windows Media Player Network Sharing Service        TabletInputService              Superfecth
+							<#
+									  Type ServiceName        DisplayName Aliases
+									  ---- -----------        ----------- -------
+								Predefined AJRouter
+								Predefined ALG
+								Predefined BTAGService
+								Predefined BthAvctpSvc
+								Predefined CscService
+								Predefined DOT3SVC
+								Predefined DPS
+								Predefined DiagTrack
+								Predefined EFS
+								Predefined FDResPub
+								Predefined MapsBroker
+								Predefined SSDPSRV
+								Predefined SensrSvc
+								Predefined SharedAccess
+								Predefined ShellHWDetection
+								Predefined StorSvc
+								Predefined Sysmain
+								Predefined Superfetch
+								Predefined TabletInputService
+								Predefined TapiSrv
+								Predefined Themes
+								Predefined WMPNetworkSvc
+								Predefined WbioSrvc
+								Predefined WdiSystemHost
+								Predefined WerSvc
+								Predefined bthserv
+								Predefined fdPHost
+								Predefined lfsvc
+								Predefined upnphost
+								Predefined wbengine
+								Predefined wisvc
+								Predefined wlidsvc					
+							#>
+							ForEach($item in $VDIPool.Optimization.WindowsServices.WindowsServicesList)
+							{
+								If($Null -eq $item.DisplayName)
+								{
+									Try
+									{
+										$DispName = Get-Service -Name $item.ServiceName -EA 0
+										$DisplayName = $DispName.DisplayName
+									}
+
+									Catch
+									{
+										$DisplayName = ""
+									}
+								}
+								Else
+								{
+									$DisplayName = $item.DisplayName
+								}
+								If($Null -eq $item.ServiceName)
+								{
+									$Service = ""
+								}
+								Else
+								{
+									$Service = $item.ServiceName
+								}
+								If($Null -eq $item.Aliases)
+								{
+									$Aliases = ""
+								}
+								Else
+								{
+									$Aliases = $item.Aliases
+								}
+								Line 7 ( "{0,-50}  {1,-30}  {2,-20}" -f $DisplayName, $ServiceName, $Aliases)
+							}
+							Line 0 ""
+						}
+						
+						Line 5 "Windows Scheduled Tasks: " $OPTWinodwsScheduledTasksEnabled 
+						If($OPTWinodwsScheduledTasksEnabled -eq "True")
+						{
+							Line 6 "Windows Scheduled Tasks Optimizations"
+							Line 7 "Disable tasks:"
+							Line 0 ""
+							Line 7 "Task                                                Type    Location                                          "
+							Line 7 "=============================================================================================================="
+							#		12345678901234567890123456789012345678901234567890SS123456SS12345678901234567890123456789012345678901234567890
+							#		MNO Metadata Parser                                 Folder  \Microsoft\Windows\Mobile Broadband Accounts\
+							<#
+								Task                Location                                        Type
+								----                --------                                        ----
+								*                   \Microsoft\Windows\Application Experience     Folder
+								*                   \Microsoft\Windows\BitLocker                  Folder
+								CDSSync             \Microsoft\Windows\WlanSvc\                     Task
+								*                   \Microsoft\OneCore\DirectX                    Folder
+								GatherNetworkInfo   \Microsoft\Windows\NetTrace\                    Task
+								MNO Metadata Parser \Microsoft\Windows\Mobile Broadband Accounts\   Task
+								NotificationTask    \Microsoft\Windows\WwanSvc\                     Task
+								*                   \Microsoft\Office                             Folder
+								QueueReporting      \Microsoft\Windows\Windows Error Reporting\     Task
+								SR                  \Microsoft\Windows\SystemRestore\               Task
+								ScheduledDefrag     \Microsoft\Windows\Defrag\                      Task
+								Scheduled Start     \Microsoft\Windows\WindowsUpdate\               Task
+								*                   \Microsoft\Windows\Sysmain                    Folder
+								Tpm-HASCertRetr     \Microsoft\Windows\TPM\                         Task
+								Tpm-Maintenance     \Microsoft\Windows\TPM\                         Task
+								UninstallDeviceTask \Microsoft\Windows\Bluetooth\                   Task
+								UpdateLibrary       \Microsoft\Windows\Windows Media Sharing\       Task
+								*                   \Microsoft\Windows\Windows Defender           Folder
+								XblGameSaveTask     \Microsoft\XblGameSave\                         Task
+								sihpostreboot       \Microsoft\Windows\WindowsUpdate\               Task					
+							#>
+							ForEach($item in $VDIPool.Optimization.WindowsScheduledTasks.WindowsScheduledTasksList)
+							{
+								Line 7 ( "{0,-50}  {1,-6}  {2,-50}" -f $item.Task, $item.Type.ToString(), $item.Location)
+							}
+							Line 0 ""
+						}
+
+						Line 5 "Windows advanced options: " $OPTWindowsAdvancedOptionsEnabled
+						If($OPTWindowsAdvancedOptionsEnabled -eq "True")
+						{
+							Line 6 "Windows Advanced Options"
+							Line 0 ""
+							Line 7 "Setting                                           Enabled  Value                                             "
+							Line 7 "============================================================================================================="
+							#		123456789012345678901234567890123456789012345678SS1234567SS12345678901234567890123456789012345678901234567890
+							#		Remove Common program groups from the start menu  False    SomeConfigFile.xml
+							<#
+								PartialStartLayoutContent   : Configuration.xml
+								Hibernate                   : True
+								TeleCollection              : True
+								SystemRestore               : True
+								AdditionalErrorReport       : True
+								Tiles                       : True
+								Cortana                     : True
+								MicrosoftConsumerExperience : True
+								WindowsTips                 : True
+								CommonProgramGroups         : True
+								PartialStartMenu            : True
+							#>
+							Line 7 ( "{0,-48}  {1,-7}  {2,-50}" -f `
+							"Disable Hibernate", `
+							$VDIPool.Optimization.WindowsAdvancedOptions.Hibernate.ToString(), `
+							"")
+							
+							Line 7 ( "{0,-48}  {1,-7}  {2,-50}" -f `
+							"Disable Telemetry collection", `
+							$VDIPool.Optimization.WindowsAdvancedOptions.TeleCollection.ToString(), `
+							"")
+							
+							Line 7 ( "{0,-48}  {1,-7}  {2,-50}" -f `
+							"Disable System Restore", `
+							$VDIPool.Optimization.WindowsAdvancedOptions.SystemRestore.ToString(), `
+							"")
+							
+							Line 7 ( "{0,-48}  {1,-7}  {2,-50}" -f `
+							"Disable error reporting to send additional data", `
+							$VDIPool.Optimization.WindowsAdvancedOptions.AdditionalErrorReport.ToString(), `
+							"")
+							
+							Line 7 ( "{0,-48}  {1,-7}  {2,-50}" -f `
+							"Disable Tiles", `
+							$VDIPool.Optimization.WindowsAdvancedOptions.Tiles.ToString(), `
+							"")
+							
+							Line 7 ( "{0,-48}  {1,-7}  {2,-50}" -f `
+							"Disable Cortana digital assistant", `
+							$VDIPool.Optimization.WindowsAdvancedOptions.Cortana.ToString(), `
+							"")
+							
+							Line 7 ( "{0,-48}  {1,-7}  {2,-50}" -f `
+							"Turn off Microsoft consumer experience", `
+							$VDIPool.Optimization.WindowsAdvancedOptions.MicrosoftConsumerExperience.ToString(), `
+							"")
+							
+							Line 7 ( "{0,-48}  {1,-7}  {2,-50}" -f `
+							"Do not show Windows tips", `
+							$VDIPool.Optimization.WindowsAdvancedOptions.WindowsTips.ToString(), `
+							"")
+							
+							Line 7 ( "{0,-48}  {1,-7}  {2,-50}" -f `
+							"Remove Common program groups from the Start Menu", `
+							$VDIPool.Optimization.WindowsAdvancedOptions.CommonProgramGroups.ToString(), `
+							"")
+							
+							Line 7 ( "{0,-48}  {1,-7}  {2,-50}" -f `
+							"Partial Start Menu layout", `
+							$VDIPool.Optimization.WindowsAdvancedOptions.PartialStartMenu.ToString(), `
+							$VDIPool.Optimization.WindowsAdvancedOptions.PartialStartLayoutContent)
+							
+							Line 0 ""
+						}
+
+						Line 5 "Network performance: " $OPTNetworkPerformanceEnabled
+						If($OPTNetworkPerformanceEnabled -eq "True")
+						{
+							Line 6 "Network Performance Optimizations"
+							Line 0 ""
+							Line 7 "Setting                      Enabled  Value"
+							Line 7 "==========================================="
+							#		123456789012345678901234567SS1234567SS12345
+							#		FileNotFoundCacheEntriesMax  False    32768
+							<#
+								DirCacheMax             : 4096
+								DormantFileLimit        : 256
+								FileNotFoundCache       : 32768
+								FileInfoCache           : 32768
+								FileInfoCacheEnable     : True
+								DirectoryCacheEnable    : True
+								FileNotFoundCacheEnable : True
+								DormantFileLimitEnable  : True
+								DisableTCP              : True
+								DisableIPv6CompEnable   : True
+								DisableIPv6ToIPv4       : True
+								DisableIsaTap           : True
+							#>
+							Line 7 ( "{0,-27}  {1,-7}  {2,-5}" -f `
+							"FileInfoCacheEntriesMax", `
+							$VDIPool.Optimization.NetworkPerformance.FileInfoCacheEnable.ToString(), `
+							$VDIPool.Optimization.NetworkPerformance.FileInfoCache)
+							
+							Line 7 ( "{0,-27}  {1,-7}  {2,-5}" -f `
+							"DirectoryCacheEntriesMax", `
+							$VDIPool.Optimization.NetworkPerformance.DirectoryCacheEnable.ToString(), `
+							$VDIPool.Optimization.NetworkPerformance.DirCacheMax)
+							
+							Line 7 ( "{0,-27}  {1,-7}  {2,-5}" -f `
+							"FileNotFoundCacheEntriesMax", `
+							$VDIPool.Optimization.NetworkPerformance.FileNotFoundCacheEnable.ToString(), `
+							$VDIPool.Optimization.NetworkPerformance.FileNotFoundCache)
+							
+							Line 7 ( "{0,-27}  {1,-7}  {2,-5}" -f `
+							"DormantFileLimit", `
+							$VDIPool.Optimization.NetworkPerformance.DormantFileLimitEnable.ToString(), `
+							$VDIPool.Optimization.NetworkPerformance.DormantFileLimit)
+							
+							Line 7 ( "{0,-27}  {1,-7}  {2,-5}" -f `
+							"Disable TCP/IP Task Offload", `
+							$VDIPool.Optimization.NetworkPerformance.DisableTCP.ToString(), `
+							"")
+							
+							Line 7 ( "{0,-27}  {1,-7}  {2,-5}" -f `
+							"Disable IPv6 Components", `
+							$VDIPool.Optimization.NetworkPerformance.DisableIPv6CompEnable.ToString(), `
+							"")
+							
+							Line 7 ( "{0,-27}  {1,-7}  {2,-5}" -f `
+							"Disable IPv6 to IPv4", `
+							$VDIPool.Optimization.NetworkPerformance.DisableIPv6ToIPv4.ToString(), `
+							"")
+							
+							Line 7 ( "{0,-27}  {1,-7}  {2,-5}" -f `
+							"Disables isatap for IPv6", `
+							$VDIPool.Optimization.NetworkPerformance.DisableIsaTap.ToString(), `
+							"")
+							
+							Line 0 ""
+						}
+
+						Line 5 "Registry: " $OPTRegistryEnabled
+						If($OPTRegistryEnabled -eq "True")
+						{
+							Line 6 "Registry Optimizations"
+							Line 0 ""
+							#		123456789012345678901234567SS1234567SS12345
+							#		FileNotFoundCacheEntriesMax  False    32768
+							<#
+								Id           : 1
+								Action       : Modify
+								RegistryName : ServicesPipeTimeout
+								DWORDValue   : 18000
+								DisplayName  : Increase service startup timeouts
+								HiveType     : HKEY_LOCAL_MACHINE
+								Path         : System\CurrentControlSet\Control
+								RegType      : REG_DWORD
+
+								Id           : 2
+								Action       : Modify
+								RegistryName : TimeOutValue
+								DWORDValue   : 200
+								DisplayName  : Increase Disk I/O Timeout
+								HiveType     : HKEY_LOCAL_MACHINE
+								Path         : System\CurrentControlSet\Services\Disk
+								RegType      : REG_DWORD
+							#>
+							Line 7 "Registry                                  Action  Value                 Type           Data                  Path                                                        "
+							Line 7 "========================================================================================================================================================================="
+							#		1234567890123456789012345678901234567890SS123456SS12345678901234567890SS1234567890123SS12345678901234567890SS123456789012345678901234567890123456789012345678901234567890
+							#		Increase service startup timeouts         Modify  99999999999999999999  REG_EXPAND_SZ  99999999999999999999  HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services\Disk
+							ForEach($item in $VDIPool.Optimization.Registry.RegistryList)
+							{
+								If($item.RegType.ToString() -eq "REG_SZ" -or $item.RegType.ToString() -eq "REG_EXPAND_SZ")
+								{
+									Line 7 ( "{0,-40}  {1,-6}  {2,-20}  {3,-13}  {4,-20}  {5,-60}" -f `
+									$item.DisplayName, $item.Action, $item.RegistryName, $item.RegType.ToString(), $item.StringValue, "$($item.HiveType)\$($item.Path)")
+								}
+								ElseIf($item.RegType.ToString() -eq "REG_DWORD" -or $item.RegType.ToString() -eq "REG_QWORD")
+								{
+									Line 7 ( "{0,-40}  {1,-6}  {2,-20}  {3,-13}  {4,-20}  {5,-60}" -f `
+									$item.DisplayName, $item.Action, $item.RegistryName, $item.RegType.ToString(), $item.DWORDValue, "$($item.HiveType)\$($item.Path)")
+								}
+								ElseIf($item.RegType.ToString() -eq "REG_MULTI_SZ")
+								{
+									#If($item.StringValue.Count -eq 1)
+									#{
+									#	Line 7 ( "{0,-40}  {1,-6}  {2,-20}  {3,-13}  {4,-20}  {5,-60}" -f `
+									#	$item.DisplayName, $item.Action, $item.RegistryName, $item.RegType.ToString(), $item.StringValue.ToString(), "$($item.HiveType)\$($item.Path)")
+									#}
+									#Else
+									#{
+										$cnt = -1
+										$TmpArray = $item.StringValue.Split("`r")
+										ForEach($SubItem in $TmpArray)
+										{
+											$cnt++
+											
+											If($cnt -eq 0)
+											{
+												Line 7 ( "{0,-40}  {1,-6}  {2,-20}  {3,-13}  {4,-20}  {5,-60}" -f `
+												$item.DisplayName, $item.Action, $item.RegistryName, $item.RegType.ToString(), $SubItem, "$($item.HiveType)\$($item.Path)")
+											}
+											Else
+											{
+												Line 17 "       " $SubItem
+											}
+										}
+									#}
+								}
+							}
+							Line 0 ""
+						}
+
+						Line 5 "Visual Effects: " $OPTVisualEffectsEnabled
+						If($OPTVisualEffectsEnabled -eq "True")
+						{
+							Line 6 "Visual Effects Optimizations"
+							Line 0 ""
+							
+							Switch ($VDIPool.Optimization.VisualEffects.VisualEffectsTypes)
+							{
+								"LetWindowsChooseWhatsBest"	{$VisualEffectsType = "Let Windows choose what's best"; Break}
+								"AdjustForBestAppearnce"	{$VisualEffectsType = "Adjust for best appearance"; Break} #misspelled in the PoSH output and the docs
+								"AdjustForBestPerformance"	{$VisualEffectsType = "Adjust for best performance"; Break}
+								"Custom"					{$VisualEffectsType = "Custom"; Break}
+								Default						{$VisualEffectsType = "Unable to determine Visual Effects Optimization type: $($VDIPool.Optimization.VisualEffects.VisualEffectsTypes)"; Break}
+							}
+							Line 7 $VisualEffectsType
+							Line 0 ""
+							Line 7 "Setting                                             Enabled"
+							Line 7 "==========================================================="
+							#		12345678901234567890123456789012345678901234567890SS1234567
+							#		Use drop shadows for icon labels on the desktop     False  
+							<#
+								VisualEffectsTypes                     : Custom
+								AnimateControlSelectElements           : False
+								AnimateWindowsWhenMinimizingMaximizing : False
+								AnimateTaskbar                         : False
+								EnablePeek                             : False
+								FadeSlideMenus                         : False
+								FadeSlideToolTips                      : False
+								FadeOutMenuItems                       : False
+								SaveTaskbarThumbnail                   : False
+								ShowShadowUnderMouse                   : False
+								ShadowUnderWindows                     : False
+								ThumbnailsInsteadOfIcons               : False
+								ShowTranslucentSelection               : False
+								ShowWindowsContentWhilstDragging       : False
+								SlideOpenComboBoxes                    : False
+								SmoothEdgesScreenFonts                 : True
+								SmoothScrollListBoxes                  : False
+								DropShadowsIcon                        : False
+							#>
+							Line 7 ( "{0,-50}  {1,-7}" -f `
+							"Animate controls and elements inside windows", `
+							$VDIPool.Optimization.VisualEffects.AnimateControlSelectElements.ToString())
+							
+							Line 7 ( "{0,-50}  {1,-7}" -f `
+							"Animate windows when minimizing and maximizing", `
+							$VDIPool.Optimization.VisualEffects.AnimateWindowsWhenMinimizingMaximizing.ToString())
+							
+							Line 7 ( "{0,-50}  {1,-7}" -f `
+							"Animations in the taskbar", `
+							$VDIPool.Optimization.VisualEffects.AnimateTaskbar.ToString())
+							
+							Line 7 ( "{0,-50}  {1,-7}" -f `
+							"Enable Peek", `
+							$VDIPool.Optimization.VisualEffects.EnablePeek.ToString())
+							
+							Line 7 ( "{0,-50}  {1,-7}" -f `
+							"Fade or slide menus into view", `
+							$VDIPool.Optimization.VisualEffects.FadeSlideMenus.ToString())
+							
+							Line 7 ( "{0,-50}  {1,-7}" -f `
+							"Fade or slide Tooltips into view", `
+							$VDIPool.Optimization.VisualEffects.FadeSlideToolTips.ToString())
+							
+							Line 7 ( "{0,-50}  {1,-7}" -f `
+							"Fade out menu items after clicking", `
+							$VDIPool.Optimization.VisualEffects.FadeOutMenuItems.ToString())
+							
+							Line 7 ( "{0,-50}  {1,-7}" -f `
+							"Save taskbar thumbnail previews", `
+							$VDIPool.Optimization.VisualEffects.SaveTaskbarThumbnail.ToString())
+							
+							Line 7 ( "{0,-50}  {1,-7}" -f `
+							"Show shadows under mouse pointer", `
+							$VDIPool.Optimization.VisualEffects.ShowShadowUnderMouse.ToString())
+							
+							Line 7 ( "{0,-50}  {1,-7}" -f `
+							"Show shadows under windows", `
+							$VDIPool.Optimization.VisualEffects.ShadowUnderWindows.ToString())
+							
+							Line 7 ( "{0,-50}  {1,-7}" -f `
+							"Show thumbnails instead of icons", `
+							$VDIPool.Optimization.VisualEffects.ThumbnailsInsteadOfIcons.ToString())
+							
+							Line 7 ( "{0,-50}  {1,-7}" -f `
+							"Show translucent selection rectangle", `
+							$VDIPool.Optimization.VisualEffects.ShowTranslucentSelection.ToString())
+							
+							Line 7 ( "{0,-50}  {1,-7}" -f `
+							"Show window contents while dragging", `
+							$VDIPool.Optimization.VisualEffects.ShowWindowsContentWhilstDragging.ToString())
+							
+							Line 7 ( "{0,-50}  {1,-7}" -f `
+							"Slide open combo boxes", `
+							$VDIPool.Optimization.VisualEffects.SlideOpenComboBoxes.ToString())
+							
+							Line 7 ( "{0,-50}  {1,-7}" -f `
+							"Smooth edges of screen fonts", `
+							$VDIPool.Optimization.VisualEffects.SmoothEdgesScreenFonts.ToString())
+							
+							Line 7 ( "{0,-50}  {1,-7}" -f `
+							"Smooth-scroll list boxes", `
+							$VDIPool.Optimization.VisualEffects.SmoothScrollListBoxes.ToString())
+							
+							Line 7 ( "{0,-50}  {1,-7}" -f `
+							"Use drop shadows for icon labels on the desktop", `
+							$VDIPool.Optimization.VisualEffects.DropShadowsIcon.ToString())
+							
+							Line 0 ""
+						}
+
+						Line 5 "Disk cleanup: " $OPTDiskCleanupEnabled
+						If($OPTDiskCleanupEnabled -eq "True")
+						{
+							Line 6 "Disk Cleanup Optimizations"
+							Line 0 ""
+							
+							Line 7 "Setting                            Enabled"
+							Line 7 "=========================================="
+							#		123456789012345678901234567890123SS1234567
+							#		Clean up temporary files and logs  False  
+							<#
+								CleanupWinSxSFolder      : False
+								CleanupSystemFiles       : False
+								CleanupTemporaryFileLogs : True
+								RemoveOneDrive           : False
+								DeleteUserProfiles       : False
+							#>
+							Line 7 ( "{0,-33}  {1,-7}" -f `
+							"Clean up redundant system files", `
+							$VDIPool.Optimization.DiskCleanup.CleanupSystemFiles.ToString())
+							
+							Line 7 ( "{0,-33}  {1,-7}" -f `
+							"Clean up the WinSxS Folder", `
+							$VDIPool.Optimization.DiskCleanup.CleanupWinSxSFolder.ToString())
+							
+							Line 7 ( "{0,-33}  {1,-7}" -f `
+							"Clean up temporary files and logs", `
+							$VDIPool.Optimization.DiskCleanup.CleanupTemporaryFileLogs.ToString())
+							
+							Line 7 ( "{0,-33}  {1,-7}" -f `
+							"Remove OneDrive", `
+							$VDIPool.Optimization.DiskCleanup.RemoveOneDrive.ToString())
+							
+							Line 7 ( "{0,-33}  {1,-7}" -f `
+							"Delete users' profiles", `
+							$VDIPool.Optimization.DiskCleanup.DeleteUserProfiles.ToString())
+							
+							Line 0 ""
+						}
+
+						Line 5 "Custom script: " $OPTCustomScriptEnabled
+						If($OPTCustomScriptEnabled  -eq "True")
+						{
+							Line 6 "Custom Script"
+							Line 0 ""
+							
+							<#
+								Arguments : CustomScriptArguments
+								Command   : CustomScriptCommand
+								InitDir   : CustomScriptInitialDirectory
+								User      : CustomScriptUsername
+							#>
+							Line 7 "Command`t`t : " $VDIPool.Optimization.CustomScript.Command
+							Line 7 "Arguments`t : " $VDIPool.Optimization.CustomScript.Arguments
+							Line 7 "Initial directory: " $VDIPool.Optimization.CustomScript.InitDir
+							Line 7 "Username`t : " $VDIPool.Optimization.CustomScript.User
+							Line 0 ""
+						}
+					}
+					Line 0 ""
+				}
+				If($HTML)
+				{
+					$rowdata = @()
+					$columnHeaders = @("Inherit default settings:",($Script:htmlsb),$VDIPool.InheritDefaultOptimizationSettings.ToString(),$htmlwhite)
+					$rowdata += @(,("Enable optimization",($Script:htmlsb), $OPTEnableOptimization,$htmlwhite))
+					$rowdata += @(,("Optimization type",($Script:htmlsb), $OPTOptimizationType,$htmlwhite))
+
+					$msg = "Optimization"
+					$columnWidths = @("300","275")
+					FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+					WriteHTMLLine 0 0 ""
+
+					If($OPTEnableOptimization -eq "True")
+					{
+						WriteHTMLLine 4 0 "Windows Defender ATP: " $OPTWindowsDefenderATPEnabled
+						If($OPTWindowsDefenderATPEnabled -eq "True")
+						{
+							$rowdata = @()
+
+							If($VDIPool.Optimization.WindowsDefenderATP.WinDefATPTurnOffOn.ToString() -eq "TurnOffWindowsDefenderATP")
+							{
+								$columnHeaders = @("Windows Defender ATP Optimizations",($Script:htmlsb),"Turn off Windows Defender ATP (I use my own ATP solution)",$htmlwhite)
+							}
+							Else
+							{
+								$columnHeaders = @("Windows Defender ATP Optimizations",($Script:htmlsb),"Turn on Windows Defender ATP and set process and folder exclusions",$htmlwhite)
+								$rowdata += @(,("     Disable real-time protection",($Script:htmlsb), $VDIPool.Optimization.WindowsDefenderATP.DisableRealTimeProtection.ToString(),$htmlwhite))
+								$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+								
+								$cnt = -1
+								ForEach($item in $VDIPool.Optimization.WindowsDefenderATP.ExcludeFolders)
+								{
+									$cnt++
+									If($cnt -eq 0)
+									{
+										$rowdata += @(,("     Exclude files and folders",($Script:htmlsb), $item,$htmlwhite))
+									}
+									Else
+									{
+										$rowdata += @(,("",($Script:htmlsb), $item,$htmlwhite))
+									}
+								}
+
+								$cnt = -1
+								ForEach($item in $VDIPool.Optimization.WindowsDefenderATP.ExcludeProcesses)
+								{
+									$cnt++
+									If($cnt -eq 0)
+									{
+										$rowdata += @(,("     Exclude processes",($Script:htmlsb), $item,$htmlwhite))
+									}
+									Else
+									{
+										$rowdata += @(,("",($Script:htmlsb), $item,$htmlwhite))
+									}
+								}
+								
+								$cnt = -1
+								ForEach($item in $VDIPool.Optimization.WindowsDefenderATP.ExcludeExtension)
+								{
+									$cnt++
+									If($cnt -eq 0)
+									{
+										$rowdata += @(,("     Exclude extensions",($Script:htmlsb), $item,$htmlwhite))
+									}
+									Else
+									{
+										$rowdata += @(,("",($Script:htmlsb), $item,$htmlwhite))
+									}
+								}
+							}
+
+
+							$msg = ""
+							$columnWidths = @("300","275")
+							FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+							WriteHTMLLine 0 0 ""
+						}
+
+						WriteHTMLLine 4 0 "Windows Components: " $OPTWindowsComponentsEnabled
+						If($OPTWindowsComponentsEnabled -eq "True")
+						{
+							WriteHTMLLine 0 0 "Windows Components Optimizations"
+
+							$rowdata = @()
+
+							ForEach($item in $VDIPool.Optimization.WindowsComponents.WindowsComponentsList)
+							{
+								$rowdata += @(,(
+									$item.DisplayName,$htmlwhite,
+									$item.ComponentName,$htmlwhite)
+								)
+							}
+
+							$columnHeaders = @(
+								"Display Name",($Script:htmlsb),
+								"Component",($Script:htmlsb)
+							)
+
+							$msg = "Disable (remove) components:"
+							$columnWidths = @("200","200")
+							FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+							WriteHTMLLine 0 0 ""
+						}
+
+						WriteHTMLLine 4 0 "Windows Services: " $OPTWindowsServicesEnabled       
+						If($OPTWindowsServicesEnabled -eq "True")
+						{
+							WriteHTMLLine 0 0 "Windows Services Optimizations"
+
+							$rowdata = @()
+
+							ForEach($item in $VDIPool.Optimization.WindowsServices.WindowsServicesList)
+							{
+								If($Null -eq $item.DisplayName)
+								{
+									Try
+									{
+										$DispName = Get-Service -Name $item.ServiceName -EA 0
+										$DisplayName = $DispName.DisplayName
+									}
+
+									Catch
+									{
+										$DisplayName = ""
+									}
+								}
+								Else
+								{
+									$DisplayName = $item.DisplayName
+								}
+								If($Null -eq $item.ServiceName)
+								{
+									$Service = ""
+								}
+								Else
+								{
+									$Service = $item.ServiceName
+								}
+								If($Null -eq $item.Aliases)
+								{
+									$Aliases = ""
+								}
+								Else
+								{
+									$Aliases = $item.Aliases
+								}
+								$rowdata += @(,(
+									$DisplayName,$htmlwhite,
+									$ServiceName,$htmlwhite,
+									$Aliases,$htmlwhite)
+								)
+							}
+
+							$columnHeaders = @(
+								"Display Name",($Script:htmlsb),
+								"Service",($Script:htmlsb),
+								"Aliases",($Script:htmlsb)
+							)
+
+							$msg = "Disable services:"
+							$columnWidths = @("200","100","50")
+							FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+							WriteHTMLLine 0 0 ""
+						}
+
+						WriteHTMLLine 4 0 "Windows Scheduled Tasks: " $OPTWinodwsScheduledTasksEnabled
+						If($OPTWinodwsScheduledTasksEnabled -eq "True")
+						{
+							WriteHTMLLine 0 0 "Windows Scheduled Tasks Optimizations"
+
+							$rowdata = @()
+
+							ForEach($item in $VDIPool.Optimization.WindowsScheduledTasks.WindowsScheduledTasksList)
+							{
+								$rowdata += @(,(
+									$item.Task,$htmlwhite,
+									$item.Type.Tostring(),$htmlwhite,
+									$item.Location,$htmlwhite)
+								)
+							}
+
+							$columnHeaders = @(
+								"Task",($Script:htmlsb),
+								"Type",($Script:htmlsb),
+								"Location",($Script:htmlsb)
+							)
+
+							$msg = "Disable tasks:"
+							$columnWidths = @("200","50","250")
+							FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+							WriteHTMLLine 0 0 ""
+						}
+
+						WriteHTMLLine 4 0 "Windows advanced options: " $OPTWindowsAdvancedOptionsEnabled
+						If($OPTWindowsAdvancedOptionsEnabled -eq "True")
+						{
+							WriteHTMLLine 0 0 "Windows Advanced Options"
+
+							$rowdata = @()
+
+							$rowdata += @(,(
+								"Disable Hibernate",$htmlwhite,
+								$VDIPool.Optimization.WindowsAdvancedOptions.Hibernate.ToString(),$htmlwhite,
+								"",$htmlwhite)
+							)
+
+							$rowdata += @(,(
+								"Disable Telemetry collection",$htmlwhite,
+								$VDIPool.Optimization.WindowsAdvancedOptions.TeleCollection.ToString(),$htmlwhite,
+								"",$htmlwhite)
+							)
+
+							$rowdata += @(,(
+								"Disable System Restore",$htmlwhite,
+								$VDIPool.Optimization.WindowsAdvancedOptions.SystemRestore.ToString(),$htmlwhite,
+								"",$htmlwhite)
+							)
+
+							$rowdata += @(,(
+								"Disable error reporting to send additional data",$htmlwhite,
+								$VDIPool.Optimization.WindowsAdvancedOptions.AdditionalErrorReport.ToString(),$htmlwhite,
+								"",$htmlwhite)
+							)
+
+							$rowdata += @(,(
+								"Disable Tiles",$htmlwhite,
+								$VDIPool.Optimization.WindowsAdvancedOptions.Tiles.ToString(),$htmlwhite,
+								"",$htmlwhite)
+							)
+
+							$rowdata += @(,(
+								"Disable Cortana digital assistant",$htmlwhite,
+								$VDIPool.Optimization.WindowsAdvancedOptions.Cortana.ToString(),$htmlwhite,
+								"",$htmlwhite)
+							)
+
+							$rowdata += @(,(
+								"Turn off Microsoft consumer experience",$htmlwhite,
+								$VDIPool.Optimization.WindowsAdvancedOptions.MicrosoftConsumerExperience.ToString(),$htmlwhite,
+								"",$htmlwhite)
+							)
+
+							$rowdata += @(,(
+								"Do not show Windows tips",$htmlwhite,
+								$VDIPool.Optimization.WindowsAdvancedOptions.WindowsTips.ToString(),$htmlwhite,
+								"",$htmlwhite)
+							)
+
+							$rowdata += @(,(
+								"Remove Common program groups from the Start Menu",$htmlwhite,
+								$VDIPool.Optimization.WindowsAdvancedOptions.CommonProgramGroups.ToString(),$htmlwhite,
+								"",$htmlwhite)
+							)
+
+							$rowdata += @(,(
+								"Partial Start Menu layout",$htmlwhite,
+								$VDIPool.Optimization.WindowsAdvancedOptions.PartialStartMenu.ToString(),$htmlwhite,
+								$VDIPool.Optimization.WindowsAdvancedOptions.PartialStartLayoutContent,$htmlwhite)
+							)
+
+							$columnHeaders = @(
+								"Setting",($Script:htmlsb),
+								"Enabled",($Script:htmlsb),
+								"Value",($Script:htmlsb)
+							)
+
+							$msg = ""
+							$columnWidths = @("300","50","200")
+							FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+							WriteHTMLLine 0 0 ""
+						}
+
+						WriteHTMLLine 4 0 "Network performance: " $OPTNetworkPerformanceEnabled
+						If($OPTWindowsAdvancedOptionsEnabled -eq "True")
+						{
+							WriteHTMLLine 0 0 "Network Performance Optimizations"
+
+							$rowdata = @()
+
+							$rowdata += @(,(
+								"FileInfoCacheEntriesMax",$htmlwhite,
+								$VDIPool.Optimization.NetworkPerformance.FileInfoCacheEnable.ToString(),$htmlwhite,
+								$VDIPool.Optimization.NetworkPerformance.FileInfoCache,$htmlwhite)
+							)
+
+							$rowdata += @(,(
+								"DirectoryCacheEntriesMax",$htmlwhite,
+								$VDIPool.Optimization.NetworkPerformance.DirectoryCacheEnable.ToString(),$htmlwhite,
+								$VDIPool.Optimization.NetworkPerformance.DirCacheMax,$htmlwhite)
+							)
+
+							$rowdata += @(,(
+								"FileNotFoundCacheEntriesMax",$htmlwhite,
+								$VDIPool.Optimization.NetworkPerformance.FileNotFoundCacheEnable.ToString(),$htmlwhite,
+								$VDIPool.Optimization.NetworkPerformance.FileNotFoundCache,$htmlwhite)
+							)
+
+							$rowdata += @(,(
+								"DormantFileLimit",$htmlwhite,
+								$VDIPool.Optimization.NetworkPerformance.DormantFileLimitEnable.ToString(),$htmlwhite,
+								$VDIPool.Optimization.NetworkPerformance.DormantFileLimit,$htmlwhite)
+							)
+
+							$rowdata += @(,(
+								"Disable TCP/IP Task Offload",$htmlwhite,
+								$VDIPool.Optimization.NetworkPerformance.DisableTCP.ToString(),$htmlwhite,
+								"",$htmlwhite)
+							)
+
+							$rowdata += @(,(
+								"Disable IPv6 Components",$htmlwhite,
+								$VDIPool.Optimization.NetworkPerformance.DisableIPv6CompEnable.ToString(),$htmlwhite,
+								"",$htmlwhite)
+							)
+
+							$rowdata += @(,(
+								"Disable IPv6 to IPv4",$htmlwhite,
+								$VDIPool.Optimization.NetworkPerformance.DisableIPv6ToIPv4.ToString(),$htmlwhite,
+								"",$htmlwhite)
+							)
+
+							$rowdata += @(,(
+								"Disables isatap for IPv6",$htmlwhite,
+								$VDIPool.Optimization.NetworkPerformance.DisableIsaTap.ToString(),$htmlwhite,
+								"",$htmlwhite)
+							)
+
+							$columnHeaders = @(
+								"Setting",($Script:htmlsb),
+								"Enabled",($Script:htmlsb),
+								"Value",($Script:htmlsb)
+							)
+
+							$msg = ""
+							$columnWidths = @("170","50","50")
+							FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+							WriteHTMLLine 0 0 ""
+						}
+
+						WriteHTMLLine 4 0 "Registry: " $OPTRegistryEnabled       
+						If($OPTRegistryEnabled -eq "True")
+						{
+							WriteHTMLLine 0 0 "Registry Optimizations"
+
+							$rowdata = @()
+
+							ForEach($item in $VDIPool.Optimization.Registry.RegistryList)
+							{
+								If($item.RegType.ToString() -eq "REG_SZ" -or $item.RegType.ToString() -eq "REG_EXPAND_SZ")
+								{
+									$rowdata += @(,(
+										$item.DisplayName,$htmlwhite,
+										$item.Action,$htmlwhite,
+										$item.RegistryName,$htmlwhite,
+										$item.RegType.ToString(),$htmlwhite,
+										$item.StringValue,$htmlwhite,
+										"$($item.HiveType)\$($item.Path)",$htmlwhite)
+									)
+								}
+								ElseIf($item.RegType.ToString() -eq "REG_DWORD" -or $item.RegType.ToString() -eq "REG_QWORD")
+								{
+									$rowdata += @(,(
+										$item.DisplayName,$htmlwhite,
+										$item.Action,$htmlwhite,
+										$item.RegistryName,$htmlwhite,
+										$item.RegType.ToString(),$htmlwhite,
+										$item.DWORDValue,$htmlwhite,
+										"$($item.HiveType)\$($item.Path)",$htmlwhite)
+									)
+								}
+								ElseIf($item.RegType.ToString() -eq "REG_MULTI_SZ")
+								{
+									$rowdata += @(,(
+										$item.DisplayName,$htmlwhite,
+										$item.Action,$htmlwhite,
+										$item.RegistryName,$htmlwhite,
+										$item.RegType.ToString(),$htmlwhite,
+										$item.StringValue.ToString(),$htmlwhite,
+										"$($item.HiveType)\$($item.Path)",$htmlwhite)
+									)
+								}
+							}
+
+							$columnHeaders = @(
+								"Registry",($Script:htmlsb),
+								"Action",($Script:htmlsb),
+								"Value",($Script:htmlsb),
+								"Type",($Script:htmlsb),
+								"Data",($Script:htmlsb),
+								"Path",($Script:htmlsb)
+							)
+
+							$msg = ""
+							$columnWidths = @("200","50","100","100","100","200")
+							FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+							WriteHTMLLine 0 0 ""
+						}
+
+						WriteHTMLLine 4 0 "Visual Effects: " $OPTVisualEffectsEnabled
+						If($OPTVisualEffectsEnabled -eq "True")
+						{
+							WriteHTMLLine 0 0 "Visual Effects Optimizations"
+
+							$rowdata = @()
+
+							$rowdata += @(,(
+								"Animate controls and elements inside windows",$htmlwhite,
+								$VDIPool.Optimization.VisualEffects.AnimateControlSelectElements.ToString(),$htmlwhite)
+							)
+
+							$rowdata += @(,(
+								"Animate windows when minimizing and maximizing",$htmlwhite,
+								$VDIPool.Optimization.VisualEffects.AnimateWindowsWhenMinimizingMaximizing.ToString(),$htmlwhite)
+							)
+
+							$rowdata += @(,(
+								"Animations in the taskbar",$htmlwhite,
+								$VDIPool.Optimization.VisualEffects.AnimateTaskbar.ToString(),$htmlwhite)
+							)
+
+							$rowdata += @(,(
+								"Enable Peek",$htmlwhite,
+								$VDIPool.Optimization.VisualEffects.EnablePeek.ToString(),$htmlwhite)
+							)
+
+							$rowdata += @(,(
+								"Fade or slide menus into view",$htmlwhite,
+								$VDIPool.Optimization.VisualEffects.FadeSlideMenus.ToString(),$htmlwhite)
+							)
+
+							$rowdata += @(,(
+								"Fade or slide Tooltips into view",$htmlwhite,
+								$VDIPool.Optimization.VisualEffects.FadeSlideToolTips.ToString(),$htmlwhite)
+							)
+
+							$rowdata += @(,(
+								"Fade out menu items after clicking",$htmlwhite,
+								$VDIPool.Optimization.VisualEffects.FadeOutMenuItems.ToString(),$htmlwhite)
+							)
+
+							$rowdata += @(,(
+								"Save taskbar thumbnail previews",$htmlwhite,
+								$VDIPool.Optimization.VisualEffects.SaveTaskbarThumbnail.ToString(),$htmlwhite)
+							)
+
+							$rowdata += @(,(
+								"Show shadows under mouse pointer",$htmlwhite,
+								$VDIPool.Optimization.VisualEffects.ShowShadowUnderMouse.ToString(),$htmlwhite)
+							)
+
+							$rowdata += @(,(
+								"Show shadows under windows",$htmlwhite,
+								$VDIPool.Optimization.VisualEffects.ShadowUnderWindows.ToString(),$htmlwhite)
+							)
+
+							$rowdata += @(,(
+								"Show thumbnails instead of icons",$htmlwhite,
+								$VDIPool.Optimization.VisualEffects.ThumbnailsInsteadOfIcons.ToString(),$htmlwhite)
+							)
+
+							$rowdata += @(,(
+								"Show translucent selection rectangle",$htmlwhite,
+								$VDIPool.Optimization.VisualEffects.ShowTranslucentSelection.ToString(),$htmlwhite)
+							)
+
+							$rowdata += @(,(
+								"Show window contents while dragging",$htmlwhite,
+								$VDIPool.Optimization.VisualEffects.ShowWindowsContentWhilstDragging.ToString(),$htmlwhite)
+							)
+
+							$rowdata += @(,(
+								"Slide open combo boxes",$htmlwhite,
+								$VDIPool.Optimization.VisualEffects.SlideOpenComboBoxes.ToString(),$htmlwhite)
+							)
+
+							$rowdata += @(,(
+								"Smooth edges of screen fonts",$htmlwhite,
+								$VDIPool.Optimization.VisualEffects.SmoothEdgesScreenFonts.ToString(),$htmlwhite)
+							)
+
+							$rowdata += @(,(
+								"Smooth-scroll list boxes",$htmlwhite,
+								$VDIPool.Optimization.VisualEffects.SmoothScrollListBoxes.ToString(),$htmlwhite)
+							)
+
+							$rowdata += @(,(
+								"Use drop shadows for icon labels on the desktop",$htmlwhite,
+								$VDIPool.Optimization.VisualEffects.DropShadowsIcon.ToString(),$htmlwhite)
+							)
+
+							$columnHeaders = @(
+								"Setting",($Script:htmlsb),
+								"Enabled",($Script:htmlsb)
+							)
+
+							$msg = ""
+							$columnWidths = @("275","50")
+							FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+							WriteHTMLLine 0 0 ""
+						}
+
+						WriteHTMLLine 4 0 "Disk cleanup: " $OPTDiskCleanupEnabled
+						If($OPTDiskCleanupEnabled -eq "True")
+						{
+							WriteHTMLLine 0 0 "Disk Cleanup Optimizations"
+
+							$rowdata = @()
+
+							$rowdata += @(,(
+								"Clean up redundant system files",$htmlwhite,
+								$VDIPool.Optimization.DiskCleanup.CleanupSystemFiles.ToString(),$htmlwhite)
+							)
+
+							$rowdata += @(,(
+								"Clean up the WinSxS Folder",$htmlwhite,
+								$VDIPool.Optimization.DiskCleanup.CleanupWinSxSFolder.ToString(),$htmlwhite)
+							)
+
+							$rowdata += @(,(
+								"Clean up temporary files and logs",$htmlwhite,
+								$VDIPool.Optimization.DiskCleanup.CleanupTemporaryFileLogs.ToString(),$htmlwhite)
+							)
+
+							$rowdata += @(,(
+								"Remove OneDrive",$htmlwhite,
+								$VDIPool.Optimization.DiskCleanup.RemoveOneDrive.ToString(),$htmlwhite)
+							)
+
+							$rowdata += @(,(
+								"Delete users' profiles",$htmlwhite,
+								$VDIPool.Optimization.DiskCleanup.DeleteUserProfiles.ToString(),$htmlwhite)
+							)
+
+							$columnHeaders = @(
+								"Setting",($Script:htmlsb),
+								"Enabled",($Script:htmlsb)
+							)
+
+							$msg = ""
+							$columnWidths = @("200","50")
+							FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+							WriteHTMLLine 0 0 ""
+						}
+
+						WriteHTMLLine 4 0 "Custom script: " $OPTCustomScriptEnabled
+						If($OPTCustomScriptEnabled -eq "True")
+						{
+							$rowdata = @()
+							$columnHeaders = @("Custom Script",($Script:htmlsb),"",$htmlwhite)
+							$rowdata += @(,("     Command",($Script:htmlsb), $VDIPool.Optimization.CustomScript.Command,$htmlwhite))
+							$rowdata += @(,("     Arguments",($Script:htmlsb), $VDIPool.Optimization.CustomScript.Arguments,$htmlwhite))
+							$rowdata += @(,("     Initial directory",($Script:htmlsb), $VDIPool.Optimization.CustomScript.InitDir,$htmlwhite))
+							$rowdata += @(,("     Username",($Script:htmlsb), $VDIPool.Optimization.CustomScript.User,$htmlwhite))
+
+							$msg = ""
+							$columnWidths = @("125","200")
+							FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+							WriteHTMLLine 0 0 ""
+						}
+					}
+				}
+				
+				#settings
+				<#
+					PS C:\Parallels-RAS-V19.x-Doc-Script-4.00> $x1.agent |fl
+
+					Name                                                 Value
+					----                                                 -----
+					AllowRemoteExec                                       True
+					AllowURLAndMailRedirection      EnabledWithAppRegistration
+					DisconnectActiveSessionAfter                            60
+					DragAndDropMode                             ClientToServer
+					EnableDriveRedirectionCache                           True
+					EnableZOrder                                          True
+					FileTransferLocation
+					FileTransferLockLocation                             False
+					FileTransferMode                             Bidirectional
+					LogoffDisconnectedSessionAfter                         300
+					ManageRDPTransportProtocol                      BothUDPTCP
+					SessionReadinessTimeout                               3600
+					SupportShellURLNamespaceObjects                       True
+				#>
+
+				If($MSWord -or $PDF)
+				{
+					WriteWordLine 4 0 "Settings"
+				}
+				If($Text)
+				{
+					Line 2 "Settings"
+				}
+				If($HTML)
+				{
+					#Nothing
+				}
+				
+				If($VDIPool.InheritDefaultAgentSettings)
+				{
+					#do we inherit site defaults?
+					#yes we do, get the default settings for the Site
+					#use the Site default settings
+
+					$VDIPoolDefaults = Get-RASVDIDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
+					
+					If($? -and $Null -ne $VDIPoolDefaults)
+					{
+						#application session lingering
+						Switch ($VDIPoolDefaults.Agent.DisconnectActiveSessionAfter)
+						{
+							0		{$VDIPoolDisconnectActiveSessionAfter = "Never"; Break}
+							1		{$VDIPoolDisconnectActiveSessionAfter = "1 minute"; Break}
+							5		{$VDIPoolDisconnectActiveSessionAfter = "5 minutes"; Break}
+							25		{$VDIPoolDisconnectActiveSessionAfter = "25 seconds"; Break}
+							60		{$VDIPoolDisconnectActiveSessionAfter = "1 minute"; Break}
+							300		{$VDIPoolDisconnectActiveSessionAfter = "5 minutes"; Break}
+							3600	{$VDIPoolDisconnectActiveSessionAfter = "1 hour"; Break}
+							Default	{$VDIPoolDisconnectActiveSessionAfter = "Unable to determine Application session lingering Disconnect active session timeout: $($VDIPoolDefaults.Agent.DisconnectActiveSessionAfter)"; Break}
+						}
+						
+						Switch ($VDIPoolDefaults.Agent.LogoffDisconnectedSessionAfter)
+						{
+							0		{$VDIPoolLogoffDisconnectedSessionAfter = "Never"; Break}
+							1		{$VDIPoolLogoffDisconnectedSessionAfter = "Immediate"; Break}
+							25		{$VDIPoolLogoffDisconnectedSessionAfter = "25 seconds"; Break}
+							60		{$VDIPoolLogoffDisconnectedSessionAfter = "1 minute"; Break}
+							300		{$VDIPoolLogoffDisconnectedSessionAfter = "5 minutes"; Break}
+							3600	{$VDIPoolLogoffDisconnectedSessionAfter = "1 hour"; Break}
+							Default	{$VDIPoolLogoffDisconnectedSessionAfter = "Unable to determine Application session lingering logoff disconnection session timeout: $($VDIPoolDefaults.Agent.LogoffDisconnectedSessionAfter)"; Break}
+						}
+						
+						#Other settings
+						Switch ($VDIPoolDefaults.Agent.SessionReadinessTimeout)
+						{
+							25		{$VDIPoolSessionReadinessTimeout = "25 seconds"; Break}
+							60		{$VDIPoolSessionReadinessTimeout = "1 minute"; Break}
+							300		{$VDIPoolSessionReadinessTimeout = "5 minutes"; Break}
+							3600	{$VDIPoolSessionReadinessTimeout = "1 hour"; Break}
+							Default	{$VDIPoolSessionReadinessTimeout = "Unable to determine session readiness timeout: $($VDIPoolDefaults.Agent.SessionReadinessTimeout)"; Break}
+						}
+						
+						Switch($VDIPoolDefaults.Agent.AllowURLAndMailRedirection)
+						{
+							"Disabled"						{$VDIPoolAllowClientURLMailRedirection = "Disabled"; 
+															 $VDIPoolReplaceRegisteredApplication = "False";
+															 $VDIPoolSupportShellURLNamespaceObjects = $VDIPoolDefaults.Agent.SupportShellURLNamespaceObjects.ToString();
+															 Break}
+							"Enabled"						{$VDIPoolAllowClientURLMailRedirection = "Enabled"; 
+															 $VDIPoolReplaceRegisteredApplication = "False";
+															 $VDIPoolSupportShellURLNamespaceObjects = $VDIPoolDefaults.Agent.SupportShellURLNamespaceObjects.ToString();
+															 Break}
+							"EnabledWithAppRegistration"	{$VDIPoolAllowClientURLMailRedirection = "Enabled";
+															 $VDIPoolReplaceRegisteredApplication = "True";
+															 $VDIPoolSupportShellURLNamespaceObjects = "N/A";
+															 Break}
+							Default 						{$VDIPoolAllowClientURLMailRedirection = "Unable to determine Allow client URL/Mail redirection: $($VDIPoolDefaults.Agent.AllowURLAndMailRedirection)"; 
+															 $VDIPoolReplaceRegisteredApplication = "False";
+															 $VDIPoolSupportShellURLNamespaceObjects = "False";
+															 Break}
+						}
+						
+						Switch ($VDIPoolDefaults.Agent.DragAndDropMode)
+						{
+							"Bidirectional"		{$VDIPoolDragAndDrop = "Bidirectional"; 
+												$VDIPoolAllowDragAndDrop = "True";
+												Break}
+							"ClientToServer"	{$VDIPoolDragAndDrop = "Client to server only"; 
+												$VDIPoolAllowDragAndDrop = "True";
+												Break}
+							"Disabled"			{$VDIPoolDragAndDrop = "Disabled"; 
+												$VDIPoolAllowDragAndDrop = "False";
+												Break}
+							"ServerToClient"	{$VDIPoolDragAndDrop = "Server to client only"; 
+												$VDIPoolAllowDragAndDrop = "True";
+												Break}
+							Default				{$VDIPoolDragAndDrop = "Unable to determine Drag and drop: $($VDIPoolDefaults.Agent.DragAndDropMode)"; 
+												$VDIPoolAllowDragAndDrop = "False";
+							Break}
+						}
+						
+						If($VDIPoolDefaults.Agent.AllowRemoteExec)
+						{
+							$VDIPoolAllowRemoteExec = "True"
+						}
+						Else
+						{
+							$VDIPoolAllowRemoteExec = "False"
+						}
+						
+						Switch ($VDIPoolDefaults.Agent.ManageRDPTransportProtocol)
+						{
+							"BothUDPTCP"		{$VDIPoolManageRDPTransportProtocol = "Use both UDP and TCP"; Break}
+							"Disabled"			{$VDIPoolManageRDPTransportProtocol = "Disabled"; Break}
+							"EitherUDPTCP"		{$VDIPoolManageRDPTransportProtocol = "Use either UDP or TCP"; Break}
+							"OnlyTCP"			{$VDIPoolManageRDPTransportProtocol = "Use only TCP"; Break}
+							Default				{$VDIPoolManageRDPTransportProtocol = "Unable to determine Manage RDP Transport Protocol mode: $($VDIPoolDefaults.Agent.ManageRDPTransportProtocol)"; Break}
+						}
+
+						Switch ($VDIPoolDefaults.Agent.FileTransferMode)
+						{
+							"Bidirectional"		{$VDIPoolFileTransferMode = "Bidirectional"; Break}
+							"ClientToServer"	{$VDIPoolFileTransferMode = "Client to server only"; Break}
+							"Disabled"			{$VDIPoolFileTransferMode = "Disabled"; Break}
+							"ServerToClient"	{$VDIPoolFileTransferMode = "Server to client only"; Break}
+							Default				{$VDIPoolFileTransferMode = "Unable to determine File Transfer mode: $($VDIPoolDefaults.Agent.FileTransferMode)"; Break}
+						}
+
+						If($VDIPoolDefaults.Agent.FileTransferLocation -eq "")
+						{
+							$VDIPoolFileTransferLocation = "Default download location"
+						}
+						Else
+						{
+							$VDIPoolFileTransferLocation = $VDIPoolDefaults.FileTransferLocation
+						}
+						
+						$VDIPoolFileTransferChangeLocation  = $VDIPoolDefaults.Agent.FileTransferLockLocation.ToString()
+						$VDIPoolEnableDriveRedirectionCache = $VDIPoolDefaults.Agent.EnableDriveRedirectionCache.ToString()
+						$VDIPoolEnableZOrder                = $VDIPoolDefaults.Agent.EnableZOrder.ToString()
+						
+					}
+					Else
+					{
+						#unable to retrieve default, use built-in default values
+						$VDIPoolDisconnectActiveSessionAfter    = "25 seconds"
+						$VDIPoolLogoffDisconnectedSessionAfter  = "Immediate"
+						$VDIPoolSessionReadinessTimeout         = "25 seconds"
+						$VDIPoolAllowClientURLMailRedirection   = "Enabled"
+						$VDIPoolReplaceRegisteredApplication    = "False"
+						$VDIPoolSupportShellURLNamespaceObjects = "False"
+						$VDIPoolDragAndDrop                     = "Bidirectional"
+						$VDIPoolAllowDragAndDrop                = "True"
+						$VDIPoolAllowRemoteExec                 = "False"
+						$VDIPoolManageRDPTransportProtocol      = "Use both UDP and TCP"
+						$VDIPoolFileTransferMode                = "Bidirectional"
+						$VDIPoolFileTransferLocation            = "Default download location"
+						$VDIPoolFileTransferChangeLocation      = "False"
+						$VDIPoolEnableDriveRedirectionCache     = "False"
+						$VDIPoolEnableZOrder                    = "False"
+					}
+				}
+				Else
+				{
+					#we don't inherit settings
+					#get the settings configured for this VDI Pool
+
+					#application session lingering
+					Switch ($VDIPool.Agent.DisconnectActiveSessionAfter)
+					{
+						0		{$VDIPoolDisconnectActiveSessionAfter = "Never"; Break}
+						1		{$VDIPoolDisconnectActiveSessionAfter = "1 minute"; Break}
+						5		{$VDIPoolDisconnectActiveSessionAfter = "5 minutes"; Break}
+						25		{$VDIPoolDisconnectActiveSessionAfter = "25 seconds"; Break}
+						60		{$VDIPoolDisconnectActiveSessionAfter = "1 minute"; Break}
+						300		{$VDIPoolDisconnectActiveSessionAfter = "5 minutes"; Break}
+						3600	{$VDIPoolDisconnectActiveSessionAfter = "1 hour"; Break}
+						Default	{$VDIPoolDisconnectActiveSessionAfter = "Unable to determine Application session lingering Disconnect active session timeout: $($VDIPool.Agent.DisconnectActiveSessionAfter)"; Break}
+					}
+					
+					Switch ($VDIPool.Agent.LogoffDisconnectedSessionAfter)
+					{
+						0		{$VDIPoolLogoffDisconnectedSessionAfter = "Never"; Break}
+						1		{$VDIPoolLogoffDisconnectedSessionAfter = "Immediate"; Break}
+						25		{$VDIPoolLogoffDisconnectedSessionAfter = "25 seconds"; Break}
+						60		{$VDIPoolLogoffDisconnectedSessionAfter = "1 minute"; Break}
+						300		{$VDIPoolLogoffDisconnectedSessionAfter = "5 minutes"; Break}
+						3600	{$VDIPoolLogoffDisconnectedSessionAfter = "1 hour"; Break}
+						Default	{$VDIPoolLogoffDisconnectedSessionAfter = "Unable to determine Application session lingering logoff disconnection session timeout: $($VDIPool.Agent.LogoffDisconnectedSessionAfter)"; Break}
+					}
+					
+					#Other settings
+					Switch ($VDIPool.Agent.SessionReadinessTimeout)
+					{
+						25		{$VDIPoolSessionReadinessTimeout = "25 seconds"; Break}
+						60		{$VDIPoolSessionReadinessTimeout = "1 minute"; Break}
+						300		{$VDIPoolSessionReadinessTimeout = "5 minutes"; Break}
+						3600	{$VDIPoolSessionReadinessTimeout = "1 hour"; Break}
+						Default	{$VDIPoolSessionReadinessTimeout = "Unable to determine session readiness timeout: $($VDIPool.Agent.SessionReadinessTimeout)"; Break}
+					}
+					
+					Switch($VDIPool.Agent.AllowURLAndMailRedirection)
+					{
+						"Disabled"						{$VDIPoolAllowClientURLMailRedirection = "Disabled"; 
+														 $VDIPoolReplaceRegisteredApplication = "False";
+														 $VDIPoolSupportShellURLNamespaceObjects = $VDIPool.Agent.SupportShellURLNamespaceObjects.ToString();
+														 Break}
+						"Enabled"						{$VDIPoolAllowClientURLMailRedirection = "Enabled"; 
+														 $VDIPoolReplaceRegisteredApplication = "False";
+														 $VDIPoolSupportShellURLNamespaceObjects = $VDIPool.Agent.SupportShellURLNamespaceObjects.ToString();
+														 Break}
+						"EnabledWithAppRegistration"	{$VDIPoolAllowClientURLMailRedirection = "Enabled";
+														 $VDIPoolReplaceRegisteredApplication = "True";
+														 $VDIPoolSupportShellURLNamespaceObjects = "N/A";
+														 Break}
+						Default 						{$VDIPoolAllowClientURLMailRedirection = "Unable to determine Allow client URL/Mail redirection: $($VDIPool.Agent.AllowURLAndMailRedirection)"; 
+														 $VDIPoolReplaceRegisteredApplication = "False";
+														 $VDIPoolSupportShellURLNamespaceObjects = "False";
+														 Break}
+					}
+					
+					Switch ($VDIPool.Agent.DragAndDropMode)
+					{
+						"Bidirectional"		{$VDIPoolDragAndDrop = "Bidirectional"; 
+											$VDIPoolAllowDragAndDrop = "True";
+											Break}
+						"ClientToServer"	{$VDIPoolDragAndDrop = "Client to server only"; 
+											$VDIPoolAllowDragAndDrop = "True";
+											Break}
+						"Disabled"			{$VDIPoolDragAndDrop = "Disabled"; 
+											$VDIPoolAllowDragAndDrop = "False";
+											Break}
+						"ServerToClient"	{$VDIPoolDragAndDrop = "Server to client only"; 
+											$VDIPoolAllowDragAndDrop = "True";
+											Break}
+						Default				{$VDIPoolDragAndDrop = "Unable to determine Drag and drop: $($VDIPool.Agent.DragAndDropMode)"; 
+											$VDIPoolAllowDragAndDrop = "False";
+											Break}
+					}
+					
+					If($VDIPool.Agent.AllowRemoteExec)
+					{
+						$VDIPoolAllowRemoteExec = "True"
+					}
+					Else
+					{
+						$VDIPoolAllowRemoteExec = "False"
+					}
+					
+					Switch ($VDIPool.Agent.ManageRDPTransportProtocol)
+					{
+						"BothUDPTCP"		{$VDIPoolManageRDPTransportProtocol = "Use both UDP and TCP"; Break}
+						"Disabled"			{$VDIPoolManageRDPTransportProtocol = "Disabled"; Break}
+						"EitherUDPTCP"		{$VDIPoolManageRDPTransportProtocol = "Use either UDP or TCP"; Break}
+						"OnlyTCP"			{$VDIPoolManageRDPTransportProtocol = "Use only TCP"; Break}
+						Default				{$VDIPoolManageRDPTransportProtocol = "Unable to determine Manage RDP Transport Protocol mode: $($VDIPool.Agent.ManageRDPTransportProtocol)"; Break}
+					}
+
+					Switch ($VDIPool.Agent.FileTransferMode)
+					{
+						"Bidirectional"		{$VDIPoolFileTransferMode = "Bidirectional"; Break}
+						"ClientToServer"	{$VDIPoolFileTransferMode = "Client to server only"; Break}
+						"Disabled"			{$VDIPoolFileTransferMode = "Disabled"; Break}
+						"ServerToClient"	{$VDIPoolFileTransferMode = "Server to client only"; Break}
+						Default				{$VDIPoolFileTransferMode = "Unable to determine File Transfer mode: $($VDIPool.Agent.FileTransferMode)"; Break}
+					}
+
+					If($VDIPool.Agent.FileTransferLocation -eq "")
+					{
+						$VDIPoolFileTransferLocation = "Default download location"
+					}
+					Else
+					{
+						$VDIPoolFileTransferLocation = $VDIPool.Agent.FileTransferLocation
+					}
+					
+					$VDIPoolFileTransferChangeLocation  = $VDIPool.Agent.FileTransferLockLocation.ToString()
+					$VDIPoolEnableDriveRedirectionCache = $VDIPool.Agent.EnableDriveRedirectionCache.ToString()
+					$VDIPoolEnableZOrder                = $VDIPool.Agent.EnableZOrder.ToString()
+				}
+				
+				If($MSWord -or $PDF)
+				{
+					$ScriptInformation = New-Object System.Collections.ArrayList
+					$ScriptInformation.Add(@{Data = "Inherit default settings"; Value = $VDIPool.InheritDefaultAgentSettings.ToString(); }) > $Null
+					$ScriptInformation.Add(@{Data = "Application session lingering"; Value = ""; }) > $Null
+					$ScriptInformation.Add(@{Data = "     Disconnect active session after"; Value = $VDIPoolDisconnectActiveSessionAfter; }) > $Null
+					$ScriptInformation.Add(@{Data = "     Logoff disconnected session after"; Value = $VDIPoolLogoffDisconnectedSessionAfter; }) > $Null
+					$ScriptInformation.Add(@{Data = "Other settings"; Value = ""; }) > $Null
+					$ScriptInformation.Add(@{Data = "     Session readiness timeout"; Value = $VDIPoolSessionReadinessTimeout; }) > $Null
+					$ScriptInformation.Add(@{Data = "     Allow client URL/Mail redirection"; Value = $VDIPoolAllowClientURLMailRedirection; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Replace registered application"; Value = $VDIPoolReplaceRegisteredApplication; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Support Windows Shell URL namespace objects"; Value = $VDIPoolSupportShellURLNamespaceObjects; }) > $Null
+					$ScriptInformation.Add(@{Data = "     Enable Drag and drop"; Value = $VDIPoolAllowDragandDrop; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Direction"; Value = $VDIPoolDragAndDrop; }) > $Null
+					$ScriptInformation.Add(@{Data = "     Allow 2xRemoteExec to send command to the client"; Value = $VDIPoolAllowRemoteExec; }) > $Null
+					$ScriptInformation.Add(@{Data = "     Manage RDP transport protocol"; Value = $VDIPoolManageRDPTransportProtocol; }) > $Null
+					$ScriptInformation.Add(@{Data = "     Allow file transfer command (Web and ChromeOS clients)"; Value = $VDIPoolFileTransferMode; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Location"; Value = $VDIPoolFileTransferLocation; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Do not allow to change location"; Value = $VDIPoolFileTransferChangeLocation; }) > $Null
+					$ScriptInformation.Add(@{Data = "     Enable drive redirection cache"; Value = $VDIPoolEnableDriveRedirectionCache; }) > $Null
+					$ScriptInformation.Add(@{Data = "     Enable Z-Order (Experimental)"; Value = $VDIPoolEnableZOrder; }) > $Null
+
+					$Table = AddWordTable -Hashtable $ScriptInformation `
+					-Columns Data,Value `
+					-List `
+					-Format $wdTableGrid `
+					-AutoFit $wdAutoFitFixed;
+
+					SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+					SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+					$Table.Columns.Item(1).Width = 250;
+					$Table.Columns.Item(2).Width = 250;
+
+					$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+					FindWordDocumentEnd
+					$Table = $Null
+					WriteWordLine 0 0 ""
+				}
+				If($Text)
+				{
+					Line 3 "Inherit default settings`t`t`t`t`t: " $VDIPool.InheritDefaultAgentSettings.ToString()
+					Line 3 "Application session lingering: " ""
+					Line 4 "Disconnect active session after`t`t`t`t: " $VDIPoolDisconnectActiveSessionAfter
+					Line 4 "Logoff disconnected session after`t`t`t: " $VDIPoolLogoffDisconnectedSessionAfter
+					Line 3 "Other settings: " ""
+					Line 4 "Session readiness timeout`t`t`t`t: " $VDIPoolSessionReadinessTimeout
+					Line 4 "Allow client URL/Mail redirection`t`t`t: " $VDIPoolAllowClientURLMailRedirection
+					Line 5 "Replace registered application`t`t`t: " $VDIPoolReplaceRegisteredApplication
+					Line 5 "Support Windows Shell URL namespace objects`t: " $VDIPoolSupportShellURLNamespaceObjects
+					Line 4 "Enable Drag and drop`t`t`t`t`t: " $VDIPoolAllowDragandDrop
+					Line 5 "Direction`t`t`t`t`t: " $VDIPoolDragAndDrop
+					Line 4 "Allow 2xRemoteExec to send command to the client`t: " $VDIPoolAllowRemoteExec
+					Line 4 "Manage RDP transport protocol`t`t`t`t: " $VDIPoolManageRDPTransportProtocol
+					Line 4 "Allow file transfer command (Web and ChromeOS clients)`t: " $VDIPoolFileTransferMode
+					Line 5 "Location`t`t`t`t`t: "  $VDIPoolFileTransferLocation
+					Line 5 "Do not allow to change location`t`t`t: " $VDIPoolFileTransferChangeLocation
+					Line 4 "Enable drive redirection cache`t`t`t`t: " $VDIPoolEnableDriveRedirectionCache
+					Line 4 "Enable Z-Order (Experimental)`t`t`t`t: " $VDIPoolEnableZOrder
+					Line 0 ""
+				}
+				If($HTML)
+				{
+					$rowdata = @()
+					$columnHeaders = @("Inherit default settings",($Script:htmlsb),$VDIPool.InheritDefaultAgentSettings.ToString(),$htmlwhite)
+					$rowdata += @(,("Application session lingering",($Script:htmlsb),"",$htmlwhite))
+					$rowdata += @(,("     Disconnect active session after",($Script:htmlsb),$VDIPoolDisconnectActiveSessionAfter,$htmlwhite))
+					$rowdata += @(,("     Logoff disconnected session after",($Script:htmlsb),$VDIPoolLogoffDisconnectedSessionAfter,$htmlwhite))
+					$rowdata += @(,("Other settings",($Script:htmlsb),"",$htmlwhite))
+					$rowdata += @(,("     Session readiness timeout",($Script:htmlsb),$VDIPoolSessionReadinessTimeout,$htmlwhite))
+					$rowdata += @(,("     Allow client URL/Mail redirection",($Script:htmlsb),$VDIPoolAllowClientURLMailRedirection,$htmlwhite))
+					$rowdata += @(,("          Replace registered application",($Script:htmlsb),$VDIPoolReplaceRegisteredApplication,$htmlwhite))
+					$rowdata += @(,("          Support Windows Shell URL namespace objects",($Script:htmlsb),$VDIPoolSupportShellURLNamespaceObjects,$htmlwhite))
+					$rowdata += @(,("     Enable Drag and drop",($Script:htmlsb),$VDIPoolAllowDragandDrop,$htmlwhite))
+					$rowdata += @(,("          Direction",($Script:htmlsb),$VDIPoolDragAndDrop,$htmlwhite))
+					$rowdata += @(,("     Allow 2xRemoteExec to send command to the client",($Script:htmlsb),$VDIPoolAllowRemoteExec,$htmlwhite))
+					$rowdata += @(,("     Manage RDP transport protocol",($Script:htmlsb),$VDIPoolManageRDPTransportProtocol,$htmlwhite))
+					$rowdata += @(,("     Allow file transfer command (Web and ChromeOS clients)",($Script:htmlsb),$VDIPoolFileTransferMode,$htmlwhite))
+					$rowdata += @(,("          Location",($Script:htmlsb),$VDIPoolFileTransferLocation,$htmlwhite))
+					$rowdata += @(,("          Do not allow to change location",($Script:htmlsb),$VDIPoolFileTransferChangeLocation,$htmlwhite))
+					$rowdata += @(,("     Enable drive redirection cache",($Script:htmlsb),$VDIPoolEnableDriveRedirectionCache,$htmlwhite))
+					$rowdata += @(,("     Enable Z-Order (Experimental)",($Script:htmlsb),$VDIPoolEnableZOrder,$htmlwhite))
+
+					$msg = "Settings"
+					$columnWidths = @("300","275")
+					FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+					WriteHTMLLine 0 0 ""
+				}
 			}
 		}
 		ElseIf($? -and $Null -eq $VDIPools)
@@ -21124,30 +23808,39 @@ Function OutputVDIDetails
 			
 						ForEach($item in $VDITemplate.Optimization.WindowsServices.WindowsServicesList)
 						{
-								If($Null -eq $item.DisplayName)
+							If($Null -eq $item.DisplayName)
+							{
+								Try
+								{
+									$DispName = Get-Service -Name $item.ServiceName -EA 0
+									$DisplayName = $DispName.DisplayName
+								}
+
+								Catch
 								{
 									$DisplayName = ""
 								}
-								Else
-								{
-									$DisplayName = $item.DisplayName
-								}
-								If($Null -eq $item.ServiceName)
-								{
-									$Service = ""
-								}
-								Else
-								{
-									$Service = $item.ServiceName
-								}
-								If($Null -eq $item.Aliases)
-								{
-									$Aliases = ""
-								}
-								Else
-								{
-									$Aliases = $item.Aliases
-								}
+							}
+							Else
+							{
+								$DisplayName = $item.DisplayName
+							}
+							If($Null -eq $item.ServiceName)
+							{
+								$Service = ""
+							}
+							Else
+							{
+								$Service = $item.ServiceName
+							}
+							If($Null -eq $item.Aliases)
+							{
+								$Aliases = ""
+							}
+							Else
+							{
+								$Aliases = $item.Aliases
+							}
 							$OptimizationTable += @{
 								DisplayName = $DisplayName
 								Service     = $Service
@@ -21839,7 +24532,40 @@ Function OutputVDIDetails
 						#		Windows Media Player Network Sharing Service        TabletInputService              Superfecth
 						ForEach($item in $VDITemplate.Optimization.WindowsServices.WindowsServicesList)
 						{
-							Line 6 ( "{0,-50}  {1,-30}  {2,-20}" -f $item.DisplayName, $item.ServiceName, $item.Aliases)
+							If($Null -eq $item.DisplayName)
+							{
+								Try
+								{
+									$DispName = Get-Service -Name $item.ServiceName -EA 0
+									$DisplayName = $DispName.DisplayName
+								}
+
+								Catch
+								{
+									$DisplayName = ""
+								}
+							}
+							Else
+							{
+								$DisplayName = $item.DisplayName
+							}
+							If($Null -eq $item.ServiceName)
+							{
+								$Service = ""
+							}
+							Else
+							{
+								$Service = $item.ServiceName
+							}
+							If($Null -eq $item.Aliases)
+							{
+								$Aliases = ""
+							}
+							Else
+							{
+								$Aliases = $item.Aliases
+							}
+							Line 6 ( "{0,-50}  {1,-30}  {2,-20}" -f $DisplayName, $ServiceName, $Aliases)
 						}
 						Line 0 ""
 					}
@@ -22280,10 +25006,43 @@ Function OutputVDIDetails
 
 						ForEach($item in $VDITemplate.Optimization.WindowsServices.WindowsServicesList)
 						{
+							If($Null -eq $item.DisplayName)
+							{
+								Try
+								{
+									$DispName = Get-Service -Name $item.ServiceName -EA 0
+									$DisplayName = $DispName.DisplayName
+								}
+
+								Catch
+								{
+									$DisplayName = ""
+								}
+							}
+							Else
+							{
+								$DisplayName = $item.DisplayName
+							}
+							If($Null -eq $item.ServiceName)
+							{
+								$Service = ""
+							}
+							Else
+							{
+								$Service = $item.ServiceName
+							}
+							If($Null -eq $item.Aliases)
+							{
+								$Aliases = ""
+							}
+							Else
+							{
+								$Aliases = $item.Aliases
+							}
 							$rowdata += @(,(
-								$item.DisplayName,$htmlwhite,
-								$item.ServiceName,$htmlwhite,
-								$item.Aliases,$htmlwhite)
+								$DisplayName,$htmlwhite,
+								$ServiceName,$htmlwhite,
+								$Aliases,$htmlwhite)
 							)
 						}
 
@@ -58256,8 +61015,8 @@ ProcessScriptEnd
 # SIG # Begin signature block
 # MIIthQYJKoZIhvcNAQcCoIItdjCCLXICAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUzUP22wi+UKU7r8jbWJ5LnV9a
-# 46aggibfMIIFjTCCBHWgAwIBAgIQDpsYjvnQLefv21DiCEAYWjANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQURX3DvzBQaRy1df3QYrCu1Pki
+# +NCggibfMIIFjTCCBHWgAwIBAgIQDpsYjvnQLefv21DiCEAYWjANBgkqhkiG9w0B
 # AQwFADBlMQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYD
 # VQQLExB3d3cuZGlnaWNlcnQuY29tMSQwIgYDVQQDExtEaWdpQ2VydCBBc3N1cmVk
 # IElEIFJvb3QgQ0EwHhcNMjIwODAxMDAwMDAwWhcNMzExMTA5MjM1OTU5WjBiMQsw
@@ -58468,33 +61227,33 @@ ProcessScriptEnd
 # UzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/BgNVBAMTOERpZ2lDZXJ0IFRy
 # dXN0ZWQgRzQgQ29kZSBTaWduaW5nIFJTQTQwOTYgU0hBMzg0IDIwMjEgQ0ExAhAL
 # bN+2Z4EOKufLWhG6HUlwMAkGBSsOAwIaBQCgQDAZBgkqhkiG9w0BCQMxDAYKKwYB
-# BAGCNwIBBDAjBgkqhkiG9w0BCQQxFgQUJS1iPnbqEE4vAf+0cQJNVGuCPjAwDQYJ
-# KoZIhvcNAQEBBQAEggIAx1yVwL6/PIA4FrzxRKLlKUxlevJ65z9eQnXmxhQnmSe9
-# eIVhldHVcQGr53fHvShKStOI4oHJ+ZXQC7+2u5DF7BWpwBA1E9Yo33z9uM48uc8v
-# Be/JvTvcYK0DFleJvGeGYC6ArTTucy3Tr3lnykX5ckGTBCaIdVLfXvLfDF3RW8P8
-# zT2kWf9Pk7ZVGoevURAhiVJvkSXVy0qwLOlFOwaGYK/6y30ITcUbY3sRk1ji38X/
-# DblBADuq5UmmHfgkHuKMVb+wI8ISEQ+hifdYDCCvHXilfVFAdPMjjo0C9QuGQTu7
-# xW+mqgJk3ny2RSFMz+HEIN63stQ5HA3y7BPxk0ohVWA95H5OGRylrhM3POPtfDX7
-# RGT8kWNq3atM4gcIpE5tPtf6EqPqFyrbGfGWi970T2PZVNzDqM4bCOWYDEk9+BpY
-# ld+fL0tBxzvo2ShUoNLJb7kad3nfr9pxz3YZGphegPZ4oW8rl6B3i/yj1A8CJbc/
-# DAvygQp7Mor/2kyJPuLD/E2shoF3QD6DXbzm3O6pXYjgTuAQ7ueXvmzUj/3aQ+Yy
-# TlzD0aSksoMv9LArhpBLq9qArFg/x9Yk2FUvdhIdJQSM+eBeaFtOKQELcjkvdaRy
-# Gl4CSpkaeWeMo8UVTeJ9Dpwmo3ssUu43twmJ70LXcWr4KpwRQxJ6JFf7vBQdxFqh
+# BAGCNwIBBDAjBgkqhkiG9w0BCQQxFgQUyn0KzQdnyDBUTg/c01P5UcZ9d3wwDQYJ
+# KoZIhvcNAQEBBQAEggIAQWEsFyjrgUmzG2+PowQFEJ52WIO9647ak8R875CPWqps
+# glxSSqjxbbEV4Ik8Fw+EicqNjvzuPk8zej0UoWqPAPh34PMxrlpGJF5VnJxCjgqy
+# UecOOKLlPdN6gyIsqV3t0g+CQQMC54V9Jfv65ooEwvLhQojIN9lS5ZhwI7zxhp7H
+# 20I0X0YmoaZ33d15pGTQmwBaPca9Oua2jBmvHx3tueC1oVot7mK8b0I+hV6KymVH
+# LXbc4QTI3dX0rtoQ565daUmIFtgK9DSmdgg0mjVcYZpa5BZsZ/+Ha743ez0q4ren
+# 6rNHgYJsLHIVsQdogYSVpEyF21ZO0CTTxhpHUgjire/fD53M0RmpbGlIO3SI2Db8
+# beyHSgbDTH23heg1iqjxXCcn6nPcOnMxMJ4zhkMeKRhSJIp4zxr0sSrSAUDD+alx
+# k2HcClFic70ZZVYXpsVFu+pd/UGpAJK9sOvUp2bkpYRhQHYk6dHul1kkO0iAI+Iy
+# /zb3LpItjgDGsZYDyeVuIWM1zADUGjVEcRtWzaU5uJ23iJmOZhINz+JtH+xWlPUB
+# G05btFU2W1e/qlejXkD9TRP4XWeJ5VLLig9rS5POdqiShiLFr0k/u8o/s2gU2x5i
+# zzktXaVym+QDCuuoJZ2Gh21CzgIcKhFNqiDfZWWygfLviQKe76NXRroUlTyO+Aih
 # ggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8CAQEwfTBpMQswCQYDVQQGEwJVUzEX
 # MBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/BgNVBAMTOERpZ2lDZXJ0IFRydXN0
 # ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYgU0hBMjU2IDIwMjUgQ0ExAhAKgO8Y
 # S43xBYLRxHanlXRoMA0GCWCGSAFlAwQCAQUAoGkwGAYJKoZIhvcNAQkDMQsGCSqG
-# SIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjUxMTEwMjA0NTUwWjAvBgkqhkiG9w0B
-# CQQxIgQgN6kcM11VbiTFjIgf6fjGvCUaAm+YM5CnHuz4Ns1O9H8wDQYJKoZIhvcN
-# AQEBBQAEggIASYuYgeNbhKefYIt8avR/uf/ER1+ABO2ZRg/M4g6GlLBE2YqAP6Cn
-# QkF8OOnPT2eu0RBBtMDcVXHDIlkPUT4QZFDqvxbIqYXbtcWc0d1ou/dOZWmhxnmD
-# RP5QWvyUtiacoT4Xa+A4ZWcbwDp244DI1hEzgJ1FsFxbQmNNaYITU1Kx4eD4rkmP
-# qnbFabgqPYyMb1xxCSadPfbktdKg1eLYa+4aoRA5mEBr1yt7xHSYkEjQ+RyEJLKC
-# /gp0IkAUhhhUSzIUuEMwTTI6HIznFAPTIYUleZOhuIkfGiu3hB98XrZ/uc6S6Ais
-# qPkdEyFIe6lCazE7DQ6p8qFlOJ9+4oB7fsd5uOPgFWQS0ZnNj1gbYBPKTg+KnejQ
-# NiSV90f2aiAxYd81UYHp4/pZO/KEASk1zRwAT4VTgiaM4c4Ax09s7tsjn+jzsfdz
-# ZOV9SSC7w/+056lBfa4WpF53+9pmh9jPPzNvvLkADJwzcfK9J84PRZLN4kynAY+V
-# IeF93zTwQk5XxESg6zdJfe3q3pHeIWuzbIAqe3sw816zAh5ifSa4sqjM52HazcZq
-# UTnHmVY6BcnouxJT9LdsSkGTlp7Y+xA8SbKPZRxiXh72XnE0ow/o+95i4iUwkhyM
-# TygwgIcXTLOI7LRYjfhgz/ArA01y/ozmXStGpldL0i2T+hQbicDsqZE=
+# SIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjUxMTE0MTg1MDEyWjAvBgkqhkiG9w0B
+# CQQxIgQgLmFLmSOhzbXd5h2zXRu2616VYFpQwEhqRa1YlXcdd78wDQYJKoZIhvcN
+# AQEBBQAEggIAtEvwDpXKHOfYeFcm5/jQMP6ea8p5vzTQPLqlGrvxh6dk+jYWKthZ
+# PP6zrPpMFEydU783aB0yGMpiA9H3GJTqOmkSLC1D7GyRUcqnMWuo2Pzdpa8FJYOi
+# XVPGyJH9DPeAIYiOJ/hIcVr+yD4xPole3dBuwp0rXV0KHDROpFHhlsaA0Z8oNTiD
+# mR2QqsWXSFboGQHqtokA51PG32412y1cCXVKYn3tyS9+0hg6+74xnHbcJarrMf+q
+# 4FwI+//fmGNTqvnW3Aq1EUmOWh8TZ3IMXJIyfOiVDbgIF95TOvNHKHHZjp4Y34Hi
+# npRNCXuamTuUs80p1isnzc1QGXrtH8vjofgzsojn18m/SFsj068dsYV9UG0iQQqT
+# 8hIm60sFaeXiaKCvsELRvtCFTBUd3oYrC6ZORglvxRmtuxW9KIU39nE2SN3d4LP5
+# u2kBSG6JQMASpcQbbJ9tm5fR50Lo7PSyiSQ9GomUeE3JSLVMQTpN4eBx+mUuZAx7
+# 4mkj4kKMQzdGG4S3l95dYNtnj7w6cY33SY88fScOW7BtQzlx1Qts80t+CJTdZRkr
+# wlxGlEe6oejSZpBrzYJ4dDJv37Pk1ZSLJUoWgtEesl+LUw0NdvuVvwmRogVlE+J3
+# g/t9lsQ9NwVlnbZij3II9JoIHIeqNgW62rlI0S0g1UbITr/qKiV7cCY=
 # SIG # End signature block

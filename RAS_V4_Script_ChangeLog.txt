@@ -133,6 +133,11 @@
 #		Changed Get-RASVDIHostStatus -Name $VDIPool.Name to Get-RASVDIHostPoolStatus -Name $VDIPool.Name -SiteId $Site.Id
 #		Fixed bug in processing the variable $AppPackagesAssigned.ApplicationPackagesAssigned with the help of Guy Leech
 #		For RDS Hosts details, rename "Agent settings" to "Settings, and move to after Desktop access
+#		In Optimization, for Windows Services, 
+#			Add a call to Get-Service to get the Display Name
+#				The Display Name is retrieved from the computer running the script.
+#				That means a Server OS will not find a service named "Fax"
+#			Make the code consistent with all three output formats
 #		Only output optimization data if optimization is enabled
 #
 #	In Function OutputSAMLSetting, handle multiple SAML items
@@ -154,10 +159,17 @@
 #			Template
 #			Template version
 #			ID
-#		For Host Pool Properties, add
+#		For Host Pool Properties, add:
 #			Action tab
 #			User profile tab
 #			Application Packages
+#			Optimization
+#				For Windows Services, 
+#					Add a call to Get-Service to get the Display Name
+#						The Display Name is retrieved from the computer running the script.
+#						That means a Server OS will not find a service named "Fax"
+#					Make the code consistent with all three output formats
+#			Settings
 #
 #	In Function ProcessAdministration
 #		Rename variable $RASFeatures to $RASHelpdesk
