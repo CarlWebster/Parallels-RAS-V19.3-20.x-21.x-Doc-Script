@@ -450,9 +450,9 @@
 	text document.
 .NOTES
 	NAME: RAS_Inventory_V4_0.ps1
-	VERSION: 4.00 Beta 26
+	VERSION: 4.00 Beta 27
 	AUTHOR: Carl Webster
-	LASTEDIT: November 14, 2025
+	LASTEDIT: November 17, 2025
 #>
 
 
@@ -593,6 +593,8 @@ Param(
 #
 #	Fixed and refined the HTML, Text, and MSWord output
 #
+#	General code cleanup and fixed some typos
+#
 #	In Function OutputFarmSite, 
 #		Add Farm Properties
 #		For RAS V20 and later, add Access addresses
@@ -701,6 +703,7 @@ Param(
 #				That means a Server OS will not find a service named "Fax"
 #			Make the code consistent with all three output formats
 #		Only output optimization data if optimization is enabled
+#		For Settings, add "Session readiness timeout"
 #
 #	In Function OutputSAMLSetting, handle multiple SAML items
 #
@@ -825,9 +828,9 @@ $ErrorActionPreference    = 'SilentlyContinue'
 $Error.Clear()
 
 $Script:emailCredentials  = $Null
-$script:MyVersion         = '4.00 Beta 26'
+$script:MyVersion         = '4.00 Beta 27'
 $Script:ScriptName        = "RAS_Inventory_V4_0.ps1"
-$tmpdate                  = [datetime] "11/14/2025"
+$tmpdate                  = [datetime] "11/17/2025"
 $Script:ReleaseDate       = $tmpdate.ToUniversalTime().ToShortDateString()
 
 If($MSWord -eq $False -and $PDF -eq $False -and $Text -eq $False -and $HTML -eq $False)
@@ -4018,7 +4021,7 @@ Function ProcessScriptSetup
 		$Script:RASVersion = "$($Script:RASMajorVersion).$($Script:RASMinorVersion)"
 		$Script:RASFullVersion = $Results.RASVersion
 		
-		If([version]$Script:RASVersion -ge [version]"19.1")
+		If([version]$Script:RASVersion -ge [version]"19.3")
 		{
 			#we are good
 		}
@@ -4028,13 +4031,19 @@ Function ProcessScriptSetup
 			Write-Host "You are running version $Script:RASVersion" -ForegroundColor White
 			Write-Error "
 	`n`n
-	This script is designed for RAS 19.1 and laterand should not be run on $Results.
+	This script is designed for RAS 19.3 and later and should not be run on $Results.
 	`n`n
-	If you are running RAS 18.x, please use: 
-	https://carlwebster.com/downloads/download-info/parallels-remote-application-server/
+	If you are running RAS 19.0 through 19.2, please use: 
+	https://github.com/CarlWebster/Parallels-RAS-V19.0-1-2-Doc-Script
+	`n`n
+	If you are running RAS 18.1+, please use: 
+	https://github.com/CarlWebster/Parallels-RAS-V18.x-Doc-Script
+	`n`n
+	If you are running RAS 18.0, please use: 
+	https://github.com/CarlWebster/Parallels-RAS-V18.0-Doc-Script
 	`n`n
 	If you are running RAS 17, please use:
-	https://carlwebster.com/downloads/download-info/parallels-remote-application-server-v17/
+	https://github.com/CarlWebster/Parallels-RAS-V17-Doc-Script
 	`n`n
 	Script cannot continue
 	`n`n
@@ -4049,13 +4058,19 @@ Function ProcessScriptSetup
 
 		Write-Error "
 	`n`n
-	This script is designed for RAS 19.1 and later and your RAS version could not be determined.
+	This script is designed for RAS 19.3 and later and your RAS version could not be determined.
 	`n`n
-	If you are running RAS 18.x, please use: 
-	https://carlwebster.com/downloads/download-info/parallels-remote-application-server/
+	If you are running RAS 19.0 through 19.2, please use: 
+	https://github.com/CarlWebster/Parallels-RAS-V19.0-1-2-Doc-Script
+	`n`n
+	If you are running RAS 18.1+, please use: 
+	https://github.com/CarlWebster/Parallels-RAS-V18.x-Doc-Script
+	`n`n
+	If you are running RAS 18.0, please use: 
+	https://github.com/CarlWebster/Parallels-RAS-V18.0-Doc-Script
 	`n`n
 	If you are running RAS 17, please use:
-	https://carlwebster.com/downloads/download-info/parallels-remote-application-server-v17/
+	https://github.com/CarlWebster/Parallels-RAS-V17-Doc-Script
 	`n`n
 	Script cannot continue
 	`n`n
@@ -4064,7 +4079,6 @@ Function ProcessScriptSetup
 	}
 	Write-Verbose "$(Get-Date -Format G): Running RAS Version $($Script:RASVersion)"
 	
-	#$Script:Title = "Parallels RAS Inventory"
 	#support multiple section items
 	If($Section.Count -eq 1 -and $Section -eq "All")
 	{
@@ -5124,9 +5138,7 @@ Function OutputSiteSummary
 				{
 					$ScriptInformation = New-Object System.Collections.ArrayList
 					$ScriptInformation.Add(@{Data = "Name"; Value = $TenantBroker.Name; }) > $Null
-					#$ScriptInformation.Add(@{Data = "Status"; Value = $TenantBrokerStatusAgentState; }) > $Null
 					$ScriptInformation.Add(@{Data = "Operating system"; Value = $TenantBrokerOS; }) > $Null
-					#$ScriptInformation.Add(@{Data = "Agent version"; Value = $TenantBrokerStatus.AgentVer; }) > $Null
 					$ScriptInformation.Add(@{Data = "Hypervisor"; Value = $TenantBrokerHostHypervisor; }) > $Null
 
 					$Table = AddWordTable -Hashtable $ScriptInformation `
@@ -5150,9 +5162,7 @@ Function OutputSiteSummary
 				If($Text)
 				{
 					Line 2 "Name`t`t`t`t: " $TenantBroker.Name
-					#Line 2 "Status`t`t`t`t: " $TenantBrokerStatusAgentState
 					Line 2 "Operating system`t`t: " $TenantBrokertOS
-					#Line 2 "Agent version`t`t`t: " $TenantBrokerStatus.AgentVer
 					Line 2 "Hypervisor`t`t`t: " $TenantBrokerHypervisor
 					Line 0 ""
 				}
@@ -5160,9 +5170,7 @@ Function OutputSiteSummary
 				{
 					$rowdata = @()
 					$columnHeaders = @("Name",($Script:htmlsb),$TenantBroker.Name,$htmlwhite)
-					#$rowdata += @(,("Status",($Script:htmlsb),$TenantBrokerStatusAgentState,$htmlwhite))
 					$rowdata += @(,("Operating system",($Script:htmlsb),$TenantBrokerOS,$htmlwhite))
-					#$rowdata += @(,("Agent version",($Script:htmlsb),$TenantBrokerStatus.AgentVer,$htmlwhite))
 					$rowdata += @(,("Hypervisor",($Script:htmlsb),$TenantBrokerHypervisor,$htmlwhite))
 
 					$msg = ""
@@ -7923,7 +7931,6 @@ Function OutputRDSessionHostsDetails
 							
 							If($cnt -eq 0)
 							{
-								#$ScriptInformation.Add(@{Data = "          User Exclusion List"; Value = "User: $($item.Account)  Type: $($item.Type)"; }) > $Null
 								$ScriptInformation.Add(@{Data = "          User Exclusion List"; Value = "User: $($item.Account)"; }) > $Null
 								$ScriptInformation.Add(@{Data = ""; Value = "Type: $($item.Type)"; }) > $Null
 								$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
@@ -8765,30 +8772,30 @@ Function OutputRDSessionHostsDetails
 			}
 
 			<#
-			Get-RASImageOptimization -Id 1 -ObjType RDS
+				Get-RASImageOptimization -Id 1 -ObjType RDS
 
-			EnableOptimization            : True
-			OptimizationType              : Automatic
-			WindowsDefenderATP            : RASAdminEngine.Core.OutputModels.ImagesOptimization.Categories.WindowsDefenderATP
-			WindowsComponents             : RASAdminEngine.Core.OutputModels.ImagesOptimization.Categories.WindowsComponents
-			WindowsDefenderATPEnabled     : True
-			WindowsComponentsEnabled      : True
-			WindowsServicesEnabled        : True
-			WindowsScheduledTasksEnabled  : True
-			WindowsAdvancedOptionsEnabled : True
-			NetworkPerformanceEnabled     : True
-			RegistryEnabled               : True
-			VisualEffectsEnabled          : True
-			DiskCleanupEnabled            : True
-			CustomScriptEnabled           : False
-			WindowsServices               : RASAdminEngine.Core.OutputModels.ImagesOptimization.Categories.WindowsServices
-			WindowsAdvancedOptions        : RASAdminEngine.Core.OutputModels.ImagesOptimization.Categories.WindowsAdvancedOptions
-			NetworkPerformance            : RASAdminEngine.Core.OutputModels.ImagesOptimization.Categories.NetworkPerformance
-			CustomScript                  : RASAdminEngine.Core.OutputModels.ImagesOptimization.Categories.CustomScript
-			DiskCleanup                   : RASAdminEngine.Core.OutputModels.ImagesOptimization.Categories.DiskCleanup
-			VisualEffects                 : RASAdminEngine.Core.OutputModels.ImagesOptimization.Categories.VisualEffects
-			WindowsScheduledTasks         : RASAdminEngine.Core.OutputModels.ImagesOptimization.Categories.WindowsScheduledTasks
-			Registry                      : RASAdminEngine.Core.OutputModels.ImagesOptimization.Categories.Registries
+				EnableOptimization            : True
+				OptimizationType              : Automatic
+				WindowsDefenderATP            : RASAdminEngine.Core.OutputModels.ImagesOptimization.Categories.WindowsDefenderATP
+				WindowsComponents             : RASAdminEngine.Core.OutputModels.ImagesOptimization.Categories.WindowsComponents
+				WindowsDefenderATPEnabled     : True
+				WindowsComponentsEnabled      : True
+				WindowsServicesEnabled        : True
+				WindowsScheduledTasksEnabled  : True
+				WindowsAdvancedOptionsEnabled : True
+				NetworkPerformanceEnabled     : True
+				RegistryEnabled               : True
+				VisualEffectsEnabled          : True
+				DiskCleanupEnabled            : True
+				CustomScriptEnabled           : False
+				WindowsServices               : RASAdminEngine.Core.OutputModels.ImagesOptimization.Categories.WindowsServices
+				WindowsAdvancedOptions        : RASAdminEngine.Core.OutputModels.ImagesOptimization.Categories.WindowsAdvancedOptions
+				NetworkPerformance            : RASAdminEngine.Core.OutputModels.ImagesOptimization.Categories.NetworkPerformance
+				CustomScript                  : RASAdminEngine.Core.OutputModels.ImagesOptimization.Categories.CustomScript
+				DiskCleanup                   : RASAdminEngine.Core.OutputModels.ImagesOptimization.Categories.DiskCleanup
+				VisualEffects                 : RASAdminEngine.Core.OutputModels.ImagesOptimization.Categories.VisualEffects
+				WindowsScheduledTasks         : RASAdminEngine.Core.OutputModels.ImagesOptimization.Categories.WindowsScheduledTasks
+				Registry                      : RASAdminEngine.Core.OutputModels.ImagesOptimization.Categories.Registries
 			#>
 
 			If($RDSHost.InheritDefaultOptimizationSettings)
@@ -11175,6 +11182,15 @@ Function OutputRDSessionHostsDetails
 							}
 							$RDSFileTransferChangeLocation = $GroupDefaults.FileTransferLockLocation.ToString()
 
+							Switch ($GroupDefaults.SessionReadinessTimeout)
+							{
+								25		{$RDSSessionReadinessTimeout = "25 seconds"; Break}
+								60		{$RDSSessionReadinessTimeout = "1 minute"; Break}
+								300		{$RDSSessionReadinessTimeout = "5 minutes"; Break}
+								3600	{$RDSSessionReadinessTimeout = "1 hour"; Break}
+								Default	{$RDSSessionReadinessTimeout = "Unable to determine session readiness timeout: $($GroupDefaults.SessionReadinessTimeout)"; Break}
+							}
+						
 							#fixed the following missing variables in 2.52 thanks to Thomas Krampe
 							$RDSAllowRemoteExec             = $GroupDefaults.AllowRemoteExec.ToString()
 							$RDSUseRemoteApps               = $GroupDefaults.UseRemoteApps.ToString()
@@ -11238,20 +11254,20 @@ Function OutputRDSessionHostsDetails
 								Switch ($RDSDefaults.DragAndDropMode)
 								{
 									"Bidirectional"		{$RDSDragAndDrop = "Bidirectional"; 
-									$RDSAllowDragAndDrop = "True";
-									Break}
+														$RDSAllowDragAndDrop = "True";
+														Break}
 									"Disabled"			{$RDSDragAndDrop = "Disabled"; 
-									$RDSAllowDragAndDrop = "False";
-									Break}
+														$RDSAllowDragAndDrop = "False";
+														Break}
 									"ClientToServer"	{$RDSDragAndDrop = "Client to server only"; 
-									$RDSAllowDragAndDrop = "True";
-									Break}
+														$RDSAllowDragAndDrop = "True";
+														Break}
 									"ServerToClient"	{$RDSDragAndDrop = "Server to client only"; 
-									$RDSAllowDragAndDrop = "True";
-									Break}
+														$RDSAllowDragAndDrop = "True";
+														Break}
 									Default				{$RDSDragAndDrop = "Unable to determine Drag and drop: $($RDSDefaults.DragAndDropMode)"; 
-									$RDSAllowDragAndDrop = "False";
-									Break}
+														$RDSAllowDragAndDrop = "False";
+														Break}
 								}
 								
 								Switch ($RDSDefaults.FileTransferMode)
@@ -11280,6 +11296,16 @@ Function OutputRDSessionHostsDetails
 								{
 									$RDSPreferredPublishingAgent = (Get-RASBroker -Id $RDSDefaults.PreferredBrokerId -EA 0 4>$Null).Server
 								}
+
+								Switch ($RDSDefaults.SessionReadinessTimeout)
+								{
+									25		{$RDSSessionReadinessTimeout = "25 seconds"; Break}
+									60		{$RDSSessionReadinessTimeout = "1 minute"; Break}
+									300		{$RDSSessionReadinessTimeout = "5 minutes"; Break}
+									3600	{$RDSSessionReadinessTimeout = "1 hour"; Break}
+									Default	{$RDSSessionReadinessTimeout = "Unable to determine session readiness timeout: $($RDSDefaults.SessionReadinessTimeout)"; Break}
+								}
+						
 								$RDSAllowRemoteExec             = $RDSDefaults.AllowRemoteExec.ToString()
 								$RDSUseRemoteApps               = $RDSDefaults.UseRemoteApps.ToString()
 								$RDSEnableAppMonitoring         = $RDSDefaults.EnableAppMonitoring.ToString()
@@ -11307,6 +11333,7 @@ Function OutputRDSessionHostsDetails
 								$RDSEnableAppMonitoring                = "True"
 								$RDSAllowFileTransfer                  = "True"
 								$RDSEnableDriveRedirectionCache        = "True"
+								$RDSSessionReadinessTimeout            = "25 seconds"
 							}
 						}
 					}
@@ -11362,20 +11389,20 @@ Function OutputRDSessionHostsDetails
 					Switch ($RDSHost.DragAndDropMode)
 					{
 						"Bidirectional"		{$RDSDragAndDrop = "Bidirectional"; 
-						$RDSAllowDragAndDrop = "True";
-						Break}
+											$RDSAllowDragAndDrop = "True";
+											Break}
 						"Disabled"			{$RDSDragAndDrop = "Disabled"; 
-						$RDSAllowDragAndDrop = "False";
-						Break}
+											$RDSAllowDragAndDrop = "False";
+											Break}
 						"ClientToServer"	{$RDSDragAndDrop = "Client to server only"; 
-						$RDSAllowDragAndDrop = "True";
-						Break}
+											$RDSAllowDragAndDrop = "True";
+											Break}
 						"ServerToClient"	{$RDSDragAndDrop = "Server to client only"; 
-						$RDSAllowDragAndDrop = "True";
-						Break}
+											$RDSAllowDragAndDrop = "True";
+											Break}
 						Default				{$RDSDragAndDrop = "Unable to determine Drag and drop: $($RDSHost.DragAndDropMode)"; 
-						$RDSAllowDragAndDrop = "False";
-						Break}
+											$RDSAllowDragAndDrop = "False";
+											Break}
 					}
 					
 					Switch ($RDSHost.FileTransferMode)
@@ -11404,6 +11431,16 @@ Function OutputRDSessionHostsDetails
 					{
 						$RDSPreferredPublishingAgent = (Get-RASBroker -Id $RDSHost.PreferredBrokerId -EA 0 4>$Null).Server
 					}
+
+					Switch ($RDSHost.SessionReadinessTimeout)
+					{
+						25		{$RDSSessionReadinessTimeout = "25 seconds"; Break}
+						60		{$RDSSessionReadinessTimeout = "1 minute"; Break}
+						300		{$RDSSessionReadinessTimeout = "5 minutes"; Break}
+						3600	{$RDSSessionReadinessTimeout = "1 hour"; Break}
+						Default	{$RDSSessionReadinessTimeout = "Unable to determine session readiness timeout: $($RDSHost.SessionReadinessTimeout)"; Break}
+					}
+						
 					$RDSAllowRemoteExec             = $RDSHost.AllowRemoteExec.ToString()
 					$RDSUseRemoteApps               = $RDSHost.UseRemoteApps.ToString()
 					$RDSEnableAppMonitoring         = $RDSHost.EnableAppMonitoring.ToString()
@@ -11462,20 +11499,20 @@ Function OutputRDSessionHostsDetails
 				Switch ($RDSHost.DragAndDropMode)
 				{
 					"Bidirectional"		{$RDSDragAndDrop = "Bidirectional"; 
-					$RDSAllowDragAndDrop = "True";
-					Break}
+										$RDSAllowDragAndDrop = "True";
+										Break}
 					"Disabled"			{$RDSDragAndDrop = "Disabled"; 
-					$RDSAllowDragAndDrop = "False";
-					Break}
+										$RDSAllowDragAndDrop = "False";
+										Break}
 					"ClientToServer"	{$RDSDragAndDrop = "Client to server only"; 
-					$RDSAllowDragAndDrop = "True";
-					Break}
+										$RDSAllowDragAndDrop = "True";
+										Break}
 					"ServerToClient"	{$RDSDragAndDrop = "Server to client only"; 
-					$RDSAllowDragAndDrop = "True";
-					Break}
+										$RDSAllowDragAndDrop = "True";
+										Break}
 					Default				{$RDSDragAndDrop = "Unable to determine Drag and drop: $($RDSHost.DragAndDropMode)"; 
-					$RDSAllowDragAndDrop = "False";
-					Break}
+										$RDSAllowDragAndDrop = "False";
+										Break}
 				}
 				
 				Switch ($RDSHost.FileTransferMode)
@@ -11504,6 +11541,16 @@ Function OutputRDSessionHostsDetails
 				{
 					$RDSPreferredPublishingAgent = (Get-RASBroker -Id $RDSHost.PreferredBrokerId -EA 0 4>$Null).Server
 				}
+
+				Switch ($RDSHost.SessionReadinessTimeout)
+				{
+					25		{$RDSSessionReadinessTimeout = "25 seconds"; Break}
+					60		{$RDSSessionReadinessTimeout = "1 minute"; Break}
+					300		{$RDSSessionReadinessTimeout = "5 minutes"; Break}
+					3600	{$RDSSessionReadinessTimeout = "1 hour"; Break}
+					Default	{$RDSSessionReadinessTimeout = "Unable to determine session readiness timeout: $($RDSHost.SessionReadinessTimeout)"; Break}
+				}
+						
 				$RDSAllowRemoteExec             = $RDSHost.AllowRemoteExec.ToString()
 				$RDSUseRemoteApps               = $RDSHost.UseRemoteApps.ToString()
 				$RDSEnableAppMonitoring         = $RDSHost.EnableAppMonitoring.ToString()
@@ -11519,6 +11566,7 @@ Function OutputRDSessionHostsDetails
 				$ScriptInformation.Add(@{Data = "     Disconnect active session after"; Value = $RDSPublishingSessionDisconnectTimeout; }) > $Null
 				$ScriptInformation.Add(@{Data = "     Logoff disconnected session after"; Value = $RDSPublishingSessionResetTime; }) > $Null
 				$ScriptInformation.Add(@{Data = "Other settings"; Value = ""; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Session readiness timeout"; Value = $RDSSessionReadinessTimeout; }) > $Null
 				$ScriptInformation.Add(@{Data = "     Port"; Value = $RDSPort; }) > $Null
 				$ScriptInformation.Add(@{Data = "     Max Sessions"; Value = $RDSMaxSessions; }) > $Null
 				$ScriptInformation.Add(@{Data = "     Preferred Connection Broker"; Value = $RDSPreferredPublishingAgent; }) > $Null
@@ -11562,6 +11610,7 @@ Function OutputRDSessionHostsDetails
 				Line 5 "Disconnect active session after`t`t`t`t: " $RDSPublishingSessionDisconnectTimeout
 				Line 5 "Logoff disconnected session after`t`t`t: " $RDSPublishingSessionResetTime
 				Line 4 "Other settings"
+				Line 5 "Session readiness timeout: " $RDSSessionReadinessTimeout
 				Line 5 "Port`t`t`t`t`t`t`t: " $RDSPort
 				Line 5 "Max Sessions`t`t`t`t`t`t: " $RDSMaxSessions
 				Line 5 "Preferred Connection Broker`t`t`t`t: " $RDSPreferredPublishingAgent
@@ -11589,6 +11638,7 @@ Function OutputRDSessionHostsDetails
 				$rowdata += @(,("     Disconnect active session after",($Script:htmlsb),$RDSPublishingSessionDisconnectTimeout,$htmlwhite))
 				$rowdata += @(,("     Logoff disconnected session after",($Script:htmlsb),$RDSPublishingSessionResetTime,$htmlwhite))
 				$rowdata += @(,("Other settings",($Script:htmlsb),$RDSPort,$htmlwhite))
+				$rowdata += @(,("     Session readiness timeout: ",($Script:htmlsb),$RDSSessionReadinessTimeout,$htmlwhite))
 				$rowdata += @(,("     Port",($Script:htmlsb),$RDSPort,$htmlwhite))
 				$rowdata += @(,("     Max Sessions",($Script:htmlsb),$RDSMaxSessions,$htmlwhite))
 				$rowdata += @(,("     Preferred Connection Broker",($Script:htmlsb),$RDSPreferredPublishingAgent,$htmlwhite))
@@ -13805,20 +13855,20 @@ Function OutputRDSessionHostsDetails
 					Switch ($RDSDefaults.DragAndDropMode)
 					{
 						"Bidirectional"		{$RDSDragAndDrop = "Bidirectional"; 
-						$RDSAllowDragAndDrop = "True";
-						Break}
+											$RDSAllowDragAndDrop = "True";
+											Break}
 						"Disabled"			{$RDSDragAndDrop = "Disabled"; 
-						$RDSAllowDragAndDrop = "False";
-						Break}
+											$RDSAllowDragAndDrop = "False";
+											Break}
 						"ClientToServer"	{$RDSDragAndDrop = "Client to server only"; 
-						$RDSAllowDragAndDrop = "True";
-						Break}
+											$RDSAllowDragAndDrop = "True";
+											Break}
 						"ServerToClient"	{$RDSDragAndDrop = "Server to client only"; 
-						$RDSAllowDragAndDrop = "True";
-						Break}
+											$RDSAllowDragAndDrop = "True";
+											Break}
 						Default				{$RDSDragAndDrop = "Unable to determine Drag and drop: $($RDSDefaults.DragAndDropMode)"; 
-						$RDSAllowDragAndDrop = "False";
-						Break}
+											$RDSAllowDragAndDrop = "False";
+											Break}
 					}
 					
 					Switch ($RDSDefaults.FileTransferMode)
@@ -13926,20 +13976,20 @@ Function OutputRDSessionHostsDetails
 				Switch ($RDSGroupDefaults.DragAndDropMode)
 				{
 					"Bidirectional"		{$RDSDragAndDrop = "Bidirectional"; 
-					$RDSAllowDragAndDrop = "True";
-					Break}
+										$RDSAllowDragAndDrop = "True";
+										Break}
 					"Disabled"			{$RDSDragAndDrop = "Disabled"; 
-					$RDSAllowDragAndDrop = "False";
-					Break}
+										$RDSAllowDragAndDrop = "False";
+										Break}
 					"ClientToServer"	{$RDSDragAndDrop = "Client to server only"; 
-					$RDSAllowDragAndDrop = "True";
-					Break}
+										$RDSAllowDragAndDrop = "True";
+										Break}
 					"ServerToClient"	{$RDSDragAndDrop = "Server to client only"; 
-					$RDSAllowDragAndDrop = "True";
-					Break}
+										$RDSAllowDragAndDrop = "True";
+										Break}
 					Default				{$RDSDragAndDrop = "Unable to determine Drag and drop: $($RDSGroupDefaults.DragAndDropMode)"; 
-					$RDSAllowDragAndDrop = "False";
-					Break}
+										$RDSAllowDragAndDrop = "False";
+										Break}
 				}
 				
 				If($RDSGroupDefaults.PreferredBrokerId -eq 0)
@@ -14541,10 +14591,7 @@ Function OutputRDSessionHostsDetails
 				WriteWordLine 3 0 "Template Name $($RDSTemplate.Name)"
 				$ScriptInformation = New-Object System.Collections.ArrayList
 				$ScriptInformation.Add(@{Data = "Name"; Value = $RDSTemplate.Name; }) > $Null
-				#$ScriptInformation.Add(@{Data = "Status"; Value = "Can't find"; }) > $Null
 				$ScriptInformation.Add(@{Data = "Power state"; Value = $TemplatePowerState; }) > $Null
-				#$ScriptInformation.Add(@{Data = "Agent status"; Value = "Can't find"; }) > $Null
-				#$ScriptInformation.Add(@{Data = "Distribution"; Value = "Can't find"; }) > $Null
 				$ScriptInformation.Add(@{Data = "Provider"; Value = $TemplateProviderName; }) > $Null
 				$ScriptInformation.Add(@{Data = "Provider type"; Value = $TemplateProviderType; }) > $Null
 				$ScriptInformation.Add(@{Data = "Last modification by"; Value = $RDSTemplate.AdminLastMod; }) > $Null
@@ -14574,10 +14621,7 @@ Function OutputRDSessionHostsDetails
 			If($Text)
 			{
 				Line 2 "Name: " $RDSTemplate.Name
-				#Line 2 "Status`t`t`t: " "Can't find"
 				Line 2 "Power state`t`t: " $TemplatePowerState
-				#Line 2 "Agent status`t`t: " "Can't find"
-				#Line 2 "Distribution`t`t: " "Can't find"
 				Line 2 "Provider`t`t: " $TemplateProviderName
 				Line 2 "Provider type`t`t: " $TemplateProviderType
 				Line 2 "Last modification by`t: " $RDSTemplate.AdminLastMod
@@ -14591,10 +14635,7 @@ Function OutputRDSessionHostsDetails
 			{
 				$rowdata = @()
 				$columnHeaders = @("Name",($Script:htmlsb),$RDSTemplate.Name,$htmlwhite)
-				#$rowdata += @(,("Status",($Script:htmlsb),"Can't find",$htmlwhite))
 				$rowdata += @(,("Power state",($Script:htmlsb),$TemplatePowerState,$htmlwhite))
-				#$rowdata += @(,("Agent status",($Script:htmlsb),"Can't find",$htmlwhite))
-				#$rowdata += @(,("Distribution",($Script:htmlsb),"Can't find",$htmlwhite))
 				$rowdata += @(,("Provider",($Script:htmlsb),$TemplateProviderName,$htmlwhite))
 				$rowdata += @(,("Provider type",($Script:htmlsb),$TemplateProviderType,$htmlwhite))
 				$rowdata += @(,("Last modification by",($Script:htmlsb), $RDSTemplate.AdminLastMod,$htmlwhite))
@@ -14650,7 +14691,6 @@ Function OutputRDSessionHostsDetails
 				$ScriptInformation.Add(@{Data = "Maximum guest VMs"; Value = $RDSTemplate.MaxVMs.ToString(); }) > $Null
 				$ScriptInformation.Add(@{Data = "Keep available buffer"; Value = $RDSTemplate.PreCreatedVMs.ToString(); }) > $Null
 				$ScriptInformation.Add(@{Data = "Guest VM name"; Value = $RDSTemplate.VMNameFormat; }) > $Null
-				#$ScriptInformation.Add(@{Data = "Guest VM state after the preparation"; Value = "Can't find"; }) > $Null
 				$ScriptInformation.Add(@{Data = "Delete unused guest VMs after"; Value = $DeleteVMTime; }) > $Null
 				$ScriptInformation.Add(@{Data = "Clone method"; Value = $CloneMethod; }) > $Null
 
@@ -14678,7 +14718,6 @@ Function OutputRDSessionHostsDetails
 				Line 3 "Maximum guest VMs`t`t`t`t: " $RDSTemplate.MaxVMs.ToString()
 				Line 3 "Keep available buffer`t`t`t`t: " $RDSTemplate.PreCreatedVMs.ToString()
 				Line 3 "Guest VM name`t`t`t`t`t: " $RDSTemplate.VMNameFormat
-				#Line 3 "Guest VM state after the preparation`t: " "Can't find"
 				Line 3 "Delete unused guest VMs after`t`t`t: " $DeleteVMTime
 				Line 3 "Clone method`t`t`t`t`t: " $CloneMethod
 				Line 0 ""
@@ -14690,7 +14729,6 @@ Function OutputRDSessionHostsDetails
 				$rowdata += @(,("Maximum guest VMs",($Script:htmlsb),$RDSTemplate.MaxVMs.ToString(),$htmlwhite))
 				$rowdata += @(,("Keep available buffer",($Script:htmlsb),$RDSTemplate.PreCreatedVMs.ToString(),$htmlwhite))
 				$rowdata += @(,("Guest VM name",($Script:htmlsb),$RDSTemplate.VMNameFormat,$htmlwhite))
-				#$rowdata += @(,("Guest VM state after the preparation",($Script:htmlsb),"Can't find",$htmlwhite))
 				$rowdata += @(,("Delete unused guest VMs after",($Script:htmlsb),$DeleteVMTime,$htmlwhite))
 				$rowdata += @(,("Clone method",($Script:htmlsb),$CloneMethod,$htmlwhite))
 
@@ -14722,10 +14760,6 @@ Function OutputRDSessionHostsDetails
 				$ScriptInformation.Add(@{Data = "Resource pool"; Value = $RDSTemplate.NativePoolName; }) > $Null
 				$ScriptInformation.Add(@{Data = "Physical Host"; Value = $RDSTemplate.PhysicalHostName; }) > $Null
 				$ScriptInformation.Add(@{Data = "Enable hardware acceleration graphics licensing support"; Value = $RDSTemplate.HWGPU.ToString(); }) > $Null
-				#$ScriptInformation.Add(@{Data = "Use a separate network interface for LAN access"; Value = "Can't find"; }) > $Null
-				#$ScriptInformation.Add(@{Data = "Specify management network details"; Value = ""; }) > $Null
-				#$ScriptInformation.Add(@{Data = "     Address"; Value = ""; }) > $Null
-				#$ScriptInformation.Add(@{Data = "     Subnet mask"; Value = ""; }) > $Null
 
 				$Table = AddWordTable -Hashtable $ScriptInformation `
 				-Columns Data,Value `
@@ -14752,10 +14786,6 @@ Function OutputRDSessionHostsDetails
 				Line 3 "Physical Host`t`t`t: " $RDSTemplate.PhysicalHostName
 				Line 3 "Enable hardware acceleration "
 				Line 3 "graphics licensing support`t: " $RDSTemplate.HWGPU.ToString()
-				#Line 3 "Use a separate network interface for LAN access: " "Can't find"
-				#Line 3 "Specify management network details:"
-				#Line 4 "Address`t`t`t: " $DeleteVMTime
-				#Line 4 "Subnet mask`t`t: " $CloneMethod
 				Line 0 ""
 			}
 			If($HTML)
@@ -14765,10 +14795,6 @@ Function OutputRDSessionHostsDetails
 				$rowdata += @(,("Resource pool",($Script:htmlsb),$RDSTemplate.NativePoolName,$htmlwhite))
 				$rowdata += @(,("Physical Host",($Script:htmlsb),$RDSTemplate.PhysicalHostName,$htmlwhite))
 				$rowdata += @(,("Enable hardware acceleration graphics licensing support",($Script:htmlsb),$RDSTemplate.HWGPU.ToString(),$htmlwhite))
-				#$rowdata += @(,("Use a separate network interface for LAN access",($Script:htmlsb),"Can't find",$htmlwhite))
-				#$rowdata += @(,("Specify management network details",($Script:htmlsb),"",$htmlwhite))
-				#$rowdata += @(,("     Address",($Script:htmlsb),"",$htmlwhite))
-				#$rowdata += @(,("     Subnet mask",($Script:htmlsb),"",$htmlwhite))
 
 				$msg = "Advanced"
 				$columnWidths = @("300","275")
@@ -16045,30 +16071,22 @@ Function OutputRDSessionHostsDetails
 						}
 						ElseIf($item.RegType.ToString() -eq "REG_MULTI_SZ")
 						{
-							#If($item.StringValue.Count -eq 1)
-							#{
-							#	Line 7 ( "{0,-40}  {1,-6}  {2,-20}  {3,-13}  {4,-20}  {5,-60}" -f `
-							#	$item.DisplayName, $item.Action, $item.RegistryName, $item.RegType.ToString(), $item.StringValue.ToString(), "$($item.HiveType)\$($item.Path)")
-							#}
-							#Else
-							#{
-								$cnt = -1
-								$TmpArray = $item.StringValue.Split("`r")
-								ForEach($SubItem in $TmpArray)
+							$cnt = -1
+							$TmpArray = $item.StringValue.Split("`r")
+							ForEach($SubItem in $TmpArray)
+							{
+								$cnt++
+								
+								If($cnt -eq 0)
 								{
-									$cnt++
-									
-									If($cnt -eq 0)
-									{
-										Line 7 ( "{0,-40}  {1,-6}  {2,-20}  {3,-13}  {4,-20}  {5,-60}" -f `
-										$item.DisplayName, $item.Action, $item.RegistryName, $item.RegType.ToString(), $SubItem, "$($item.HiveType)\$($item.Path)")
-									}
-									Else
-									{
-										Line 17 "       " $SubItem
-									}
+									Line 7 ( "{0,-40}  {1,-6}  {2,-20}  {3,-13}  {4,-20}  {5,-60}" -f `
+									$item.DisplayName, $item.Action, $item.RegistryName, $item.RegType.ToString(), $SubItem, "$($item.HiveType)\$($item.Path)")
 								}
-							#}
+								Else
+								{
+									Line 17 "       " $SubItem
+								}
+							}
 						}
 					}
 					Line 0 ""
@@ -19361,40 +19379,40 @@ Function OutputVDIDetails
 				}
 
 				<#
-				Get-RASImageOptimization -Id 4 -ObjType VDIHostPool
+					Get-RASImageOptimization -Id 4 -ObjType VDIHostPool
 
-				Name                               Value
-				----                               -----
-				Action                             RASAdminEngine.Core.OutputModels.HostPool.ActionSettings
-				AdminCreate                        rasadmin
-				AdminLastMod                       carl.webster@parallelslabus
-				Agent                              RASAdminEngine.Core.OutputModels.HostPool.AgentSettings
-				AppPackagesAssigned                RASAdminEngine.Core.OutputModels.AppPackagesAssigned
-				AutoUpgrade                        RASAdminEngine.Core.OutputModels.HostPool.AutoUpgradeSettings
-				Description                        Pool description
-				Enabled                            True
-				Id                                 4
-				InheritDefaultAgentSettings        True
-				InheritDefaultAppPackageSettings   False
-				InheritDefaultAutoUpgradeSettings  True
-				InheritDefaultOptimizationSettings False
-				InheritDefaultRDPPrinterSettings   True
-				InheritDefaultUserProfileSettings  False
-				InheritDefaultVDIActionSettings    False
-				InheritDefaultVDISecuritySettings  True
-				Members                            RASAdminEngine.Core.OutputModels.HostPool.MembersSettings
-				Name                               Pool
-				Optimization                       RASAdminEngine.Core.OutputModels.ImagesOptimization.ImageOptimization
-				ProviderSettings
-				Provisioning                       RASAdminEngine.Core.OutputModels.HostPool.VDIProvisioningSettings
-				ProvisioningType
-				RDPPrinter                         RASAdminEngine.Core.OutputModels.HostPool.RDPPrinterSettings
-				Security                           RASAdminEngine.Core.OutputModels.VDISecuritySettings
-				SiteId                             1
-				Template
-				TimeCreate                         2/27/2020 11:18:44 AM
-				TimeLastMod                        11/11/2025 4:31:10 PM
-				UserProfile                        RASAdminEngine.Core.OutputModels.UserProfile.UserProfileSettings
+					Name                               Value
+					----                               -----
+					Action                             RASAdminEngine.Core.OutputModels.HostPool.ActionSettings
+					AdminCreate                        rasadmin
+					AdminLastMod                       carl.webster@parallelslabus
+					Agent                              RASAdminEngine.Core.OutputModels.HostPool.AgentSettings
+					AppPackagesAssigned                RASAdminEngine.Core.OutputModels.AppPackagesAssigned
+					AutoUpgrade                        RASAdminEngine.Core.OutputModels.HostPool.AutoUpgradeSettings
+					Description                        Pool description
+					Enabled                            True
+					Id                                 4
+					InheritDefaultAgentSettings        True
+					InheritDefaultAppPackageSettings   False
+					InheritDefaultAutoUpgradeSettings  True
+					InheritDefaultOptimizationSettings False
+					InheritDefaultRDPPrinterSettings   True
+					InheritDefaultUserProfileSettings  False
+					InheritDefaultVDIActionSettings    False
+					InheritDefaultVDISecuritySettings  True
+					Members                            RASAdminEngine.Core.OutputModels.HostPool.MembersSettings
+					Name                               Pool
+					Optimization                       RASAdminEngine.Core.OutputModels.ImagesOptimization.ImageOptimization
+					ProviderSettings
+					Provisioning                       RASAdminEngine.Core.OutputModels.HostPool.VDIProvisioningSettings
+					ProvisioningType
+					RDPPrinter                         RASAdminEngine.Core.OutputModels.HostPool.RDPPrinterSettings
+					Security                           RASAdminEngine.Core.OutputModels.VDISecuritySettings
+					SiteId                             1
+					Template
+					TimeCreate                         2/27/2020 11:18:44 AM
+					TimeLastMod                        11/11/2025 4:31:10 PM
+					UserProfile                        RASAdminEngine.Core.OutputModels.UserProfile.UserProfileSettings
 				#>
 
 				If($VDIPool.InheritDefaultOptimizationSettings)
@@ -22011,10 +22029,7 @@ Function OutputVDIDetails
 				{
 					$ScriptInformation = New-Object System.Collections.ArrayList
 					$ScriptInformation.Add(@{Data = "Name"; Value = $VDITemplate.Name; }) > $Null
-					#$ScriptInformation.Add(@{Data = "Status"; Value = "Can't find"; }) > $Null
 					$ScriptInformation.Add(@{Data = "Power state"; Value = $TemplatePowerState; }) > $Null
-					#$ScriptInformation.Add(@{Data = "Agent status"; Value = "Can't find"; }) > $Null
-					#$ScriptInformation.Add(@{Data = "Distribution"; Value = "Can't find"; }) > $Null
 					$ScriptInformation.Add(@{Data = "Provider"; Value = $TemplateProviderName; }) > $Null
 					$ScriptInformation.Add(@{Data = "Provider type"; Value = $TemplateProviderType; }) > $Null
 					$ScriptInformation.Add(@{Data = "Last modification by"; Value = $VDITemplate.AdminLastMod; }) > $Null
@@ -22044,10 +22059,7 @@ Function OutputVDIDetails
 				If($Text)
 				{
 					Line 3 "Name: " $VDITemplate.Name
-					#Line 3 "Status`t`t`t: " "Can't find"
 					Line 3 "Power state`t`t: " $TemplatePowerState
-					#Line 3 "Agent status`t`t: " "Can't find"
-					#Line 3 "Distribution`t`t: " "Can't find"
 					Line 3 "Provider`t`t: " $TemplateProviderName
 					Line 3 "Provider type`t`t: " $TemplateProviderType
 					Line 3 "Last modification by`t: " $VDITemplate.AdminLastMod
@@ -22061,10 +22073,7 @@ Function OutputVDIDetails
 				{
 					$rowdata = @()
 					$columnHeaders = @("Name",($Script:htmlsb),$VDITemplate.Name,$htmlwhite)
-					#$rowdata += @(,("Status",($Script:htmlsb),"Can't find",$htmlwhite))
 					$rowdata += @(,("Power state",($Script:htmlsb),$TemplatePowerState,$htmlwhite))
-					#$rowdata += @(,("Agent status",($Script:htmlsb),"Can't find",$htmlwhite))
-					#$rowdata += @(,("Distribution",($Script:htmlsb),"Can't find",$htmlwhite))
 					$rowdata += @(,("Provider",($Script:htmlsb),$TemplateProviderName,$htmlwhite))
 					$rowdata += @(,("Provider type",($Script:htmlsb),$TemplateProviderType,$htmlwhite))
 					$rowdata += @(,("Last modification by",($Script:htmlsb), $VDITemplate.AdminLastMod,$htmlwhite))
@@ -22120,7 +22129,6 @@ Function OutputVDIDetails
 					$ScriptInformation.Add(@{Data = "Maximum guest VMs"; Value = $VDITemplate.MaxVMs.ToString(); }) > $Null
 					$ScriptInformation.Add(@{Data = "Keep available buffer"; Value = $VDITemplate.PreCreatedVMs.ToString(); }) > $Null
 					$ScriptInformation.Add(@{Data = "Guest VM name"; Value = $VDITemplate.VMNameFormat; }) > $Null
-					#$ScriptInformation.Add(@{Data = "Guest VM state after the preparation"; Value = "Can't find"; }) > $Null
 					$ScriptInformation.Add(@{Data = "Delete unused guest VMs after"; Value = $DeleteVMTime; }) > $Null
 					$ScriptInformation.Add(@{Data = "Clone method"; Value = $CloneMethod; }) > $Null
 
@@ -22147,7 +22155,6 @@ Function OutputVDIDetails
 					Line 4 "Template name`t`t`t: " $VDITemplate.Name
 					Line 4 "Maximum guest VMs`t`t: " $VDITemplate.MaxVMs.ToString()
 					Line 4 "Keep available buffer`t`t: " $VDITemplate.PreCreatedVMs.ToString()
-					#Line 4 "Guest VM state after the preparation`t: " "Can't find"
 					Line 4 "Guest VM name`t`t`t: " $VDITemplate.VMNameFormat
 					Line 4 "Delete unused guest VMs after`t: " $DeleteVMTime
 					Line 4 "Clone method`t`t`t: " $CloneMethod
@@ -22160,7 +22167,6 @@ Function OutputVDIDetails
 					$rowdata += @(,("Maximum guest VMs",($Script:htmlsb),$VDITemplate.MaxVMs.ToString(),$htmlwhite))
 					$rowdata += @(,("Keep available buffer",($Script:htmlsb),$VDITemplate.PreCreatedVMs.ToString(),$htmlwhite))
 					$rowdata += @(,("Guest VM name",($Script:htmlsb),$VDITemplate.VMNameFormat,$htmlwhite))
-					#$rowdata += @(,("Guest VM state after the preparation",($Script:htmlsb),"Can't find",$htmlwhite))
 					$rowdata += @(,("Delete unused guest VMs after",($Script:htmlsb),$DeleteVMTime,$htmlwhite))
 					$rowdata += @(,("Clone method",($Script:htmlsb),$CloneMethod,$htmlwhite))
 
@@ -22192,10 +22198,6 @@ Function OutputVDIDetails
 					$ScriptInformation.Add(@{Data = "Resource pool"; Value = $VDITemplate.NativePoolName; }) > $Null
 					$ScriptInformation.Add(@{Data = "Physical Host"; Value = $VDITemplate.PhysicalHostName; }) > $Null
 					$ScriptInformation.Add(@{Data = "Enable hardware acceleration graphics licensing support"; Value = $VDITemplate.HWGPU.ToString(); }) > $Null
-					#$ScriptInformation.Add(@{Data = "Use a separate network interface for LAN access"; Value = "Can't find"; }) > $Null
-					#$ScriptInformation.Add(@{Data = "Specify management network details"; Value = ""; }) > $Null
-					#$ScriptInformation.Add(@{Data = "     Address"; Value = ""; }) > $Null
-					#$ScriptInformation.Add(@{Data = "     Subnet mask"; Value = ""; }) > $Null
 
 					$Table = AddWordTable -Hashtable $ScriptInformation `
 					-Columns Data,Value `
@@ -22222,10 +22224,6 @@ Function OutputVDIDetails
 					Line 4 "Physical Host`t`t`t: " $VDITemplate.PhysicalHostName
 					Line 4 "Enable hardware acceleration "
 					Line 4 "graphics licensing support`t: " $VDITemplate.HWGPU.ToString()
-					#Line 4 "Use a separate network interface for LAN access: " "Can't find"
-					#Line 4 "Specify management network details:"
-					#Line 5 "Address`t`t`t: " $DeleteVMTime
-					#Line 6 "Subnet mask`t`t: " $CloneMethod
 					Line 0 ""
 				}
 				If($HTML)
@@ -22235,10 +22233,6 @@ Function OutputVDIDetails
 					$rowdata += @(,("Resource pool",($Script:htmlsb),$VDITemplate.NativePoolName,$htmlwhite))
 					$rowdata += @(,("Physical Host",($Script:htmlsb),$VDITemplate.PhysicalHostName,$htmlwhite))
 					$rowdata += @(,("Enable hardware acceleration graphics licensing support",($Script:htmlsb),$VDITemplate.HWGPU.ToString(),$htmlwhite))
-					#$rowdata += @(,("Use a separate network interface for LAN access",($Script:htmlsb),"Can't find",$htmlwhite))
-					#$rowdata += @(,("Specify management network details",($Script:htmlsb),"",$htmlwhite))
-					#$rowdata += @(,("     Address",($Script:htmlsb),"",$htmlwhite))
-					#$rowdata += @(,("     Subnet mask",($Script:htmlsb),"",$htmlwhite))
 
 					$msg = "Advanced"
 					$columnWidths = @("200","275")
@@ -26444,20 +26438,20 @@ Function OutputProvidersDetails
 				Switch ($Provider.DragAndDropMode)
 				{
 					"Bidirectional"		{$VDIDragAndDrop = "Bidirectional"; 
-					$VDIAllowDragAndDrop = "True";
-					Break}
+										$VDIAllowDragAndDrop = "True";
+										Break}
 					"Disabled"			{$VDIDragAndDrop = "Disabled"; 
-					$VDIAllowDragAndDrop = "False";
-					Break}
+										$VDIAllowDragAndDrop = "False";
+										Break}
 					"ClientToServer"	{$VDIDragAndDrop = "Client to server only"; 
-					$VDIAllowDragAndDrop = "True";
-					Break}
+										$VDIAllowDragAndDrop = "True";
+										Break}
 					"ServerToClient"	{$VDIDragAndDrop = "Server to client only"; 
-					$VDIAllowDragAndDrop = "True";
-					Break}
+										$VDIAllowDragAndDrop = "True";
+										Break}
 					Default				{$VDIDragAndDrop = "Unable to determine Drag and drop: $($Provider.DragAndDropMode)"; 
-					$VDIAllowDragAndDrop = "False";
-					Break}
+										$VDIAllowDragAndDrop = "False";
+										Break}
 				}
 			}
 			Else
@@ -29469,7 +29463,6 @@ Function OutputHALBDetails
 			{
 				$rowdata = @()
 				$columnHeaders = @("Port",($Script:htmlsb),$HALBGatewayPort,$htmlwhite)
-				#$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 
 				$msg = ""
 				$columnWidths = @("200","400")
@@ -33146,26 +33139,26 @@ Function OutputPublishingSettings
 	Write-Verbose "$(Get-Date -Format G): `tOutput Publishing"
 	
 	<#
-	From RAS version 20.2
-	AVDApp check
-	AVDDesktop check
-	Folder check
-	LocalApp check
-	RDSApp check
-	RDSDesktop check
-	PCDesktop check
-	VDIApp check
-	VDIDesktop check
-	
-	From previous versions of RAS. The script must still handle the ones that no longer exist.
-	PCApp
-	PCDesktop
-	RDSApp
-	RDSDesktop
-	VDIApp
-	VDIDesktop
-	WVDApp and AVDApp
-	WVDDesktop and AVDDesktop
+		From RAS version 20.2
+		AVDApp check
+		AVDDesktop check
+		Folder check
+		LocalApp check
+		RDSApp check
+		RDSDesktop check
+		PCDesktop check
+		VDIApp check
+		VDIDesktop check
+		
+		From previous versions of RAS. The script must still handle the ones that no longer exist.
+		PCApp
+		PCDesktop
+		RDSApp
+		RDSDesktop
+		VDIApp
+		VDIDesktop
+		WVDApp and AVDApp
+		WVDDesktop and AVDDesktop
 	#>
 	
 	#Get the published items default settings
@@ -33178,21 +33171,21 @@ Function OutputPublishingSettings
 		Unable to retrieve Publishing Default Site Settings for Site $xSiteName, using built-in defaults
 		" -ForegroundColor White
 		<#
-		StartPath                     : RAS Remote Desktops & Applications\%Groups%
-		CreateShortcutOnDesktop       : False
-		CreateShortcutInStartFolder   : True
-		CreateShortcutInStartUpFolder : False
-		ReplicateShortcutSettings     : False
-		ReplicateDisplaySettings      : False
-		WaitForPrinters               : False
-		StartMaximized                : True
-		WaitForPrintersTimeout        : 20
-		ColorDepth                    : ClientSpecified
-		DisableSessionSharing         : False
-		OneInstancePerUser            : False
-		ConCurrentLicenses            : 0
-		LicenseLimitNotify            : WarnUserAndNoStart
-		ReplicateLicenseSettings      : False
+			StartPath                     : RAS Remote Desktops & Applications\%Groups%
+			CreateShortcutOnDesktop       : False
+			CreateShortcutInStartFolder   : True
+			CreateShortcutInStartUpFolder : False
+			ReplicateShortcutSettings     : False
+			ReplicateDisplaySettings      : False
+			WaitForPrinters               : False
+			StartMaximized                : True
+			WaitForPrintersTimeout        : 20
+			ColorDepth                    : ClientSpecified
+			DisableSessionSharing         : False
+			OneInstancePerUser            : False
+			ConCurrentLicenses            : 0
+			LicenseLimitNotify            : WarnUserAndNoStart
+			ReplicateLicenseSettings      : False
 		#>
 		
 		#Shortcuts tab
@@ -33745,14 +33738,11 @@ Function OutputPublishingSettings
 				
 				$ScriptInformation.Add(@{Data = "Target"; Value = $PubItem.Target; }) > $Null
 				$ScriptInformation.Add(@{Data = "Start In"; Value = $PubItem.StartIn; }) > $Null
-				#$ScriptInformation.Add(@{Data = "Start automatically when user logs on"; Value = $PubItem.StartOnLogon.ToString(); }) > $Null
 
 				If(![String]::IsNullOrEmpty($PubItem.Parameters))
 				{
 					$ScriptInformation.Add(@{Data = "Parameters"; Value = $PubItem.Parameters; }) > $Null
 				}
-				
-				#$ScriptInformation.Add(@{Data = "Settings for Site $xSiteName"; Value = ""; }) > $Null
 				
 				If($PubItem.InheritShortcutDefaultSettings)
 				{
@@ -34010,15 +34000,12 @@ Function OutputPublishingSettings
 				
 				Line 3 "Target`t`t`t`t`t`t`t: " $PubItem.Target
 				Line 3 "Start In`t`t`t`t`t`t: " $PubItem.StartIn
-				#Line 3 "Start automatically when user logs on`t`t`t: " $PubItem.StartOnLogon.ToString()
 				
 				If(![String]::IsNullOrEmpty($PubItem.Parameters))
 				{
 					Line 3 "Parameters`t`t`t`t`t`t: " $PubItem.Parameters
 				}
 				
-				#Line 3 "Settings for Site $xSiteName"
-
 				If($PubItem.InheritShortcutDefaultSettings)
 				{
 					If($DefaultCreateShortcutOnDesktop -eq "True")
@@ -34181,14 +34168,11 @@ Function OutputPublishingSettings
 				$rowdata += @(,("Status",($Script:htmlsb),$PubItemStatus,$htmlwhite))
 				$rowdata += @(,("Target",($Script:htmlsb),$PubItem.Target,$htmlwhite))
 				$rowdata += @(,("Start In",($Script:htmlsb),$PubItem.StartIn,$htmlwhite))
-				#$rowdata += @(,("Start automatically when user logs on",($Script:htmlsb),$PubItem.StartOnLogon.ToString(),$htmlwhite))
 				
 				If(![String]::IsNullOrEmpty($PubItem.Parameters))
 				{
 					$rowdata += @(,("Parameters",($Script:htmlsb),$PubItem.Parameters,$htmlwhite))
 				}
-				
-				#$rowdata += @(,("Settings for Site $xSiteName",($Script:htmlsb),"",$htmlwhite))
 				
 				If($PubItem.InheritShortcutDefaultSettings)
 				{
@@ -34593,7 +34577,6 @@ Function OutputPublishingSettings
 
 				WriteWordLine 4 0 "Properties"
 				$ScriptInformation = New-Object System.Collections.ArrayList
-				#$ScriptInformation.Add(@{Data = "Select Remote PC"; Value = ""; }) > $Null
 				$ScriptInformation.Add(@{Data = "Desktop Size"; Value = $DesktopSize; }) > $Null
 				$ScriptInformation.Add(@{Data = "Multi-Monitor"; Value = $AllowMultiMonitor; }) > $Null
 				
@@ -38878,53 +38861,7 @@ Function OutputPublishingSettings
 				$ScriptInformation.Add(@{Data = "Status"; Value = $PubItemStatus; }) > $Null
 				$ScriptInformation.Add(@{Data = "Target"; Value = $PubItem.Target; }) > $Null
 				$ScriptInformation.Add(@{Data = "Start In"; Value = $PubItem.StartIn; }) > $Null
-				<#$ScriptInformation.Add(@{Data = "Start automatically when user logs on"; Value = $PubItem.StartOnLogon.ToString(); }) > $Null
 
-				If(![String]::IsNullOrEmpty($PubItem.Parameters))
-				{
-					$ScriptInformation.Add(@{Data = "Parameters"; Value = $PubItem.Parameters; }) > $Null
-				}
-				
-				If($PubItem.EnableFileExtensions)
-				{
-					$ScriptInformation.Add(@{Data = "Associate the following file extensions"; Value = ""; }) > $Null
-					ForEach($Item in $PubItem.FileExtensions)
-					{
-						$ScriptInformation.Add(@{Data = ""; Value = $Item; }) > $Null
-					}
-				}
-				
-				If($PubItem.InheritLicenseDefaultSettings)
-				{
-					If($DefaultOneInstancePerUser)
-					{
-						$ScriptInformation.Add(@{Data = "Allow users to start only 1 instance of this application"; Value = "True"; }) > $Null
-					}
-					Else
-					{
-						$ScriptInformation.Add(@{Data = "Allow users to start only 1 instance of this application"; Value = "False"; }) > $Null
-					}
-					$ScriptInformation.Add(@{Data = "Concurrent licenses"; Value = $DefaultConCurrentLicenses; }) > $Null
-					$ScriptInformation.Add(@{Data = "If limit is exceeded"; Value = $DefaultLicenseLimitNotify; }) > $Null
-					$ScriptInformation.Add(@{Data = "Session Sharing"; Value = $DefaultDisableSessionSharing ; }) > $Null
-				}
-				Else
-				{
-					If($PubItem.OneInstancePerUser)
-					{
-						$ScriptInformation.Add(@{Data = "Allow users to start only 1 instance of this application"; Value = "True"; }) > $Null
-					}
-					Else
-					{
-						$ScriptInformation.Add(@{Data = "Allow users to start only 1 instance of this application"; Value = "False"; }) > $Null
-					}
-					$ScriptInformation.Add(@{Data = "Concurrent licenses"; Value = $ConCurrentLicenses; }) > $Null
-					$ScriptInformation.Add(@{Data = "If limit is exceeded"; Value = $LicenseLimitNotify; }) > $Null
-					$ScriptInformation.Add(@{Data = "Session Sharing"; Value = $SessionSharing; }) > $Null
-				}
-
-				$ScriptInformation.Add(@{Data = "Settings for Site $xSiteName"; Value = ""; }) > $Null
-				#>
 				If(validObject $PubItem PublishFrom)
 				{
 					If($PubItem.PublishFrom -eq "Server")
@@ -39364,40 +39301,7 @@ Function OutputPublishingSettings
 				Line 3 "Type`t`t`t`t`t`t`t: " $PubItem.Type
 				Line 3 "Status`t`t`t`t`t`t`t: " $PubItemStatus
 				Line 3 "Target`t`t`t`t`t`t`t: " $PubItem.Target
-				<#Line 3 "Start In`t`t`t`t`t`t: " $PubItem.StartIn
-				Line 3 "Start automatically when user logs on`t`t`t: " $PubItem.StartOnLogon.ToString()
-				
-				If(![String]::IsNullOrEmpty($PubItem.Parameters))
-				{
-					Line 3 "Parameters`t`t`t`t`t`t: " $PubItem.Parameters
-				}
-				
-				If($PubItem.EnableFileExtensions)
-				{
-					Line 3 "Associate the following file extensions"
-					ForEach($Item in $PubItem.FileExtensions)
-					{
-						Line 10 $Item
-					}
-				}
-				
-				If($PubItem.InheritLicenseDefaultSettings)
-				{
-					Line 3 "Allow users to start only 1 instance of this application: " $DefaultOneInstancePerUser.ToString()
-					Line 3 "Concurrent licenses`t`t`t`t`t: " $DefaultConCurrentLicenses
-					Line 3 "If limit is exceeded`t`t`t`t`t: " $DefaultLicenseLimitNotify
-					Line 3 "Session Sharing`t`t`t`t`t`t: " $DefaultDisableSessionSharing 
-				}
-				Else
-				{
-					Line 3 "Allow users to start only 1 instance of this application: " $PubItem.OneInstancePerUser.ToString()
-					Line 3 "Concurrent licenses`t`t`t`t`t: " $ConCurrentLicenses
-					Line 3 "If limit is exceeded`t`t`t`t`t: " $LicenseLimitNotify
-					Line 3 "Session Sharing`t`t`t`t`t`t: " $SessionSharing
-				}
 
-				Line 3 "Settings for Site $xSiteName"
-				#>
 				If(validObject $PubItem PublishFrom)
 				{
 					If($PubItem.PublishFrom -eq "Server")
@@ -39631,53 +39535,7 @@ Function OutputPublishingSettings
 				$rowdata += @(,("Status",($Script:htmlsb),$PubItemStatus,$htmlwhite))
 				$rowdata += @(,("Target",($Script:htmlsb),$PubItem.Target,$htmlwhite))
 				$rowdata += @(,("Start In",($Script:htmlsb),$PubItem.StartIn,$htmlwhite))
-				<#$rowdata += @(,("Start automatically when user logs on",($Script:htmlsb),$PubItem.StartOnLogon.ToString(),$htmlwhite))
-				
-				If(![String]::IsNullOrEmpty($PubItem.Parameters))
-				{
-					$rowdata += @(,("Parameters",($Script:htmlsb),$PubItem.Parameters,$htmlwhite))
-				}
-				
-				If($PubItem.EnableFileExtensions)
-				{
-					$rowdata += @(,("Associate the following file extensions",($Script:htmlsb),"",$htmlwhite))
-					ForEach($Item in $PubItem.FileExtensions)
-					{
-						$rowdata += @(,("",($Script:htmlsb),$Item,$htmlwhite))
-					}
-				}
-				
-				If($PubItem.InheritLicenseDefaultSettings)
-				{
-					If($DefaultOneInstancePerUser)
-					{
-						$rowdata += @(,("Allow users to start only 1 instance of this application",($Script:htmlsb),"True",$htmlwhite))
-					}
-					Else
-					{
-						$rowdata += @(,("Allow users to start only 1 instance of this application",($Script:htmlsb),"False",$htmlwhite))
-					}
-					$rowdata += @(,("Concurrent licenses",($Script:htmlsb),$DefaultConCurrentLicenses,$htmlwhite))
-					$rowdata += @(,("If limit is exceeded",($Script:htmlsb),$DefaultLicenseLimitNotify,$htmlwhite))
-					$rowdata += @(,("Session Sharing",($Script:htmlsb),$DefaultDisableSessionSharing,$htmlwhite))
-				}
-				Else
-				{
-					If($PubItem.OneInstancePerUser)
-					{
-						$rowdata += @(,("Allow users to start only 1 instance of this application",($Script:htmlsb),"True",$htmlwhite))
-					}
-					Else
-					{
-						$rowdata += @(,("Allow users to start only 1 instance of this application",($Script:htmlsb),"False",$htmlwhite))
-					}
-					$rowdata += @(,("Concurrent licenses",($Script:htmlsb),$ConCurrentLicenses,$htmlwhite))
-					$rowdata += @(,("If limit is exceeded",($Script:htmlsb),$LicenseLimitNotify,$htmlwhite))
-					$rowdata += @(,("Session Sharing",($Script:htmlsb),$SessionSharing,$htmlwhite))
-				}
 
-				$rowdata += @(,("Settings for Site $xSiteName",($Script:htmlsb),"",$htmlwhite))
-				#>
 				If(validObject $PubItem PublishFrom)
 				{
 					If($PubItem.PublishFrom -eq "Server")
@@ -44408,7 +44266,6 @@ Function OutputUniversalPrinterFontsSettings
 	{
 		$tmpArray1 = $RASFontsSettings.ExcludedFontsArray.Split(",")
 		$tmpArray1 = $tmpArray1 | Sort-Object
-		#$maxLength = ($tmparray1 | Measure-Object -Property length -Maximum).Maximum
 	}
 	Else
 	{
@@ -44423,7 +44280,6 @@ Function OutputUniversalPrinterFontsSettings
 	{
 		$tmpArray2 = $RASFontsSettings.AutoInstallFonts.Split(",")
 		$tmpArray2 = $tmpArray2 | Sort-Object
-		#$maxLength = ($tmparray2 | Measure-Object -Property length -Maximum).Maximum
 	}
 
 	If($MSWord -or $PDF)
@@ -51941,7 +51797,6 @@ Function OutputMFASetting
 					{
 						$cnt++
 						$ScriptInformation.Add(@{Data = ""; Value = "Attribute $cnt"; }) > $Null
-						#$ScriptInformation.Add(@{Data = ""; Value = "     Name: $($Item.Name)"; }) > $Null
 						$ScriptInformation.Add(@{Data = ""; Value = "     Vendor: $($Item.Vendor)"; }) > $Null
 						$ScriptInformation.Add(@{Data = ""; Value = "     Attribute: $($Item.RadiusAttrName)"; }) > $Null
 						$ScriptInformation.Add(@{Data = ""; Value = "     Type: $($Item.AttributeType)"; }) > $Null
@@ -52043,15 +51898,6 @@ Function OutputMFASetting
 					$ScriptInformation.Add(@{Data = "          TOTP tolerence"; Value = $TOTPTolerance; }) > $Null
 				}
 
-				<#If($RASMFASetting.RestrictionMode -eq "Exclusion")
-				{
-					$ScriptInformation.Add(@{Data = "Enable MFA for all users except"; Value = ""; }) > $Null
-				}
-				Else
-				{
-					$ScriptInformation.Add(@{Data = "Disable MFA for all users except"; Value = ""; }) > $Null
-				}#>
-				
 				$Table = AddWordTable -Hashtable $ScriptInformation `
 				-Columns Data,Value `
 				-List `
@@ -52069,126 +51915,6 @@ Function OutputMFASetting
 				FindWordDocumentEnd
 				$Table = $Null
 				WriteWordLine 0 0 ""
-
-				<#WriteWordLine 3 0 "Restrictions"
-				$ScriptInformation = New-Object System.Collections.ArrayList
-				$ScriptInformation.Add(@{Data = "User or group list"; Value = $RASMFASetting.ExcludeUserGroup.ToString(); }) > $Null
-				If($RASMFASetting.ExcludeUserGroup)
-				{
-					If($RASMFASetting.ExcludeUserGroupList.Count -gt 0)
-					{
-						ForEach($Item in $RASMFASetting.ExcludeUserGroupList)
-						{
-							$ScriptInformation.Add(@{Data = ""; Value = "User: $($Item.Account)"; }) > $Null
-							$ScriptInformation.Add(@{Data = ""; Value = "Type: $($Item.Type)"; }) > $Null
-							$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
-						}
-					}
-				}
-
-				$ScriptInformation.Add(@{Data = "Client IP list"; Value = $RASMFASetting.ExcludeClientIPs.ToString(); }) > $Null
-				If($RASMFASetting.ExcludeClientIPs)
-				{
-					If($RASMFASetting.ExcludeClientIPList.Count -gt 0)
-					{
-						$cnt     = -1
-						$MaxFrom = (($RASMFASetting.ExcludeClientIPList.From | Measure-Object -Property length -maximum).Maximum * -1)
-						$MaxTo   = (($RASMFASetting.ExcludeClientIPList.To | Measure-Object -Property length -maximum).Maximum * -1)
-
-						ForEach($Item in $RASMFASetting.ExcludeClientIPList)
-						{
-							$cnt++
-							$tmp = ("From: {0,$($MaxFrom)} To: {1,$($MaxTo)}" -f $Item.From, $Item.To)
-							
-							If($cnt -eq 0)
-							{
-								$ScriptInformation.Add(@{Data = "     IPv4 Addresses"; Value = $tmp; }) > $Null
-							}
-							Else
-							{
-								$ScriptInformation.Add(@{Data = ""; Value = $tmp; }) > $Null
-							}
-						}
-					}
-					
-					If($RASMFASetting.ExcludeClientIPv6List.Count -gt 0)
-					{
-						$cnt     = -1
-						$MaxFrom = (($RASMFASetting.ExcludeClientIPv6List.From | Measure-Object -Property length -maximum).Maximum * -1)
-						$MaxTo   = (($RASMFASetting.ExcludeClientIPv6List.To | Measure-Object -Property length -maximum).Maximum * -1)
-
-						ForEach($Item in $RASMFASetting.ExcludeClientIPv6List)
-						{
-							$cnt++
-							$tmp = ("From: {0,$($MaxFrom)} To: {1,$($MaxTo)}" -f $Item.From, $Item.To)
-							
-							If($cnt -eq 0)
-							{
-								$ScriptInformation.Add(@{Data = "     IPv6 Addresses"; Value = $tmp; }) > $Null
-							}
-							Else
-							{
-								$ScriptInformation.Add(@{Data = ""; Value = $tmp; }) > $Null
-							}
-						}
-					}
-				}
-
-				$ScriptInformation.Add(@{Data = "Client MAC list"; Value = $RASMFASetting.ExcludeClientMAC.ToString(); }) > $Null
-				If($RASMFASetting.ExcludeClientMAC)
-				{
-					$cnt = -1
-					ForEach($MAC in $RASMFASetting.ExcludeClientMACList)
-					{
-						$cnt++
-						
-						If($cnt -eq 0)
-						{
-							$ScriptInformation.Add(@{Data = "     MAC Address"; Value = $MAC; }) > $Null
-						}
-						Else
-						{
-							$ScriptInformation.Add(@{Data = ""; Value = $MAC; }) > $Null
-						}
-					}
-				}
-
-				$ScriptInformation.Add(@{Data = "Connection to the following Gateway IPs"; Value = $RASMFASetting.ExcludeClientGWIPs.ToString(); }) > $Null
-				If($RASMFASetting.ExcludeClientGWIPs)
-				{
-					$cnt = -1
-					ForEach($Server in $RASMFASetting.ExcludeClientGWIPList)
-					{
-						$cnt++
-						
-						If($cnt -eq 0)
-						{
-							$ScriptInformation.Add(@{Data = "     Server Name"; Value = $Server; }) > $Null
-						}
-						Else
-						{
-							$ScriptInformation.Add(@{Data = ""; Value = $Server; }) > $Null
-						}
-					}
-				}
-
-				$Table = AddWordTable -Hashtable $ScriptInformation `
-				-Columns Data,Value `
-				-List `
-				-Format $wdTableGrid `
-				-AutoFit $wdAutoFitFixed;
-
-				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
-				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
-				$Table.Columns.Item(1).Width = 250;
-				$Table.Columns.Item(2).Width = 250;
-
-				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-				FindWordDocumentEnd
-				$Table = $Null
-				WriteWordLine 0 0 ""#>
 			}
 		}
 		If($Text)
@@ -52428,7 +52154,6 @@ Function OutputMFASetting
 					{
 						$cnt++
 						Line 5 "Attribute $cnt"
-						#Line 6 "Name  : $($Item.Name)"
 						Line 6 "Vendor: $($Item.Vendor)"
 						LIne 6 "Attribute: $($Item.RadiusAttrName)"
 						Line 6 "Type  : $($Item.AttributeType)"
@@ -52518,115 +52243,6 @@ Function OutputMFASetting
 					Line 4 "Authentication"
 					Line 5 "TOTP tolerence: " $TOTPTolerance
 				}
-
-				<#If($RASMFASetting.RestrictionMode -eq "Exclusion")
-				{
-					Line 3 "Enable MFA for all users except"
-				}
-				Else
-				{
-					Line 3 "Disable MFA for all users except"
-				}#>
-				Line 0 ""
-
-				<#Line 2 "Restriction"
-				Line 3 "User or group list`t`t`t: " $RASMFASetting.ExcludeUserGroup.ToString()
-				If($RASMFASetting.ExcludeUserGroup)
-				{
-					If($RASMFASetting.ExcludeUserGroupList.Count -gt 0)
-					{
-						ForEach($Item in $RASMFASetting.ExcludeUserGroupList)
-						{
-							Line 8 "  " "User: $($Item.Account)"
-							Line 8 "  " "Type: $($Item.Type)"
-							Line 8 "  "
-						}
-					}
-				}
-					
-				Line 3 "Client IP list`t`t`t`t: " $RASMFASetting.ExcludeClientIPs.ToString()
-				If($RASMFASetting.ExcludeClientIPs)
-				{
-					If($RASMFASetting.ExcludeClientIPList.Count -gt 0)
-					{
-						$cnt     = -1
-						$MaxFrom = (($RASMFASetting.ExcludeClientIPList.From | Measure-Object -Property length -maximum).Maximum * -1)
-						$MaxTo   = (($RASMFASetting.ExcludeClientIPList.To | Measure-Object -Property length -maximum).Maximum * -1)
-
-						ForEach($Item in $RASMFASetting.ExcludeClientIPList)
-						{
-							$cnt++
-							$tmp = ("From: {0,$($MaxFrom)} To: {1,$($MaxTo)}" -f $Item.From, $Item.To)
-							
-							If($cnt -eq 0)
-							{
-								Line 6 "IPv4 Addresses`t: " $tmp
-							}
-							Else
-							{
-								Line 8 "  " $tmp
-							}
-						}
-					}
-					
-					If($RASMFASetting.ExcludeClientIPv6List.Count -gt 0)
-					{
-						$cnt     = -1
-						$MaxFrom = (($RASMFASetting.ExcludeClientIPv6List.From | Measure-Object -Property length -maximum).Maximum * -1)
-						$MaxTo   = (($RASMFASetting.ExcludeClientIPv6List.To | Measure-Object -Property length -maximum).Maximum * -1)
-
-						ForEach($Item in $RASMFASetting.ExcludeClientIPv6List)
-						{
-							$cnt++
-							$tmp = ("From: {0,$($MaxFrom)} To: {1,$($MaxTo)}" -f $Item.From, $Item.To)
-							
-							If($cnt -eq 0)
-							{
-								Line 6 "IPv6 Addresses`t: " $tmp
-							}
-							Else
-							{
-								Line 8 "  " $tmp
-							}
-						}
-					}
-				}
-				Line 3 "Client MAC list`t`t`t`t: " $RASMFASetting.ExcludeClientMAC.ToString()
-				If($RASMFASetting.ExcludeClientMAC)
-				{
-					$cnt = -1
-					ForEach($MAC in $RASMFASetting.ExcludeClientMACList)
-					{
-						$cnt++
-						
-						If($cnt -eq 0)
-						{
-							Line 6 "MAC Address`t: " $MAC
-						}
-						Else
-						{
-							Line 8 "  " $MAC
-						}
-					}
-				}
-				Line 3 "Connection to the following Gateway IPs`t: " $RASMFASetting.ExcludeClientGWIPs.ToString()
-				If($RASMFASetting.ExcludeClientGWIPs)
-				{
-					$cnt = -1
-					ForEach($Server in $RASMFASetting.ExcludeClientGWIPList)
-					{
-						$cnt++
-						
-						If($cnt -eq 0)
-						{
-							Line 6 "Server Name`t: " $Server
-						}
-						Else
-						{
-							Line 8 "  " $Server
-						}
-					}
-				}#>
 			}
 			Line 0 ""
 		}
@@ -52853,7 +52469,6 @@ Function OutputMFASetting
 					{
 						$cnt++
 						$rowdata += @(,( "",($Script:htmlsb), "Attribute $cnt",$htmlwhite))
-						#$rowdata += @(,( "",($Script:htmlsb), "     Name: $($Item.Name)",$htmlwhite))
 						$rowdata += @(,( "",($Script:htmlsb), "     Vendor: $($Item.Vendor)",$htmlwhite))
 						$rowdata += @(,( "",($Script:htmlsb), "     Attribute: $($Item.RadiusAttrName)",$htmlwhite))
 						$rowdata += @(,( "",($Script:htmlsb), "     Type: $($Item.AttributeType)",$htmlwhite))
@@ -52946,125 +52561,10 @@ Function OutputMFASetting
 					$rowdata += @(,( "          TOTP tolerence",($Script:htmlsb), $TOTPTolerance,$htmlwhite))
 				}
 
-				<#If($RASMFASetting.RestrictionMode -eq "Exclusion")
-				{
-					$rowdata += @(,("Enable MFA for all users except",($Script:htmlsb),"",$htmlwhite))
-				}
-				Else
-				{
-					$rowdata += @(,("Disable MFA for all users except",($Script:htmlsb),"",$htmlwhite))
-				}#>
-
 				$msg = "Provider settings"
 				$columnWidths = @("300","175")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
-
-				<#
-				$rowdata = @()
-				$columnHeaders = @("User or group list",($Script:htmlsb),$RASMFASetting.ExcludeUserGroup.ToString(),$htmlwhite)
-				If($RASMFASetting.ExcludeUserGroup)
-				{
-					If($RASMFASetting.ExcludeUserGroupList.Count -gt 0)
-					{
-						ForEach($Item in $RASMFASetting.ExcludeUserGroupList)
-						{
-							$rowdata += @(,("",($Script:htmlsb),"User: $($Item.Account)",$htmlwhite))
-							$rowdata += @(,("",($Script:htmlsb),"Type: $($Item.Type)",$htmlwhite))
-							$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
-						}
-					}
-				}
-				
-				$rowdata += @(,("Client IP list",($Script:htmlsb),$RASMFASetting.ExcludeClientIPs.ToString(),$htmlwhite))
-				If($RASMFASetting.ExcludeClientIPs)
-				{
-					If($RASMFASetting.ExcludeClientIPList.Count -gt 0)
-					{
-						$cnt     = -1
-						$MaxFrom = (($RASMFASetting.ExcludeClientIPList.From | Measure-Object -Property length -maximum).Maximum * -1)
-						$MaxTo   = (($RASMFASetting.ExcludeClientIPList.To | Measure-Object -Property length -maximum).Maximum * -1)
-
-						ForEach($Item in $RASMFASetting.ExcludeClientIPList)
-						{
-							$cnt++
-							$tmp = ("From: {0,$($MaxFrom)} To: {1,$($MaxTo)}" -f $Item.From, $Item.To)
-							
-							If($cnt -eq 0)
-							{
-								$rowdata += @(,("     IPv4 Addresses",($Script:htmlsb),$tmp,$htmlwhite))
-							}
-							Else
-							{
-								$rowdata += @(,("",($Script:htmlsb),$tmp,$htmlwhite))
-							}
-						}
-					}
-					
-					If($RASMFASetting.ExcludeClientIPv6List.Count -gt 0)
-					{
-						$cnt     = -1
-						$MaxFrom = (($RASMFASetting.ExcludeClientIPv6List.From | Measure-Object -Property length -maximum).Maximum * -1)
-						$MaxTo   = (($RASMFASetting.ExcludeClientIPv6List.To | Measure-Object -Property length -maximum).Maximum * -1)
-
-						ForEach($Item in $RASMFASetting.ExcludeClientIPv6List)
-						{
-							$cnt++
-							$tmp = ("From: {0,$($MaxFrom)} To: {1,$($MaxTo)}" -f $Item.From, $Item.To)
-							
-							If($cnt -eq 0)
-							{
-								$rowdata += @(,("     IPv6 Addresses",($Script:htmlsb),$tmp,$htmlwhite))
-							}
-							Else
-							{
-								$rowdata += @(,("",($Script:htmlsb),$tmp,$htmlwhite))
-							}
-						}
-					}
-				}
-				$rowdata += @(,("Client MAC list",($Script:htmlsb),$RASMFASetting.ExcludeClientMAC.ToString(),$htmlwhite))
-				If($RASMFASetting.ExcludeClientMAC)
-				{
-					$cnt = -1
-					ForEach($MAC in $RASMFASetting.ExcludeClientMACList)
-					{
-						$cnt++
-						
-						If($cnt -eq 0)
-						{
-							$rowdata += @(,("     MAC Address",($Script:htmlsb),$MAC,$htmlwhite))
-						}
-						Else
-						{
-							$rowdata += @(,("",($Script:htmlsb),$MAC,$htmlwhite))
-						}
-					}
-				}
-				$rowdata += @(,("Connection to the following Gateway IPs",($Script:htmlsb),$RASMFASetting.ExcludeClientGWIPs.ToString(),$htmlwhite))
-				If($RASMFASetting.ExcludeClientGWIPs)
-				{
-					$cnt = -1
-					ForEach($Server in $RASMFASetting.ExcludeClientGWIPList)
-					{
-						$cnt++
-						
-						If($cnt -eq 0)
-						{
-							$rowdata += @(,("     Server Name",($Script:htmlsb),$Server,$htmlwhite))
-						}
-						Else
-						{
-							$rowdata += @(,("",($Script:htmlsb),$Server,$htmlwhite))
-						}
-					}
-				}
-				
-				$msg = "Restriction"
-				$columnWidths = @("300","175")
-				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-				WriteHTMLLine 0 0 ""
-				#>
 			}
 		}
 	}
@@ -60543,13 +60043,13 @@ Function OutputRASClientSettings
 	Param([object] $RASClientSettings)
 
 	<#
-	ExcludeDirectRDP         :
-	ExcludeDirectRDPForVDI   :
-	SendHDIcons              : True
-	ReplicateSendHDIcons     : True
-	EnableOverlayIcons       : True
-	ShowPasswordExpiry       : False
-	TokenValidationExpireMin : 60
+		ExcludeDirectRDP         :
+		ExcludeDirectRDPForVDI   :
+		SendHDIcons              : True
+		ReplicateSendHDIcons     : True
+		EnableOverlayIcons       : True
+		ShowPasswordExpiry       : False
+		TokenValidationExpireMin : 60
 	#>
 
 	If($MSWord -or $PDF)

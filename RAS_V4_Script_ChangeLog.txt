@@ -31,6 +31,8 @@
 #
 #	Fixed and refined the HTML, Text, and MSWord output
 #
+#	General code cleanup and fixed some typos
+#
 #	In Function OutputFarmSite, 
 #		Add Farm Properties
 #		For RAS V20 and later, add Access addresses
@@ -139,6 +141,7 @@
 #				That means a Server OS will not find a service named "Fax"
 #			Make the code consistent with all three output formats
 #		Only output optimization data if optimization is enabled
+#		For Settings, add "Session readiness timeout"
 #
 #	In Function OutputSAMLSetting, handle multiple SAML items
 #
