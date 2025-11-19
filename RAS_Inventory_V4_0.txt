@@ -450,9 +450,9 @@
 	text document.
 .NOTES
 	NAME: RAS_Inventory_V4_0.ps1
-	VERSION: 4.00 Beta 27
+	VERSION: 4.00 Beta 28
 	AUTHOR: Carl Webster
-	LASTEDIT: November 17, 2025
+	LASTEDIT: November 19, 2025
 #>
 
 
@@ -592,6 +592,12 @@ Param(
 #	Clean up some console output
 #
 #	Fixed and refined the HTML, Text, and MSWord output
+#
+#	For the messages: 
+#		"Unable to find _____"
+#		"Unable to retrieve_____"
+#		"No _____ were found for _____"
+#		standardized how the messages were formatted
 #
 #	General code cleanup and fixed some typos
 #
@@ -735,6 +741,8 @@ Param(
 #						That means a Server OS will not find a service named "Fax"
 #					Make the code consistent with all three output formats
 #			Settings
+#			RDP Printer
+#			Security
 #
 #	In Function ProcessAdministration
 #		Rename variable $RASFeatures to $RASHelpdesk
@@ -828,9 +836,9 @@ $ErrorActionPreference    = 'SilentlyContinue'
 $Error.Clear()
 
 $Script:emailCredentials  = $Null
-$script:MyVersion         = '4.00 Beta 27'
+$script:MyVersion         = '4.00 Beta 28'
 $Script:ScriptName        = "RAS_Inventory_V4_0.ps1"
-$tmpdate                  = [datetime] "11/17/2025"
+$tmpdate                  = [datetime] "11/19/2025"
 $Script:ReleaseDate       = $tmpdate.ToUniversalTime().ToShortDateString()
 
 If($MSWord -eq $False -and $PDF -eq $False -and $Text -eq $False -and $HTML -eq $False)
@@ -5012,7 +5020,7 @@ Function OutputSiteSummary
 	{
 		Write-Warning "
 		`n
-		Unable to retrieve Tenant Brokers for Site $($Site.Name)`
+	Unable to retrieve Tenant Brokers for Site $($Site.Name)`
 		"
 		If($MSWord -or $PDF)
 		{
@@ -5439,15 +5447,21 @@ Function OutputSiteSummary
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "No Providers retrieved for Site $($Site.Name)"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "No Providers retrieved for Site $($Site.Name)"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "No Providers retrieved for Site $($Site.Name)"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	Else
@@ -11139,20 +11153,20 @@ Function OutputRDSessionHostsDetails
 							Switch ($GroupDefaults.DragAndDropMode)
 							{
 								"Bidirectional"		{$RDSDragAndDrop = "Bidirectional"; 
-								$RDSAllowDragAndDrop = "True";
-								Break}
+													$RDSAllowDragAndDrop = "True";
+													Break}
 								"Disabled"			{$RDSDragAndDrop = "Disabled"; 
-								$RDSAllowDragAndDrop = "False";
-								Break}
+													$RDSAllowDragAndDrop = "False";
+													Break}
 								"ClientToServer"	{$RDSDragAndDrop = "Client to server only"; 
-								$RDSAllowDragAndDrop = "True";
-								Break}
+													$RDSAllowDragAndDrop = "True";
+													Break}
 								"ServerToClient"	{$RDSDragAndDrop = "Server to client only"; 
-								$RDSAllowDragAndDrop = "True";
-								Break}
+													$RDSAllowDragAndDrop = "True";
+													Break}
 								Default				{$RDSDragAndDrop = "Unable to determine Drag and drop: $($GroupDefaults.DragAndDropMode)"; 
-								$RDSAllowDragAndDrop = "False";
-								Break}
+													$RDSAllowDragAndDrop = "False";
+													Break}
 							}
 							
 							If($GroupDefaults.PreferredBrokerId -eq 0)
@@ -11849,15 +11863,21 @@ Function OutputRDSessionHostsDetails
 		"
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "Unable to retrieve RD Session Host Pools for Site $($Site.Name)"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "Unable to retrieve RD Session Host Pools for Site $($Site.Name)"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "Unable to retrieve RD Session Host Pools for Site $($Site.Name)"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	ElseIf($? -and $Null -eq $RDSGroups)
@@ -11867,15 +11887,21 @@ Function OutputRDSessionHostsDetails
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "No RD Session Host Pools retrieved for Site $($Site.Name)"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "No RD Session Host Pools retrieved for Site $($Site.Name)"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "No RD Session Host Pools retrieved for Site $($Site.Name)"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	Else
@@ -14510,15 +14536,21 @@ Function OutputRDSessionHostsDetails
 		"
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "Unable to retrieve RD Session Hosts Templates for Site $($Site.Name)"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "Unable to retrieve RD Session Hosts Templates for Site $($Site.Name)"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "Unable to retrieve RD Session Hosts Templates for Site $($Site.Name)"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	ElseIf($? -and $Null -eq $RDSTemplates)
@@ -14528,15 +14560,21 @@ Function OutputRDSessionHostsDetails
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "No RD Session Hosts Templates retrieved for Site $($Site.Name)"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "No RD Session Hosts Templates retrieved for Site $($Site.Name)"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "No RD Session Hosts Templates retrieved for Site $($Site.Name)"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	Else
@@ -16917,15 +16955,21 @@ Function OutputRDSessionHostsDetails
 		"
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "Unable to retrieve RD Session Hosts Scheduler for Site $($Site.Name)"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "Unable to retrieve RD Session Hosts Scheduler for Site $($Site.Name)"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "Unable to retrieve RD Session Hosts Scheduler for Site $($Site.Name)"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	ElseIf($? -and $Null -eq $RDSSchedules)
@@ -16935,15 +16979,21 @@ Function OutputRDSessionHostsDetails
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "No RD Session Host Scheduler retrieved for Site $($Site.Name)"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "No RD Session Host Scheduler retrieved for Site $($Site.Name)"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "No RD Session Host Scheduler retrieved for Site $($Site.Name)"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	Else
@@ -17518,15 +17568,21 @@ Function OutputVDIDetails
 		"
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "Unable to retrieve VDI for Site $($Site.Name)"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "Unable to retrieve VDI for Site $($Site.Name)"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "Unable to retrieve VDI for Site $($Site.Name)"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	ElseIf($? -and $Null -eq $VDIHosts)
@@ -17536,15 +17592,21 @@ Function OutputVDIDetails
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "No VDI retrieved for Site $($Site.Name)"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "No VDI retrieved for Site $($Site.Name)"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "No VDI retrieved for Site $($Site.Name)"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	Else
@@ -18800,8 +18862,8 @@ Function OutputVDIDetails
 				}
 				If($Text)
 				{
-					Line 3 "Inherit default settings`t`t`t`t: " $VDIPool.InheritDefaultUserProfileSettings.ToString()
-					Line 3 "Technology`t`t`t`t`t`t: " $VDIPoolTechnology
+					Line 4 "Inherit default settings`t`t`t`t: " $VDIPool.InheritDefaultUserProfileSettings.ToString()
+					Line 4 "Technology`t`t`t`t`t`t: " $VDIPoolTechnology
 
 					If($VDIPoolTechnology -eq "Do not manage by RAS")
 					{
@@ -18809,21 +18871,21 @@ Function OutputVDIDetails
 					}
 					ElseIf($VDIPoolTechnology -eq "FSLogix")
 					{
-						Line 3 "Deployment method`t`t`t`t`t: " $FSLogixDeploymentSettingsDeploymentMethod
+						Line 4 "Deployment method`t`t`t`t`t: " $FSLogixDeploymentSettingsDeploymentMethod
 						If($FSLogixDeploymentSettings.InstallType -eq "Online")
 						{
-							Line 3 "URL`t`t`t`t`t`t`t: " $FSLogixDeploymentSettingsInstallOnlineURL
+							Line 4 "URL`t`t`t`t`t`t`t: " $FSLogixDeploymentSettingsInstallOnlineURL
 						}
 						ElseIf($FSLogixDeploymentSettings.InstallType -eq "NetworkDrive")
 						{
-							Line 10 ": " $FSLogixDeploymentSettingsNetworkDrivePath
+							Line 11 ": " $FSLogixDeploymentSettingsNetworkDrivePath
 						}
 						ElseIf($FSLogixDeploymentSettings.InstallType -eq "UploadInstall")
 						{
-							Line 10 ": " $FSLogixDeploymentSettingsInstallerFileName
+							Line 11 ": " $FSLogixDeploymentSettingsInstallerFileName
 						}
-						Line 3 "Settings"
-						Line 4 "Location type`t`t`t`t`t: " $FSLogixLocationType
+						Line 4 "Settings"
+						Line 5 "Location type`t`t`t`t`t: " $FSLogixLocationType
 						
 						$cnt = -1
 						ForEach($item in $FSLogixLocationOfProfileDisks)
@@ -18832,22 +18894,22 @@ Function OutputVDIDetails
 							
 							If($cnt -eq 0)
 							{
-								Line 4 "Location of profile disks`t`t`t: " $item
+								Line 5 "Location of profile disks`t`t`t: " $item
 							}
 							Else
 							{
-								Line 10 "  " $item
+								Line 11 "  " $item
 							}
 						}
-						Line 4 "Profile disk format`t`t`t`t: " $FSLogixProfileDiskFormat
-						Line 4 "Allocation type`t`t`t`t`t: " $FSLogixAllocationType
-						Line 4 "Default size`t`t`t`t`t: " "$FSLogixDefaultSize GB"
-						Line 3 "Additional settings"
-						Line 4 "Users and Groups"
+						Line 5 "Profile disk format`t`t`t`t: " $FSLogixProfileDiskFormat
+						Line 5 "Allocation type`t`t`t`t`t: " $FSLogixAllocationType
+						Line 5 "Default size`t`t`t`t`t: " "$FSLogixDefaultSize GB"
+						Line 4 "Additional settings"
+						Line 5 "Users and Groups"
 						
 						If($FSLogixSettingsUserInclusionList.Count -eq 0)
 						{
-							Line 5 "User Inclusion List`t`t`t: " "None"
+							Line 6 "User Inclusion List`t`t`t: " "None"
 						}
 						Else
 						{
@@ -18858,18 +18920,18 @@ Function OutputVDIDetails
 								
 								If($cnt -eq 0)
 								{
-									Line 5 "User Inclusion List`t`t`t: " "User: $($item.Account)  Type: $($item.Type)"
+									Line 6 "User Inclusion List`t`t`t: " "User: $($item.Account)  Type: $($item.Type)"
 								}
 								Else
 								{
-									Line 10 "  " "User: $($item.Account)  Type: $($item.Type)"
+									Line 11 "  " "User: $($item.Account)  Type: $($item.Type)"
 								}
 							}
 						}
 
 						If($FSLogixSettingsUserExclusionList.Count -eq 0)
 						{
-							Line 5 "User Exclusion List`t`t`t: " "None"
+							Line 6 "User Exclusion List`t`t`t: " "None"
 						}
 						Else
 						{
@@ -18880,16 +18942,16 @@ Function OutputVDIDetails
 								
 								If($cnt -eq 0)
 								{
-									Line 5 "User Exclusion List`t`t`t: " "User: $($item.Account)  Type: $($item.Type)"
+									Line 6 "User Exclusion List`t`t`t: " "User: $($item.Account)  Type: $($item.Type)"
 								}
 								Else
 								{
-									Line 10 "  " "User: $($item.Account)  Type: $($item.Type)"
+									Line 11 "  " "User: $($item.Account)  Type: $($item.Type)"
 								}
 							}
 						}
-						Line 4 "Folders"
-						Line 5 "Customize profile folders`t`t: " $FSLogixSettingsCustomizeProfileFolders.ToString()
+						Line 5 "Folders"
+						Line 6 "Customize profile folders`t`t: " $FSLogixSettingsCustomizeProfileFolders.ToString()
 						If($FSLogixSettingsCustomizeProfileFolders)
 						{
 							If($ExcludedCommonFolders.Count -gt 0)
@@ -18901,27 +18963,27 @@ Function OutputVDIDetails
 									
 									If($cnt -eq 0)
 									{
-										Line 6 "Exclude Common Folders`t`t: " $item
+										Line 7 "Exclude Common Folders`t`t: " $item
 									}
 									Else
 									{
-										Line 10 "  " $item
+										Line 11 "  " $item
 									}
 								}
 							}
 							Else
 							{
-								Line 6 "Exclude Common Folders`t`t: None"
+								Line 7 "Exclude Common Folders`t`t: None"
 							}
 						}
 
 						If($FSLogixSettingsFolderInclusionList.Count -eq 0)
 						{
-							Line 5 "Folder Inclusion List`t`t`t: " "None"
+							Line 6 "Folder Inclusion List`t`t`t: " "None"
 						}
 						Else
 						{
-							Line 5 "Folder Inclusion List"
+							Line 6 "Folder Inclusion List"
 							$cnt = -1
 							ForEach($item in $FSLogixSettingsFolderInclusionList)
 							{
@@ -18929,22 +18991,22 @@ Function OutputVDIDetails
 								
 								If($cnt -eq 0)
 								{
-									Line 6 "Folder`t`t`t`t: " $item
+									Line 7 "Folder`t`t`t`t: " $item
 								}
 								Else
 								{
-									Line 10 "  " $item
+									Line 11 "  " $item
 								}
 							}
 						}
 
 						If($FSLogixSettingsFolderExclusionList.Count -eq 0)
 						{
-							Line 5 "Folder Exclusion List`t`t`t: " "None"
+							Line 6 "Folder Exclusion List`t`t`t: " "None"
 						}
 						Else
 						{
-							Line 5 "Folder Exclusion List"
+							Line 6 "Folder Exclusion List"
 							$cnt = -1
 							ForEach($item in $FSLogixSettingsFolderExclusionList)
 							{
@@ -18961,45 +19023,45 @@ Function OutputVDIDetails
 								
 								If($cnt -eq 0)
 								{
-									Line 6 "Folder`t`t`t`t: " "$($item.Folder) Copy base: $CopyBase Copy back: $CopyBack"
+									Line 7 "Folder`t`t`t`t: " "$($item.Folder) Copy base: $CopyBase Copy back: $CopyBack"
 								}
 								Else
 								{
-									Line 10 "  " "$($item.Folder) Copy base: $CopyBase Copy back: $CopyBack"
+									Line 11 "  " "$($item.Folder) Copy base: $CopyBase Copy back: $CopyBack"
 								}
 							}
 						}
 						
-						Line 4 "Advanced"
-						Line 5 "FSLogix Setting                                      Value"
-						Line 5 "======================================================================================"
+						Line 5 "Advanced"
+						Line 6 "FSLogix Setting                                      Value"
+						Line 6 "======================================================================================"
 						#      "Swap SID and username in profile directory names     Redirect TEMP, TMP, and INetCache"
-						Line 5 "Access network as computer object                    $($FSLogixAS_AccessNetworkAsComputerObject)"
-						Line 5 "Custom SDDL for profile directory                    $($FSLogixAS_ProfileDirSDDL)"
-						Line 5 "Delay between locked VHD(X) retries                  $($FSLogixAS_LockedRetryInterval)"
-						Line 5 "Delete local profile when loading from VHD           $($FSLogixAS_DeleteLocalProfileWhenVHDShouldApply)"
-						Line 5 "Diff disk parent folder path                         $($FSLogixAS_DiffDiskParentFolderPath)"
-						Line 5 "Do not create a folder for new profiles              $($FSLogixAS_NoProfileContainingFolder)"
-						Line 5 "Enable Cached mode for Outlook                       $($FSLogixAS_OutlookCachedMode)"
-						Line 5 "Keep local profiles                                  $($FSLogixAS_KeepLocalDir)"
-						Line 5 "Naming pattern for new VHD(X) files                  $($FSLogixAS_VHDNamePattern)"
-						Line 5 "Number of locked VHD(X) retries                      $($FSLogixAS_LockedRetryCount)"
-						Line 5 "Prevent logons with failures                         $($FSLogixAS_PreventLoginWithFailure)"
-						Line 5 "Prevent logons with temp profiles                    $($FSLogixAS_PreventLoginWithTempProfile)"
-						Line 5 "Profile folder naming pattern                        $($FSLogixAS_SIDDirNameMatch)"
-						Line 5 "Profile type                                         $($FSLogixAS_ProfileType)"
-						Line 5 "Profile VHD(X) file matching pattern                 $($FSLogixAS_VHDNameMatch)"
-						Line 5 "Re-attach interval                                   $($FSLogixAS_ReAttachIntervalSeconds)"
-						Line 5 "Re-attach retry limit                                $($FSLogixAS_ReAttachRetryCount)"
-						Line 5 "Remove duplicate OST files on logoff                 $($FSLogixAS_RemoveOrphanedOSTFilesOnLogoff)"
-						Line 5 "SDDL used when attaching the VHD                     $($FSLogixAS_AttachVHDSDDL)"
-						Line 5 "Search roaming feature mode                          $($FSLogixAS_RoamSearch)"
-						Line 5 "Swap SID and username in profile directory names     $($FSLogixAS_FlipFlopProfileDirectoryName)"
-						Line 5 "Temporary folders redirection mode                   $($FSLogixAS_SetTempToLocalPath)"
-						Line 5 "Use SDDL on creation of SID containing folder        $($FSLogixAS_SIDDirSDDL)"
-						Line 5 "User-to-Profile matching pattern                     $($FSLogixAS_SIDDirNamePattern)"
-						Line 5 "VHDX sector size                                     $($FSLogixAS_VHDXSectorSize)"
-						Line 5 "Volume wait time                                     $($FSLogixAS_VolumeWaitTimeMS)"
+						Line 6 "Access network as computer object                    $($FSLogixAS_AccessNetworkAsComputerObject)"
+						Line 6 "Custom SDDL for profile directory                    $($FSLogixAS_ProfileDirSDDL)"
+						Line 6 "Delay between locked VHD(X) retries                  $($FSLogixAS_LockedRetryInterval)"
+						Line 6 "Delete local profile when loading from VHD           $($FSLogixAS_DeleteLocalProfileWhenVHDShouldApply)"
+						Line 6 "Diff disk parent folder path                         $($FSLogixAS_DiffDiskParentFolderPath)"
+						Line 6 "Do not create a folder for new profiles              $($FSLogixAS_NoProfileContainingFolder)"
+						Line 6 "Enable Cached mode for Outlook                       $($FSLogixAS_OutlookCachedMode)"
+						Line 6 "Keep local profiles                                  $($FSLogixAS_KeepLocalDir)"
+						Line 6 "Naming pattern for new VHD(X) files                  $($FSLogixAS_VHDNamePattern)"
+						Line 6 "Number of locked VHD(X) retries                      $($FSLogixAS_LockedRetryCount)"
+						Line 6 "Prevent logons with failures                         $($FSLogixAS_PreventLoginWithFailure)"
+						Line 6 "Prevent logons with temp profiles                    $($FSLogixAS_PreventLoginWithTempProfile)"
+						Line 6 "Profile folder naming pattern                        $($FSLogixAS_SIDDirNameMatch)"
+						Line 6 "Profile type                                         $($FSLogixAS_ProfileType)"
+						Line 6 "Profile VHD(X) file matching pattern                 $($FSLogixAS_VHDNameMatch)"
+						Line 6 "Re-attach interval                                   $($FSLogixAS_ReAttachIntervalSeconds)"
+						Line 6 "Re-attach retry limit                                $($FSLogixAS_ReAttachRetryCount)"
+						Line 6 "Remove duplicate OST files on logoff                 $($FSLogixAS_RemoveOrphanedOSTFilesOnLogoff)"
+						Line 6 "SDDL used when attaching the VHD                     $($FSLogixAS_AttachVHDSDDL)"
+						Line 6 "Search roaming feature mode                          $($FSLogixAS_RoamSearch)"
+						Line 6 "Swap SID and username in profile directory names     $($FSLogixAS_FlipFlopProfileDirectoryName)"
+						Line 6 "Temporary folders redirection mode                   $($FSLogixAS_SetTempToLocalPath)"
+						Line 6 "Use SDDL on creation of SID containing folder        $($FSLogixAS_SIDDirSDDL)"
+						Line 6 "User-to-Profile matching pattern                     $($FSLogixAS_SIDDirNamePattern)"
+						Line 6 "VHDX sector size                                     $($FSLogixAS_VHDXSectorSize)"
+						Line 6 "Volume wait time                                     $($FSLogixAS_VolumeWaitTimeMS)"
 					}
 
 					Line 0 ""
@@ -21520,7 +21582,7 @@ Function OutputVDIDetails
 				}
 				If($Text)
 				{
-					Line 2 "Settings"
+					Line 3 "Settings"
 				}
 				If($HTML)
 				{
@@ -21832,24 +21894,24 @@ Function OutputVDIDetails
 				}
 				If($Text)
 				{
-					Line 3 "Inherit default settings`t`t`t`t`t: " $VDIPool.InheritDefaultAgentSettings.ToString()
-					Line 3 "Application session lingering: " ""
-					Line 4 "Disconnect active session after`t`t`t`t: " $VDIPoolDisconnectActiveSessionAfter
-					Line 4 "Logoff disconnected session after`t`t`t: " $VDIPoolLogoffDisconnectedSessionAfter
-					Line 3 "Other settings: " ""
-					Line 4 "Session readiness timeout`t`t`t`t: " $VDIPoolSessionReadinessTimeout
-					Line 4 "Allow client URL/Mail redirection`t`t`t: " $VDIPoolAllowClientURLMailRedirection
-					Line 5 "Replace registered application`t`t`t: " $VDIPoolReplaceRegisteredApplication
-					Line 5 "Support Windows Shell URL namespace objects`t: " $VDIPoolSupportShellURLNamespaceObjects
-					Line 4 "Enable Drag and drop`t`t`t`t`t: " $VDIPoolAllowDragandDrop
-					Line 5 "Direction`t`t`t`t`t: " $VDIPoolDragAndDrop
-					Line 4 "Allow 2xRemoteExec to send command to the client`t: " $VDIPoolAllowRemoteExec
-					Line 4 "Manage RDP transport protocol`t`t`t`t: " $VDIPoolManageRDPTransportProtocol
-					Line 4 "Allow file transfer command (Web and ChromeOS clients)`t: " $VDIPoolFileTransferMode
-					Line 5 "Location`t`t`t`t`t: "  $VDIPoolFileTransferLocation
-					Line 5 "Do not allow to change location`t`t`t: " $VDIPoolFileTransferChangeLocation
-					Line 4 "Enable drive redirection cache`t`t`t`t: " $VDIPoolEnableDriveRedirectionCache
-					Line 4 "Enable Z-Order (Experimental)`t`t`t`t: " $VDIPoolEnableZOrder
+					Line 4 "Inherit default settings`t`t`t`t`t: " $VDIPool.InheritDefaultAgentSettings.ToString()
+					Line 4 "Application session lingering: " ""
+					Line 5 "Disconnect active session after`t`t`t`t: " $VDIPoolDisconnectActiveSessionAfter
+					Line 5 "Logoff disconnected session after`t`t`t: " $VDIPoolLogoffDisconnectedSessionAfter
+					Line 4 "Other settings: " ""
+					Line 5 "Session readiness timeout`t`t`t`t: " $VDIPoolSessionReadinessTimeout
+					Line 5 "Allow client URL/Mail redirection`t`t`t: " $VDIPoolAllowClientURLMailRedirection
+					Line 6 "Replace registered application`t`t`t: " $VDIPoolReplaceRegisteredApplication
+					Line 6 "Support Windows Shell URL namespace objects`t: " $VDIPoolSupportShellURLNamespaceObjects
+					Line 5 "Enable Drag and drop`t`t`t`t`t: " $VDIPoolAllowDragandDrop
+					Line 6 "Direction`t`t`t`t`t: " $VDIPoolDragAndDrop
+					Line 5 "Allow 2xRemoteExec to send command to the client`t: " $VDIPoolAllowRemoteExec
+					Line 5 "Manage RDP transport protocol`t`t`t`t: " $VDIPoolManageRDPTransportProtocol
+					Line 5 "Allow file transfer command (Web and ChromeOS clients)`t: " $VDIPoolFileTransferMode
+					Line 6 "Location`t`t`t`t`t: "  $VDIPoolFileTransferLocation
+					Line 6 "Do not allow to change location`t`t`t: " $VDIPoolFileTransferChangeLocation
+					Line 5 "Enable drive redirection cache`t`t`t`t: " $VDIPoolEnableDriveRedirectionCache
+					Line 5 "Enable Z-Order (Experimental)`t`t`t`t: " $VDIPoolEnableZOrder
 					Line 0 ""
 				}
 				If($HTML)
@@ -21879,49 +21941,546 @@ Function OutputVDIDetails
 					FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 					WriteHTMLLine 0 0 ""
 				}
+				
+				#RDP Printer
+				
+				If($MSWord -or $PDF)
+				{
+					WriteWordLine 4 0 "RDP printer"
+				}
+				If($Text)
+				{
+					Line 3 "RDP printer"
+				}
+				If($HTML)
+				{
+					#Nothing
+				}
+				
+				<#
+					PrinterNameFormat                  : PrnFormat_PRN_CMP_SES
+					RemoveSessionNumberFromPrinterName : True
+					RemoveClientNameFromPrinterName    : True
+				#>
+				If($VDIPool.InheritDefaultRDPPrinterSettings)
+				{
+					#do we inherit site defaults?
+					$VDIPoolDefaults = Get-RASVDIDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
+					
+					If($? -and $Null -ne $VDIPoolDefaults)
+					{
+						Switch ($VDIPoolDefaults.RDPPrinter.PrinterNameFormat)
+						{
+							"PrnFormat_PRN_CMP_SES"	{$VDIPoolPrinterNameFormat = "Printername (from Computername) in Session no."; Break}
+							"PrnFormat_SES_CMP_PRN"	{$VDIPoolPrinterNameFormat = "Session no. (Computername from) Printername"; Break}
+							"PrnFormat_PRN_REDSES"	{$VDIPoolPrinterNameFormat = "Printername (redirected Session no.)"; Break}
+							Default					{$VDIPoolPrinterNameFormat = "Unable to determine RDP Printer Name Format: $($VDIPoolHost.RDPPrinter.$VDIPoolDefaults)"; Break}
+						}
+						
+						$VDIPoolRemoveSessionNumberFromPrinter = $VDIPoolDefaults.RDPPrinter.RemoveSessionNumberFromPrinterName.ToString()
+						$VDIPoolRemoveClientNameFromPrinter    = $VDIPoolDefaults.RDPPrinter.RemoveClientNameFromPrinterName.ToString()
+					}
+				}
+				Else
+				{
+					#we don't inherit
+					#get the settings for the host
+					Switch ($VDIPool.RDPPrinter.PrinterNameFormat)
+					{
+						"PrnFormat_PRN_CMP_SES"	{$VDIPoolPrinterNameFormat = "Printername (from Computername) in Session no."; Break}
+						"PrnFormat_SES_CMP_PRN"	{$VDIPoolPrinterNameFormat = "Session no. (Computername from) Printername"; Break}
+						"PrnFormat_PRN_REDSES"	{$VDIPoolPrinterNameFormat = "Printername (redirected Session no.)"; Break}
+						Default					{$VDIPoolPrinterNameFormat = "Unable to determine RDP Printer Name Format: $($VDIPool.RDPPrinter.PrinterNameFormat)"; Break}
+					}
+					
+					$VDIPoolRemoveSessionNumberFromPrinter = $VDIPool.RDPPrinter.RemoveSessionNumberFromPrinterName.ToString()
+					$VDIPoolRemoveClientNameFromPrinter    = $VDIPool.RDPPrinter.RemoveClientNameFromPrinterName.ToString()
+				}
+
+				If($MSWord -or $PDF)
+				{
+					$ScriptInformation = New-Object System.Collections.ArrayList
+					$ScriptInformation.Add(@{Data = "Inherit default settings"; Value = $VDIPool.InheritDefaultPrinterSettings.ToString(); }) > $Null
+					$ScriptInformation.Add(@{Data = "RDP Printer Name Format"; Value = $VDIPoolPrinterNameFormat; }) > $Null
+					$ScriptInformation.Add(@{Data = "Remove session number from printer name"; Value = $VDIPoolRemoveSessionNumberFromPrinter; }) > $Null
+					If($VDIPool.RemoveSessionNumberFromPrinterName)
+					{
+						$ScriptInformation.Add(@{Data = "Remove client name from printer name"; Value = $VDIPoolRemoveClientNameFromPrinter; }) > $Null
+					}
+
+					$Table = AddWordTable -Hashtable $ScriptInformation `
+					-Columns Data,Value `
+					-List `
+					-Format $wdTableGrid `
+					-AutoFit $wdAutoFitFixed;
+
+					SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+					SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+					$Table.Columns.Item(1).Width = 250;
+					$Table.Columns.Item(2).Width = 250;
+
+					$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+					FindWordDocumentEnd
+					$Table = $Null
+					WriteWordLine 0 0 ""
+				}
+				If($Text)
+				{
+					Line 4 "Inherit default settings`t`t`t`t: " $VDIPool.InheritDefaultPrinterSettings.ToString()
+					Line 4 "RDP Printer Name Format`t`t`t`t`t: " $VDIPoolPrinterNameFormat
+					Line 4 "Remove session number from printer name`t`t`t: " $VDIPoolRemoveSessionNumberFromPrinter
+					If($VDIPool.RemoveSessionNumberFromPrinterName)
+					{
+						Line 4 "Remove client name from printer name`t`t`t: " $VDIPoolRemoveClientNameFromPrinter
+					}
+					Line 0 ""
+				}
+				If($HTML)
+				{
+					$rowdata = @()
+					$columnHeaders = @("Inherit default settings",($Script:htmlsb),$VDIPool.InheritDefaultPrinterSettings.ToString(),$htmlwhite)
+					$rowdata += @(,("RDP Printer Name Format",($Script:htmlsb),$VDIPoolPrinterNameFormat,$htmlwhite))
+					$rowdata += @(,("Remove session number from printer name",($Script:htmlsb),$VDIPoolRemoveSessionNumberFromPrinter,$htmlwhite))
+					If($VDIPool.RemoveSessionNumberFromPrinterName)
+					{
+						$rowdata += @(,("Remove client name from printer name",($Script:htmlsb),$VDIPoolRemoveClientNameFromPrinter,$htmlwhite))
+					}
+
+					$msg = "RDP printer"
+					$columnWidths = @("300","275")
+					FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+					WriteHTMLLine 0 0 ""
+				}
+				
+				#Security
+				
+				If($MSWord -or $PDF)
+				{
+					WriteWordLine 4 0 "Security"
+				}
+				If($Text)
+				{
+					Line 3 "Security"
+				}
+				If($HTML)
+				{
+					#Nothing
+				}
+				
+				If($VDIPool.InheritDefaultVDISecuritySettings)
+				{
+					#do we inherit site defaults?
+					#yes we do, get the default settings for the Site
+					#use the Site default settings
+
+					$VDIDefaults = Get-RASVDIDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
+					
+					If($? -and $Null -ne $VDIDefaults)
+					{
+						$VDIPoolGrantPermissions = $VDIDefaults.Security.IsUsersGrantedRDPermissions.ToString()
+						If($VDIDefaults.Security.GroupType -eq "Administrators")
+						{
+							$VDIPoolSecurityGroup = "Administrators"
+						}
+						Else
+						{
+							$VDIPoolSecurityGroup = "Remote Desktop Users group"
+						}
+					}
+					Else
+					{
+						#unable to retrieve default, use built-in default values
+						$VDIPoolGrantPermissions = "False"
+						$VDIPoolSecurityGroup    = ""
+					}
+				}
+				Else
+				{
+					#No, we don't use the VDI Template settings
+					$VDIPoolGrantPermissions  = $VDIPool.Security.IsUsersGrantedRDPermissions.ToString()
+					If($VDIPool.Security.GroupType -eq "Administrators")
+					{
+						$VDIPoolSecurityGroup = "Administrators"
+					}
+					Else
+					{
+						$VDIPoolSecurityGroup = "Remote Desktop Users group"
+					}
+				}
+				
+				If($MSWord -or $PDF)
+				{
+					$ScriptInformation = New-Object System.Collections.ArrayList
+					$ScriptInformation.Add(@{Data = "Inherit default settings"; Value = $VDIPool.InheritDefaultVDISecuritySettings.ToString(); }) > $Null
+					$ScriptInformation.Add(@{Data = "Grant users Remote Desktop connection permissions"; Value = $VDIPoolGrantPermissions; }) > $Null
+					If($VDIPoolGrantPermissions -eq "True")
+					{
+						$ScriptInformation.Add(@{Data = "Local security group"; Value = $VDIPoolSecurityGroup; }) > $Null
+					}
+
+					$Table = AddWordTable -Hashtable $ScriptInformation `
+					-Columns Data,Value `
+					-List `
+					-Format $wdTableGrid `
+					-AutoFit $wdAutoFitFixed;
+
+					SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+					$Table.Columns.Item(1).Width = 200;
+					$Table.Columns.Item(2).Width = 250;
+
+					$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+					FindWordDocumentEnd
+					$Table = $Null
+					WriteWordLine 0 0 ""
+				}
+				If($Text)
+				{
+					Line 4 "Inherit default settings`t`t`t : " $VDIPool.InheritDefaultVDISecuritySettings.ToString()
+					Line 4 "Grant users Remote Desktop connection permissions: " $VDIPoolGrantPermissions
+					If($VDIPoolGrantPermissions -eq "True")
+					{
+						Line 5 "Local security group`t`t`t : " $VDIPoolSecurityGroup
+					}
+					Line 0 ""
+				}
+				If($HTML)
+				{
+
+					$rowdata = @()
+					$columnHeaders = @("Inherit default settings",($Script:htmlsb),$VDIPool.InheritDefaultVDISecuritySettings.ToString(),$htmlwhite)
+					$rowdata += @(,( "Grant users Remote Desktop connection permissions",($Script:htmlsb),$VDIPoolGrantPermissions,$htmlwhite))
+					If($VDIPoolGrantPermissions -eq "True")
+					{
+						$rowdata += @(,( "Local security group",($Script:htmlsb),$VDIPoolSecurityGroup,$htmlwhite))
+					}
+
+					$msg = "Security"
+					$columnWidths = @("200","275")
+					FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+					WriteHTMLLine 0 0 ""
+				}
+				
+				#Auto-upgrade
+				
+				If($MSWord -or $PDF)
+				{
+					WriteWordLine 4 0 "Auto-upgrade"
+				}
+				If($Text)
+				{
+					Line 3 "Auto-upgrade"
+				}
+				If($HTML)
+				{
+					#Nothing
+				}
+				
+				If($VDIPool.InheritDefaultAutoUpgradeSettings)
+				{
+					#do we inherit site defaults?
+					#yes we do, get the default settings for the Site
+					#use the Site default settings
+					$VDIPoolDefaults = Get-RASVDIDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
+					
+					If($? -and $Null -ne $VDIPoolDefaults)
+					{
+						$AutoUpgradeEnabled = $VDIPoolDefaults.AutoUpgrade.Enabled.ToString()
+						
+						If($VDIPoolDefaults.AutoUpgrade.Enabled)
+						{
+							$AutoUpgradeDate    = $VDIPoolDefaults.AutoUpgrade.StartDateTime.ToShortDateString()
+							$AutoUpgradeStart   = $VDIPoolDefaults.AutoUpgrade.StartDateTime.ToLongTimeString()
+							Switch ($VDIPoolDefaults.AutoUpgrade.DrainModeDurationInSecs)
+							{
+								900		{$AutoUpgradeDrainModeDuration = "15 minutes"; Break}
+								1800	{$AutoUpgradeDrainModeDuration = "30 minutes"; Break}
+								2700	{$AutoUpgradeDrainModeDuration = "45 minutes"; Break}
+								3600	{$AutoUpgradeDrainModeDuration = "1 hour"; Break}
+								7200	{$AutoUpgradeDrainModeDuration = "2 hours"; Break}
+								10800	{$AutoUpgradeDrainModeDuration = "3 hours"; Break}
+								21600	{$AutoUpgradeDrainModeDuration = "6 hours"; Break}
+								43200	{$AutoUpgradeDrainModeDuration = "12 hours"; Break}
+								86400	{$AutoUpgradeDrainModeDuration = "1 day"; Break}
+								Default	{$AutoUpgradeDrainModeDuration = "Unable to determine Drain mode duration: $($VDIPoolDefaults.AutoUpgrade.DrainModeDurationInSecs)"; Break}
+							}
+							$AutoUpgradeForceLogoff = $VDIPoolDefaults.AutoUpgrade.ForceLogoffSessions.ToString()
+							Switch ($VDIPoolDefaults.AutoUpgrade.Repeat)
+							{
+								Never			{$AutoUpgradeRecur = "Never "; Break}
+								EveryDay		{$AutoUpgradeRecur = "Every day"; Break}
+								EveryWeek		{$AutoUpgradeRecur = "Every week"; Break}
+								Every2Weeks		{$AutoUpgradeRecur = "Every 2 weeks"; Break}
+								EveryMonth		{$AutoUpgradeRecur = "Every month"; Break}
+								EveryYear		{$AutoUpgradeRecur = "Every year"; Break}
+								SpecificDays	{$AutoUpgradeRecur = "Every $($VDIPoolDefaults.AutoUpgrade.SpecificDays)"; Break}
+								Default			{$AutoUpgradeRecur = "Unable to determine the Recur: $($VDIPoolDefaults.AutoUpgrade.Repeat)"; Break}
+							}
+							$AutoUpgradeMessages = $VDIPoolDefaults.AutoUpgrade.Messages
+						}
+						Else
+						{
+							$AutoUpgradeEnabled           = "False"
+							$AutoUpgradeDate              = ""
+							$AutoUpgradeStart             = ""
+							$AutoUpgradeDrainModeDuration = ""
+							$AutoUpgradeForceLogoff       = ""
+							$AutoUpgradeRecur             = ""
+							$AutoUpgradeMessages          = @()
+						}
+					}
+					Else
+					{
+						#unable to retrieve default, use built-in default values
+						$AutoUpgradeEnabled           = "False"
+						$AutoUpgradeDate              = ""
+						$AutoUpgradeStart             = ""
+						$AutoUpgradeDrainModeDuration = ""
+						$AutoUpgradeForceLogoff       = ""
+						$AutoUpgradeRecur             = ""
+						$AutoUpgradeMessages          = @()
+					}
+				}
+				Else
+				{
+					#we don't inherit
+					#get the settings for the host pool
+					$Results = Get-RASAutoUpgrade -Name $VDIPool.Name -SiteId $Site.Id -ObjType "VDIHostPool" -EA 0 4>$Null
+					
+					If(!$? -or $Null -eq $Results)
+					{
+						$AutoUpgradeEnabled           = "False"
+						$AutoUpgradeDate              = ""
+						$AutoUpgradeStart             = ""
+						$AutoUpgradeDrainModeDuration = ""
+						$AutoUpgradeForceLogoff       = ""
+						$AutoUpgradeRecur             = ""
+						$AutoUpgradeMessages          = @()
+					}
+					Else
+					{
+						$AutoUpgradeEnabled = $Results.Enabled.ToString()
+						
+						If($Results.Enabled)
+						{
+							$AutoUpgradeDate    = $Results.StartDateTime.ToShortDateString()
+							$AutoUpgradeStart   = $Results.StartDateTime.ToLongTimeString()
+							Switch ($Results.DrainModeDurationInSecs)
+							{
+								900		{$AutoUpgradeDrainModeDuration = "15 minutes"; Break}
+								1800	{$AutoUpgradeDrainModeDuration = "30 minutes"; Break}
+								2700	{$AutoUpgradeDrainModeDuration = "45 minutes"; Break}
+								3600	{$AutoUpgradeDrainModeDuration = "1 hour"; Break}
+								7200	{$AutoUpgradeDrainModeDuration = "2 hours"; Break}
+								10800	{$AutoUpgradeDrainModeDuration = "3 hours"; Break}
+								21600	{$AutoUpgradeDrainModeDuration = "6 hours"; Break}
+								43200	{$AutoUpgradeDrainModeDuration = "12 hours"; Break}
+								86400	{$AutoUpgradeDrainModeDuration = "1 day"; Break}
+								Default	{$AutoUpgradeDrainModeDuration = "Unable to determine Drain mode duration: $($Results.DrainModeDurationInSecs)"; Break}
+							}
+							$AutoUpgradeForceLogoff = $Results.ForceLogoffSessions.ToString()
+							Switch ($Results.Repeat)
+							{
+								Never			{$AutoUpgradeRecur = "Never "; Break}
+								EveryDay		{$AutoUpgradeRecur = "Every day"; Break}
+								EveryWeek		{$AutoUpgradeRecur = "Every week"; Break}
+								Every2Weeks		{$AutoUpgradeRecur = "Every 2 weeks"; Break}
+								EveryMonth		{$AutoUpgradeRecur = "Every month"; Break}
+								EveryYear		{$AutoUpgradeRecur = "Every year"; Break}
+								SpecificDays	{$AutoUpgradeRecur = "Every $($Results.SpecificDays)"; Break}
+								Default			{$AutoUpgradeRecur = "Unable to determine the Recur: $($Results.Repeat)"; Break}
+							}
+							$AutoUpgradeMessages = $Results.Messages
+						}
+						Else
+						{
+							$AutoUpgradeEnabled           = "False"
+							$AutoUpgradeDate              = ""
+							$AutoUpgradeStart             = ""
+							$AutoUpgradeDrainModeDuration = ""
+							$AutoUpgradeForceLogoff       = ""
+							$AutoUpgradeRecur             = ""
+							$AutoUpgradeMessages          = @()
+						}
+					}
+				}
+				
+				If($MSWord -or $PDF)
+				{
+					$ScriptInformation = New-Object System.Collections.ArrayList
+					$ScriptInformation.Add(@{Data = "Inherit default settings"; Value = $VDIPool.InheritDefaultAutoUpgradeSettings.ToString(); }) > $Null
+					$ScriptInformation.Add(@{Data = "Enable auto-upgrade maintenance window"; Value = $AutoUpgradeEnabled; }) > $Null
+					$ScriptInformation.Add(@{Data = "Date"; Value = $AutoUpgradeDate; }) > $Null
+					$ScriptInformation.Add(@{Data = "Start"; Value = $AutoUpgradeStart; }) > $Null
+					$ScriptInformation.Add(@{Data = "Drain mode duration"; Value = $AutoUpgradeDrainModeDuration; }) > $Null
+					$ScriptInformation.Add(@{Data = "Force logoff session at the end of the drain mode period"; Value = $AutoUpgradeForceLogoff; }) > $Null
+					$ScriptInformation.Add(@{Data = "Recur"; Value = $AutoUpgradeRecur; }) > $Null
+					$ScriptInformation.Add(@{Data = "Send message before maintenance window is triggered"; Value = ""; }) > $Null
+
+					If($AutoUpgradeMessages.Count -gt 0)
+					{
+						ForEach($Item in $AutoUpgradeMessages)
+						{
+							Switch ($Item.SendMsgSecs)
+							{
+								900		{$MsgTime = "15 minutes $($Item.SendMsgWhen)"; Break}
+								1800	{$MsgTime = "30 minutes $($Item.SendMsgWhen)"; Break}
+								2700	{$MsgTime = "45 minutes $($Item.SendMsgWhen)"; Break}
+								3600	{$MsgTime = "1 hour $($Item.SendMsgWhen)"; Break}
+								7200	{$MsgTime = "2 hours $($Item.SendMsgWhen)"; Break}
+								10800	{$MsgTime = "3 hours $($Item.SendMsgWhen)"; Break}
+								Default	{$MsgTime = "Unable to determine scheduled message Time: $($Item.SendMsgSecs)"; Break}
+							}
+							
+							$ScriptInformation.Add(@{Data = "     Enabled"; Value = $Item.Enabled.ToString(); }) > $Null
+							$ScriptInformation.Add(@{Data = "     Body"; Value = $Item.Message; }) > $Null
+							$ScriptInformation.Add(@{Data = "     Title"; Value = $Item.MessageTitle; }) > $Null
+							$ScriptInformation.Add(@{Data = "     Time"; Value = $MsgTime; }) > $Null
+							$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+						}
+					}
+
+					$Table = AddWordTable -Hashtable $ScriptInformation `
+					-Columns Data,Value `
+					-List `
+					-Format $wdTableGrid `
+					-AutoFit $wdAutoFitFixed;
+
+					SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+					SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+					$Table.Columns.Item(1).Width = 300;
+					$Table.Columns.Item(2).Width = 250;
+
+					$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+					FindWordDocumentEnd
+					$Table = $Null
+					WriteWordLine 0 0 ""
+				}
+				If($Text)
+				{
+					Line 4 "Inherit default settings`t`t`t`t: " $VDIPool.InheritDefaultAutoUpgradeSettings.ToString()
+					Line 4 "Enable auto-upgrade maintenance window`t`t`t: " $AutoUpgradeEnabled
+					Line 4 "Date`t`t`t`t`t`t`t: " $AutoUpgradeDate
+					Line 4 "Start`t`t`t`t`t`t`t: " $AutoUpgradeStart
+					Line 4 "Drain mode duration`t`t`t`t`t: " $AutoUpgradeDrainModeDuration
+					Line 4 "Force logoff session at the end of the drain mode period: " $AutoUpgradeForceLogoff
+					Line 4 "Recur`t`t`t`t`t`t`t: " $AutoUpgradeRecur
+					Line 4 "Send message before maintenance window is triggered"
+					
+					If($AutoUpgradeMessages.Count -gt 0)
+					{
+						ForEach($Item in $AutoUpgradeMessages)
+						{
+							Switch ($Item.SendMsgSecs)
+							{
+								900		{$MsgTime = "15 minutes $($Item.SendMsgWhen)"; Break}
+								1800	{$MsgTime = "30 minutes $($Item.SendMsgWhen)"; Break}
+								2700	{$MsgTime = "45 minutes $($Item.SendMsgWhen)"; Break}
+								3600	{$MsgTime = "1 hour $($Item.SendMsgWhen)"; Break}
+								7200	{$MsgTime = "2 hours $($Item.SendMsgWhen)"; Break}
+								10800	{$MsgTime = "3 hours $($Item.SendMsgWhen)"; Break}
+								Default	{$MsgTime = "Unable to determine scheduled message Time: $($Item.SendMsgSecs)"; Break}
+							}
+							
+							Line 5 "Enabled`t: " $Item.Enabled.ToString()
+							Line 5 "Body`t: " $Item.Message
+							Line 5 "Title`t: " $Item.MessageTitle
+							Line 5 "Time`t: " $MsgTime
+							Line 5 ""
+						}
+					}
+
+					Line 0 ""
+				}
+				If($HTML)
+				{
+					$rowdata = @()
+					$columnHeaders = @("Inherit default settings",($Script:htmlsb),$VDIPool.InheritDefaultAutoUpgradeSettings.ToString(),$htmlwhite)
+					$rowdata += @(,("Enable auto-upgrade maintenance window",($Script:htmlsb),$AutoUpgradeEnabled,$htmlwhite))
+					$rowdata += @(,("Date",($Script:htmlsb),$AutoUpgradeDate,$htmlwhite))
+					$rowdata += @(,("Start",($Script:htmlsb),$AutoUpgradeStart,$htmlwhite))
+					$rowdata += @(,("Drain mode duration",($Script:htmlsb),$AutoUpgradeDrainModeDuration,$htmlwhite))
+					$rowdata += @(,("Force logoff session at the end of the drain mode period",($Script:htmlsb),$AutoUpgradeForceLogoff,$htmlwhite))
+					$rowdata += @(,("Recur",($Script:htmlsb),$AutoUpgradeRecur,$htmlwhite))
+					$rowdata += @(,("Send message before maintenance window is triggered",($Script:htmlsb),"",$htmlwhite))
+					
+					If($AutoUpgradeMessages.Count -gt 0)
+					{
+						ForEach($Item in $AutoUpgradeMessages)
+						{
+							Switch ($Item.SendMsgSecs)
+							{
+								900		{$MsgTime = "15 minutes $($Item.SendMsgWhen)"; Break}
+								1800	{$MsgTime = "30 minutes $($Item.SendMsgWhen)"; Break}
+								2700	{$MsgTime = "45 minutes $($Item.SendMsgWhen)"; Break}
+								3600	{$MsgTime = "1 hour $($Item.SendMsgWhen)"; Break}
+								7200	{$MsgTime = "2 hours $($Item.SendMsgWhen)"; Break}
+								10800	{$MsgTime = "3 hours $($Item.SendMsgWhen)"; Break}
+								Default	{$MsgTime = "Unable to determine scheduled message Time: $($Item.SendMsgSecs)"; Break}
+							}
+							
+							$rowdata += @(,("     Enabled",($Script:htmlsb),$Item.Enabled.ToString(),$htmlwhite))
+							$rowdata += @(,("     Body",($Script:htmlsb),$Item.Message,$htmlwhite))
+							$rowdata += @(,("     Title",($Script:htmlsb),$Item.MessageTitle,$htmlwhite))
+							$rowdata += @(,("     Time",($Script:htmlsb),$MsgTime,$htmlwhite))
+							$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+						}
+					}
+
+					$msg = "Auto-upgrade"
+					$columnWidths = @("300","275")
+					FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+					WriteHTMLLine 0 0 ""
+				}
+				
 			}
 		}
 		ElseIf($? -and $Null -eq $VDIPools)
 		{
 			If($MSWord -or $PDF)
 			{
+				WriteWordLine 0 0 ""
 				WriteWordLine 0 0 "No VDI Pools found for Site $($Site.Name)"
+				WriteWordLine 0 0 ""
 			}
 			If($Text)
 			{
+				Line 0 ""
 				Line 0 "No VDI Pools found for Site $($Site.Name)"
+				Line 0 ""
 			}
 			If($HTML)
 			{
+				WriteHTMLLine 0 0 ""
 				WriteHTMLLine 0 0 "No VDI Pools found for Site $($Site.Name)"
+				WriteHTMLLine 0 0 ""
 			}
 		}
 		Else
 		{
 			If($MSWord -or $PDF)
 			{
+				WriteWordLine 0 0 ""
 				WriteWordLine 0 0 "Unable to retrieve VDI Pools for Site $($Site.Name)"
+				WriteWordLine 0 0 ""
 			}
 			If($Text)
 			{
+				Line 0 ""
 				Line 0 "Unable to retrieve VDI Pools for Site $($Site.Name)"
+				Line 0 ""
 			}
 			If($HTML)
 			{
+				WriteHTMLLine 0 0 ""
 				WriteHTMLLine 0 0 "Unable to retrieve VDI Pools for Site $($Site.Name)"
+				WriteHTMLLine 0 0 ""
 			}
-		}
-		If($MSWord -or $PDF)
-		{
-			WriteWordLine 0 0 ""
-		}
-		If($Text)
-		{
-			Line 0 ""
-		}
-		If($HTML)
-		{
-			WriteHTMLLine 0 0 ""
 		}
 		
 		Write-Verbose "$(Get-Date -Format G): `tOutput VDI Templates"
@@ -21937,15 +22496,21 @@ Function OutputVDIDetails
 			"
 			If($MSWord -or $PDF)
 			{
+				WriteWordLine 0 0 ""
 				WriteWordLine 0 0 "Unable to retrieve VDI Templates for Site $($Site.Name)"
+				WriteWordLine 0 0 ""
 			}
 			If($Text)
 			{
+				Line 0 ""
 				Line 0 "Unable to retrieve VDI Templates for Site $($Site.Name)"
+				Line 0 ""
 			}
 			If($HTML)
 			{
+				WriteHTMLLine 0 0 ""
 				WriteHTMLLine 0 0 "Unable to retrieve VDI Templates for Site $($Site.Name)"
+				WriteHTMLLine 0 0 ""
 			}
 		}
 		ElseIf($? -and $Null -eq $VDITemplates)
@@ -21955,15 +22520,21 @@ Function OutputVDIDetails
 			" -ForegroundColor White
 			If($MSWord -or $PDF)
 			{
+				WriteWordLine 0 0 ""
 				WriteWordLine 0 0 "No VDI Templates retrieved for Site $($Site.Name)"
+				WriteWordLine 0 0 ""
 			}
 			If($Text)
 			{
+				Line 0 ""
 				Line 0 "No VDI Templates retrieved for Site $($Site.Name)"
+				Line 0 ""
 			}
 			If($HTML)
 			{
+				WriteHTMLLine 0 0 ""
 				WriteHTMLLine 0 0 "No VDI Templates retrieved for Site $($Site.Name)"
+				WriteHTMLLine 0 0 ""
 			}
 		}
 		Else
@@ -22825,7 +23396,7 @@ Function OutputVDIDetails
 						"OnlyRWProfile"	{$FSLogixAS_ProfileType = "Only RW profile"; Break}
 						"OnlyROProfile"	{$FSLogixAS_ProfileType = "Only RO profile"; Break}
 						"RWROProfile"	{$FSLogixAS_ProfileType = "RW/RO profile"; Break}
-						Default		{$FSLogixAS_ProfileType = "Unknown: $($FSLogixAS.ProfileType)"; Break}
+						Default			{$FSLogixAS_ProfileType = "Unknown: $($FSLogixAS.ProfileType)"; Break}
 					}
 
 					$FSLogixAS_ReAttachIntervalSeconds = $FSLogixAS.ReAttachIntervalSeconds                
@@ -25855,15 +26426,21 @@ Function OutputAVDDetails
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "No Azure Virtual Desktops retrieved for Site $($Site.Name)"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "No Azure Virtual Desktops retrieved for Site $($Site.Name)"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "No Azure Virtual Desktops retrieved for Site $($Site.Name)"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	Else
@@ -25880,15 +26457,21 @@ Function OutputAVDDetails
 				"
 				If($MSWord -or $PDF)
 				{
+					WriteWordLine 0 0 ""
 					WriteWordLine 0 0 "Unable to retrieve AVD Status for AVD $($AVD.Name)"
+					WriteWordLine 0 0 ""
 				}
 				If($Text)
 				{
+					Line 0 ""
 					Line 0 "Unable to retrieve AVD Status for AVD $($AVD.Name)"
+					Line 0 ""
 				}
 				If($HTML)
 				{
+					WriteHTMLLine 0 0 ""
 					WriteHTMLLine 0 0 "Unable to retrieve AVD Status for AVD $($AVD.Name)"
+					WriteHTMLLine 0 0 ""
 				}
 			}
 			ElseIf($? -and $Null -eq $AVDStatus)
@@ -25961,15 +26544,21 @@ Function OutputProvidersDetails
 		"
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "Unable to retrieve Providers for Site $($Site.Name)"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "Unable to retrieve Providers for Site $($Site.Name)"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "Unable to retrieve Providers for Site $($Site.Name)"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	ElseIf($? -and $Null -eq $Providers)
@@ -25979,15 +26568,21 @@ Function OutputProvidersDetails
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "No Providers retrieved for Site $($Site.Name)"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "No Providers retrieved for Site $($Site.Name)"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "No Providers retrieved for Site $($Site.Name)"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	Else
@@ -26004,15 +26599,21 @@ Function OutputProvidersDetails
 				"
 				If($MSWord -or $PDF)
 				{
+					WriteWordLine 0 0 ""
 					WriteWordLine 0 0 "Unable to retrieve Provider Status for Provider $($Provider.Id)"
+					WriteWordLine 0 0 ""
 				}
 				If($Text)
 				{
+					Line 0 ""
 					Line 0 "Unable to retrieve Provider Status for Provider $($Provider.Id)"
+					Line 0 ""
 				}
 				If($HTML)
 				{
+					WriteHTMLLine 0 0 ""
 					WriteHTMLLine 0 0 "Unable to retrieve Provider Status for Provider $($Provider.Id)"
+					WriteHTMLLine 0 0 ""
 				}
 			}
 			ElseIf($? -and $Null -eq $ProviderStatus)
@@ -26022,15 +26623,21 @@ Function OutputProvidersDetails
 				" -ForegroundColor White
 				If($MSWord -or $PDF)
 				{
+					WriteWordLine 0 0 ""
 					WriteWordLine 0 0 "No Provider Status retrieved for Provider $($Provider.Id)"
+					WriteWordLine 0 0 ""
 				}
 				If($Text)
 				{
+					Line 0 ""
 					Line 0 "No Provider Status retrieved for Provider $($Provider.Id)"
+					Line 0 ""
 				}
 				If($HTML)
 				{
+					WriteHTMLLine 0 0 ""
 					WriteHTMLLine 0 0 "No Provider Status retrieved for Provider $($Provider.Id)"
+					WriteHTMLLine 0 0 ""
 				}
 			}
 			Else
@@ -26748,15 +27355,21 @@ Function OutputSecureGatewaysDetails
 		"
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "Unable to retrieve Secure Gateways for Site $($Site.Name)"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "Unable to retrieve Secure Gateways for Site $($Site.Name)"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "Unable to retrieve Secure Gateways for Site $($Site.Name)"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	ElseIf($? -and $Null -eq $SecureGateways)
@@ -26766,15 +27379,21 @@ Function OutputSecureGatewaysDetails
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "No Secure Gateways retrieved for Site $($Site.Name)"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "No Secure Gateways retrieved for Site $($Site.Name)"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "No Secure Gateways retrieved for Site $($Site.Name)"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	Else
@@ -26791,15 +27410,21 @@ Function OutputSecureGatewaysDetails
 				"
 				If($MSWord -or $PDF)
 				{
+					WriteWordLine 0 0 ""
 					WriteWordLine 0 0 "Unable to retrieve Secure Gateway Status for Gateway $($SecureGateway.Id)"
+					WriteWordLine 0 0 ""
 				}
 				If($Text)
 				{
+					Line 0 ""
 					Line 0 "Unable to retrieve Secure Gateway Status for Gateway $($SecureGateway.Id)"
+					Line 0 ""
 				}
 				If($HTML)
 				{
+					WriteHTMLLine 0 0 ""
 					WriteHTMLLine 0 0 "Unable to retrieve Secure Gateway Status for Gateway $($SecureGateway.Id)"
+					WriteHTMLLine 0 0 ""
 				}
 				#unable to retrieve
 				$SecureGatewayEnableHSTS            = "Unable to retrieve Secure Gateway Status"
@@ -28485,15 +29110,21 @@ Function OutputConnectionBrokersDetails
 		"
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "Unable to retrieve Connection Brokers for Site $($Site.Name)"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "Unable to retrieve Connection Brokers for Site $($Site.Name)"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "Unable to retrieve Connection Brokers for Site $($Site.Name)"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	ElseIf($? -and $Null -eq $ConnectionBrokers)
@@ -28503,15 +29134,21 @@ Function OutputConnectionBrokersDetails
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "No Connection Brokers retrieved for Site $($Site.Name)"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "No Connection Brokers retrieved for Site $($Site.Name)"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "No Connection Brokers retrieved for Site $($Site.Name)"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	Else
@@ -28528,15 +29165,21 @@ Function OutputConnectionBrokersDetails
 				"
 				If($MSWord -or $PDF)
 				{
+					WriteWordLine 0 0 ""
 					WriteWordLine 0 0 "Unable to retrieve Status for Connection Broker $($ConnectionBroker.Id)"
+					WriteWordLine 0 0 ""
 				}
 				If($Text)
 				{
+					Line 0 ""
 					Line 0 "Unable to retrieve Status for Connection Broker $($ConnectionBroker.Id)"
+					Line 0 ""
 				}
 				If($HTML)
 				{
+					WriteHTMLLine 0 0 ""
 					WriteHTMLLine 0 0 "Unable to retrieve Status for Connection Broker $($ConnectionBroker.Id)"
+					WriteHTMLLine 0 0 ""
 				}
 			}
 			ElseIf($? -and $Null -eq $ConnectionBrokerStatus)
@@ -28546,15 +29189,21 @@ Function OutputConnectionBrokersDetails
 				" -ForegroundColor White
 				If($MSWord -or $PDF)
 				{
+					WriteWordLine 0 0 ""
 					WriteWordLine 0 0 "No Status retrieved for Connection Broker $($ConnectionBroker.Id)"
+					WriteWordLine 0 0 ""
 				}
 				If($Text)
 				{
+					Line 0 ""
 					Line 0 "No Status retrieved for Connection Broker $($ConnectionBroker.Id)"
+					Line 0 ""
 				}
 				If($HTML)
 				{
+					WriteHTMLLine 0 0 ""
 					WriteHTMLLine 0 0 "No Status retrieved for Connection Broker $($ConnectionBroker.Id)"
+					WriteHTMLLine 0 0 ""
 				}
 			}
 			Else
@@ -28718,15 +29367,21 @@ Function OutputConnectionBrokersDetails
 				"
 				If($MSWord -or $PDF)
 				{
+					WriteWordLine 0 0 ""
 					WriteWordLine 0 0 "Unable to retrieve Auto-promotion for Site $($Site.Id)"
+					WriteWordLine 0 0 ""
 				}
 				If($Text)
 				{
+					Line 0 ""
 					Line 0 "Unable to retrieve Auto-promotion for Site $($Site.Id)"
+					Line 0 ""
 				}
 				If($HTML)
 				{
+					WriteHTMLLine 0 0 ""
 					WriteHTMLLine 0 0 "Unable to retrieve Auto-promotion for Site $($Site.Id)"
+					WriteHTMLLine 0 0 ""
 				}
 			}
 			ElseIf($? -and $Null -eq $ConnectionBrokerStatus)
@@ -28736,15 +29391,21 @@ Function OutputConnectionBrokersDetails
 				" -ForegroundColor White
 				If($MSWord -or $PDF)
 				{
+					WriteWordLine 0 0 ""
 					WriteWordLine 0 0 "No data retrieved for Auto-promotion for Site $($Site.Id)"
+					WriteWordLine 0 0 ""
 				}
 				If($Text)
 				{
+					Line 0 ""
 					Line 0 "No data retrieved for Auto-promotion for Site $($Site.Id)"
+					Line 0 ""
 				}
 				If($HTML)
 				{
+					WriteHTMLLine 0 0 ""
 					WriteHTMLLine 0 0 "No data retrieved for Auto-promotion for Site $($Site.Id)"
+					WriteHTMLLine 0 0 ""
 				}
 			}
 			Else
@@ -28839,15 +29500,21 @@ Function OutputEnrollmentServersDetails
 		"
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "Unable to retrieve Enrollment Servers for Site $($Site.Name)"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "Unable to retrieve Enrollment Servers for Site $($Site.Name)"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "Unable to retrieve Enrollment Servers for Site $($Site.Name)"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	ElseIf($? -and $Null -eq $EnrollmentServers)
@@ -28857,15 +29524,21 @@ Function OutputEnrollmentServersDetails
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "No Enrollment Servers retrieved for Site $($Site.Name)"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "No Enrollment Servers retrieved for Site $($Site.Name)"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "No Enrollment Servers retrieved for Site $($Site.Name)"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	Else
@@ -28884,15 +29557,21 @@ Function OutputEnrollmentServersDetails
 				"
 				If($MSWord -or $PDF)
 				{
+					WriteWordLine 0 0 ""
 					WriteWordLine 0 0 "Unable to retrieve Status for Enrollment Server $($EnrollmentServer.Server)"
+					WriteWordLine 0 0 ""
 				}
 				If($Text)
 				{
+					Line 0 ""
 					Line 0 "Unable to retrieve Status for Enrollment Server $($EnrollmentServer.Server)"
+					Line 0 ""
 				}
 				If($HTML)
 				{
+					WriteHTMLLine 0 0 ""
 					WriteHTMLLine 0 0 "Unable to retrieve Status for Enrollment Server $($EnrollmentServer.Server)"
+					WriteHTMLLine 0 0 ""
 				}
 			}
 			ElseIf($? -and $Null -eq $ESStatus)
@@ -28902,15 +29581,21 @@ Function OutputEnrollmentServersDetails
 				" -ForegroundColor White
 				If($MSWord -or $PDF)
 				{
+					WriteWordLine 0 0 ""
 					WriteWordLine 0 0 "No Status retrieved for Enrollment Server $($EnrollmentServer.Server)"
+					WriteWordLine 0 0 ""
 				}
 				If($Text)
 				{
+					Line 0 ""
 					Line 0 "No Status retrieved for Enrollment Server $($EnrollmentServer.Server)"
+					Line 0 ""
 				}
 				If($HTML)
 				{
+					WriteHTMLLine 0 0 ""
 					WriteHTMLLine 0 0 "No Status retrieved for Enrollment Server $($EnrollmentServer.Server)"
+					WriteHTMLLine 0 0 ""
 				}
 			}
 			Else
@@ -29069,15 +29754,21 @@ Function OutputEnrollmentServersDetails
 			"
 			If($MSWord -or $PDF)
 			{
+				WriteWordLine 0 0 ""
 				WriteWordLine 0 0 "Unable to retrieve Enrollment Server AD Integration for Site $($Site.Name)"
+				WriteWordLine 0 0 ""
 			}
 			If($Text)
 			{
+				Line 0 ""
 				Line 0 "Unable to retrieve Enrollment Server AD Integration for Site $($Site.Name)"
+				Line 0 ""
 			}
 			If($HTML)
 			{
+				WriteHTMLLine 0 0 ""
 				WriteHTMLLine 0 0 "Unable to retrieve Enrollment Server AD Integration for Site $($Site.Name)"
+				WriteHTMLLine 0 0 ""
 			}
 		}
 		ElseIf($? -and $Null -eq $EnrollmentServers)
@@ -29087,15 +29778,21 @@ Function OutputEnrollmentServersDetails
 			" -ForegroundColor White
 			If($MSWord -or $PDF)
 			{
+				WriteWordLine 0 0 ""
 				WriteWordLine 0 0 "No Enrollment Server AD Integration retrieved for Site $($Site.Name)"
+				WriteWordLine 0 0 ""
 			}
 			If($Text)
 			{
+				Line 0 ""
 				Line 0 "No Enrollment Server AD Integration retrieved for Site $($Site.Name)"
+				Line 0 ""
 			}
 			If($HTML)
 			{
+				WriteHTMLLine 0 0 ""
 				WriteHTMLLine 0 0 "No Enrollment Server AD Integration retrieved for Site $($Site.Name)"
+				WriteHTMLLine 0 0 ""
 			}
 		}
 		Else
@@ -29197,15 +29894,21 @@ Function OutputHALBDetails
 		"
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "Unable to retrieve HALBs for Site $($Site.Name)"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "Unable to retrieve HALBs for Site $($Site.Name)"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "Unable to retrieve HALBs for Site $($Site.Name)"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	ElseIf($? -and $Null -eq $HALBs)
@@ -29215,16 +29918,21 @@ Function OutputHALBDetails
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "No HALBs retrieved for Site $($Site.Name)"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "No HALBs retrieved for Site $($Site.Name)"
 			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "No HALBs retrieved for Site $($Site.Name)"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	Else
@@ -30092,15 +30800,21 @@ Function OutputThemesDetails
 		"
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "Unable to retrieve Themes for Site $($Site.Name)"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "Unable to retrieve Themes for Site $($Site.Name)"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "Unable to retrieve Themes for Site $($Site.Name)"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	ElseIf($? -and $Null -eq $Themes)
@@ -30110,15 +30824,21 @@ Function OutputThemesDetails
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "No Themes retrieved for Site $($Site.Name)"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "No Themes retrieved for Site $($Site.Name)"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "No Themes retrieved for Site $($Site.Name)"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	Else
@@ -30177,22 +30897,10 @@ Function OutputThemesDetails
 			$ThemeUserPortalLaunchSessionsUsing = ""
 			Switch($Theme.UserPortal.Gateway.LaunchMethod)
 			{
-				"Launch_Applications_with_Parallels_Client_Fallback_to_HTML_5"	
-				{
-					$ThemeUserPortalLaunchSessionsUsing = "Launch apps with Parallels Client & Fallback to HTML5"; Break
-				}
-				"Launch_Applications_with_Parallels_Client"						
-				{
-					$ThemeUserPortalLaunchSessionsUsing = "Launch apps with Parallels Client"; Break
-				}
-				"Launch_Applications_with_Browser_HTML5"						
-				{
-					$ThemeUserPortalLaunchSessionsUsing = "Launch apps in Browser only (HTML5 Only)"; Break
-				}
-				Default															
-				{
-					$ThemeUserPortalLaunchSessionsUsing = "Unable to determine Launch sessions using: $($Theme.UserPortal.Gateway.LaunchMethod)"; Break
-				}
+				"Launch_Applications_with_Parallels_Client_Fallback_to_HTML_5"	{$ThemeUserPortalLaunchSessionsUsing = "Launch apps with Parallels Client & Fallback to HTML5"; Break}
+				"Launch_Applications_with_Parallels_Client"						{$ThemeUserPortalLaunchSessionsUsing = "Launch apps with Parallels Client"; Break}
+				"Launch_Applications_with_Browser_HTML5"						{$ThemeUserPortalLaunchSessionsUsing = "Launch apps in Browser only (HTML5 Only)"; Break}
+				Default															{$ThemeUserPortalLaunchSessionsUsing = "Unable to determine Launch sessions using: $($Theme.UserPortal.Gateway.LaunchMethod)"; Break}
 			}
 			
 			$ThemeHTMLFileTransfer = ""
@@ -31320,7 +32028,7 @@ Function OutputThemesDetails
 			}
 			If($Text)
 			{
-				Line 3 "Override Secure Gateway settings for theme: " $Theme.UserPortal.Gateway.OverrideGatewaySettings.ToString()
+				Line 3 "Override Secure Gateway settings for theme`t: " $Theme.UserPortal.Gateway.OverrideGatewaySettings.ToString()
 				Line 3 "Client"
 				Line 4 "Launch sessions using`t`t`t: " $ThemeUserPortalLaunchSessionsUsing
 				Switch($Theme.UserPortal.Gateway.LaunchMethod)
@@ -31703,15 +32411,21 @@ Function OutputCertificatesDetails
 		"
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "Unable to retrieve Certificates for Site $($Site.Name)"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "Unable to retrieve Certificates for Site $($Site.Name)"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "Unable to retrieve Certificates for Site $($Site.Name)"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	ElseIf($? -and $Null -eq $Certs)
@@ -31721,15 +32435,21 @@ Function OutputCertificatesDetails
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "No Certificates retrieved for Site $($Site.Name)"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "No Certificates retrieved for Site $($Site.Name)"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "No Certificates retrieved for Site $($Site.Name)"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	Else
@@ -32041,15 +32761,21 @@ Function OutputSettingsDetails
 		"
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "Unable to retrieve Settings for Site $($Site.Name)"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "Unable to retrieve Settings for Site $($Site.Name)"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "Unable to retrieve Settings for Site $($Site.Name)"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	ElseIf($? -and $Null -eq $FarmSettings)
@@ -32059,15 +32785,21 @@ Function OutputSettingsDetails
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "No Settings retrieved for Site $($Site.Name)"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "No Settings retrieved for Site $($Site.Name)"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "No Settings retrieved for Site $($Site.Name)"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	Else
@@ -32101,15 +32833,21 @@ Function OutputSettingsDetails
 		"
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "Unable to retrieve URL Redirection settings for Site $($Site.Name)"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "Unable to retrieve URL Redirection settings for Site $($Site.Name)"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "Unable to retrieve URL Redirection settings for Site $($Site.Name)"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	ElseIf($? -and $Null -eq $URLRedirectionSettings)
@@ -32119,15 +32857,21 @@ Function OutputSettingsDetails
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "No URL Redirection settings retrieved for Site $($Site.Name)"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "No URL Redirection settings retrieved for Site $($Site.Name)"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "No URL Redirection settings retrieved for Site $($Site.Name)"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	Else
@@ -32364,15 +33108,21 @@ Function OutputSettingsDetails
 		"
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "Unable to retrieve notification handlers information"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "Unable to retrieve notification handlers information"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "Unable to retrieve notification handlers information"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	ElseIf($? -and $null -eq $RASNotificationHandlers)
@@ -32382,15 +33132,21 @@ Function OutputSettingsDetails
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "No notification handlers information was found"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "No notification handlers information was found"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "No notification handlers information was found"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	Else
@@ -32408,15 +33164,21 @@ Function OutputSettingsDetails
 		"
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "Unable to retrieve notification scripts information"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "Unable to retrieve notification scripts information"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "Unable to retrieve notification scripts information"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	ElseIf($? -and $null -eq $RASNotificationScripts)
@@ -32426,15 +33188,21 @@ Function OutputSettingsDetails
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "No notification scripts information was found"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "No notification scripts information was found"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "No notification scripts information was found"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	Else
@@ -32452,15 +33220,21 @@ Function OutputSettingsDetails
 		"
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "Unable to retrieve CLient Settings information"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "Unable to retrieve CLient Settings information"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "Unable to retrieve CLient Settings information"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	ElseIf($? -and $null -eq $RASClientSettings)
@@ -32470,15 +33244,21 @@ Function OutputSettingsDetails
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "No CLient Settings information was found"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "No CLient Settings information was found"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "No CLient Settings information was found"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	Else
@@ -32496,15 +33276,21 @@ Function OutputSettingsDetails
 		"
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "Unable to retrieve FSLogix Settings information"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "Unable to retrieve FSLogix Settings information"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "Unable to retrieve FSLogix Settings information"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	ElseIf($? -and $null -eq $FSLogixDeploymentSettings)
@@ -32514,15 +33300,21 @@ Function OutputSettingsDetails
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "No FSLogix Settings information was found"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "No FSLogix Settings information was found"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "No FSLogix Settings information was found"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	Else
@@ -32682,15 +33474,21 @@ Function ProcessLoadBalancing
 		"
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "Unable to retrieve Load Balancing information"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "Unable to retrieve Load Balancing information"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLIne 0 0 ""
 			WriteHTMLLine 0 0 "Unable to retrieve Load Balancing information"
+			WriteHTMLLIne 0 0 ""
 		}
 	}
 	ElseIf($? -and $null -eq $results)
@@ -32700,15 +33498,21 @@ Function ProcessLoadBalancing
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "No Load Balancing information was found"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "No Load Balancing information was found"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLIne 0 0 ""
 			WriteHTMLLine 0 0 "No Load Balancing information was found"
+			WriteHTMLLIne 0 0 ""
 		}
 	}
 	Else
@@ -32726,15 +33530,21 @@ Function ProcessLoadBalancing
 	"
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "Unable to retrieve CPU Optimization information"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "Unable to retrieve CPU Optimization information"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLIne 0 0 ""
 			WriteHTMLLine 0 0 "Unable to retrieve CPU Optimization information"
+			WriteHTMLLIne 0 0 ""
 		}
 	}
 	ElseIf($? -and $null -eq $results)
@@ -32744,15 +33554,21 @@ Function ProcessLoadBalancing
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "No CPU Optimization information was found"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "No CPU Optimization information was found"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLIne 0 0 ""
 			WriteHTMLLine 0 0 "No CPU Optimization information was found"
+			WriteHTMLLIne 0 0 ""
 		}
 	}
 	Else
@@ -33075,15 +33891,21 @@ Function ProcessPublishing
 		"
 		If($MSWord -or $PDF)
 		{
+			WriteWordLIne 0 0 ""
 			WriteWordLine 0 0 "Unable to retrieve Publishing information for Site $($Site.Name)"
+			WriteWordLIne 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "Unable to retrieve Publishing information for Site $($Site.Name)"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "Unable to retrieve Publishing information for Site $($Site.Name)"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	ElseIf($? -and $null -eq $results)
@@ -33093,15 +33915,21 @@ Function ProcessPublishing
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
+			WriteWordLIne 0 0 ""
 			WriteWordLine 2 0 "No Publishing information was found for Site $($Site.Name)"
+			WriteWordLIne 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "No Publishing information was found for Site $($Site.Name)"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 2 0 "No Publishing information was found for Site $($Site.Name)"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	Else
@@ -33211,15 +34039,21 @@ Function OutputPublishingSettings
 
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "Unable to retrieve Publishing Default Site Settings for Site $xSiteName, using built-in defaults"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "Unable to retrieve Publishing Default Site Settings for Site $xSiteName, using built-in defaults"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "Unable to retrieve Publishing Default Site Settings for Site $xSiteName, using built-in defaults"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	Else
@@ -35075,7 +35909,7 @@ Function OutputPublishingSettings
 				"NotifyAdminAndStart"		{$LicenseLimitNotify ="Notify administrator and start"; Break}
 				"NotifyUserAdminAndStart"	{$LicenseLimitNotify ="Notify user, administrator and start"; Break}
 				"NotifyUserAdminAndNoStart"	{$LicenseLimitNotify ="Notify user, administrator and do not start"; Break}
-				Default	{$LicenseLimitNotify ="Unable to determine If limit is exceeded: $($PubItem.LicenseLimitNotify)"; Break}
+				Default						{$LicenseLimitNotify ="Unable to determine If limit is exceeded: $($PubItem.LicenseLimitNotify)"; Break}
 			}
 			
 			Switch ($PubItem.ColorDepth)
@@ -37203,8 +38037,7 @@ Function OutputPublishingSettings
 			Switch($PubItem.ConnectTo)
 			{
 				"AnyGuest"				{$ConnectTo = "Any Guest VM"; Break}
-				"SpecificRASTemplate"	{$ConnectTo = "Specific Template ($($PubItem.SelectedGuests[0].VDIGuestName))"; Break
-										}
+				"SpecificRASTemplate"	{$ConnectTo = "Specific Template ($($PubItem.SelectedGuests[0].VDIGuestName))"; Break}
 				Default					{$ConnectTo = "Unable to determine Connect To: $($PubItem.ConnectTo)"; Break}
 			}
 			
@@ -43672,15 +44505,21 @@ Function ProcessUniversalPrinting
 		"
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "Unable to retrieve Universal Printing information"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "Unable to retrieve Universal Printing information"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "Unable to retrieve Universal Printing information"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	ElseIf($? -and $null -eq $RASPrinterSettings)
@@ -43690,15 +44529,21 @@ Function ProcessUniversalPrinting
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "No Universal Printing information was found"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "No Universal Printing information was found"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "No Universal Printing information was found"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	Else
@@ -44057,14 +44902,10 @@ Function OutputUniversalPrinterDriversSettings
 
 	Switch ($RASPrinterSettings.DriverAllowMode)
 	{
-		"AllowRedirUsingAnyDriver"
-			{$RASPrinterSettingsDriverAllowMode = "Allow redirection of printers using any driver"; Break}
-		"AllowRedirUsingSpecifiedDriver"
-			{$RASPrinterSettingsDriverAllowMode = "Allow redirection of printers using one of the following drivers"; Break}
-		"DoNotAllowRedirUsingSpecifiedDriver"
-			{$RASPrinterSettingsDriverAllowMode = "Don't allow redirection of printers that use one of the following drivers"; Break}
-		Default
-			{$RASPrinterSettingsDriverAllowMode = "Unable to determine RAS Printer Setting Driver Allow Mode: $($RASPrinterSettings.DriverAllowMode)"; Break}
+		"AllowRedirUsingAnyDriver"				{$RASPrinterSettingsDriverAllowMode = "Allow redirection of printers using any driver"; Break}
+		"AllowRedirUsingSpecifiedDriver"		{$RASPrinterSettingsDriverAllowMode = "Allow redirection of printers using one of the following drivers"; Break}
+		"DoNotAllowRedirUsingSpecifiedDriver"	{$RASPrinterSettingsDriverAllowMode = "Don't allow redirection of printers that use one of the following drivers"; Break}
+		Default									{$RASPrinterSettingsDriverAllowMode = "Unable to determine RAS Printer Setting Driver Allow Mode: $($RASPrinterSettings.DriverAllowMode)"; Break}
 	}
 	
 	If($RASPrinterSettingsDriverAllowMode -eq "Allow redirection of printers using any driver")
@@ -44491,15 +45332,21 @@ Function ProcessUniversalScanning
 		"
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "Unable to retrieve Universal Scanning information"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "Unable to retrieve Universal Scanning information"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "Unable to retrieve Universal Scanning information"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	ElseIf($? -and $null -eq $results)
@@ -44509,15 +45356,21 @@ Function ProcessUniversalScanning
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "No Universal Scanning information was found"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "No Universal Scanning information was found"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "No Universal Scanning information was found"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	Else
@@ -45121,15 +45974,21 @@ Function ProcessConnection
 		"
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "Unable to retrieve authentication information"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "Unable to retrieve authentication information"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "Unable to retrieve authentication information"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	ElseIf($? -and $null -eq $results)
@@ -45139,15 +45998,21 @@ Function ProcessConnection
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "No authentication information was found"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "No authentication information was found"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "No authentication information was found"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	Else
@@ -45167,7 +46032,9 @@ Function ProcessConnection
 		"
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "Unable to retrieve RAS Session settings information"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
@@ -45175,7 +46042,9 @@ Function ProcessConnection
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "Unable to retrieve RAS Session settings information"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	ElseIf($? -and $null -eq $results)
@@ -45185,15 +46054,21 @@ Function ProcessConnection
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "No RAS Session settings information was found"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "No RAS Session settings information was found"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "No RAS Session settings information was found"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	Else
@@ -45213,15 +46088,21 @@ Function ProcessConnection
 		"
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "Unable to retrieve Logon hours information"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "Unable to retrieve Logon hours information"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "Unable to retrieve Logon hours information"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	ElseIf($? -and $null -eq $results)
@@ -45231,15 +46112,21 @@ Function ProcessConnection
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "No Logon hours information was found"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "No Logon hours information was found"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "No Logon hours information was found"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	Else
@@ -45259,15 +46146,21 @@ Function ProcessConnection
 		"
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "Unable to retrieve Multi-Factor authentication information"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "Unable to retrieve Multi-Factor authentication information"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "Unable to retrieve Multi-Factor authentication information"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	ElseIf($? -and $null -eq $MFA)
@@ -45277,15 +46170,21 @@ Function ProcessConnection
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "No Multi-Factor authentication information was found"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "No Multi-Factor authentication information was found"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "No Multi-Factor authentication information was found"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	Else
@@ -45305,15 +46204,21 @@ Function ProcessConnection
 		"
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "Unable to retrieve SAML information"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "Unable to retrieve SAML information"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "Unable to retrieve SAML information"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	ElseIf($? -and $null -eq $SAML)
@@ -45323,15 +46228,21 @@ Function ProcessConnection
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "No SAML information was found"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "No SAML information was found"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "No SAML information was found"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	Else
@@ -45351,15 +46262,21 @@ Function ProcessConnection
 		"
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "Unable to retrieve Allowed devices information"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "Unable to retrieve Allowed devices information"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "Unable to retrieve Allowed devices information"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	ElseIf($? -and $null -eq $results)
@@ -45369,15 +46286,21 @@ Function ProcessConnection
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "No Allowed devices information was found"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "No Allowed devices information was found"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "No Allowed devices information was found"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	Else
@@ -53054,14 +53977,10 @@ Function OutputRASAllowedDevicesSetting
 	
 	Switch ($RASAllowedDevices.AllowClientMode)
 	{
-		"AllowAllClientsConnectToSystem"			
-			{$RASAllowedDevicesAllowClientMode = "Allow all clients to connect to the system"; Break}
-		"AllowSelectedClientsConnectToSystem"		
-			{$RASAllowedDevicesAllowClientMode = "Allow only the selected clients to connect to the system"; Break}
-		"AllowSelectedClientsListPublishedItems"	
-			{$RASAllowedDevicesAllowClientMode = "Allow only the selected clients to list the published items"; Break}
-		Default										
-			{$RASAllowedDevicesAllowClientMode = "Unable to determine Allow Client Mode: $($RASAllowedDevices.AllowClientMode)"; Break}
+		"AllowAllClientsConnectToSystem"			{$RASAllowedDevicesAllowClientMode = "Allow all clients to connect to the system"; Break}
+		"AllowSelectedClientsConnectToSystem"		{$RASAllowedDevicesAllowClientMode = "Allow only the selected clients to connect to the system"; Break}
+		"AllowSelectedClientsListPublishedItems"	{$RASAllowedDevicesAllowClientMode = "Allow only the selected clients to list the published items"; Break}
+		Default										{$RASAllowedDevicesAllowClientMode = "Unable to determine Allow Client Mode: $($RASAllowedDevices.AllowClientMode)"; Break}
 	}
 	
 	If($MSWord -or $PDF)
@@ -53279,15 +54198,21 @@ Function ProcessPolicies
 		"
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "Unable to retrieve Policies information"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "Unable to retrieve Policies information"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "Unable to retrieve Policies information"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	ElseIf($? -and $null -eq $Policies)
@@ -53297,15 +54222,21 @@ Function ProcessPolicies
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "No Policies information was found"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "No Policies information was found"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "No Policies information was found"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	Else
@@ -56562,10 +57493,10 @@ Function OutputPoliciesDetails
 				$ProxyServer = ""
 				Switch($Policy.ClientPolicy.Session.Network.ProxyType)
 				{
-					0	{$ProxyServer = "SOCKS4"; Break}
-					1	{$ProxyServer = "SOCKS4A"; Break}
-					2	{$ProxyServer = "SOCKS5"; Break}
-					3	{$ProxyServer = "HTTP 1.1"; Break}
+					0		{$ProxyServer = "SOCKS4"; Break}
+					1		{$ProxyServer = "SOCKS4A"; Break}
+					2		{$ProxyServer = "SOCKS5"; Break}
+					3		{$ProxyServer = "HTTP 1.1"; Break}
 					Default	{$ProxyServer = "Use proxy server type not found: $($Policy.ClientPolicy.Session.Network.ProxyType)"; Break}
 				}
 				
@@ -58327,15 +59258,21 @@ Function ProcessAdministration
 		"
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "Unable to retrieve administration information"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "Unable to retrieve administration information"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "Unable to retrieve administration information"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	ElseIf($? -and $null -eq $results)
@@ -58345,15 +59282,21 @@ Function ProcessAdministration
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "No administration information was found"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "No administration information was found"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "No administration information was found"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	Else
@@ -58375,15 +59318,21 @@ Function ProcessAdministration
 		"
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "Unable to retrieve Helpdesk information"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "Unable to retrieve Helpdesk information"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "Unable to retrieve Helpdesk information"
+			WriteHTMLLine 0 0 ""
 		}
 		$RASHelpdesk = $Null
 	}
@@ -58394,15 +59343,21 @@ Function ProcessAdministration
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "No Helpdesk information was found"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "No Helpdesk information was found"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "No Helpdesk information was found"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 
@@ -58418,15 +59373,21 @@ Function ProcessAdministration
 		"
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "Unable to retrieve Support information"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "Unable to retrieve Support information"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "Unable to retrieve Support information"
+			WriteHTMLLine 0 0 ""
 		}
 		$RASSupport = $Null
 	}
@@ -58437,15 +59398,21 @@ Function ProcessAdministration
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "No Support information was found"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "No Support information was found"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "No Support information was found"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 
@@ -58463,15 +59430,21 @@ Function ProcessAdministration
 		"
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "Unable to retrieve settings information"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "Unable to retrieve settings information"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "Unable to retrieve settings information"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	ElseIf($? -and $null -eq $RASsettings)
@@ -58481,15 +59454,21 @@ Function ProcessAdministration
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "No settings information was found"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "No settings information was found"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "No settings information was found"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	Else
@@ -58504,15 +59483,21 @@ Function ProcessAdministration
 			"
 			If($MSWord -or $PDF)
 			{
+				WriteWordLine 0 0 ""
 				WriteWordLine 0 0 "Unable to retrieve Proxy settings information"
+				WriteWordLine 0 0 ""
 			}
 			If($Text)
 			{
+				Line 0 ""
 				Line 0 "Unable to retrieve Proxy settings information"
+				Line 0 ""
 			}
 			If($HTML)
 			{
+				WriteHTMLLine 0 0 ""
 				WriteHTMLLine 0 0 "Unable to retrieve Proxy settings information"
+				WriteHTMLLine 0 0 ""
 			}
 		}
 		ElseIf($? -and $null -eq $RASProxySettings)
@@ -58522,15 +59507,21 @@ Function ProcessAdministration
 			" -ForegroundColor White
 			If($MSWord -or $PDF)
 			{
+				WriteWordLine 0 0 ""
 				WriteWordLine 0 0 "No Proxy settings information was found"
+				WriteWordLine 0 0 ""
 			}
 			If($Text)
 			{
+				Line 0 ""
 				Line 0 "No Proxy settings information was found"
+				Line 0 ""
 			}
 			If($HTML)
 			{
+				WriteHTMLLine 0 0 ""
 				WriteHTMLLine 0 0 "No Proxy settings information was found"
+				WriteHTMLLine 0 0 ""
 			}
 		}
 		OutputRASSettings $RASSettings $RASProxySettings
@@ -58546,15 +59537,21 @@ Function ProcessAdministration
 		"
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "Unable to retrieve mailbox settings information"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "Unable to retrieve mailbox settings information"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "Unable to retrieve mailbox settings information"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	ElseIf($? -and $null -eq $RASMailboxSettings)
@@ -58564,15 +59561,21 @@ Function ProcessAdministration
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "No mailbox settings information was found"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "No mailbox settings information was found"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "No mailbox settings information was found"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	Else
@@ -58590,15 +59593,21 @@ Function ProcessAdministration
 		"
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "Unable to retrieve Reporting settings information"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "Unable to retrieve Reporting settings information"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "Unable to retrieve Reporting settings information"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	ElseIf($? -and $null -eq $RASReportingSettings)
@@ -58608,15 +59617,21 @@ Function ProcessAdministration
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "No Reporting settings information was found"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "No Reporting settings information was found"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "No Reporting settings information was found"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	Else
@@ -58634,15 +59649,21 @@ Function ProcessAdministration
 		"
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "Unable to retrieve Performance Monitor settings information"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "Unable to retrieve Performance Monitor settings information"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "Unable to retrieve Performance Monitor settings information"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	ElseIf($? -and $null -eq $RASPerformanceMonitorSettings)
@@ -58652,15 +59673,21 @@ Function ProcessAdministration
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "No Performance Monitor settings information was found"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "No Performance Monitor settings information was found"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "No Performance Monitor settings information was found"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	Else
@@ -60150,15 +61177,21 @@ Function ProcessLicensing
 		"
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "Unable to retrieve licensing information"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "Unable to retrieve licensing information"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "Unable to retrieve licensing information"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	ElseIf($? -and $null -eq $results)
@@ -60166,15 +61199,21 @@ Function ProcessLicensing
 		Write-Warning "No licensing information was found"
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "No licensing information was found"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "No licensing information was found"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "No licensing information was found"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	Else

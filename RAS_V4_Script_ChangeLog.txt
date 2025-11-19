@@ -31,6 +31,12 @@
 #
 #	Fixed and refined the HTML, Text, and MSWord output
 #
+#	For the messages: 
+#		"Unable to find _____"
+#		"Unable to retrieve_____"
+#		"No _____ were found for _____"
+#		standardized how the messages were formatted
+#
 #	General code cleanup and fixed some typos
 #
 #	In Function OutputFarmSite, 
@@ -173,6 +179,8 @@
 #						That means a Server OS will not find a service named "Fax"
 #					Make the code consistent with all three output formats
 #			Settings
+#			RDP Printer
+#			Security
 #
 #	In Function ProcessAdministration
 #		Rename variable $RASFeatures to $RASHelpdesk
