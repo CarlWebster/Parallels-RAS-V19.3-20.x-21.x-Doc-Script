@@ -450,9 +450,9 @@
 	text document.
 .NOTES
 	NAME: RAS_Inventory_V4_0.ps1
-	VERSION: 4.00 Beta 28
+	VERSION: 4.00 Beta 29
 	AUTHOR: Carl Webster
-	LASTEDIT: November 19, 2025
+	LASTEDIT: November 21, 2025
 #>
 
 
@@ -836,9 +836,9 @@ $ErrorActionPreference    = 'SilentlyContinue'
 $Error.Clear()
 
 $Script:emailCredentials  = $Null
-$script:MyVersion         = '4.00 Beta 28'
+$script:MyVersion         = '4.00 Beta 29'
 $Script:ScriptName        = "RAS_Inventory_V4_0.ps1"
-$tmpdate                  = [datetime] "11/19/2025"
+$tmpdate                  = [datetime] "11/21/2025"
 $Script:ReleaseDate       = $tmpdate.ToUniversalTime().ToShortDateString()
 
 If($MSWord -eq $False -and $PDF -eq $False -and $Text -eq $False -and $HTML -eq $False)
@@ -8667,10 +8667,8 @@ Function OutputRDSessionHostsDetails
 				$ScriptInformation.Add(@{Data = "Inherit default settings"; Value = $RDSHost.InheritDefaultAppPackageSettings.ToString(); }) > $Null
 				$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
 
-				#If( $AppPackagesAssigned.PSObject.Properties[ 'ApplicationPackagesAssigned' ] -and 
-				#	$AppPackagesAssigned.ApplicationPackagesAssigned -is [array] -and 
-				#	$AppPackagesAssigned.ApplicationPackagesAssigned.Count ) #Guy Leech fixed this                                               
-				#{
+				If(validObject $AppPackagesAssigned ApplicationPackagesAssigned)
+				{
 					ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
 					{
 						$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4>$Null
@@ -8688,7 +8686,7 @@ Function OutputRDSessionHostsDetails
 							$ScriptInformation.Add(@{Data = "Unable to retrieve data for"; Value = $Result.PackageName; }) > $Null
 						}
 					}
-				#}
+				}
 
 				$Table = AddWordTable -Hashtable $ScriptInformation `
 				-Columns Data,Value `
@@ -8712,10 +8710,8 @@ Function OutputRDSessionHostsDetails
 				Line 4 "Inherit default settings`t: " $RDSHost.InheritDefaultAppPackageSettings.ToString()
 				Line 5 ""
 
-				#If( $AppPackagesAssigned.PSObject.Properties[ 'ApplicationPackagesAssigned' ] -and 
-				#	$AppPackagesAssigned.ApplicationPackagesAssigned -is [array] -and 
-				#	$AppPackagesAssigned.ApplicationPackagesAssigned.Count ) #Guy Leech fixed this                                               
-				#{
+				If(validObject $AppPackagesAssigned ApplicationPackagesAssigned)
+				{
 					ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
 					{
 						$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4>$Null
@@ -8733,7 +8729,7 @@ Function OutputRDSessionHostsDetails
 							Line 4 "Unable to retrieve data for: " $Result.PackageName
 						}
 					}
-				#}
+				}
 			}
 			If($HTML)
 			{
@@ -8741,10 +8737,8 @@ Function OutputRDSessionHostsDetails
 				$columnHeaders = @("Inherit default settings",($Script:htmlsb),$RDSHost.InheritDefaultAppPackageSettings.ToString(),$htmlwhite)
 				$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 
-				#If( $AppPackagesAssigned.PSObject.Properties[ 'ApplicationPackagesAssigned' ] -and 
-				#	$AppPackagesAssigned.ApplicationPackagesAssigned -is [array] -and 
-				#	$AppPackagesAssigned.ApplicationPackagesAssigned.Count ) #Guy Leech fixed this                                               
-				#{
+				If(validObject $AppPackagesAssigned ApplicationPackagesAssigned)
+				{
 					ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
 					{
 						$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4>$Null
@@ -8762,7 +8756,7 @@ Function OutputRDSessionHostsDetails
 							$rowdata += @(,("Unable to retrieve data for",($Script:htmlsb),$Result.PackageName,$htmlwhite))
 						}
 					}
-				#}
+				}
 
 				$msg = "Application Packages"
 				$columnWidths = @("200","275")
@@ -19322,10 +19316,8 @@ Function OutputVDIDetails
 					$ScriptInformation.Add(@{Data = "Inherit default settings"; Value = $VDIPool.InheritDefaultAppPackageSettings.ToString(); }) > $Null
 					$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
 
-					#If( $AppPackagesAssigned.PSObject.Properties[ 'ApplicationPackagesAssigned' ] -and 
-					#	$AppPackagesAssigned.ApplicationPackagesAssigned -is [array] -and 
-					#	$AppPackagesAssigned.ApplicationPackagesAssigned.Count ) #Guy Leech fixed this                                               
-					#{
+					If(validObject $AppPackagesAssigned ApplicationPackagesAssigned)
+					{
 						ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
 						{
 							$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4>$Null
@@ -19343,7 +19335,7 @@ Function OutputVDIDetails
 								$ScriptInformation.Add(@{Data = "Unable to retrieve data for"; Value = $Result.PackageName; }) > $Null
 							}
 						}
-					#}
+					}
 
 					$Table = AddWordTable -Hashtable $ScriptInformation `
 					-Columns Data,Value `
@@ -19367,10 +19359,8 @@ Function OutputVDIDetails
 					Line 4 "Inherit default settings`t: " $VDIPool.InheritDefaultAppPackageSettings.ToString()
 					Line 5 ""
 
-					#If( $AppPackagesAssigned.PSObject.Properties[ 'ApplicationPackagesAssigned' ] -and 
-					#	$AppPackagesAssigned.ApplicationPackagesAssigned -is [array] -and 
-					#	$AppPackagesAssigned.ApplicationPackagesAssigned.Count ) #Guy Leech fixed this                                               
-					#{
+					If(validObject $AppPackagesAssigned ApplicationPackagesAssigned)
+					{
 						ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
 						{
 							$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4>$Null
@@ -19388,7 +19378,7 @@ Function OutputVDIDetails
 								Line 4 "Unable to retrieve data for: " $Result.PackageName
 							}
 						}
-					#}
+					}
 				}
 				If($HTML)
 				{
@@ -19396,10 +19386,8 @@ Function OutputVDIDetails
 					$columnHeaders = @("Inherit default settings",($Script:htmlsb),$VDIPool.InheritDefaultAppPackageSettings.ToString(),$htmlwhite)
 					$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 
-					#If( $AppPackagesAssigned.PSObject.Properties[ 'ApplicationPackagesAssigned' ] -and 
-					#	$AppPackagesAssigned.ApplicationPackagesAssigned -is [array] -and 
-					#	$AppPackagesAssigned.ApplicationPackagesAssigned.Count ) #Guy Leech fixed this                                               
-					#{
+					If(validObject $AppPackagesAssigned ApplicationPackagesAssigned)
+					{
 						ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
 						{
 							$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4>$Null
@@ -19417,7 +19405,7 @@ Function OutputVDIDetails
 								$rowdata += @(,("Unable to retrieve data for",($Script:htmlsb),$Result.PackageName,$htmlwhite))
 							}
 						}
-					#}
+					}
 
 					$msg = "Application Packages"
 					$columnWidths = @("200","275")
@@ -21141,7 +21129,7 @@ Function OutputVDIDetails
 								}
 								$rowdata += @(,(
 									$DisplayName,$htmlwhite,
-									$ServiceName,$htmlwhite,
+									$Service,$htmlwhite,
 									$Aliases,$htmlwhite)
 								)
 							}
@@ -22000,10 +21988,10 @@ Function OutputVDIDetails
 				If($MSWord -or $PDF)
 				{
 					$ScriptInformation = New-Object System.Collections.ArrayList
-					$ScriptInformation.Add(@{Data = "Inherit default settings"; Value = $VDIPool.InheritDefaultPrinterSettings.ToString(); }) > $Null
+					$ScriptInformation.Add(@{Data = "Inherit default settings"; Value = $VDIPool.InheritDefaultRDPPrinterSettings.ToString(); }) > $Null
 					$ScriptInformation.Add(@{Data = "RDP Printer Name Format"; Value = $VDIPoolPrinterNameFormat; }) > $Null
 					$ScriptInformation.Add(@{Data = "Remove session number from printer name"; Value = $VDIPoolRemoveSessionNumberFromPrinter; }) > $Null
-					If($VDIPool.RemoveSessionNumberFromPrinterName)
+					If($VDIPool.RDPPrinter.RemoveSessionNumberFromPrinterName)
 					{
 						$ScriptInformation.Add(@{Data = "Remove client name from printer name"; Value = $VDIPoolRemoveClientNameFromPrinter; }) > $Null
 					}
@@ -22028,10 +22016,10 @@ Function OutputVDIDetails
 				}
 				If($Text)
 				{
-					Line 4 "Inherit default settings`t`t`t`t: " $VDIPool.InheritDefaultPrinterSettings.ToString()
+					Line 4 "Inherit default settings`t`t`t`t: " $VDIPool.InheritDefaultRDPPrinterSettings.ToString()
 					Line 4 "RDP Printer Name Format`t`t`t`t`t: " $VDIPoolPrinterNameFormat
 					Line 4 "Remove session number from printer name`t`t`t: " $VDIPoolRemoveSessionNumberFromPrinter
-					If($VDIPool.RemoveSessionNumberFromPrinterName)
+					If($VDIPool.RDPPrinter.RemoveSessionNumberFromPrinterName)
 					{
 						Line 4 "Remove client name from printer name`t`t`t: " $VDIPoolRemoveClientNameFromPrinter
 					}
@@ -22040,10 +22028,10 @@ Function OutputVDIDetails
 				If($HTML)
 				{
 					$rowdata = @()
-					$columnHeaders = @("Inherit default settings",($Script:htmlsb),$VDIPool.InheritDefaultPrinterSettings.ToString(),$htmlwhite)
+					$columnHeaders = @("Inherit default settings",($Script:htmlsb),$VDIPool.InheritDefaultRDPPrinterSettings.ToString(),$htmlwhite)
 					$rowdata += @(,("RDP Printer Name Format",($Script:htmlsb),$VDIPoolPrinterNameFormat,$htmlwhite))
 					$rowdata += @(,("Remove session number from printer name",($Script:htmlsb),$VDIPoolRemoveSessionNumberFromPrinter,$htmlwhite))
-					If($VDIPool.RemoveSessionNumberFromPrinterName)
+					If($VDIPool.RDPPrinter.RemoveSessionNumberFromPrinterName)
 					{
 						$rowdata += @(,("Remove client name from printer name",($Script:htmlsb),$VDIPoolRemoveClientNameFromPrinter,$htmlwhite))
 					}
@@ -26408,15 +26396,21 @@ Function OutputAVDDetails
 		"
 		If($MSWord -or $PDF)
 		{
+			WriteWordLine 0 0 ""
 			WriteWordLine 0 0 "Unable to retrieve Azure Virtual Desktops for Site $($Site.Name)"
+			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
+			Line 0 ""
 			Line 0 "Unable to retrieve Azure Virtual Desktops for Site $($Site.Name)"
+			Line 0 ""
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 0 0 ""
 			WriteHTMLLine 0 0 "Unable to retrieve Azure Virtual Desktops for Site $($Site.Name)"
+			WriteHTMLLine 0 0 ""
 		}
 	}
 	ElseIf($? -and $Null -eq $AVDs)
@@ -26447,67 +26441,182 @@ Function OutputAVDDetails
 	{
 		ForEach($AVD in $AVDs)
 		{
-			$AVDStatus = Get-RASAVDWorkspaceStatus -Name $AVD.Name -EA 0 4>$Null
+			$WorkspaceStatus = Get-RASAVDWorkspaceStatus -Name $AVD.Name -EA 0 4>$Null
 			
 			If(!$?)
 			{
-				Write-Warning "
-				`n
-				Unable to retrieve AVD Status for AVD $($AVD.Name)`
-				"
-				If($MSWord -or $PDF)
-				{
-					WriteWordLine 0 0 ""
-					WriteWordLine 0 0 "Unable to retrieve AVD Status for AVD $($AVD.Name)"
-					WriteWordLine 0 0 ""
-				}
-				If($Text)
-				{
-					Line 0 ""
-					Line 0 "Unable to retrieve AVD Status for AVD $($AVD.Name)"
-					Line 0 ""
-				}
-				If($HTML)
-				{
-					WriteHTMLLine 0 0 ""
-					WriteHTMLLine 0 0 "Unable to retrieve AVD Status for AVD $($AVD.Name)"
-					WriteHTMLLine 0 0 ""
-				}
+				$AVDStatus = "Unable to retrieve AVD Status"
 			}
-			ElseIf($? -and $Null -eq $AVDStatus)
+			ElseIf($? -and $Null -eq $WorkspaceStatus)
 			{
-				Write-Host "
-				No AVD Status retrieved for AVD $($AVD.Name)`
-				" -ForegroundColor White
-				If($MSWord -or $PDF)
-				{
-					WriteWordLine 0 0 "No AVD Status retrieved for AVD $($AVD.Name)"
-				}
-				If($Text)
-				{
-					Line 0 "No AVD Status retrieved for AVD $($AVD.Name)"
-				}
-				If($HTML)
-				{
-					WriteHTMLLine 0 0 "No AVD Status retrieved for AVD $($AVD.Name)"
-				}
+				$AVDStatus = "No AVD Status retrieved"
 			}
 			Else
 			{
-				$FullAVDStatus = GetRASStatus $AVDStatus.AgentState
+				$AVDStatus = $WorkspaceStatus.AgentState
+			}
+			
+			$AVDProvider = Get-RASProvider -Id $AVD.ProviderId  -EA 0 4>$Null
+			
+			If(!$?)
+			{
+				$AVDProviderName = "Unable to retrieve AVD Provider Name"
+			}
+			ElseIf($? -and $Null -eq $AVDStatus)
+			{
+				$AVDProviderName = "No AVD Provider Name retrieved"
+			}
+			Else
+			{
+				$AVDProviderName = $AVDProvider.Name
+			}
+			
+			If($MSWord -or $PDF)
+			{
+				WriteWordLine 3 0 "AVD $($AVD.Name)"
+			}
+			If($Text)
+			{
+				Line 2 "AVD $($AVD.Name)"
+			}
+			If($HTML)
+			{
+				WriteHTMLLine 3 0 "AVD $($AVD.Name)"
+			}
+			
+			If($MSWord -or $PDF)
+			{
+				$ScriptInformation = New-Object System.Collections.ArrayList
+				$ScriptInformation.Add(@{Data = "Name"; Value = $AVD.Name; }) > $Null
+				$ScriptInformation.Add(@{Data = "Enabled"; Value = $AVD.Enabled.ToString(); }) > $Null
+				$ScriptInformation.Add(@{Data = "Friendly name"; Value = $AVD.FriendlyName; }) > $Null
+				$ScriptInformation.Add(@{Data = "Description"; Value = $AVD.Description; }) > $Null
+				$ScriptInformation.Add(@{Data = "Status"; Value = $AVDStatus; }) > $Null
+				$ScriptInformation.Add(@{Data = "Provider"; Value = $AVDProviderName; }) > $Null
+				$ScriptInformation.Add(@{Data = "Resource group"; Value = $WorkspaceStatus.ResourceGroup; }) > $Null
+				$ScriptInformation.Add(@{Data = "Location"; Value = $WorkspaceStatus.Location; }) > $Null
+				$ScriptInformation.Add(@{Data = "Last modification by"; Value = $AVD.AdminLastMod; }) > $Null
+				$ScriptInformation.Add(@{Data = "Modified on"; Value = (Get-Date -UFormat "%c" $AVD.TimeLastMod); }) > $Null
+				$ScriptInformation.Add(@{Data = "Created by"; Value = $AVD.AdminCreate; }) > $Null
+				$ScriptInformation.Add(@{Data = "Created on"; Value = (Get-Date -UFormat "%c" $AVD.TimeCreate); }) > $Null
+				$ScriptInformation.Add(@{Data = "ID"; Value = $AVD.Id.ToString(); }) > $Null
+				
+				$Table = AddWordTable -Hashtable $ScriptInformation `
+				-Columns Data,Value `
+				-List `
+				-Format $wdTableGrid `
+				-AutoFit $wdAutoFitFixed;
 
-				If($MSWord -or $PDF)
-				{
-					WriteWordLine 3 0 "AVD $($AVD.Name)"
-				}
-				If($Text)
-				{
-					Line 2 "AVD $($AVD.Name)"
-				}
-				If($HTML)
-				{
-					WriteHTMLLine 3 0 "AVD $($AVD.Name)"
-				}
+				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+				$Table.Columns.Item(1).Width = 200;
+				$Table.Columns.Item(2).Width = 250;
+
+				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+				FindWordDocumentEnd
+				$Table = $Null
+				WriteWordLine 0 0 ""
+			}
+			If($Text)
+			{
+				Line 3 "Name`t`t`t: " $AVD.Name
+				Line 3 "Enabled`t`t`t: " $AVD.Enabled.ToString()
+				Line 3 "Friendly name`t`t: " $AVD.FriendlyName
+				Line 3 "Description`t`t: " $AVD.Description
+				Line 3 "Status`t`t: " $AVDStatus
+				Line 3 "Provider`t`t: " $AVDProviderName
+				Line 3 "Resource group`t`t: " $WorkspaceStatus.ResourceGroup
+				Line 3 "Location`t`t: " $WorkspaceStatus.Location
+				Line 3 "Last modification by`t: " $AVD.AdminLastMod
+				Line 3 "Modified on`t`t: " (Get-Date -UFormat "%c" $AVD.TimeLastMod)
+				Line 3 "Created by`t`t: " $AVD.AdminCreate
+				Line 3 "Created on`t`t: " (Get-Date -UFormat "%c" $AVD.TimeCreate)
+				Line 3 "ID`t`t`t: " $AVD.Id.ToString()
+				Line 0 ""
+			}
+			If($HTML)
+			{
+				$rowdata = @()
+				$columnHeaders = @("Name",($Script:htmlsb),$AVD.Name,$htmlwhite)
+				$rowdata += @(,("Enabled",($Script:htmlsb),$AVD.Enabled.ToString(),$htmlwhite))
+				$rowdata += @(,("Friendly name",($Script:htmlsb),$AVD.FriendlyName,$htmlwhite))
+				$rowdata += @(,("Description",($Script:htmlsb),$AVD.Description,$htmlwhite))
+				$rowdata += @(,("Status",($Script:htmlsb),$AVDStatus,$htmlwhite))
+				$rowdata += @(,("Provider",($Script:htmlsb),$AVDProviderName,$htmlwhite))
+				$rowdata += @(,("Resource group",($Script:htmlsb),$WorkspaceStatus.ResourceGroup,$htmlwhite))
+				$rowdata += @(,("Location",($Script:htmlsb),$WorkspaceStatus.Location,$htmlwhite))
+				$rowdata += @(,("Last modification by",($Script:htmlsb),$AVD.AdminLastMod,$htmlwhite))
+				$rowdata += @(,("Modified on",($Script:htmlsb),(Get-Date -UFormat "%c" $AVD.TimeLastMod),$htmlwhite))
+				$rowdata += @(,("Created by",($Script:htmlsb),$AVD.AdminCreate,$htmlwhite))
+				$rowdata += @(,("Created on",($Script:htmlsb),(Get-Date -UFormat "%c" $AVD.TimeCreate),$htmlwhite))
+				$rowdata += @(,("ID",($Script:htmlsb),$AVD.Id.ToString(),$htmlwhite))
+
+				$msg = ""
+				$columnWidths = @("200","275")
+				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+				WriteHTMLLine 0 0 ""
+			}
+			
+			#general
+			If($MSWord -or $PDF)
+			{
+				WriteWordLine 4 0 "General"
+
+				$ScriptInformation = New-Object System.Collections.ArrayList
+				$ScriptInformation.Add(@{Data = "Enable workspace in site"; Value = $AVD.Enabled.ToString(); }) > $Null
+				$ScriptInformation.Add(@{Data = "Name"; Value = $AVD.Name; }) > $Null
+				$ScriptInformation.Add(@{Data = "Friendly name"; Value = $AVD.FriendlyName; }) > $Null
+				$ScriptInformation.Add(@{Data = "Description"; Value = $AVD.Description; }) > $Null
+				$ScriptInformation.Add(@{Data = "Resource group"; Value = $WorkspaceStatus.ResourceGroup; }) > $Null
+				$ScriptInformation.Add(@{Data = "Location"; Value = $WorkspaceStatus.Location; }) > $Null
+				$ScriptInformation.Add(@{Data = "Provider"; Value = $AVDProviderName; }) > $Null
+				$Table = AddWordTable -Hashtable $ScriptInformation `
+				-Columns Data,Value `
+				-List `
+				-Format $wdTableGrid `
+				-AutoFit $wdAutoFitFixed;
+
+				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+				$Table.Columns.Item(1).Width = 200;
+				$Table.Columns.Item(2).Width = 250;
+
+				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+				FindWordDocumentEnd
+				$Table = $Null
+				WriteWordLine 0 0 ""
+			}
+			If($Text)
+			{
+				Line 3 "General"
+				Line 4 "Enable workspace in site: " $AVD.Enabled.ToString()
+				Line 4 "Name`t`t`t: " $AVD.Name
+				Line 4 "Friendly name`t`t: " $AVD.FriendlyName
+				Line 4 "Description`t`t: " $AVD.Description
+				Line 4 "Resource group`t`t: " $WorkspaceStatus.ResourceGroup
+				Line 4 "Location`t`t: " $WorkspaceStatus.Location
+				Line 4 "Provider`t`t: " $AVDProviderName
+				Line 0 ""
+			}
+			If($HTML)
+			{
+				$rowdata = @()
+				$columnHeaders = @("Enable workspace in site",($Script:htmlsb),$AVD.Enabled.ToString(),$htmlwhite)
+				$rowdata += @(,("Name",($Script:htmlsb),$AVD.Name,$htmlwhite))
+				$rowdata += @(,("Friendly name",($Script:htmlsb),$AVD.FriendlyName,$htmlwhite))
+				$rowdata += @(,("Description",($Script:htmlsb),$AVD.Description,$htmlwhite))
+				$rowdata += @(,("Resource group",($Script:htmlsb),$WorkspaceStatus.ResourceGroup,$htmlwhite))
+				$rowdata += @(,("Location",($Script:htmlsb),$WorkspaceStatus.Location,$htmlwhite))
+				$rowdata += @(,("Provider",($Script:htmlsb),$AVDProviderName,$htmlwhite))
+				
+				$msg = "General"
+				$columnWidths = @("200","275")
+				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+				WriteHTMLLine 0 0 ""
 			}
 		}
 	}
@@ -61554,8 +61663,8 @@ ProcessScriptEnd
 # SIG # Begin signature block
 # MIIthQYJKoZIhvcNAQcCoIItdjCCLXICAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQU6y4tvWED8a1B0MDh749bPRlj
-# s5eggibfMIIFjTCCBHWgAwIBAgIQDpsYjvnQLefv21DiCEAYWjANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUC3jmJwVPvReGDO9TNsGn42L9
+# xMyggibfMIIFjTCCBHWgAwIBAgIQDpsYjvnQLefv21DiCEAYWjANBgkqhkiG9w0B
 # AQwFADBlMQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYD
 # VQQLExB3d3cuZGlnaWNlcnQuY29tMSQwIgYDVQQDExtEaWdpQ2VydCBBc3N1cmVk
 # IElEIFJvb3QgQ0EwHhcNMjIwODAxMDAwMDAwWhcNMzExMTA5MjM1OTU5WjBiMQsw
@@ -61766,33 +61875,33 @@ ProcessScriptEnd
 # UzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/BgNVBAMTOERpZ2lDZXJ0IFRy
 # dXN0ZWQgRzQgQ29kZSBTaWduaW5nIFJTQTQwOTYgU0hBMzg0IDIwMjEgQ0ExAhAL
 # bN+2Z4EOKufLWhG6HUlwMAkGBSsOAwIaBQCgQDAZBgkqhkiG9w0BCQMxDAYKKwYB
-# BAGCNwIBBDAjBgkqhkiG9w0BCQQxFgQU/U/OTvqKzoKbvNTWfLsFRt0eyHswDQYJ
-# KoZIhvcNAQEBBQAEggIAbaiqBESsirDKEckByyjQP7O+0rb5YBDH9YHjxKphS8Hf
-# G+LV1Kq5Sa0aP52b14mSnCp6imCgr9VGCyfoI8l5cMZUf+V16XtkWZBNvabyLUPN
-# X0tg8yedOxq8G2GdsPF8sAMdtxLTYyXx6AJiDESDC6OfLzcRjcK3yNBd/ZP2Xywk
-# j7BfCROEOOJL5IthG2i0+CBwM6N0MGyCCOahZSAmmgc9UOj3WRk3tx3mAxqEUbc4
-# mHIYKY07RQJ5E7m7/lqMD4FnFt8MIY95oLF1VbNdPxOeUw5LTj3Tv4Ltw8zElL+0
-# 7nYGEoR9sMfHZ5SP65JRGgJALumLOuvzxVaySYRjBRHdSBu0Kya44Fe72RMOehwe
-# MAmmNoaZCieagg9MotoYCrjYtB84r62RyccTeFqLkGjjZ3QbJvToydvAW0T2SpoC
-# QHk920JElWNPvVLRx4sGg47aa7gBvwIWn/qmuFnXzu7xBhI83CuDN/XMTGvJCDqF
-# ar8DEL7nO4C6dJYHSfW7dnnrfNy9Pv+q9Yvqk4OnRakAjnOR5tGIJIU5YM3f9U7M
-# CiUwVNRGx0aYTvPaHnOTxcVBOaXZNzVEovXNUqExnrnb83T2mesIToPDcVhTJJQV
-# b9wrHKfWCt/64+rAXU6qTmViCRemJ+TN2jF36ct7BHqVb7E/YCDemC3BInQ4Ee2h
+# BAGCNwIBBDAjBgkqhkiG9w0BCQQxFgQUYPbosadTVnC/wEkC572vu2Vxi7swDQYJ
+# KoZIhvcNAQEBBQAEggIAIuHhUj9FWtMRFWGgLzu3yOrQK2Td4czDGom2y1LILoAU
+# 5PhXsO2W0tKheoFW5NCdrSdLAje4YFHqTyJtDqssHeZs9O9X4RKZwiFFt/G55iwO
+# QI3p28uu+k8lCxZeTSV6/rpg0tHg81ehLGaKAXeh/5huZ5ziZ75OuDIHyYAyuHf1
+# 6qaRp+kpc5J0rdCB7rMeGaJZTt6kfDItt3opPH6pOD83Wbt/2VSxiU5Estlqd0OB
+# CnUdpD9heFpAY+552ZYLF+mDjCTB65y+IE/izDRvYkQOT6upe8jKZNqI69uZUNjP
+# HpTPPjZqBOWgJMnlO7Uo/zmDY8dT5hy44NT4fu9eY8xnEyu1usDO18qhUDek7R74
+# zfDSuigjfmK9N2+LZnPEfu5XglAbqEeTgyVssiUtAYCpfAPan0LLXc1uTv6G3MPX
+# E8tCmlPUq/2DF/KfJCnulkGxQiGNEhhhE09fy6KwDcxZ+3OOc2fvB6J9d5H1yYnd
+# Bhyj9xNcBGIbswChoJ/LtynsbEFq3zUJvw/OMzzxiT38oH5+ZrGvgRTo+czeSFxd
+# 1nr5RwlAzVedNVFbu7cjejkgZqLL/UtclayrGXBbiGUjF/t5vw/gxYXO07ZsaPoj
+# 4CboQmRxSy2m5nZmv2nx19LBAMO2upnUXT30EhAI2Ik9u8Ky0V0Hvy+u2uA31Rmh
 # ggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8CAQEwfTBpMQswCQYDVQQGEwJVUzEX
 # MBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/BgNVBAMTOERpZ2lDZXJ0IFRydXN0
 # ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYgU0hBMjU2IDIwMjUgQ0ExAhAKgO8Y
 # S43xBYLRxHanlXRoMA0GCWCGSAFlAwQCAQUAoGkwGAYJKoZIhvcNAQkDMQsGCSqG
-# SIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjUxMTE5MjAzODM0WjAvBgkqhkiG9w0B
-# CQQxIgQgTbl+IacWPOO5jhz3ByDKDjXph5/+ZdBuBKPXDwf2cn0wDQYJKoZIhvcN
-# AQEBBQAEggIAJIZSCiU5ytqzlNTyTs9DCeFLGLTMASmRd0KB8dGZJFwqz0AwYWm9
-# Zd9UVWRgLtIiL5V7bjbfu12Ec2LNOlQRL986gWwsXg2vIWmCQwU+lHF12crqqRdG
-# WSQf0IzJzdAQPfwZkFjvRNr4ueP7zpshInxjEv6pQxEv5XEXSXI69xIkOPY6t6TZ
-# SjbRYGclxnKWue/KFArd2lzD0ipR85qdkIwvGsIi3e6npkPgxr6QZ+5Yz+pvmQaO
-# 8sUCNc13028RXdDj6pa13HcVmlJfBDY4sgfbzVBMjhclTp4VwWjppvyMMuI9h3iC
-# FSXaPu0o4ii4JL3ztWluPooqCDttB37cmDXP8eTs7sZ0zWFFNDCv0OZjLeqcWhEt
-# f/Aylz7B0tD72G++EaroYAwMMIR/9ZEYQKrdMZV/vjohXiunMYk5+zwQAT6S6iD9
-# W20ZovQhL2AnDN/7QB5G/6YQJs8F0PZfyCdAI9NNJzousOH7h7UVYGHSWRVb7I/R
-# +y2pc8fBlZp06fdLN5OgkTTQ2e97h+UsxtDBY340dr6BfLv93E4tzTvQXAFvcjZB
-# LQLBCsMZszQGPKQFiag3E9Orak5Sp+y9buV3uP1vfermkBGXd9IpG/oynKHcmEQg
-# GD2v9h+xHGUrFO6psIaK8tcaLFl7mHDAq9Fbw/b20KuW2FbRmwFkuCY=
+# SIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjUxMTIxMTc1MjAzWjAvBgkqhkiG9w0B
+# CQQxIgQgtmSUwVj5pbMrxNImeMcxo1U2E+mTtLprbUgIhRYX1QswDQYJKoZIhvcN
+# AQEBBQAEggIAWM4ZMAAgtiN85VxPw/NK4OoTKj5wT2eaQS0QlMLaeIzQg4cE8aT3
+# JlWxaNtTSukAFJsi8El+sbaWVG9ojQK564cuFcJ+SU91elry5v7pITn67dQVzJDS
+# ZvHOzL0SJXgxYJWOc6UOpQuzr+gkzZq12n30lNtl1rD3RYjOBTzq+bypGusM98DE
+# Wrd/GG8sUxdrf4kaI0rmGJ91DCgtF8UjZFdHX30K9ESkwFwE/NkPHfSBY3QfES1y
+# zsAacZe5BLt5WEtYX++c9Ox9mhbkaDSOQBq6uExjf7PvhhYsshCy1deJTN9LxlKN
+# 80n28XMmZAmH73Ja+g4DKtccsMivQ6sV2XrZqiPu0gPlsaJwVqq0zN/S5nFjrejM
+# jm+ePUqb/rfUPhg6MTKBXwLR5FlJJMKCyubdtjCnc5vpTwKELMHlixwPXAu1SavQ
+# bHh/4K0Z/u2xHwkoDOu4aloqbchG89442y6Go8JqjyQBDOs9yWP6+QuL1WC+iB+c
+# GEizhm/Th5qtMT8VMTJhgGQKOUASJjltVZuBzalfSjVemT63ImSqwvKjm52acbBA
+# JnipZnNqVZdHEfsoVRG9cxfI4jDmGig8JCrC9GJDjk1byltRQtTloreZ3WLfVBRi
+# qn95m1LBFCyZJP3zvWEIC5N4WBxQKvs6OdSkO2YSQxpC/JOUFkPmN24=
 # SIG # End signature block
