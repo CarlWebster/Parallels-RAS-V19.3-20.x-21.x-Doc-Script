@@ -8,7 +8,7 @@
 #Work on 3.0 started on 15-Nov-2022
 #Work on 4.0 started on September 24, 2024
 
-#Version 4.00 #Version 4.00 
+#Version 4.00 
 #
 #	Added new Functions:
 #		OutputSiteSummary
@@ -42,6 +42,11 @@
 #	In Function OutputFarmSite, 
 #		Add Farm Properties
 #		For RAS V20 and later, add Access addresses
+#
+#	In Function OutputApplicationPackagesDetails
+#		Add Application Packages
+#			General
+#			Certificate
 #
 #	In Function OutputLogonHours
 #		Add General data
@@ -147,7 +152,11 @@
 #				That means a Server OS will not find a service named "Fax"
 #			Make the code consistent with all three output formats
 #		Only output optimization data if optimization is enabled
-#		For Settings, add "Session readiness timeout"
+#		For Host pools:
+#			Add "Enabled"
+#			For HTML output, rename "Server" to "Name"
+#			Add Application packages
+#			Add Session readiness timeout
 #
 #	In Function OutputSAMLSetting, handle multiple SAML items
 #
@@ -161,6 +170,11 @@
 #	In Function OutputSiteSummary:
 #		Added basic information for Tenant Brokers
 #		Changed "VDI Host" to "Provider"
+#
+#	In Function OutputAVDDetails, add:
+#		Workspaces
+#			General
+#		Host pools
 #
 #	In Function OutputVDIDetails:
 #		For Host pools, add:
@@ -211,4 +225,3 @@
 #
 #	Working on updating Function OutputMFASetting
 #		Fixed issues with RADIUS output
-

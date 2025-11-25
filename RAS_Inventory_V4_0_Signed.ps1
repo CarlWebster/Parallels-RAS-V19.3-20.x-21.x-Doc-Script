@@ -450,9 +450,9 @@
 	text document.
 .NOTES
 	NAME: RAS_Inventory_V4_0.ps1
-	VERSION: 4.00 Beta 29
+	VERSION: 4.00 Beta 30
 	AUTHOR: Carl Webster
-	LASTEDIT: November 21, 2025
+	LASTEDIT: November 25, 2025
 #>
 
 
@@ -605,6 +605,11 @@ Param(
 #		Add Farm Properties
 #		For RAS V20 and later, add Access addresses
 #
+#	In Function OutputApplicationPackagesDetails
+#		Add Application Packages
+#			General
+#			Certificate
+#
 #	In Function OutputLogonHours
 #		Add General data
 #		Add logon hours schedule's criteria
@@ -709,7 +714,11 @@ Param(
 #				That means a Server OS will not find a service named "Fax"
 #			Make the code consistent with all three output formats
 #		Only output optimization data if optimization is enabled
-#		For Settings, add "Session readiness timeout"
+#		For Host pools:
+#			Add "Enabled"
+#			For HTML output, rename "Server" to "Name"
+#			Add Application packages
+#			Add Session readiness timeout
 #
 #	In Function OutputSAMLSetting, handle multiple SAML items
 #
@@ -723,6 +732,11 @@ Param(
 #	In Function OutputSiteSummary:
 #		Added basic information for Tenant Brokers
 #		Changed "VDI Host" to "Provider"
+#
+#	In Function OutputAVDDetails, add:
+#		Workspaces
+#			General
+#		Host pools
 #
 #	In Function OutputVDIDetails:
 #		For Host pools, add:
@@ -836,9 +850,9 @@ $ErrorActionPreference    = 'SilentlyContinue'
 $Error.Clear()
 
 $Script:emailCredentials  = $Null
-$script:MyVersion         = '4.00 Beta 29'
+$script:MyVersion         = '4.00 Beta 30'
 $Script:ScriptName        = "RAS_Inventory_V4_0.ps1"
-$tmpdate                  = [datetime] "11/21/2025"
+$tmpdate                  = [datetime] "11/25/2025"
 $Script:ReleaseDate       = $tmpdate.ToUniversalTime().ToShortDateString()
 
 If($MSWord -eq $False -and $PDF -eq $False -and $Text -eq $False -and $HTML -eq $False)
@@ -5020,7 +5034,7 @@ Function OutputSiteSummary
 	{
 		Write-Warning "
 		`n
-	Unable to retrieve Tenant Brokers for Site $($Site.Name)`
+		Unable to retrieve Tenant Brokers for Site $($Site.Name)`
 		"
 		If($MSWord -or $PDF)
 		{
@@ -5044,7 +5058,7 @@ Function OutputSiteSummary
 	ElseIf($? -and $Null -eq $TenantBrokers)
 	{
 		Write-Host "
-	No Tenant Brokers retrieved for Site $($Site.Name).
+		No Tenant Brokers retrieved for Site $($Site.Name).
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
@@ -11190,15 +11204,22 @@ Function OutputRDSessionHostsDetails
 							}
 							$RDSFileTransferChangeLocation = $GroupDefaults.FileTransferLockLocation.ToString()
 
-							Switch ($GroupDefaults.SessionReadinessTimeout)
+							If(ValidObject $GroupDefaults SessionReadinessTimeout)
 							{
-								25		{$RDSSessionReadinessTimeout = "25 seconds"; Break}
-								60		{$RDSSessionReadinessTimeout = "1 minute"; Break}
-								300		{$RDSSessionReadinessTimeout = "5 minutes"; Break}
-								3600	{$RDSSessionReadinessTimeout = "1 hour"; Break}
-								Default	{$RDSSessionReadinessTimeout = "Unable to determine session readiness timeout: $($GroupDefaults.SessionReadinessTimeout)"; Break}
+								Switch ($GroupDefaults.SessionReadinessTimeout)
+								{
+									25		{$RDSSessionReadinessTimeout = "25 seconds"; Break}
+									60		{$RDSSessionReadinessTimeout = "1 minute"; Break}
+									300		{$RDSSessionReadinessTimeout = "5 minutes"; Break}
+									3600	{$RDSSessionReadinessTimeout = "1 hour"; Break}
+									Default	{$RDSSessionReadinessTimeout = "Unable to determine session readiness timeout: $($GroupDefaults.SessionReadinessTimeout)"; Break}
+								}
 							}
-						
+							Else
+							{
+								$RDSSessionReadinessTimeout = ""
+							}
+							
 							#fixed the following missing variables in 2.52 thanks to Thomas Krampe
 							$RDSAllowRemoteExec             = $GroupDefaults.AllowRemoteExec.ToString()
 							$RDSUseRemoteApps               = $GroupDefaults.UseRemoteApps.ToString()
@@ -11305,13 +11326,20 @@ Function OutputRDSessionHostsDetails
 									$RDSPreferredPublishingAgent = (Get-RASBroker -Id $RDSDefaults.PreferredBrokerId -EA 0 4>$Null).Server
 								}
 
-								Switch ($RDSDefaults.SessionReadinessTimeout)
+								If(ValidObject $RDSDefaults SessionReadinessTimeout)
 								{
-									25		{$RDSSessionReadinessTimeout = "25 seconds"; Break}
-									60		{$RDSSessionReadinessTimeout = "1 minute"; Break}
-									300		{$RDSSessionReadinessTimeout = "5 minutes"; Break}
-									3600	{$RDSSessionReadinessTimeout = "1 hour"; Break}
-									Default	{$RDSSessionReadinessTimeout = "Unable to determine session readiness timeout: $($RDSDefaults.SessionReadinessTimeout)"; Break}
+									Switch ($RDSDefaults.SessionReadinessTimeout)
+									{
+										25		{$RDSSessionReadinessTimeout = "25 seconds"; Break}
+										60		{$RDSSessionReadinessTimeout = "1 minute"; Break}
+										300		{$RDSSessionReadinessTimeout = "5 minutes"; Break}
+										3600	{$RDSSessionReadinessTimeout = "1 hour"; Break}
+										Default	{$RDSSessionReadinessTimeout = "Unable to determine session readiness timeout: $($RDSDefaults.SessionReadinessTimeout)"; Break}
+									}
+								}
+								Else
+								{
+									$RDSSessionReadinessTimeout = ""
 								}
 						
 								$RDSAllowRemoteExec             = $RDSDefaults.AllowRemoteExec.ToString()
@@ -11440,13 +11468,20 @@ Function OutputRDSessionHostsDetails
 						$RDSPreferredPublishingAgent = (Get-RASBroker -Id $RDSHost.PreferredBrokerId -EA 0 4>$Null).Server
 					}
 
-					Switch ($RDSHost.SessionReadinessTimeout)
+					If(ValidObject $RDSHost SessionReadinessTimeout)
 					{
-						25		{$RDSSessionReadinessTimeout = "25 seconds"; Break}
-						60		{$RDSSessionReadinessTimeout = "1 minute"; Break}
-						300		{$RDSSessionReadinessTimeout = "5 minutes"; Break}
-						3600	{$RDSSessionReadinessTimeout = "1 hour"; Break}
-						Default	{$RDSSessionReadinessTimeout = "Unable to determine session readiness timeout: $($RDSHost.SessionReadinessTimeout)"; Break}
+						Switch ($RDSHost.SessionReadinessTimeout)
+						{
+							25		{$RDSSessionReadinessTimeout = "25 seconds"; Break}
+							60		{$RDSSessionReadinessTimeout = "1 minute"; Break}
+							300		{$RDSSessionReadinessTimeout = "5 minutes"; Break}
+							3600	{$RDSSessionReadinessTimeout = "1 hour"; Break}
+							Default	{$RDSSessionReadinessTimeout = "Unable to determine session readiness timeout: $($RDSHost.SessionReadinessTimeout)"; Break}
+						}
+					}
+					Else
+					{
+						$RDSSessionReadinessTimeout = ""
 					}
 						
 					$RDSAllowRemoteExec             = $RDSHost.AllowRemoteExec.ToString()
@@ -11550,13 +11585,20 @@ Function OutputRDSessionHostsDetails
 					$RDSPreferredPublishingAgent = (Get-RASBroker -Id $RDSHost.PreferredBrokerId -EA 0 4>$Null).Server
 				}
 
-				Switch ($RDSHost.SessionReadinessTimeout)
+				If(ValidObject $RDSHost SessionReadinessTimeout)
 				{
-					25		{$RDSSessionReadinessTimeout = "25 seconds"; Break}
-					60		{$RDSSessionReadinessTimeout = "1 minute"; Break}
-					300		{$RDSSessionReadinessTimeout = "5 minutes"; Break}
-					3600	{$RDSSessionReadinessTimeout = "1 hour"; Break}
-					Default	{$RDSSessionReadinessTimeout = "Unable to determine session readiness timeout: $($RDSHost.SessionReadinessTimeout)"; Break}
+					Switch ($RDSHost.SessionReadinessTimeout)
+					{
+						25		{$RDSSessionReadinessTimeout = "25 seconds"; Break}
+						60		{$RDSSessionReadinessTimeout = "1 minute"; Break}
+						300		{$RDSSessionReadinessTimeout = "5 minutes"; Break}
+						3600	{$RDSSessionReadinessTimeout = "1 hour"; Break}
+						Default	{$RDSSessionReadinessTimeout = "Unable to determine session readiness timeout: $($RDSHost.SessionReadinessTimeout)"; Break}
+					}
+				}
+				Else
+				{
+					$RDSSessionReadinessTimeout = ""
 				}
 						
 				$RDSAllowRemoteExec             = $RDSHost.AllowRemoteExec.ToString()
@@ -11836,15 +11878,15 @@ Function OutputRDSessionHostsDetails
 	Write-Verbose "$(Get-Date -Format G): `tOutput RD Session Host Pools"
 	If($MSWord -or $PDF)
 	{
-		WriteWordLine 2 0 "Host Pools"
+		WriteWordLine 3 0 "Host Pools"
 	}
 	If($Text)
 	{
-		Line 1 "Host Pools"
+		Line 2 "Host Pools"
 	}
 	If($HTML)
 	{
-		WriteHTMLLine 2 0 "Host Pools"
+		WriteHTMLLine 3 0 "Host Pools"
 	}
 
 	$RDSGroups = Get-RASRDSHostPool -Siteid $Site.Id -EA 0 4> $Null
@@ -11917,9 +11959,22 @@ Function OutputRDSessionHostsDetails
 			
 			If($MSWord -or $PDF)
 			{
-				WriteWordLine 3 0 "Pool $($RDSGroup.Name)"
+				WriteWordLine 4 0 "Pool $($RDSGroup.Name)"
+			}
+			If($Text)
+			{
+				Line 4 "Name`t`t`t: " $RDSGroup.Name
+			}
+			If($HTML)
+			{
+				WriteHTMLLine 4 0 "Pool $($RDSGroup.Name)"
+			}
+
+			If($MSWord -or $PDF)
+			{
 				$ScriptInformation = New-Object System.Collections.ArrayList
 				$ScriptInformation.Add(@{Data = "Name"; Value = $RDSGroup.Name; }) > $Null
+				$ScriptInformation.Add(@{Data = "Enabled"; Value = $RDSGroup.Enabled.ToString(); }) > $Null
 				$ScriptInformation.Add(@{Data = "Members"; Value = $RDSGroup.RDSIds.Count.ToString(); }) > $Null
 				$ScriptInformation.Add(@{Data = "Description"; Value = $RDSGroup.Description; }) > $Null
 				$ScriptInformation.Add(@{Data = "Status"; Value = $RDSGroupAgentState; }) > $Null
@@ -11949,22 +12004,22 @@ Function OutputRDSessionHostsDetails
 			}
 			If($Text)
 			{
-				Line 2 "Name`t`t`t: " $RDSGroup.Name
-				Line 2 "Members`t`t`t: " $RDSGroup.RDSIds.Count.ToString()
-				Line 2 "Description`t`t: " $RDSGroup.Description
-				Line 2 "Status`t`t`t: " $RDSGroupAgentState
-				Line 2 "Last modification by`t: " $RDSGroup.AdminLastMod
-				Line 2 "Modified on`t`t: " (Get-Date -UFormat "%c" $RDSGroup.TimeLastMod)
-				Line 2 "Created by`t`t: " $RDSGroup.AdminCreate
-				Line 2 "Created on`t`t: " (Get-Date -UFormat "%c" $RDSGroup.TimeCreate)
-				Line 2 "ID`t`t`t: " $RDSGroup.Id.ToString()
+				Line 4 "Enabled`t`t`t: " $RDSGroup.Enabled.ToString()
+				Line 4 "Members`t`t`t: " $RDSGroup.RDSIds.Count.ToString()
+				Line 4 "Description`t`t: " $RDSGroup.Description
+				Line 4 "Status`t`t`t: " $RDSGroupAgentState
+				Line 4 "Last modification by`t: " $RDSGroup.AdminLastMod
+				Line 4 "Modified on`t`t: " (Get-Date -UFormat "%c" $RDSGroup.TimeLastMod)
+				Line 4 "Created by`t`t: " $RDSGroup.AdminCreate
+				Line 4 "Created on`t`t: " (Get-Date -UFormat "%c" $RDSGroup.TimeCreate)
+				Line 4 "ID`t`t`t: " $RDSGroup.Id.ToString()
 				Line 0 ""
 			}
 			If($HTML)
 			{
-				WriteHTMLLine 3 0 "Pool $($RDSGroup.Name)"
 				$rowdata = @()
-				$columnHeaders = @("Server",($Script:htmlsb),$RDSGroup.Name,$htmlwhite)
+				$columnHeaders = @("Name",($Script:htmlsb),$RDSGroup.Name,$htmlwhite)
+				$rowdata += @(,("Enabled",($Script:htmlsb),$RDSGroup.Enabled.ToString(),$htmlwhite))
 				$rowdata += @(,("Members",($Script:htmlsb),$RDSGroup.RDSIds.Count.ToString(),$htmlwhite))
 				$rowdata += @(,("Description",($Script:htmlsb),$RDSGroup.Description,$htmlwhite))
 				$rowdata += @(,("Status",($Script:htmlsb),$RDSGroupAgentState,$htmlwhite))
@@ -11984,11 +12039,11 @@ Function OutputRDSessionHostsDetails
 			
 			If($MSWord -or $PDF)
 			{
-				WriteWordLine 4 0 "General"
+				WriteWordLine 5 0 "General"
 			}
 			If($Text)
 			{
-				Line 2 "General"
+				Line 4 "General"
 			}
 			If($HTML)
 			{
@@ -12025,9 +12080,9 @@ Function OutputRDSessionHostsDetails
 			}
 			If($Text)
 			{
-				Line 3 "Enable host pool in site: " $RDSGroup.Enabled.ToString()
-				Line 3 "Name`t`t`t: " $RDSGroup.Name
-				Line 3 "Description`t`t: " $RDSGroup.Description
+				Line 5 "Enable host pool in site: " $RDSGroup.Enabled.ToString()
+				Line 5 "Name`t`t`t: " $RDSGroup.Name
+				Line 5 "Description`t`t: " $RDSGroup.Description
 				Line 0 ""
 			}
 			If($HTML)
@@ -12047,11 +12102,11 @@ Function OutputRDSessionHostsDetails
 			
 			If($MSWord -or $PDF)
 			{
-				WriteWordLine 4 0 "Hosts"
+				WriteWordLine 5 0 "Hosts"
 			}
 			If($Text)
 			{
-				Line 2 "Hosts"
+				Line 4 "Hosts"
 			}
 			If($HTML)
 			{
@@ -12142,25 +12197,25 @@ Function OutputRDSessionHostsDetails
 						{
 							$AgentStatus = GetRASStatus $Status.AgentState
 							$cnt++
-							Line 3 "Server`t`t: " $RDSGroupMember.Server
-							Line 3 "Status`t`t: " $AgentStatus
-							Line 3 "Logon status`t: " $RDSGroupMemberLogonStatus
-							Line 3 "Description`t: " $RDSGroupMember.Description
-							Line 3 "Sessions`t: " $Status.ActiveSessions.ToString()
+							Line 5 "Server`t`t: " $RDSGroupMember.Server
+							Line 5 "Status`t`t: " $AgentStatus
+							Line 5 "Logon status`t: " $RDSGroupMemberLogonStatus
+							Line 5 "Description`t: " $RDSGroupMember.Description
+							Line 5 "Sessions`t: " $Status.ActiveSessions.ToString()
 							If($RDSGroupMembers.Count -gt 1)
 							{
-								Line 3 ""
+								Line 5 ""
 							}
 						}
 						Else
 						{
-							Line 3 "Server`t`t: " "Error retrieving server $($RDSGroupMember.Server) status"
+							Line 5 "Server`t`t: " "Error retrieving server $($RDSGroupMember.Server) status"
 						}
 					}
 				}
 				Else
 				{
-					Line 3 "Host Pool Members`t`t: " "No Host Pool Members Found"
+					Line 5 "Host Pool Members`t`t: " "No Host Pool Members Found"
 				}
 				Line 0 ""
 			}
@@ -12225,11 +12280,11 @@ Function OutputRDSessionHostsDetails
 			
 			If($MSWord -or $PDF)
 			{
-				WriteWordLine 4 0 "User profile"
+				WriteWordLine 5 0 "User profile"
 			}
 			If($Text)
 			{
-				Line 2 "User profile"
+				Line 4 "User profile"
 			}
 			If($HTML)
 			{
@@ -13142,8 +13197,8 @@ Function OutputRDSessionHostsDetails
 			}
 			If($Text)
 			{
-				Line 3 "Inherit default settings`t`t`t`t: " $RDSGroup.InheritDefaultUserProfileSettings.ToString()
-				Line 3 "Technology`t`t`t`t`t`t: " $RDSTechnology
+				Line 5 "Inherit default settings`t`t`t`t: " $RDSGroup.InheritDefaultUserProfileSettings.ToString()
+				Line 5 "Technology`t`t`t`t`t`t: " $RDSTechnology
 
 				If($RDSTechnology -eq "Do not manage by RAS")
 				{
@@ -13151,62 +13206,62 @@ Function OutputRDSessionHostsDetails
 				}
 				ElseIf($RDSTechnology -eq "User profile disk")
 				{
-					Line 3 "Settings"
-					Line 4 "UPD State`t`t`t`t`t: " $RDSUPDState
-					Line 4 "Location of UPD`t`t`t`t`t: " $RDSUPDLocation
-					Line 4 "Maximum size (in GB)`t`t`t`t: " $RDSUPDSize
-					Line 4 "User profile disks data settings..."
+					Line 5 "Settings"
+					Line 6 "UPD State`t`t`t`t`t: " $RDSUPDState
+					Line 6 "Location of UPD`t`t`t`t`t: " $RDSUPDLocation
+					Line 6 "Maximum size (in GB)`t`t`t`t: " $RDSUPDSize
+					Line 6 "User profile disks data settings..."
 					
 					If($RDSUPDRoamingMode -eq "Exclude")
 					{
-						Line 5 "Store all user settings and data on the user profile disk"
-						Line 5 "Exclude the following folders"
+						Line 7 "Store all user settings and data on the user profile disk"
+						Line 7 "Exclude the following folders"
 						ForEach($item in $RDSUPDExcludeFilePath)
 						{
-							Line 6 "Path: $item Type: File"
+							Line 8 "Path: $item Type: File"
 						}
 						
 						ForEach($item in $RDSUPDExcludeFolderPath)
 						{
-							Line 6 "Path: $item Type: Folder"
+							Line 8 "Path: $item Type: Folder"
 						}
 					}
 					ElseIf($RDSUPDRoamingMode -eq "Include")
 					{
-						Line 5 "Store only the following folders on the user profile disk"
-						Line 5 "All other folders in the user profile will not be preserved"
+						Line 7 "Store only the following folders on the user profile disk"
+						Line 7 "All other folders in the user profile will not be preserved"
 						ForEach($item in $RDSUPDIncludeFolderPath)
 						{
-							Line 6 "Path: $item Type: Folder"
+							Line 8 "Path: $item Type: Folder"
 						}
-						Line 5 "Include the following folders"
+						Line 7 "Include the following folders"
 						ForEach($item in $RDSUPDIncludeFilePath)
 						{
-							Line 6 "Path: $item Type: File"
+							Line 8 "Path: $item Type: File"
 						}
 					}
 					Else
 					{
-						Line 5 "Unable to determine UPD Roaming Mode"
+						Line 7 "Unable to determine UPD Roaming Mode"
 					}
 				}
 				ElseIf($RDSTechnology -eq "FSLogix")
 				{
-					Line 3 "Deployment method`t`t`t`t`t: " $FSLogixDeploymentSettingsDeploymentMethod
+					Line 5 "Deployment method`t`t`t`t`t: " $FSLogixDeploymentSettingsDeploymentMethod
 					If($FSLogixDeploymentSettings.InstallType -eq "Online")
 					{
-						Line 3 "URL`t`t`t`t`t`t`t: " $FSLogixDeploymentSettingsInstallOnlineURL
+						Line 5 "URL`t`t`t`t`t`t`t: " $FSLogixDeploymentSettingsInstallOnlineURL
 					}
 					ElseIf($FSLogixDeploymentSettings.InstallType -eq "NetworkDrive")
 					{
-						Line 10 ": " $FSLogixDeploymentSettingsNetworkDrivePath
+						Line 12 ": " $FSLogixDeploymentSettingsNetworkDrivePath
 					}
 					ElseIf($FSLogixDeploymentSettings.InstallType -eq "UploadInstall")
 					{
-						Line 10 ": " $FSLogixDeploymentSettingsInstallerFileName
+						Line 12 ": " $FSLogixDeploymentSettingsInstallerFileName
 					}
-					Line 3 "Settings"
-					Line 4 "Location type`t`t`t`t`t: " $FSLogixLocationType
+					Line 5 "Settings"
+					Line 6 "Location type`t`t`t`t`t: " $FSLogixLocationType
 					
 					$cnt = -1
 					ForEach($item in $FSLogixLocationOfProfileDisks)
@@ -13215,22 +13270,22 @@ Function OutputRDSessionHostsDetails
 						
 						If($cnt -eq 0)
 						{
-							Line 4 "Location of profile disks`t`t`t: " $item
+							Line 6 "Location of profile disks`t`t`t: " $item
 						}
 						Else
 						{
-							Line 10 "  " $item
+							Line 12 "  " $item
 						}
 					}
-					Line 4 "Profile disk format`t`t`t`t: " $FSLogixProfileDiskFormat
-					Line 4 "Allocation type`t`t`t`t`t: " $FSLogixAllocationType
-					Line 4 "Default size`t`t`t`t`t: " "$FSLogixDefaultSize GB"
-					Line 3 "Additional settings"
-					Line 4 "Users and Groups"
+					Line 6 "Profile disk format`t`t`t`t: " $FSLogixProfileDiskFormat
+					Line 6 "Allocation type`t`t`t`t`t: " $FSLogixAllocationType
+					Line 6 "Default size`t`t`t`t`t: " "$FSLogixDefaultSize GB"
+					Line 5 "Additional settings"
+					Line 6 "Users and Groups"
 					
 					If($FSLogixSettingsUserInclusionList.Count -eq 0)
 					{
-						Line 5 "User Inclusion List`t`t`t: " "None"
+						Line 7 "User Inclusion List`t`t`t: " "None"
 					}
 					Else
 					{
@@ -13241,18 +13296,18 @@ Function OutputRDSessionHostsDetails
 							
 							If($cnt -eq 0)
 							{
-								Line 5 "User Inclusion List`t`t`t: " "User: $($item.Account)  Type: $($item.Type)"
+								Line 7 "User Inclusion List`t`t`t: " "User: $($item.Account)  Type: $($item.Type)"
 							}
 							Else
 							{
-								Line 10 "  " "User: $($item.Account)  Type: $($item.Type)"
+								Line 12 "  " "User: $($item.Account)  Type: $($item.Type)"
 							}
 						}
 					}
 
 					If($FSLogixSettingsUserExclusionList.Count -eq 0)
 					{
-						Line 5 "User Exclusion List`t`t`t: " "None"
+						Line 7 "User Exclusion List`t`t`t: " "None"
 					}
 					Else
 					{
@@ -13263,16 +13318,16 @@ Function OutputRDSessionHostsDetails
 							
 							If($cnt -eq 0)
 							{
-								Line 5 "User Exclusion List`t`t`t: " "User: $($item.Account)  Type: $($item.Type)"
+								Line 7 "User Exclusion List`t`t`t: " "User: $($item.Account)  Type: $($item.Type)"
 							}
 							Else
 							{
-								Line 10 "  " "User: $($item.Account)  Type: $($item.Type)"
+								Line 12 "  " "User: $($item.Account)  Type: $($item.Type)"
 							}
 						}
 					}
-					Line 4 "Folders"
-					Line 5 "Customize profile folders`t`t: " $FSLogixSettingsCustomizeProfileFolders.ToString()
+					Line 6 "Folders"
+					Line 7 "Customize profile folders`t`t: " $FSLogixSettingsCustomizeProfileFolders.ToString()
 					If($FSLogixSettingsCustomizeProfileFolders)
 					{
 						If($ExcludedCommonFolders.Count -gt 0)
@@ -13284,27 +13339,27 @@ Function OutputRDSessionHostsDetails
 								
 								If($cnt -eq 0)
 								{
-									Line 6 "Exclude Common Folders`t`t: " $item
+									Line 8 "Exclude Common Folders`t`t: " $item
 								}
 								Else
 								{
-									Line 10 "  " $item
+									Line 12 "  " $item
 								}
 							}
 						}
 						Else
 						{
-							Line 6 "Exclude Common Folders`t`t: None"
+							Line 8 "Exclude Common Folders`t`t: None"
 						}
 					}
 					
 					If($FSLogixSettingsFolderInclusionList.Count -eq 0)
 					{
-						Line 5 "Folder Inclusion List`t`t`t: " "None"
+						Line 7 "Folder Inclusion List`t`t`t: " "None"
 					}
 					Else
 					{
-						Line 5 "Folder Inclusion List"
+						Line 7 "Folder Inclusion List"
 						$cnt = -1
 						ForEach($item in $FSLogixSettingsFolderInclusionList)
 						{
@@ -13312,22 +13367,22 @@ Function OutputRDSessionHostsDetails
 							
 							If($cnt -eq 0)
 							{
-								Line 6 "Folder`t`t`t`t: " $item
+								Line 8 "Folder`t`t`t`t: " $item
 							}
 							Else
 							{
-								Line 10 "  " $item
+								Line 12 "  " $item
 							}
 						}
 					}
 
 					If($FSLogixSettingsFolderExclusionList.Count -eq 0)
 					{
-						Line 5 "Folder Exclusion List`t`t`t: " "None"
+						Line 7 "Folder Exclusion List`t`t`t: " "None"
 					}
 					Else
 					{
-						Line 5 "Folder Exclusion List"
+						Line 7 "Folder Exclusion List"
 						$cnt = -1
 						ForEach($item in $FSLogixSettingsFolderExclusionList)
 						{
@@ -13344,45 +13399,45 @@ Function OutputRDSessionHostsDetails
 							
 							If($cnt -eq 0)
 							{
-								Line 6 "Folder`t`t`t`t: " "$($item.Folder) Copy base: $CopyBase Copy back: $CopyBack"
+								Line 8 "Folder`t`t`t`t: " "$($item.Folder) Copy base: $CopyBase Copy back: $CopyBack"
 							}
 							Else
 							{
-								Line 10 "  " "$($item.Folder) Copy base: $CopyBase Copy back: $CopyBack"
+								Line 12 "  " "$($item.Folder) Copy base: $CopyBase Copy back: $CopyBack"
 							}
 						}
 					}
 					
-					Line 4 "Advanced"
-					Line 5 "FSLogix Setting                                      Value"
-					Line 5 "======================================================================================"
+					Line 6 "Advanced"
+					Line 7 "FSLogix Setting                                      Value"
+					Line 7 "======================================================================================"
 					#      "Swap SID and username in profile directory names     Redirect TEMP, TMP, and INetCache"
-					Line 5 "Access network as computer object                    $($FSLogixAS_AccessNetworkAsComputerObject)"
-					Line 5 "Custom SDDL for profile directory                    $($FSLogixAS_ProfileDirSDDL)"
-					Line 5 "Delay between locked VHD(X) retries                  $($FSLogixAS_LockedRetryInterval)"
-					Line 5 "Delete local profile when loading from VHD           $($FSLogixAS_DeleteLocalProfileWhenVHDShouldApply)"
-					Line 5 "Diff disk parent folder path                         $($FSLogixAS_DiffDiskParentFolderPath)"
-					Line 5 "Do not create a folder for new profiles              $($FSLogixAS_NoProfileContainingFolder)"
-					Line 5 "Enable Cached mode for Outlook                       $($FSLogixAS_OutlookCachedMode)"
-					Line 5 "Keep local profiles                                  $($FSLogixAS_KeepLocalDir)"
-					Line 5 "Naming pattern for new VHD(X) files                  $($FSLogixAS_VHDNamePattern)"
-					Line 5 "Number of locked VHD(X) retries                      $($FSLogixAS_LockedRetryCount)"
-					Line 5 "Prevent logons with failures                         $($FSLogixAS_PreventLoginWithFailure)"
-					Line 5 "Prevent logons with temp profiles                    $($FSLogixAS_PreventLoginWithTempProfile)"
-					Line 5 "Profile folder naming pattern                        $($FSLogixAS_SIDDirNameMatch)"
-					Line 5 "Profile type                                         $($FSLogixAS_ProfileType)"
-					Line 5 "Profile VHD(X) file matching pattern                 $($FSLogixAS_VHDNameMatch)"
-					Line 5 "Re-attach interval                                   $($FSLogixAS_ReAttachIntervalSeconds)"
-					Line 5 "Re-attach retry limit                                $($FSLogixAS_ReAttachRetryCount)"
-					Line 5 "Remove duplicate OST files on logoff                 $($FSLogixAS_RemoveOrphanedOSTFilesOnLogoff)"
-					Line 5 "SDDL used when attaching the VHD                     $($FSLogixAS_AttachVHDSDDL)"
-					Line 5 "Search roaming feature mode                          $($FSLogixAS_RoamSearch)"
-					Line 5 "Swap SID and username in profile directory names     $($FSLogixAS_FlipFlopProfileDirectoryName)"
-					Line 5 "Temporary folders redirection mode                   $($FSLogixAS_SetTempToLocalPath)"
-					Line 5 "Use SDDL on creation of SID containing folder        $($FSLogixAS_SIDDirSDDL)"
-					Line 5 "User-to-Profile matching pattern                     $($FSLogixAS_SIDDirNamePattern)"
-					Line 5 "VHDX sector size                                     $($FSLogixAS_VHDXSectorSize)"
-					Line 5 "Volume wait time                                     $($FSLogixAS_VolumeWaitTimeMS)"
+					Line 7 "Access network as computer object                    $($FSLogixAS_AccessNetworkAsComputerObject)"
+					Line 7 "Custom SDDL for profile directory                    $($FSLogixAS_ProfileDirSDDL)"
+					Line 7 "Delay between locked VHD(X) retries                  $($FSLogixAS_LockedRetryInterval)"
+					Line 7 "Delete local profile when loading from VHD           $($FSLogixAS_DeleteLocalProfileWhenVHDShouldApply)"
+					Line 7 "Diff disk parent folder path                         $($FSLogixAS_DiffDiskParentFolderPath)"
+					Line 7 "Do not create a folder for new profiles              $($FSLogixAS_NoProfileContainingFolder)"
+					Line 7 "Enable Cached mode for Outlook                       $($FSLogixAS_OutlookCachedMode)"
+					Line 7 "Keep local profiles                                  $($FSLogixAS_KeepLocalDir)"
+					Line 7 "Naming pattern for new VHD(X) files                  $($FSLogixAS_VHDNamePattern)"
+					Line 7 "Number of locked VHD(X) retries                      $($FSLogixAS_LockedRetryCount)"
+					Line 7 "Prevent logons with failures                         $($FSLogixAS_PreventLoginWithFailure)"
+					Line 7 "Prevent logons with temp profiles                    $($FSLogixAS_PreventLoginWithTempProfile)"
+					Line 7 "Profile folder naming pattern                        $($FSLogixAS_SIDDirNameMatch)"
+					Line 7 "Profile type                                         $($FSLogixAS_ProfileType)"
+					Line 7 "Profile VHD(X) file matching pattern                 $($FSLogixAS_VHDNameMatch)"
+					Line 7 "Re-attach interval                                   $($FSLogixAS_ReAttachIntervalSeconds)"
+					Line 7 "Re-attach retry limit                                $($FSLogixAS_ReAttachRetryCount)"
+					Line 7 "Remove duplicate OST files on logoff                 $($FSLogixAS_RemoveOrphanedOSTFilesOnLogoff)"
+					Line 7 "SDDL used when attaching the VHD                     $($FSLogixAS_AttachVHDSDDL)"
+					Line 7 "Search roaming feature mode                          $($FSLogixAS_RoamSearch)"
+					Line 7 "Swap SID and username in profile directory names     $($FSLogixAS_FlipFlopProfileDirectoryName)"
+					Line 7 "Temporary folders redirection mode                   $($FSLogixAS_SetTempToLocalPath)"
+					Line 7 "Use SDDL on creation of SID containing folder        $($FSLogixAS_SIDDirSDDL)"
+					Line 7 "User-to-Profile matching pattern                     $($FSLogixAS_SIDDirNamePattern)"
+					Line 7 "VHDX sector size                                     $($FSLogixAS_VHDXSectorSize)"
+					Line 7 "Volume wait time                                     $($FSLogixAS_VolumeWaitTimeMS)"
 				}
 
 				Line 0 ""
@@ -13658,16 +13713,150 @@ Function OutputRDSessionHostsDetails
 			}
 
 			#Application Packages
+			If($MSWord -or $PDF)
+			{
+				WriteWordLine 4 0 "Application Packages"
+			}
+			If($Text)
+			{
+				Line 3 "Application Packages"
+			}
+			If($HTML)
+			{
+				#Nothing
+			}
+
+			If($RDSGroup.InheritDefaultAppPackageSettings)
+			{
+				#do we inherit site defaults?
+				#yes we do, get the default settings for the Site
+				#use the Site default settings
+				$RDSGroupDefaults = Get-RASRDSDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
+				
+				If($? -and $Null -ne $RDSGroupDefaults)
+				{
+					[array]$AppPackagesAssigned = $RDSGroupDefaults.AppPackagesAssigned
+				}
+			}
+			Else
+			{
+				#we don't inherit
+				#get the settings for the vdi host
+				[array]$AppPackagesAssigned = $RDSGroup.AppPackagesAssigned
+			}
+
+			If($MSWord -or $PDF)
+			{
+				$ScriptInformation = New-Object System.Collections.ArrayList
+				$ScriptInformation.Add(@{Data = "Inherit default settings"; Value = $RDSGroup.InheritDefaultAppPackageSettings.ToString(); }) > $Null
+				$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+
+				If(validObject $AppPackagesAssigned ApplicationPackagesAssigned)
+				{
+					ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
+					{
+						$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4>$Null
+						
+						If($? -and $Null -ne $Result)
+						{
+							$ScriptInformation.Add(@{Data = "Name"; Value = $Result.PackageName; }) > $Null
+							$ScriptInformation.Add(@{Data = "Status"; Value = ""; }) > $Null
+							$ScriptInformation.Add(@{Data = "Version"; Value = $Result.Version; }) > $Null
+							$ScriptInformation.Add(@{Data = "Display name"; Value = $Result.DisplayName; }) > $Null
+							$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+						}
+						Else
+						{
+							$ScriptInformation.Add(@{Data = "Unable to retrieve data for"; Value = $Result.PackageName; }) > $Null
+						}
+					}
+				}
+
+				$Table = AddWordTable -Hashtable $ScriptInformation `
+				-Columns Data,Value `
+				-List `
+				-Format $wdTableGrid `
+				-AutoFit $wdAutoFitFixed
+
+				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+				$Table.Columns.Item(1).Width = 200;
+				$Table.Columns.Item(2).Width = 250;
+
+				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+				FindWordDocumentEnd
+				$Table = $Null
+				WriteWordLine 0 0 ""
+			}
+			If($Text)
+			{
+				Line 4 "Inherit default settings`t: " $RDSGroup.InheritDefaultAppPackageSettings.ToString()
+				Line 5 ""
+
+				If(validObject $AppPackagesAssigned ApplicationPackagesAssigned)
+				{
+					ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
+					{
+						$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4>$Null
+						
+						If($? -and $Null -ne $Result)
+						{
+							Line 4 "Name`t`t: " $Result.PackageName
+							Line 4 "Status`t`t: "
+							Line 4 "Version`t`t: " $Result.Version
+							Line 4 "Display name`t: " $Result.DisplayName
+							Line 4 ""
+						}
+						Else
+						{
+							Line 4 "Unable to retrieve data for: " $Result.PackageName
+						}
+					}
+				}
+			}
+			If($HTML)
+			{
+				$rowdata = @()
+				$columnHeaders = @("Inherit default settings",($Script:htmlsb),$RDSGroup.InheritDefaultAppPackageSettings.ToString(),$htmlwhite)
+				$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+
+				If(validObject $AppPackagesAssigned ApplicationPackagesAssigned)
+				{
+					ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
+					{
+						$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4>$Null
+						
+						If($? -and $Null -ne $Result)
+						{
+							$rowdata += @(,("Name",($Script:htmlsb),$Result.PackageName,$htmlwhite))
+							$rowdata += @(,("Status",($Script:htmlsb),"",$htmlwhite))
+							$rowdata += @(,("Version",($Script:htmlsb),$Result.Version,$htmlwhite))
+							$rowdata += @(,("Display name",($Script:htmlsb),$Result.DisplayName,$htmlwhite))
+							$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+						}
+						Else
+						{
+							$rowdata += @(,("Unable to retrieve data for",($Script:htmlsb),$Result.PackageName,$htmlwhite))
+						}
+					}
+				}
+
+				$msg = "Application Packages"
+				$columnWidths = @("200","275")
+				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+				WriteHTMLLine 0 0 ""
+			}
 			
 			#Desktop Access
 			
 			If($MSWord -or $PDF)
 			{
-				WriteWordLine 4 0 "Desktop access"
+				WriteWordLine 5 0 "Desktop access"
 			}
 			If($Text)
 			{
-				Line 2 "Desktop access"
+				Line 3 "Desktop access"
 			}
 			If($HTML)
 			{
@@ -13760,19 +13949,19 @@ Function OutputRDSessionHostsDetails
 			}
 			If($Text)
 			{
-				Line 3 "Inherit default settings`t`t`t`t: " $RDSGroup.InheritDefaultDesktopAccessSettings.ToString()
-				Line 3 "Restrict direct desktop access to the following users`t: " $RDSRestrictDesktopAccess
+				Line 4 "Inherit default settings`t`t`t`t: " $RDSGroup.InheritDefaultDesktopAccessSettings.ToString()
+				Line 4 "Restrict direct desktop access to the following users`t: " $RDSRestrictDesktopAccess
 				$cnt = -1
 				ForEach($Item in $RDSRestrictedUsers)
 				{
 					$cnt++
 					If($cnt -eq 0)
 					{
-						Line 9 "Users`t: " $Item
+						Line 10 "Users`t: " $Item
 					}
 					Else
 					{
-						Line 10 "  " $Item
+						Line 11 "  " $Item
 					}
 				}
 				Line 0 ""
@@ -13807,11 +13996,11 @@ Function OutputRDSessionHostsDetails
 			
 			If($MSWord -or $PDF)
 			{
-				WriteWordLine 4 0 "Settings"
+				WriteWordLine 5 0 "Settings"
 			}
 			If($Text)
 			{
-				Line 2 "Settings"
+				Line 3 "Settings"
 			}
 			If($HTML)
 			{
@@ -13909,6 +14098,22 @@ Function OutputRDSessionHostsDetails
 					}
 					$RDSFileTransferChangeLocation = $RDSDefaults.FileTransferLockLocation.ToString()
 
+					If(ValidObject $RDSDefaults SessionReadinessTimeout)
+					{
+						Switch ($RDSDefaults.SessionReadinessTimeout)
+						{
+							25		{$RDSSessionReadinessTimeout = "25 seconds"; Break}
+							60		{$RDSSessionReadinessTimeout = "1 minute"; Break}
+							300		{$RDSSessionReadinessTimeout = "5 minutes"; Break}
+							3600	{$RDSSessionReadinessTimeout = "1 hour"; Break}
+							Default	{$RDSSessionReadinessTimeout = "Unable to determine session readiness timeout: $($RDSDefaults.SessionReadinessTimeout)"; Break}
+						}
+					}
+					Else
+					{
+						$RDSSessionReadinessTimeout = ""
+					}
+							
 					If($RDSDefaults.PreferredBrokerId -eq 0)
 					{
 						$RDSPreferredPublishingAgent = "Automatically"
@@ -13942,6 +14147,7 @@ Function OutputRDSessionHostsDetails
 					$RDSUseRemoteApps                      = "False"
 					$RDSEnableAppMonitoring                = "True"
 					$RDSAllowFileTransfer                  = "True"
+					$RDSSessionReadinessTimeout            = "25 seconds"
 				}
 			}
 			Else
@@ -14024,6 +14230,22 @@ Function OutputRDSessionHostsDetails
 				$RDSUseRemoteApps       = $RDSGroupDefaults.UseRemoteApps.ToString()
 				$RDSEnableAppMonitoring = $RDSGroupDefaults.EnableAppMonitoring.ToString()
 				$RDSAllowFileTransfer   = $RDSGroupDefaults.AllowFileTransfer.ToString()
+				
+				If(ValidObject $$RDSGroupDefaults SessionReadinessTimeout)
+				{
+					Switch ($RDSGroupDefaults.SessionReadinessTimeout)
+					{
+						25		{$RDSSessionReadinessTimeout = "25 seconds"; Break}
+						60		{$RDSSessionReadinessTimeout = "1 minute"; Break}
+						300		{$RDSSessionReadinessTimeout = "5 minutes"; Break}
+						3600	{$RDSSessionReadinessTimeout = "1 hour"; Break}
+						Default	{$RDSSessionReadinessTimeout = "Unable to determine session readiness timeout: $($RDSGroupDefaults.SessionReadinessTimeout)"; Break}
+					}
+				}
+				Else
+				{
+					$RDSSessionReadinessTimeout = ""
+				}
 			}
 			
 			If($MSWord -or $PDF)
@@ -14034,6 +14256,7 @@ Function OutputRDSessionHostsDetails
 				$ScriptInformation.Add(@{Data = "     Disconnect active session after"; Value = $RDSPublishingSessionDisconnectTimeout; }) > $Null
 				$ScriptInformation.Add(@{Data = "     Logoff disconnected session after"; Value = $RDSPublishingSessionResetTime; }) > $Null
 				$ScriptInformation.Add(@{Data = "Other settings"; Value = ""; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Session readiness timeout"; Value = $RDSSessionReadinessTimeout; }) > $Null
 				$ScriptInformation.Add(@{Data = "     Port"; Value = $RDSPort; }) > $Null
 				$ScriptInformation.Add(@{Data = "     Max Sessions"; Value = $RDSMaxSessions; }) > $Null
 				$ScriptInformation.Add(@{Data = "     Preferred Connection Broker"; Value = $RDSPreferredPublishingAgent; }) > $Null
@@ -14072,28 +14295,29 @@ Function OutputRDSessionHostsDetails
 			}
 			If($Text)
 			{
-				Line 3 "Inherit default settings`t`t`t`t`t: " $RDSGroup.InheritDefaultAgentSettings.ToString()
-				Line 3 "Application session lingering"
-				Line 4 "Disconnect active session after`t`t`t`t: " $RDSPublishingSessionDisconnectTimeout
-				Line 4 "Logoff disconnected session after`t`t`t: " $RDSPublishingSessionResetTime
-				Line 3 "Other settings"
-				Line 4 "Port`t`t`t`t`t`t`t: " $RDSPort
-				Line 4 "Max Sessions`t`t`t`t`t`t: " $RDSMaxSessions
-				Line 4 "Preferred Connection Broker`t`t`t`t: " $RDSPreferredPublishingAgent
-				Line 3 "Allow Client URL/Mail Redirection`t`t`t`t: " $RDSAllowClientURLMailRedirection
-				Line 4 "Replace registered application`t`t`t`t: " $ReplaceRegisteredApplication
-				Line 4 "Support Windows Shell URL namespace objects`t`t: " $RDSSupportShellURLNamespaceObject
-				Line 3 "Enable Drag and drop`t`t`t`t`t`t: " $RDSAllowDragandDrop
-				Line 4 "Direction`t`t`t`t`t`t: " $RDSDragAndDrop
-				Line 3 "Allow 2xRemoteExec to send command to the client`t`t: " $RDSAllowRemoteExec
-				Line 3 "Use RemoteApp if available`t`t`t`t`t: " $RDSUseRemoteApps
-				Line 3 "Enable applications monitoring`t`t`t`t`t: " $RDSEnableAppMonitoring
-				Line 3 "Allow file transfer command (Web (HTML5) and Chrome clients)`t: " $RDSAllowFileTransfer
-				Line 4 "Configure File Transfer"
-				Line 5 "Direction`t`t`t: " $RDSFileTransferMode
-				Line 5 "Location`t`t`t: " $RDSFileTransferLocation
-				Line 5 "Do not allow to change location : " $RDSFileTransferChangeLocation
-				Line 3 "Enable drive redirection cache`t`t`t`t`t: " $RDSEnableDriveRedirectionCache
+				Line 4 "Inherit default settings`t`t`t`t`t: " $RDSGroup.InheritDefaultAgentSettings.ToString()
+				Line 4 "Application session lingering"
+				Line 5 "Disconnect active session after`t`t`t`t: " $RDSPublishingSessionDisconnectTimeout
+				Line 5 "Logoff disconnected session after`t`t`t: " $RDSPublishingSessionResetTime
+				Line 4 "Other settings"
+				Line 5 "Session readiness timeout: " $RDSSessionReadinessTimeout
+				Line 5 "Port`t`t`t`t`t`t`t: " $RDSPort
+				Line 5 "Max Sessions`t`t`t`t`t`t: " $RDSMaxSessions
+				Line 5 "Preferred Connection Broker`t`t`t`t: " $RDSPreferredPublishingAgent
+				Line 4 "Allow Client URL/Mail Redirection`t`t`t`t: " $RDSAllowClientURLMailRedirection
+				Line 5 "Replace registered application`t`t`t`t: " $ReplaceRegisteredApplication
+				Line 5 "Support Windows Shell URL namespace objects`t`t: " $RDSSupportShellURLNamespaceObject
+				Line 4 "Enable Drag and drop`t`t`t`t`t`t: " $RDSAllowDragandDrop
+				Line 5 "Direction`t`t`t`t`t`t: " $RDSDragAndDrop
+				Line 4 "Allow 2xRemoteExec to send command to the client`t`t: " $RDSAllowRemoteExec
+				Line 4 "Use RemoteApp if available`t`t`t`t`t: " $RDSUseRemoteApps
+				Line 4 "Enable applications monitoring`t`t`t`t`t: " $RDSEnableAppMonitoring
+				Line 4 "Allow file transfer command (Web (HTML5) and Chrome clients)`t: " $RDSAllowFileTransfer
+				Line 5 "Configure File Transfer"
+				Line 6 "Direction`t`t`t: " $RDSFileTransferMode
+				Line 6 "Location`t`t`t: " $RDSFileTransferLocation
+				Line 6 "Do not allow to change location : " $RDSFileTransferChangeLocation
+				Line 4 "Enable drive redirection cache`t`t`t`t`t: " $RDSEnableDriveRedirectionCache
 				Line 0 ""
 			}
 			If($HTML)
@@ -14104,6 +14328,7 @@ Function OutputRDSessionHostsDetails
 				$rowdata += @(,("     Disconnect active session after",($Script:htmlsb),$RDSPublishingSessionDisconnectTimeout,$htmlwhite))
 				$rowdata += @(,("     Logoff disconnected session after",($Script:htmlsb),$RDSPublishingSessionResetTime,$htmlwhite))
 				$rowdata += @(,("Other settings",($Script:htmlsb),$RDSPort,$htmlwhite))
+				$rowdata += @(,("     Session readiness timeout: ",($Script:htmlsb),$RDSSessionReadinessTimeout,$htmlwhite))
 				$rowdata += @(,("     Port",($Script:htmlsb),$RDSPort,$htmlwhite))
 				$rowdata += @(,("     Max Sessions",($Script:htmlsb),$RDSMaxSessions,$htmlwhite))
 				$rowdata += @(,("     Preferred Connection Broker",($Script:htmlsb),$RDSPreferredPublishingAgent,$htmlwhite))
@@ -14132,11 +14357,11 @@ Function OutputRDSessionHostsDetails
 			
 			If($MSWord -or $PDF)
 			{
-				WriteWordLine 4 0 "RDP printer"
+				WriteWordLine 5 0 "RDP printer"
 			}
 			If($Text)
 			{
-				Line 2 "RDP printer"
+				Line 3 "RDP printer"
 			}
 			If($HTML)
 			{
@@ -14212,9 +14437,9 @@ Function OutputRDSessionHostsDetails
 			}
 			If($Text)
 			{
-				Line 3 "Inherit default settings`t`t`t`t: " $RDSGroup.InheritDefaultPrinterSettings.ToString()
-				Line 3 "RDP Printer Name Format`t`t`t`t`t: " $RDSPrinterNameFormat
-				Line 3 "Remove session number from printer name`t`t`t: " $RDSRemoveSessionNumberFromPrinter
+				Line 4 "Inherit default settings`t`t`t`t: " $RDSGroup.InheritDefaultPrinterSettings.ToString()
+				Line 4 "RDP Printer Name Format`t`t`t`t`t: " $RDSPrinterNameFormat
+				Line 4 "Remove session number from printer name`t`t`t: " $RDSRemoveSessionNumberFromPrinter
 				Line 0 ""
 			}
 			If($HTML)
@@ -14234,11 +14459,11 @@ Function OutputRDSessionHostsDetails
 			
 			If($MSWord -or $PDF)
 			{
-				WriteWordLine 4 0 "Auto-upgrade"
+				WriteWordLine 5 0 "Auto-upgrade"
 			}
 			If($Text)
 			{
-				Line 2 "Auto-upgrade"
+				Line 3 "Auto-upgrade"
 			}
 			If($HTML)
 			{
@@ -14429,14 +14654,14 @@ Function OutputRDSessionHostsDetails
 			}
 			If($Text)
 			{
-				Line 3 "Inherit default settings`t`t`t`t: " $RDSGroup.InheritDefaultAutoUpgradeSettings.ToString()
-				Line 3 "Enable auto-upgrade maintenance window`t`t`t: " $AutoUpgradeEnabled
-				Line 3 "Date`t`t`t`t`t`t`t: " $AutoUpgradeDate
-				Line 3 "Start`t`t`t`t`t`t`t: " $AutoUpgradeStart
-				Line 3 "Drain mode duration`t`t`t`t`t: " $AutoUpgradeDrainModeDuration
-				Line 3 "Force logoff session at the end of the drain mode period: " $AutoUpgradeForceLogoff
-				Line 3 "Recur`t`t`t`t`t`t`t: " $AutoUpgradeRecur
-				Line 3 "Send message before maintenance window is triggered"
+				Line 4 "Inherit default settings`t`t`t`t: " $RDSGroup.InheritDefaultAutoUpgradeSettings.ToString()
+				Line 4 "Enable auto-upgrade maintenance window`t`t`t: " $AutoUpgradeEnabled
+				Line 4 "Date`t`t`t`t`t`t`t: " $AutoUpgradeDate
+				Line 4 "Start`t`t`t`t`t`t`t: " $AutoUpgradeStart
+				Line 4 "Drain mode duration`t`t`t`t`t: " $AutoUpgradeDrainModeDuration
+				Line 4 "Force logoff session at the end of the drain mode period: " $AutoUpgradeForceLogoff
+				Line 4 "Recur`t`t`t`t`t`t`t: " $AutoUpgradeRecur
+				Line 4 "Send message before maintenance window is triggered"
 				
 				If($AutoUpgradeMessages.Count -gt 0)
 				{
@@ -14453,11 +14678,11 @@ Function OutputRDSessionHostsDetails
 							Default	{$MsgTime = "Unable to determine scheduled message Time: $($Item.SendMsgSecs)"; Break}
 						}
 						
-						Line 4 "Enabled`t: " $Item.Enabled.ToString()
-						Line 4 "Body`t: " $Item.Message
-						Line 4 "Title`t: " $Item.MessageTitle
-						Line 4 "Time`t: " $MsgTime
-						Line 4 ""
+						Line 5 "Enabled`t: " $Item.Enabled.ToString()
+						Line 5 "Body`t: " $Item.Message
+						Line 5 "Title`t: " $Item.MessageTitle
+						Line 5 "Time`t: " $MsgTime
+						Line 5 ""
 					}
 				}
 
@@ -14509,15 +14734,15 @@ Function OutputRDSessionHostsDetails
 	Write-Verbose "$(Get-Date -Format G): `tOutput RD Session Host Templates"
 	If($MSWord -or $PDF)
 	{
-		WriteWordLine 2 0 "Templates"
+		WriteWordLine 3 0 "Templates"
 	}
 	If($Text)
 	{
-		Line 1 "Templates"
+		Line 3 "Templates"
 	}
 	If($HTML)
 	{
-		WriteHTMLLine 2 0 "Templates"
+		WriteHTMLLine 3 0 "Templates"
 	}
 		
 	$RDSTemplates = Get-RASTemplate -Siteid $Site.Id -ObjType "RDSTemplate" -EA 0 4>$Null
@@ -14652,15 +14877,15 @@ Function OutputRDSessionHostsDetails
 			}
 			If($Text)
 			{
-				Line 2 "Name: " $RDSTemplate.Name
-				Line 2 "Power state`t`t: " $TemplatePowerState
-				Line 2 "Provider`t`t: " $TemplateProviderName
-				Line 2 "Provider type`t`t: " $TemplateProviderType
-				Line 2 "Last modification by`t: " $RDSTemplate.AdminLastMod
-				Line 2 "Modified on`t`t: " (Get-Date -UFormat "%c" $RDSTemplate.TimeLastMod)
-				Line 2 "Created by`t`t: " $RDSTemplate.AdminCreate
-				Line 2 "Created on`t`t: " (Get-Date -UFormat "%c" $RDSTemplate.TimeCreate)
-				Line 2 "ID`t`t`t: " $RDSTemplate.Id.ToString()
+				Line 3 "Name: " $RDSTemplate.Name
+				Line 3 "Power state`t`t: " $TemplatePowerState
+				Line 3 "Provider`t`t: " $TemplateProviderName
+				Line 3 "Provider type`t`t: " $TemplateProviderType
+				Line 3 "Last modification by`t: " $RDSTemplate.AdminLastMod
+				Line 3 "Modified on`t`t: " (Get-Date -UFormat "%c" $RDSTemplate.TimeLastMod)
+				Line 3 "Created by`t`t: " $RDSTemplate.AdminCreate
+				Line 3 "Created on`t`t: " (Get-Date -UFormat "%c" $RDSTemplate.TimeCreate)
+				Line 3 "ID`t`t`t: " $RDSTemplate.Id.ToString()
 				Line 0 ""
 			}
 			If($HTML)
@@ -16928,15 +17153,15 @@ Function OutputRDSessionHostsDetails
 	Write-Verbose "$(Get-Date -Format G): `tOutput RD Session Hosts Scheduler"
 	If($MSWord -or $PDF)
 	{
-		WriteWordLine 2 0 "Scheduler"
+		WriteWordLine 3 0 "Scheduler"
 	}
 	If($Text)
 	{
-		Line 1 "Scheduler"
+		Line 2 "Scheduler"
 	}
 	If($HTML)
 	{
-		WriteHTMLLine 2 0 "Scheduler"
+		WriteHTMLLine 3 0 "Scheduler"
 	}
 
 	$RDSSchedules = Get-RASSchedule -Siteid $Site.Id -ObjType "RDS" -EA 0 4> $Null
@@ -17084,7 +17309,20 @@ Function OutputRDSessionHostsDetails
 			
 			If($MSWord -or $PDF)
 			{
-				WriteWordLine 3 0 "Schedule Name $($RDSSchedule.Name)"
+				WriteWordLine 4 0 "Schedule Name $($RDSSchedule.Name)"
+			}
+			If($Text)
+			{
+				Line 3 "Name`t`t`t: " $RDSSchedule.Name
+			}
+			If($HTML)
+			{
+				WriteHTMLLine 4 0 "Schedule Name $($RDSSchedule.Name)"
+			}
+			
+			
+			If($MSWord -or $PDF)
+			{
 				$ScriptInformation = New-Object System.Collections.ArrayList
 				$ScriptInformation.Add(@{Data = "Name"; Value = $RDSSchedule.Name; }) > $Null
 				$ScriptInformation.Add(@{Data = "Action"; Value = $Action; }) > $Null
@@ -17132,8 +17370,7 @@ Function OutputRDSessionHostsDetails
 			}
 			If($Text)
 			{
-				Line 2 "Name`t`t`t: " $RDSSchedule.Name
-				Line 2 "Action`t`t`t: " $Action
+				Line 3 "Action`t`t`t: " $Action
 				
 				$cnt=-1
 				ForEach($Item in $Target)
@@ -17141,27 +17378,26 @@ Function OutputRDSessionHostsDetails
 					$cnt++
 					If($cnt -eq 0)
 					{
-						Line 2 "Target`t`t`t: " $Item
+						Line 3 "Target`t`t`t: " $Item
 					}
 					Else
 					{
-						Line 6 "  " $Item
+						Line 7 "  " $Item
 					}
 				}
 				
-				Line 2 "Start`t`t`t: " $RDSSchedule.Trigger.StartDateTime
-				Line 2 "Repeat`t`t`t: " $Repeat
-				Line 2 "Description`t`t: " $RDSSchedule.Description
-				Line 2 "Last modification by`t: " $RDSSchedule.AdminLastMod
-				Line 2 "Modified on`t`t: " (Get-Date -UFormat "%c" $RDSSchedule.TimeLastMod)
-				Line 2 "Created by`t`t: " $RDSSchedule.AdminCreate
-				Line 2 "Created on`t`t: " (Get-Date -UFormat "%c" $RDSSchedule.TimeCreate)
-				Line 2 "ID`t`t`t: " $RDSSchedule.Id.ToString()
+				Line 3 "Start`t`t`t: " $RDSSchedule.Trigger.StartDateTime
+				Line 3 "Repeat`t`t`t: " $Repeat
+				Line 3 "Description`t`t: " $RDSSchedule.Description
+				Line 3 "Last modification by`t: " $RDSSchedule.AdminLastMod
+				Line 3 "Modified on`t`t: " (Get-Date -UFormat "%c" $RDSSchedule.TimeLastMod)
+				Line 3 "Created by`t`t: " $RDSSchedule.AdminCreate
+				Line 3 "Created on`t`t: " (Get-Date -UFormat "%c" $RDSSchedule.TimeCreate)
+				Line 3 "ID`t`t`t: " $RDSSchedule.Id.ToString()
 				Line 0 ""
 			}
 			If($HTML)
 			{
-				WriteHTMLLine 3 0 "Schedule Name $($RDSSchedule.Name)"
 				$rowdata = @()
 				$columnHeaders = @("Name",($Script:htmlsb),$RDSSchedule.Name,$htmlwhite)
 				$rowdata += @(,("Action",($Script:htmlsb),$Action,$htmlwhite))
@@ -17199,11 +17435,11 @@ Function OutputRDSessionHostsDetails
 			
 			If($MSWord -or $PDF)
 			{
-				WriteWordLine 4 0 "General"
+				WriteWordLine 5 0 "General"
 			}
 			If($Text)
 			{
-				Line 2 "General"
+				Line 3 "General"
 			}
 			If($HTML)
 			{
@@ -17252,10 +17488,10 @@ Function OutputRDSessionHostsDetails
 			}
 			If($Text)
 			{
-				Line 3 "Enable Schedule`t`t`t: " $RDSSchedule.Enabled.ToString()
-				Line 3 "Name`t`t`t`t: " $RDSSchedule.Name
-				Line 3 "Action`t`t`t`t: " $Action
-				Line 3 "Description`t`t`t: " $RDSSchedule.Description
+				Line 4 "Enable Schedule`t`t`t: " $RDSSchedule.Enabled.ToString()
+				Line 4 "Name`t`t`t`t: " $RDSSchedule.Name
+				Line 4 "Action`t`t`t`t: " $Action
+				Line 4 "Description`t`t`t: " $RDSSchedule.Description
 				
 				$cnt=-1
 				ForEach($Item in $Target)
@@ -17263,11 +17499,11 @@ Function OutputRDSessionHostsDetails
 					$cnt++
 					If($cnt -eq 0)
 					{
-						Line 3 "Target`t`t`t`t: " $Item
+						Line 4 "Target`t`t`t`t: " $Item
 					}
 					Else
 					{
-						Line 7 "  " $Item
+						Line 8 "  " $Item
 					}
 				}
 				Line 0 ""
@@ -17304,11 +17540,11 @@ Function OutputRDSessionHostsDetails
 			
 			If($MSWord -or $PDF)
 			{
-				WriteWordLine 4 0 "Trigger"
+				WriteWordLine 5 0 "Trigger"
 			}
 			If($Text)
 			{
-				Line 2 "Trigger"
+				Line 3 "Trigger"
 			}
 			If($HTML)
 			{
@@ -17342,9 +17578,9 @@ Function OutputRDSessionHostsDetails
 			}
 			If($Text)
 			{
-				Line 3 "Date`t`t`t`t: " $RDSSchedule.Trigger.StartDateTime.ToShortDateString()
-				Line 3 "Start`t`t`t`t: " $RDSSchedule.Trigger.StartDateTime.ToShortTimeString()
-				Line 3 "Recur`t`t`t`t: " $Repeat
+				Line 4 "Date`t`t`t`t: " $RDSSchedule.Trigger.StartDateTime.ToShortDateString()
+				Line 4 "Start`t`t`t`t: " $RDSSchedule.Trigger.StartDateTime.ToShortTimeString()
+				Line 4 "Recur`t`t`t`t: " $Repeat
 				Line 0 ""
 			}
 			If($HTML)
@@ -17364,11 +17600,11 @@ Function OutputRDSessionHostsDetails
 			
 			If($MSWord -or $PDF)
 			{
-				WriteWordLine 4 0 "Options"
+				WriteWordLine 5 0 "Options"
 			}
 			If($Text)
 			{
-				Line 2 "Options"
+				Line 3 "Options"
 			}
 			If($HTML)
 			{
@@ -17439,7 +17675,7 @@ Function OutputRDSessionHostsDetails
 			}
 			If($Text)
 			{
-				Line 3 "Send message before schedule is triggered"
+				Line 4 "Send message before schedule is triggered"
 				
 				If($RDSSchedule.Options.Messages.Count -gt 0)
 				{
@@ -17456,29 +17692,29 @@ Function OutputRDSessionHostsDetails
 							Default	{$MsgTime = "Unable to determine scheduled message Time: $($Item.SendMsgSecs)"; Break}
 						}
 						
-						Line 3 "Enabled`t`t`t`t: " $Item.Enabled.ToString()
-						Line 3 "Body`t`t`t`t: " $Item.Message
-						Line 3 "Title`t`t`t`t: " $Item.MessageTitle
-						Line 3 "Time`t`t`t`t: " $MsgTime
+						Line 4 "Enabled`t`t`t`t: " $Item.Enabled.ToString()
+						Line 4 "Body`t`t`t`t: " $Item.Message
+						Line 4 "Title`t`t`t`t: " $Item.MessageTitle
+						Line 4 "Time`t`t`t`t: " $MsgTime
 					}
 				}
 
 				If($Action -ne "Disable")
 				{
-					Line 3 "Enable Drain Mode`t`t: " $RDSSchedule.Options.EnableDrainMode.ToString()
+					Line 4 "Enable Drain Mode`t`t: " $RDSSchedule.Options.EnableDrainMode.ToString()
 				}
 				If($Action -eq "Reboot - Drain Mode")
 				{
-					Line 3 "Force server reboot after`t: " $ForceRebootTime
+					Line 4 "Force server reboot after`t: " $ForceRebootTime
 				}
 				If($Action -like "Reboot*")
 				{
-					Line 3 "Enforce schedule for currently"
-					Line 3 "inactive RD Session Host`t: " $RDSSchedule.Options.EnforceScheduleInactiveHost.ToString()
+					Line 4 "Enforce schedule for currently"
+					Line 4 "inactive RD Session Host`t: " $RDSSchedule.Options.EnforceScheduleInactiveHost.ToString()
 				}
 				If($Action -eq "Disable")
 				{
-					Line 3 "On disable`t`t`t: " $OnDisable
+					Line 4 "On disable`t`t`t: " $OnDisable
 				}
 				Line 0 ""
 			}
@@ -17613,6 +17849,8 @@ Function OutputVDIDetails
 		{
 			ForEach($VDIPool in $VDIPools)
 			{
+				Write-Verbose "$(Get-Date -Format G): `t`t$($VDIPool.Name)"
+
 				If($MSWord -or $PDF)
 				{
 					WriteWordLine 3 0 "Pool $($VDIPool.Name)"
@@ -17737,11 +17975,21 @@ Function OutputVDIDetails
 				}
 				
 				#General
+				If($MSword -or $PDF)
+				{
+					WriteWordLine 4 0 "General"
+				}
+				If($Text)
+				{
+					Line 3 "General"
+				}
+				If($HTML)
+				{
+					#nothing
+				}
 				
 				If($MSWord -or $PDF)
 				{
-					WriteWordLine 4 0 "General"
-
 					$ScriptInformation = New-Object System.Collections.ArrayList
 					$ScriptInformation.Add(@{Data = "Enable host pool in site"; Value = $VDIPool.Enabled.ToString(); }) > $Null
 					$ScriptInformation.Add(@{Data = "Name"; Value = $VDIPool.Name; }) > $Null
@@ -17766,7 +18014,6 @@ Function OutputVDIDetails
 				}
 				If($Text)
 				{
-					Line 3 "General"
 					Line 4 "Enable host pool in site: " $VDIPool.Enabled.ToString()
 					Line 4 "Name`t`t`t: " $VDIPool.Name
 					Line 4 "Description`t`t: " $VDIPool.Description
@@ -19280,7 +19527,7 @@ Function OutputVDIDetails
 				#Application Packages
 				If($MSWord -or $PDF)
 				{
-					WriteWordLine 4 0 "Application Packages"
+					WriteWordLine 5 0 "Application Packages"
 				}
 				If($Text)
 				{
@@ -19357,7 +19604,7 @@ Function OutputVDIDetails
 				If($Text)
 				{
 					Line 4 "Inherit default settings`t: " $VDIPool.InheritDefaultAppPackageSettings.ToString()
-					Line 5 ""
+					Line 4 ""
 
 					If(validObject $AppPackagesAssigned ApplicationPackagesAssigned)
 					{
@@ -22529,6 +22776,8 @@ Function OutputVDIDetails
 		{
 			ForEach($VDITemplate in $VDITemplates)
 			{
+				Write-Verbose "$(Get-Date -Format G): `t`t$($VDITemplate.Name)"
+
 				If($MSWord -or $PDF)
 				{
 					WriteWordLine 3 0 "Template $($VDITemplate.Name)"
@@ -26439,8 +26688,25 @@ Function OutputAVDDetails
 	}
 	Else
 	{
+		Write-Verbose "$(Get-Date -Format G): `tOutput Azure Virtual Desktop Workspaces"
+
+		If($MSWord -or $PDF)
+		{
+			WriteWordLine 3 0 "Workspaces"
+		}
+		If($Text)
+		{
+			Line 2 "Workspaces"
+		}
+		If($HTML)
+		{
+			WriteHTMLLine 3 0 "Workspaces"
+		}
+
 		ForEach($AVD in $AVDs)
 		{
+			Write-Verbose "$(Get-Date -Format G): `t`t$($AVD.Name)"
+
 			$WorkspaceStatus = Get-RASAVDWorkspaceStatus -Name $AVD.Name -EA 0 4>$Null
 			
 			If(!$?)
@@ -26473,15 +26739,15 @@ Function OutputAVDDetails
 			
 			If($MSWord -or $PDF)
 			{
-				WriteWordLine 3 0 "AVD $($AVD.Name)"
+				WriteWordLine 4 0 "AVD $($AVD.Name)"
 			}
 			If($Text)
 			{
-				Line 2 "AVD $($AVD.Name)"
+				Line 3 "AVD $($AVD.Name)"
 			}
 			If($HTML)
 			{
-				WriteHTMLLine 3 0 "AVD $($AVD.Name)"
+				WriteHTMLLine 4 0 "AVD $($AVD.Name)"
 			}
 			
 			If($MSWord -or $PDF)
@@ -26521,19 +26787,19 @@ Function OutputAVDDetails
 			}
 			If($Text)
 			{
-				Line 3 "Name`t`t`t: " $AVD.Name
-				Line 3 "Enabled`t`t`t: " $AVD.Enabled.ToString()
-				Line 3 "Friendly name`t`t: " $AVD.FriendlyName
-				Line 3 "Description`t`t: " $AVD.Description
-				Line 3 "Status`t`t: " $AVDStatus
-				Line 3 "Provider`t`t: " $AVDProviderName
-				Line 3 "Resource group`t`t: " $WorkspaceStatus.ResourceGroup
-				Line 3 "Location`t`t: " $WorkspaceStatus.Location
-				Line 3 "Last modification by`t: " $AVD.AdminLastMod
-				Line 3 "Modified on`t`t: " (Get-Date -UFormat "%c" $AVD.TimeLastMod)
-				Line 3 "Created by`t`t: " $AVD.AdminCreate
-				Line 3 "Created on`t`t: " (Get-Date -UFormat "%c" $AVD.TimeCreate)
-				Line 3 "ID`t`t`t: " $AVD.Id.ToString()
+				Line 4 "Name`t`t`t: " $AVD.Name
+				Line 4 "Enabled`t`t`t: " $AVD.Enabled.ToString()
+				Line 4 "Friendly name`t`t: " $AVD.FriendlyName
+				Line 4 "Description`t`t: " $AVD.Description
+				Line 4 "Status`t`t`t: " $AVDStatus
+				Line 4 "Provider`t`t: " $AVDProviderName
+				Line 4 "Resource group`t`t: " $WorkspaceStatus.ResourceGroup
+				Line 4 "Location`t`t: " $WorkspaceStatus.Location
+				Line 4 "Last modification by`t: " $AVD.AdminLastMod
+				Line 4 "Modified on`t`t: " (Get-Date -UFormat "%c" $AVD.TimeLastMod)
+				Line 4 "Created by`t`t: " $AVD.AdminCreate
+				Line 4 "Created on`t`t: " (Get-Date -UFormat "%c" $AVD.TimeCreate)
+				Line 4 "ID`t`t`t: " $AVD.Id.ToString()
 				Line 0 ""
 			}
 			If($HTML)
@@ -26560,17 +26826,92 @@ Function OutputAVDDetails
 			}
 			
 			#general
+			Switch($WorkspaceStatus.Location)
+			{
+				"australiacentral"		{$AVDLocation = "Australia Central"; Break}
+				"australiacentral2"		{$AVDLocation = "Australia Central 2"; Break}
+				"australiaeast"			{$AVDLocation = "Australia East"; Break}
+				"australiasoutheast"	{$AVDLocation = "Australia Southeast"; Break}
+				"austriaeast"			{$AVDLocation = "Austria East"; Break}
+				"belgiumcentral"		{$AVDLocation = "Belgium Central"; Break}
+				"brazilsouth"			{$AVDLocation = "Brazil South"; Break}
+				"brazilsoutheast"		{$AVDLocation = "Brazil Southeast"; Break}
+				"canadacentral"			{$AVDLocation = "Canada Central"; Break}
+				"canadaeast"			{$AVDLocation = "Canada East"; Break}
+				"centralindia"			{$AVDLocation = "Central India"; Break}
+				"centralus"				{$AVDLocation = "Central US"; Break}
+				"chilecentral"			{$AVDLocation = "Chile Central"; Break}
+				"eastasia"				{$AVDLocation = "East Asia"; Break}
+				"eastus"				{$AVDLocation = "East US"; Break}
+				"eastus2"				{$AVDLocation = "East US 2"; Break}
+				"eastusstg"				{$AVDLocation = "East US STG"; Break}
+				"francecentral"			{$AVDLocation = "France Central"; Break}
+				"francesouth"			{$AVDLocation = "France South"; Break}
+				"germanynorth"			{$AVDLocation = "Germany North"; Break}
+				"germanywestcentral"	{$AVDLocation = "Germany West Central"; Break}
+				"indonesiacentral"		{$AVDLocation = "Indonesia Central"; Break}
+				"israelcentral"			{$AVDLocation = "Israel Central"; Break}
+				"italynorth"			{$AVDLocation = "Italy North"; Break}
+				"japaneast"				{$AVDLocation = "Japan East"; Break}
+				"japanwest"				{$AVDLocation = "Japan West"; Break}
+				"jioindiacentral"		{$AVDLocation = "Jio India Central"; Break}
+				"jioindiawest"			{$AVDLocation = "Jio India West"; Break}
+				"koreacentral"			{$AVDLocation = "Korea Central"; Break}
+				"koreasouth"			{$AVDLocation = "Korea South"; Break}
+				"malaysiawest"			{$AVDLocation = "Malaysia West"; Break}
+				"mexicocentral"			{$AVDLocation = "Mexico Central"; Break}
+				"newzealandnorth"		{$AVDLocation = "New Zealand North"; Break}
+				"northcentralus"		{$AVDLocation = "North Central US"; Break}
+				"northeurope"			{$AVDLocation = "North Europe"; Break}
+				"norwayeast"			{$AVDLocation = "Norway East"; Break}
+				"norwaywest"			{$AVDLocation = "Norway West"; Break}
+				"polandcentral"			{$AVDLocation = "Poland Central"; Break}
+				"qatarcentral"			{$AVDLocation = "Qatar Central"; Break}
+				"southafricanorth"		{$AVDLocation = "South Africa North"; Break}
+				"southafricawest"		{$AVDLocation = "South Africa West"; Break}
+				"southcentralus"		{$AVDLocation = "South Central US"; Break}
+				"southcentralusstg"		{$AVDLocation = "South Central US STG"; Break}
+				"southeastasia"			{$AVDLocation = "Southeast Asia"; Break}
+				"southindia"			{$AVDLocation = "South India"; Break}
+				"spaincentral"			{$AVDLocation = "Spain Central"; Break}
+				"swedencentral"			{$AVDLocation = "Sweden Central"; Break}
+				"switzerlandnorth"		{$AVDLocation = "Switzerland North"; Break}
+				"switzerlandwest"		{$AVDLocation = "Switzerland West"; Break}
+				"uaecentral"			{$AVDLocation = "UAE Central"; Break}
+				"uaenorth"				{$AVDLocation = "UAE North"; Break}
+				"uksouth"				{$AVDLocation = "UK South"; Break}
+				"ukwest"				{$AVDLocation = "UK West"; Break}
+				"westcentralus"			{$AVDLocation = "West Central US"; Break}
+				"westeurope"			{$AVDLocation = "West Europe"; Break}
+				"westindia"				{$AVDLocation = "West India"; Break}
+				"westus"				{$AVDLocation = "West US"; Break}
+				"westus2"				{$AVDLocation = "West US 2"; Break}
+				"westus3"				{$AVDLocation = "West US 3"; Break}
+				Default					{$AVDLocation = "Unable to determine AVD Location: $($WorkspaceStatus.Location)"; Break}
+			}
+
 			If($MSWord -or $PDF)
 			{
 				WriteWordLine 4 0 "General"
+			}
+			If($Text)
+			{
+				Line 3 "General"
+			}
+			If($HTML)
+			{
+				#nothing
+			}
 
+			If($MSWord -or $PDF)
+			{
 				$ScriptInformation = New-Object System.Collections.ArrayList
 				$ScriptInformation.Add(@{Data = "Enable workspace in site"; Value = $AVD.Enabled.ToString(); }) > $Null
 				$ScriptInformation.Add(@{Data = "Name"; Value = $AVD.Name; }) > $Null
 				$ScriptInformation.Add(@{Data = "Friendly name"; Value = $AVD.FriendlyName; }) > $Null
 				$ScriptInformation.Add(@{Data = "Description"; Value = $AVD.Description; }) > $Null
 				$ScriptInformation.Add(@{Data = "Resource group"; Value = $WorkspaceStatus.ResourceGroup; }) > $Null
-				$ScriptInformation.Add(@{Data = "Location"; Value = $WorkspaceStatus.Location; }) > $Null
+				$ScriptInformation.Add(@{Data = "Location"; Value = $AVDLocation; }) > $Null
 				$ScriptInformation.Add(@{Data = "Provider"; Value = $AVDProviderName; }) > $Null
 				$Table = AddWordTable -Hashtable $ScriptInformation `
 				-Columns Data,Value `
@@ -26592,13 +26933,12 @@ Function OutputAVDDetails
 			}
 			If($Text)
 			{
-				Line 3 "General"
 				Line 4 "Enable workspace in site: " $AVD.Enabled.ToString()
 				Line 4 "Name`t`t`t: " $AVD.Name
 				Line 4 "Friendly name`t`t: " $AVD.FriendlyName
 				Line 4 "Description`t`t: " $AVD.Description
 				Line 4 "Resource group`t`t: " $WorkspaceStatus.ResourceGroup
-				Line 4 "Location`t`t: " $WorkspaceStatus.Location
+				Line 4 "Location`t`t: " $AVDLocation
 				Line 4 "Provider`t`t: " $AVDProviderName
 				Line 0 ""
 			}
@@ -26610,13 +26950,495 @@ Function OutputAVDDetails
 				$rowdata += @(,("Friendly name",($Script:htmlsb),$AVD.FriendlyName,$htmlwhite))
 				$rowdata += @(,("Description",($Script:htmlsb),$AVD.Description,$htmlwhite))
 				$rowdata += @(,("Resource group",($Script:htmlsb),$WorkspaceStatus.ResourceGroup,$htmlwhite))
-				$rowdata += @(,("Location",($Script:htmlsb),$WorkspaceStatus.Location,$htmlwhite))
+				$rowdata += @(,("Location",($Script:htmlsb),$AVDLocation,$htmlwhite))
 				$rowdata += @(,("Provider",($Script:htmlsb),$AVDProviderName,$htmlwhite))
 				
 				$msg = "General"
 				$columnWidths = @("200","275")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
+			}
+			
+			#host pools
+			Write-Verbose "$(Get-Date -Format G): `tOutput Azure Virtual Desktop Host Pools"
+
+			If($MSWord -or $PDF)
+			{
+				WriteWordLine 3 0 "Host pools"
+			}
+			If($Text)
+			{
+				Line 2 "Host pools"
+			}
+			If($HTML)
+			{
+				WriteHTMLLine 3 0 "Host pools"
+			}
+			
+			$AVDHostPools = Get-RASAVDHostPool -Siteid $Site.Id -EA 0 4> $Null
+			
+			If(!$?)
+			{
+				Write-Warning "
+				`n
+				Unable to retrieve Azure Virtual Desktop Host Pools for Site $($Site.Name)`
+				"
+				If($MSWord -or $PDF)
+				{
+					WriteWordLine 0 0 ""
+					WriteWordLine 0 0 "Unable to retrieve Azure Virtual Desktop Host Pools for Site $($Site.Name)"
+					WriteWordLine 0 0 ""
+				}
+				If($Text)
+				{
+					Line 0 ""
+					Line 0 "Unable to retrieve Azure Virtual Desktop Host Pools for Site $($Site.Name)"
+					Line 0 ""
+				}
+				If($HTML)
+				{
+					WriteHTMLLine 0 0 ""
+					WriteHTMLLine 0 0 "Unable to retrieve Azure Virtual Desktop Host Pools for Site $($Site.Name)"
+					WriteHTMLLine 0 0 ""
+				}
+			}
+			ElseIf($? -and $Null -eq $AVDHostPools)
+			{
+				Write-Host "
+			No Azure Virtual Desktop Host Pools retrieved for Site $($Site.Name).`
+				" -ForegroundColor White
+				If($MSWord -or $PDF)
+				{
+					WriteWordLine 0 0 ""
+					WriteWordLine 0 0 "No Azure Virtual Desktop Host Pools retrieved for Site $($Site.Name)"
+					WriteWordLine 0 0 ""
+				}
+				If($Text)
+				{
+					Line 0 ""
+					Line 0 "No Azure Virtual Desktop Host Pools retrieved for Site $($Site.Name)"
+					Line 0 ""
+				}
+				If($HTML)
+				{
+					WriteHTMLLine 0 0 ""
+					WriteHTMLLine 0 0 "No Azure Virtual Desktop Host Pools retrieved for Site $($Site.Name)"
+					WriteHTMLLine 0 0 ""
+				}
+			}
+			Else
+			{
+				ForEach($AVDHostPool in $AVDHostPools)
+				{
+					Write-Verbose "$(Get-Date -Format G): `t`t$($AVDHostPool.Name)"
+
+					<#
+						PS C:\Parallels-RAS-V19.x-Doc-Script-4.00> $AVDHostPool | % {$_.psobject.properties | select name, value | sort name}
+
+						Name                               Value
+						----                               -----
+						Action
+						AdminCreate                        rasadmin
+						AdminLastMod                       Microsoft Azure
+						Agent                              RASAdminEngine.Core.OutputModels.HostPool.HostPoolAgentSettings
+						AppPackagesAssigned                RASAdminEngine.Core.OutputModels.AppPackagesAssigned
+						Assignments                        {73e0791f-07a6-47e1-9c92-b3ea97925abc, db8d7adc-bae1-4055-89fe-ea491f7dd71e, 1aca...
+						AutoUpgrade                        RASAdminEngine.Core.OutputModels.HostPool.AutoUpgradeSettings
+						AVDAgent                           RASAdminEngine.Core.OutputModels.AVD.AVDAgent
+						AzureId                            /subscriptions/b4085957-22f0-440f-ac06-71ef3dcd61cb/resourcegroups/PM_MSI_RG01/pr...
+						Configuration                      RASAdminEngine.Core.OutputModels.AVD.Configuration
+						Description                        Managed by Parallels RAS
+						Enabled                            True
+						FriendlyName                       PM Hostpool 01
+						Id                                 1
+						InheritDefaultActionsSettings
+						InheritDefaultAgentSettings        False
+						InheritDefaultAppPackageSettings   True
+						InheritDefaultAutoUpgradeSettings  True
+						InheritDefaultOptimizationSettings False
+						InheritDefaultRDPPrinterSettings   True
+						InheritDefaultUserProfileSettings  False
+						LinkedDesktopApplicationGroup      /subscriptions/b4085957-22f0-440f-ac06-71ef3dcd61cb/resourcegroups/PM_MSI_RG01/pr...
+						LinkedRemoteApplicationGroup
+						Location                           eastus
+						Name                               PM_MSI_DSK_HP01
+						Optimization                       RASAdminEngine.Core.OutputModels.ImagesOptimization.ImageOptimization
+						ProvisioningSettings
+						RDPPrinter                         RASAdminEngine.Core.OutputModels.HostPool.RDPPrinterSettings
+						ResourceGroup                      PM_MSI_RG01
+						SiteId                             1
+						TemplateSettings
+						TimeCreate                         11/12/2020 12:28:03 PM
+						TimeLastMod                        3/24/2025 6:09:08 PM
+						UserProfile                        RASAdminEngine.Core.OutputModels.UserProfile.UserProfileSettings
+						WorkspaceId                        1
+
+						PS C:\Parallels-RAS-V19.x-Doc-Script-4.00> $avdhostpool.TemplateSettings |fl
+
+
+						TemplateId        : 1107296294
+						TemplateVersionId : 2
+						TemplateTagId     : 0
+
+						PS C:\Parallels-RAS-V19.x-Doc-Script-4.00> $AVDTemplate = get-rastemplate -Id 1107296294 -ObjType "AVDTemplate"
+						PS C:\Parallels-RAS-V19.x-Doc-Script-4.00> $AVDTemplate | % {$_.psobject.properties | select name, value | sort name}
+
+						Name                               Value
+						----                               -----
+						AdminCreate                        devadmin@parallelslabus
+						AdminLastMod                       rasadmin
+						Advanced                           RASAdminEngine.Core.OutputModels.Template.TemplateAdvanced
+						AvailabilitySet                    False
+						AzureId                            /subscriptions/b4085957-22f0-440f-ac06-71ef3dcd61cb/resourceGroups/PM_MSI_RG01/pr...
+						CloneMethod
+						Description                        Windows 11 Ent Multi-Session Template
+						Distribution
+						Id                                 1107296294
+						InheritDefaultOptimizationSettings False
+						LicenseKeys
+						Name                               PM-Win11-T0
+						ObjType                            AVDTemplate
+						Optimization                       RASAdminEngine.Core.OutputModels.ImagesOptimization.ImageOptimization
+						Preparation                        RASAdminEngine.Core.OutputModels.Template.TemplatePreparation
+						ProviderId                         1056964609
+						SiteId                             1
+						TemplateType                       MultiSession
+						TimeCreate                         10/16/2023 11:27:43 AM
+						TimeLastMod                        1/16/2025 5:04:02 PM
+						VMId                               79590e09-51fe-44e2-b39d-d9300cacedd3
+
+						PS C:\Parallels-RAS-V19.x-Doc-Script-4.00> $AVDTemplateVersion = Get-RASTemplateVersion -id 2 -TemplateId 1107296294 -ObjType "AVDTemplate"
+						PS C:\Parallels-RAS-V19.x-Doc-Script-4.00> $AVDTemplateVersion |fl
+
+
+						Name         : Updated Agents Dec 2023
+						Id           : 2
+						TemplateId   : 1107296294
+						Description  : Updated Agents Dec 2023
+						AdminCreate  : rasadmin
+						AdminLastMod : rasadmin
+						TimeCreate   : 12/29/2023 7:27:13 PM
+						TimeLastMod  : 12/29/2023 7:27:13 PM
+
+
+
+						PS C:\Parallels-RAS-V19.x-Doc-Script-4.00>
+					#>
+					
+					If($Null -ne $AVDHostPool.TemplateSettings)
+					{
+						$AVDTemplate = Get-RASTemplate -Id $AVDHostPool.TemplateSettings.TemplateId -ObjType "AVDTemplate" -EA 0 4> $Null
+						
+						If($? -and $Null -ne $AVDTemplate)
+						{
+							$AVDTemplateName = $AVDTemplate.Name
+							
+							$AVDTemplateVersion = Get-RASTemplateVersion -Id $AVDHostPool.TemplateSettings.TemplateVersionId -TemplateId $AVDHostPool.TemplateSettings.TemplateId -ObjType "AVDTemplate" -EA 0 4> $Null
+
+							If($? -and $Null -ne $AVDTemplateVersion)
+							{
+								$AVDTemplateVersionName = $AVDTemplateVersion.Name
+							}
+							Else
+							{
+								$AVDTemplateVersionName = "Unable to retrieve template version name"
+							}
+						}
+						Else
+						{
+							$AVDTemplateName        = "Unable to retrieve template data"
+							$AVDTemplateVersionName = "Unable to retrieve template data"
+						}
+					}
+					Else
+					{
+						$AVDTemplateName        = ""
+						$AVDTemplateVersionName = ""
+					}
+					
+					If($AVDHostPool.Configuration.ValidationEnvironment)
+					{
+						$ValidationEnvironment = "Yes"
+					}
+					Else
+					{
+						$ValidationEnvironment = "No"
+					}
+					
+					Switch($AVDHostPool.Location)
+					{
+						"australiacentral"		{$AVDLocation = "Australia Central"; Break}
+						"australiacentral2"		{$AVDLocation = "Australia Central 2"; Break}
+						"australiaeast"			{$AVDLocation = "Australia East"; Break}
+						"australiasoutheast"	{$AVDLocation = "Australia Southeast"; Break}
+						"austriaeast"			{$AVDLocation = "Austria East"; Break}
+						"belgiumcentral"		{$AVDLocation = "Belgium Central"; Break}
+						"brazilsouth"			{$AVDLocation = "Brazil South"; Break}
+						"brazilsoutheast"		{$AVDLocation = "Brazil Southeast"; Break}
+						"canadacentral"			{$AVDLocation = "Canada Central"; Break}
+						"canadaeast"			{$AVDLocation = "Canada East"; Break}
+						"centralindia"			{$AVDLocation = "Central India"; Break}
+						"centralus"				{$AVDLocation = "Central US"; Break}
+						"chilecentral"			{$AVDLocation = "Chile Central"; Break}
+						"eastasia"				{$AVDLocation = "East Asia"; Break}
+						"eastus"				{$AVDLocation = "East US"; Break}
+						"eastus2"				{$AVDLocation = "East US 2"; Break}
+						"eastusstg"				{$AVDLocation = "East US STG"; Break}
+						"francecentral"			{$AVDLocation = "France Central"; Break}
+						"francesouth"			{$AVDLocation = "France South"; Break}
+						"germanynorth"			{$AVDLocation = "Germany North"; Break}
+						"germanywestcentral"	{$AVDLocation = "Germany West Central"; Break}
+						"indonesiacentral"		{$AVDLocation = "Indonesia Central"; Break}
+						"israelcentral"			{$AVDLocation = "Israel Central"; Break}
+						"italynorth"			{$AVDLocation = "Italy North"; Break}
+						"japaneast"				{$AVDLocation = "Japan East"; Break}
+						"japanwest"				{$AVDLocation = "Japan West"; Break}
+						"jioindiacentral"		{$AVDLocation = "Jio India Central"; Break}
+						"jioindiawest"			{$AVDLocation = "Jio India West"; Break}
+						"koreacentral"			{$AVDLocation = "Korea Central"; Break}
+						"koreasouth"			{$AVDLocation = "Korea South"; Break}
+						"malaysiawest"			{$AVDLocation = "Malaysia West"; Break}
+						"mexicocentral"			{$AVDLocation = "Mexico Central"; Break}
+						"newzealandnorth"		{$AVDLocation = "New Zealand North"; Break}
+						"northcentralus"		{$AVDLocation = "North Central US"; Break}
+						"northeurope"			{$AVDLocation = "North Europe"; Break}
+						"norwayeast"			{$AVDLocation = "Norway East"; Break}
+						"norwaywest"			{$AVDLocation = "Norway West"; Break}
+						"polandcentral"			{$AVDLocation = "Poland Central"; Break}
+						"qatarcentral"			{$AVDLocation = "Qatar Central"; Break}
+						"southafricanorth"		{$AVDLocation = "South Africa North"; Break}
+						"southafricawest"		{$AVDLocation = "South Africa West"; Break}
+						"southcentralus"		{$AVDLocation = "South Central US"; Break}
+						"southcentralusstg"		{$AVDLocation = "South Central US STG"; Break}
+						"southeastasia"			{$AVDLocation = "Southeast Asia"; Break}
+						"southindia"			{$AVDLocation = "South India"; Break}
+						"spaincentral"			{$AVDLocation = "Spain Central"; Break}
+						"swedencentral"			{$AVDLocation = "Sweden Central"; Break}
+						"switzerlandnorth"		{$AVDLocation = "Switzerland North"; Break}
+						"switzerlandwest"		{$AVDLocation = "Switzerland West"; Break}
+						"uaecentral"			{$AVDLocation = "UAE Central"; Break}
+						"uaenorth"				{$AVDLocation = "UAE North"; Break}
+						"uksouth"				{$AVDLocation = "UK South"; Break}
+						"ukwest"				{$AVDLocation = "UK West"; Break}
+						"westcentralus"			{$AVDLocation = "West Central US"; Break}
+						"westeurope"			{$AVDLocation = "West Europe"; Break}
+						"westindia"				{$AVDLocation = "West India"; Break}
+						"westus"				{$AVDLocation = "West US"; Break}
+						"westus2"				{$AVDLocation = "West US 2"; Break}
+						"westus3"				{$AVDLocation = "West US 3"; Break}
+						Default					{$AVDLocation = "Unable to determine AVD Location: $($AVDHostPool.Location)"; Break}
+					}
+					
+					$Results = Get-RASAVDWorkspace -Id $AVDHostPool.WorkspaceId -EA 0 4> $Null
+					
+					If($? -and $Null -ne $Results)
+					{
+						$AVDWorkspace = $Results.Name
+						
+						$AVDProvider = Get-RASProvider -Id $Results.ProviderId  -EA 0 4>$Null
+						
+						If(!$?)
+						{
+							$AVDProviderName = "Unable to retrieve AVD Provider Name"
+						}
+						ElseIf($? -and $Null -eq $AVDStatus)
+						{
+							$AVDProviderName = "No AVD Provider Name retrieved"
+						}
+						Else
+						{
+							$AVDProviderName = $AVDProvider.Name
+						}
+					}
+					Else
+					{
+						$AVDWorkspace = "Unable to retrieve Workspace"
+					}
+					
+					If($MSWord -or $PDF)
+					{
+						WriteWordLine 4 0 "Pool $($AVDHostPool.Name)"
+					}
+					If($Text)
+					{
+						Line 4 "Name`t`t`t: " $AVDHostPool.Name
+					}
+					If($HTML)
+					{
+						WriteHTMLLine 4 0 "Pool $($AVDHostPool.Name)"
+					}
+					If($MSWord -or $PDF)
+					{
+						$ScriptInformation = New-Object System.Collections.ArrayList
+						$ScriptInformation.Add(@{Data = "Name"; Value = $AVDHostPool.Name; }) > $Null
+						$ScriptInformation.Add(@{Data = "Enabled"; Value = $AVDHostPool.Enabled.ToString(); }) > $Null
+						$ScriptInformation.Add(@{Data = "Friendly name"; Value = $AVDHostPool.FriendlyName; }) > $Null
+						$ScriptInformation.Add(@{Data = "Description"; Value = $AVDHostPool.Description; }) > $Null
+						$ScriptInformation.Add(@{Data = "Status"; Value = ""; }) > $Null
+						$ScriptInformation.Add(@{Data = "Template"; Value = $AVDTemplateName; }) > $Null
+						$ScriptInformation.Add(@{Data = "Template version"; Value = $AVDTemplateVersionName; }) > $Null
+						$ScriptInformation.Add(@{Data = "Resource group"; Value = $AVDHostPool.ResourceGroup; }) > $Null
+						$ScriptInformation.Add(@{Data = "Location"; Value = $AVDLocation; }) > $Null
+						$ScriptInformation.Add(@{Data = "Validation environment"; Value = $ValidationEnvironment; }) > $Null
+						$ScriptInformation.Add(@{Data = "Workspace"; Value = $AVDWorkspace; }) > $Null
+						$ScriptInformation.Add(@{Data = "Type"; Value = "Can't find"; }) > $Null
+						$ScriptInformation.Add(@{Data = "Publishing type"; Value = "Can't find"; }) > $Null
+						$ScriptInformation.Add(@{Data = "Provisioning type"; Value = "Can't find"; }) > $Null
+						$ScriptInformation.Add(@{Data = "Session limit"; Value = "Can't find"; }) > $Null
+						$ScriptInformation.Add(@{Data = "Load balancer"; Value = "Can't find"; }) > $Null
+						$ScriptInformation.Add(@{Data = "Last modification by"; Value = $AVDHostPool.AdminLastMod; }) > $Null
+						$ScriptInformation.Add(@{Data = "Modified on"; Value = (Get-Date -UFormat "%c" $AVDHostPool.TimeLastMod); }) > $Null
+						$ScriptInformation.Add(@{Data = "Created by"; Value = $AVDHostPool.AdminCreate; }) > $Null
+						$ScriptInformation.Add(@{Data = "Created on"; Value = (Get-Date -UFormat "%c" $AVDHostPool.TimeCreate); }) > $Null
+						$ScriptInformation.Add(@{Data = "ID"; Value = $AVDHostPool.Id.ToString(); }) > $Null
+
+						$Table = AddWordTable -Hashtable $ScriptInformation `
+						-Columns Data,Value `
+						-List `
+						-Format $wdTableGrid `
+						-AutoFit $wdAutoFitFixed;
+
+						SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+						SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+						$Table.Columns.Item(1).Width = 250;
+						$Table.Columns.Item(2).Width = 250;
+
+						$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+						FindWordDocumentEnd
+						$Table = $Null
+						WriteWordLine 0 0 ""
+					}
+					If($Text)
+					{
+						Line 4 "Name`t`t`t: " $AVDHostPool.Name
+						Line 4 "Enabled`t`t`t: " $AVDHostPool.Enabled.ToString()
+						Line 4 "Friendly name`t`t: " $AVDHostPool.FriendlyName
+						Line 4 "Description`t`t: " $AVDHostPool.Description
+						Line 4 "Status`t`t`t: " ""
+						Line 4 "Template`t`t: " $AVDTemplateName
+						Line 4 "Template version`t: " $AVDTemplateVersionName
+						Line 4 "Resource group`t`t: " $AVDHostPool.ResourceGroup
+						Line 4 "Location`t`t: " $AVDLocation
+						Line 4 "Validation environment`t: " $ValidationEnvironment
+						Line 4 "Workspace`t`t: " $AVDWorkspace
+						Line 4 "Type`t`t`t: " "Can't find"
+						Line 4 "Publishing type`t`t: " "Can't find"
+						Line 4 "Provisioning type`t: " "Can't find"
+						Line 4 "Session limit`t`t: " "Can't find"
+						Line 4 "Load balancer`t`t: " "Can't find"
+						Line 4 "Last modification by`t: " $AVDHostPool.AdminLastMod
+						Line 4 "Modified on`t`t: " (Get-Date -UFormat "%c" $AVDHostPool.TimeLastMod)
+						Line 4 "Created by`t`t: " $AVDHostPool.AdminCreate
+						Line 4 "Created on`t`t: " (Get-Date -UFormat "%c" $AVDHostPool.TimeCreate)
+						Line 4 "ID`t`t`t: " $AVDHostPool.Id.ToString()
+						Line 0 ""
+					}
+					If($HTML)
+					{
+						$rowdata = @()
+						$columnHeaders = @("Name",($Script:htmlsb),$AVDHostPool.Name,$htmlwhite)
+						$rowdata += @(,("Enabled",($Script:htmlsb),$AVDHostPool.Enabled.ToString(),$htmlwhite))
+						$rowdata += @(,("Friendly name",($Script:htmlsb),$AVDHostPool.FriendlyName,$htmlwhite))
+						$rowdata += @(,("Description",($Script:htmlsb),$AVDHostPool.Description,$htmlwhite))
+						$rowdata += @(,("Status",($Script:htmlsb),"",$htmlwhite))
+						$rowdata += @(,("Template",($Script:htmlsb),$AVDTemplateName,$htmlwhite))
+						$rowdata += @(,("Template version",($Script:htmlsb),$AVDTemplateVersionName,$htmlwhite))
+						$rowdata += @(,("Resource group",($Script:htmlsb),$AVDHostPool.ResourceGroup,$htmlwhite))
+						$rowdata += @(,("Location",($Script:htmlsb),$AVDLocation,$htmlwhite))
+						$rowdata += @(,("Validation environment",($Script:htmlsb),$ValidationEnvironment,$htmlwhite))
+						$rowdata += @(,("Workspace",($Script:htmlsb),$AVDWorkspace,$htmlwhite))
+						$rowdata += @(,("Type",($Script:htmlsb),"Can't find",$htmlwhite))
+						$rowdata += @(,("Publishing type",($Script:htmlsb),"Can't find",$htmlwhite))
+						$rowdata += @(,("Provisioning type",($Script:htmlsb),"Can't find",$htmlwhite))
+						$rowdata += @(,("Session limit",($Script:htmlsb),"Can't find",$htmlwhite))
+						$rowdata += @(,("Load balancer",($Script:htmlsb),"Can't find",$htmlwhite))
+						$rowdata += @(,("Last modification by",($Script:htmlsb), $AVDHostPool.AdminLastMod,$htmlwhite))
+						$rowdata += @(,("Modified on",($Script:htmlsb), (Get-Date -UFormat "%c" $AVDHostPool.TimeLastMod),$htmlwhite))
+						$rowdata += @(,("Created by",($Script:htmlsb), $AVDHostPool.AdminCreate,$htmlwhite))
+						$rowdata += @(,("Created on",($Script:htmlsb), (Get-Date -UFormat "%c" $AVDHostPool.TimeCreate),$htmlwhite))
+						$rowdata += @(,("ID",($Script:htmlsb),$AVDHostPool.Id.ToString(),$htmlwhite))
+
+						$msg = ""
+						$columnWidths = @("300","275")
+						FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+						WriteHTMLLine 0 0 ""
+					}
+					
+					#General
+					If($MSword -or $PDF)
+					{
+						WriteWordLine 5 0 "General"
+					}
+					If($Text)
+					{
+						Line 4 "General"
+					}
+					If($HTML)
+					{
+						#nothing
+					}
+
+					If($MSWord -or $PDF)
+					{
+						$ScriptInformation = New-Object System.Collections.ArrayList
+						$ScriptInformation.Add(@{Data = "Enable host pool in site"; Value = $AVDHostPool.Enabled.ToString(); }) > $Null
+						$ScriptInformation.Add(@{Data = "Name"; Value = $AVDHostPool.Name; }) > $Null
+						$ScriptInformation.Add(@{Data = "Friendly name"; Value = $AVDHostPool.FriendlyName; }) > $Null
+						$ScriptInformation.Add(@{Data = "Description"; Value = $AVDHostPool.Description; }) > $Null
+						$ScriptInformation.Add(@{Data = "Resource group"; Value = $AVDHostPool.ResourceGroup; }) > $Null
+						$ScriptInformation.Add(@{Data = "Location"; Value = $AVDLocation; }) > $Null
+						$ScriptInformation.Add(@{Data = "Provider"; Value = $AVDProviderName; }) > $Null
+						$ScriptInformation.Add(@{Data = "Workspace"; Value = $AVDWorkspace; }) > $Null
+						$Table = AddWordTable -Hashtable $ScriptInformation `
+						-Columns Data,Value `
+						-List `
+						-Format $wdTableGrid `
+						-AutoFit $wdAutoFitFixed;
+
+						SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+						SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+						$Table.Columns.Item(1).Width = 200;
+						$Table.Columns.Item(2).Width = 250;
+
+						$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+						FindWordDocumentEnd
+						$Table = $Null
+						WriteWordLine 0 0 ""
+					}
+					If($Text)
+					{
+						Line 5 "Enable host pool in site: " $AVDHostPool.Enabled.ToString()
+						Line 5 "Name`t`t`t: " $AVDHostPool.Name
+						Line 5 "Friendly name`t`t: " $AVDHostPool.FriendlyName
+						Line 5 "Description`t`t: " $AVDHostPool.Description
+						Line 5 "Resource group`t`t: " $AVDHostPool.ResourceGroup
+						Line 5 "Location`t`t: " $AVDLocation
+						Line 5 "Provider`t`t: " $AVDProviderName
+						Line 5 "Workspace`t`t: " $AVDWorkspace
+						Line 0 ""
+					}
+					If($HTML)
+					{
+						$rowdata = @()
+						$columnHeaders = @("Enable host pool in site",($Script:htmlsb),$AVDHostPool.Enabled.ToString(),$htmlwhite)
+						$rowdata += @(,("Name",($Script:htmlsb),$AVDHostPool.Name,$htmlwhite))
+						$rowdata += @(,("Friendly name",($Script:htmlsb),$AVDHostPool.FriendlyName,$htmlwhite))
+						$rowdata += @(,("Description",($Script:htmlsb),$AVDHostPool.Description,$htmlwhite))
+						$rowdata += @(,("Resource group",($Script:htmlsb),$AVDHostPool.ResourceGroup,$htmlwhite))
+						$rowdata += @(,("Location",($Script:htmlsb),$AVDLocation,$htmlwhite))
+						$rowdata += @(,("Provider",($Script:htmlsb),$AVDProviderName,$htmlwhite))
+						$rowdata += @(,("Workspace",($Script:htmlsb),$AVDWorkspace,$htmlwhite))
+						
+						$msg = "General"
+						$columnWidths = @("200","275")
+						FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+						WriteHTMLLine 0 0 ""
+					}
+				}
 			}
 		}
 	}
@@ -29404,7 +30226,7 @@ Function OutputConnectionBrokersDetails
 			}
 			If($Text)
 			{
-				Line 2 "Properties"
+				Line 3 "Properties"
 			}
 			If($HTML)
 			{
@@ -29441,12 +30263,12 @@ Function OutputConnectionBrokersDetails
 			}
 			If($Text)
 			{
-				Line 3 "Enable Server in Site`t: " $ConnectionBroker.Enabled.ToString()
-				Line 3 "Server`t`t`t: " $ConnectionBroker.Server
-				Line 3 "IP`t`t`t: " $ConnectionBroker.IP
-				Line 3 "Alternative IPs`t`t: " $ConnectionBroker.AlternativeIPs
-				Line 3 "Description`t`t: " $ConnectionBroker.Description
-				Line 3 "Standby`t`t`t: " $ConnectionBroker.Standby.ToString()
+				Line 4 "Enable Server in Site`t: " $ConnectionBroker.Enabled.ToString()
+				Line 4 "Server`t`t`t: " $ConnectionBroker.Server
+				Line 4 "IP`t`t`t: " $ConnectionBroker.IP
+				Line 4 "Alternative IPs`t`t: " $ConnectionBroker.AlternativeIPs
+				Line 4 "Description`t`t: " $ConnectionBroker.Description
+				Line 4 "Standby`t`t`t: " $ConnectionBroker.Standby.ToString()
 				Line 0 ""
 			}
 			If($HTML)
@@ -29521,7 +30343,19 @@ Function OutputConnectionBrokersDetails
 			{
 				If($MSWord -or $PDF)
 				{
-					WriteWordLine 3 0 "Auto-promotion"
+					WriteWordLine 4 0 "Auto-promotion"
+				}
+				If($Text)
+				{
+					Line 3 "Auto-promotion"
+				}
+				If($HTML)
+				{
+					WriteHTMLLine 4 0 "Auto-promotion"
+				}
+				
+				If($MSWord -or $PDF)
+				{
 					$ScriptInformation = New-Object System.Collections.ArrayList
 					$ScriptInformation.Add(@{Data = "Auto-promotion Enabled"; Value = $ConnectionBrokerAutoPromotion.Enabled.ToString(); }) > $Null
 					If($ConnectionBrokerAutoPromotion.Enabled)
@@ -29551,19 +30385,17 @@ Function OutputConnectionBrokersDetails
 				}
 				If($Text)
 				{
-					Line 2 "Auto-promotion"
-					Line 3 "Auto-promotion Enabled: " $ConnectionBrokerAutoPromotion.Enabled.ToString()
+					Line 4 "Auto-promotion Enabled: " $ConnectionBrokerAutoPromotion.Enabled.ToString()
 					If($ConnectionBrokerAutoPromotion.Enabled)
 					{
-						Line 3 "Enable auto-promotion after (minutes): " $ConnectionBrokerAutoPromotion.AutoPromoteAfterMins.ToString()
-						Line 3 "Enable fallback: " $ConnectionBrokerAutoPromotion.FailbackEnabled.ToString()
-						Line 3 "Replicate settings: " $ConnectionBrokerAutoPromotion.Replicate.ToString()
+						Line 4 "Enable auto-promotion after (minutes): " $ConnectionBrokerAutoPromotion.AutoPromoteAfterMins.ToString()
+						Line 4 "Enable fallback: " $ConnectionBrokerAutoPromotion.FailbackEnabled.ToString()
+						Line 4 "Replicate settings: " $ConnectionBrokerAutoPromotion.Replicate.ToString()
 					}
 					Line 0 ""
 				}
 				If($HTML)
 				{
-					WriteHTMLLine 3 0 "Auto-promotion"
 					$rowdata = @()
 					$columnHeaders = @("Auto-promotion Enabled",($Script:htmlsb),$ConnectionBrokerAutoPromotion.Enabled.ToString(),$htmlwhite)
 					If($ConnectionBrokerAutoPromotion.Enabled)
@@ -32840,6 +33672,613 @@ Function OutputCertificatesDetails
 
 Function OutputApplicationPackagesDetails
 {
+	#Application Packages
+	
+	Write-Verbose "$(Get-Date -Format G): Output Application Packages"
+
+	If($MSWord -or $PDF)
+	{
+		WriteWordLine 2 0 "Application Packages"
+	}
+	If($Text)
+	{
+		Line 1 "Application Packages"
+	}
+	If($HTML)
+	{
+		WriteHTMLLine 2 0 "Application Packages"
+	}
+	
+	$AppPackages = Get-RASAppPackage -SiteId $Site.Id -ea 0 4>$Null
+	
+	If(!$?)
+	{
+		Write-Warning "
+		`n
+		Unable to retrieve Application Packages for Site $($Site.Name)`
+		"
+		If($MSWord -or $PDF)
+		{
+			WriteWordLine 0 0 ""
+			WriteWordLine 0 0 "Unable to retrieve Application Packages for Site $($Site.Name)"
+			WriteWordLine 0 0 ""
+		}
+		If($Text)
+		{
+			Line 0 ""
+			Line 0 "Unable to retrieve Application Packages for Site $($Site.Name)"
+			Line 0 ""
+		}
+		If($HTML)
+		{
+			WriteHTMLLine 0 0 ""
+			WriteHTMLLine 0 0 "Unable to retrieve Application Packages for Site $($Site.Name)"
+			WriteHTMLLine 0 0 ""
+		}
+	}
+	ElseIf($? -and $Null -eq $AppPackages)
+	{
+		Write-Host "
+	No Application Packages retrieved for Site $($Site.Name).`
+		" -ForegroundColor White
+		If($MSWord -or $PDF)
+		{
+			WriteWordLine 0 0 ""
+			WriteWordLine 0 0 "No Application Packages retrieved for Site $($Site.Name)"
+			WriteWordLine 0 0 ""
+		}
+		If($Text)
+		{
+			Line 0 ""
+			Line 0 "No Application Packages retrieved for Site $($Site.Name)"
+			Line 0 ""
+		}
+		If($HTML)
+		{
+			WriteHTMLLine 0 0 ""
+			WriteHTMLLine 0 0 "No Application Packages retrieved for Site $($Site.Name)"
+			WriteHTMLLine 0 0 ""
+		}
+	}
+	Else
+	{
+		<#
+			PS C:\Parallels-RAS-V19.x-Doc-Script-4.00> $AppPackage1 | % {$_.psobject.properties | select name, value | sort name}
+
+			Name          Value
+			----          -----
+			AdminCreate   rasadmin
+			AdminLastMod  rasadmin
+			Certificate   RASAdminEngine.Core.OutputModels.AppPackageCertificate
+			Dependencies
+			DisplayName   Mozilla Firefox
+			Enabled       True
+			Id            1
+			MSIXImagePath \\PMMSIRAS03\Appimages\FireFox_99.vhd
+			PackagedApps  {App}
+			PackageName   Mozilla.MozillaFirefox
+			Publisher     Mozilla Corporation
+			SiteId        1
+			TagIds        {1, 2}
+			TimeCreate    5/11/2022 8:10:51 PM
+			TimeLastMod   1/13/2023 3:05:32 PM
+			Version       99.0.0.0
+
+
+			PS C:\Parallels-RAS-V19.x-Doc-Script-4.00> $AppPackage2 | % {$_.psobject.properties | select name, value | sort name}
+
+			Name          Value
+			----          -----
+			AdminCreate   rasadmin
+			AdminLastMod  cmadmin@parallelslabus
+			Certificate   RASAdminEngine.Core.OutputModels.AppPackageCertificate
+			Dependencies
+			DisplayName   NotepadPP_1.0.0.0_x64
+			Enabled       True
+			Id            2
+			MSIXImagePath \\PMMSIRAS03\appimages\NotepadPP_1.0.0.vhd
+			PackagedApps  {NOTEPAD}
+			PackageName   NotepadPP
+			Publisher     Nerdio
+			SiteId        1
+			TagIds        {}
+			TimeCreate    6/8/2022 9:30:11 AM
+			TimeLastMod   10/14/2024 11:43:26 AM
+			Version       1.0.0.0
+
+
+			PS C:\Parallels-RAS-V19.x-Doc-Script-4.00>
+
+			PS C:\Parallels-RAS-V19.x-Doc-Script-4.00> Get-RASAppPackageSettings |fl
+
+
+			SiteId                                    : 1
+			Enabled                                   : True
+			Tags                                      : {Production, Pre-production, Custom}
+			ProvisionPackageCertificatesAutomatically : True
+
+			PS C:\Parallels-RAS-V19.x-Doc-Script-4.00> $AppTags = $Result.Tags
+			PS C:\Parallels-RAS-V19.x-Doc-Script-4.00> $AppTags
+
+			Id Name
+			-- ----
+			 1 Production
+			 2 Pre-production
+			 3 Custom
+			PS C:\Parallels-RAS-V19.x-Doc-Script-4.00> $x = 1
+			PS C:\Parallels-RAS-V19.x-Doc-Script-4.00> $AppTags | Where-Object {$_.id -eq $x}
+
+			Id Name
+			-- ----
+			 1 Production
+
+
+			PS C:\Parallels-RAS-V19.x-Doc-Script-4.00> $AppTag = $AppTags | Where-Object {$_.id -eq $x}
+			PS C:\Parallels-RAS-V19.x-Doc-Script-4.00> $AppTag.Name
+			Production
+			PS C:\Parallels-RAS-V19.x-Doc-Script-4.00>
+		#>
+
+		$Result = Get-RASAppPackageSettings -SiteId $Site.Id -ea 0 4>$Null
+		
+		If($? -and $Null -ne $Result)
+		{
+			[array]$AppTags = $Result.Tags
+		}
+		Else
+		{
+			[array]$AppTags = @()
+		}
+		
+		ForEach($AppPackage in $AppPackages)
+		{
+			Write-Verbose "$(Get-Date -Format G): `t$($AppPackage.PackageName)"
+			
+			If($MSWord -Or $PDF)
+			{
+				WriteWordLine 3 0 "$($AppPackage.PackageName)"
+			}
+			If($Text)
+			{
+				Line 2 "Package`t`t`t`t: " $AppPackage.PackageName
+			}
+			If($HTML)
+			{
+				WriteHTMLLine 3 0 "$($AppPackage.PackageName)"
+			}
+			
+			If($MSWord -or $PDF)
+			{
+				$ScriptInformation = New-Object System.Collections.ArrayList
+				$ScriptInformation.Add(@{Data = "Package"; Value = $AppPackage.PackageName; }) > $Null
+				$ScriptInformation.Add(@{Data = "Enabled"; Value = $AppPackage.Enabled.ToString(); }) > $Null
+				$ScriptInformation.Add(@{Data = "Display name"; Value = $AppPackage.DisplayName; }) > $Null
+				$ScriptInformation.Add(@{Data = "Version"; Value = $AppPackage.Version; }) > $Null
+				
+				$cnt = -1
+				ForEach($Tag in $AppPackage.TagIds)
+				{
+					$cnt++
+					$AppTag = $AppTags | Where-Object {$_.id -eq $Tag}
+					
+					If($cnt -eq 0)
+					{
+						$ScriptInformation.Add(@{Data = "Version tag"; Value = $AppTag.Name; }) > $Null
+					}
+					Else
+					{
+						$ScriptInformation.Add(@{Data = ""; Value = $AppTag.Name; }) > $Null
+					}
+				}
+
+				$ScriptInformation.Add(@{Data = "Publisher"; Value = $AppPackage.Publisher; }) > $Null
+				$ScriptInformation.Add(@{Data = "Certificate expiration date"; Value = (Get-Date -UFormat "%c" $AppPackage.Certificate.ExpirationDate); }) > $Null
+				$ScriptInformation.Add(@{Data = "Type"; Value = ""; }) > $Null
+				$ScriptInformation.Add(@{Data = "Image path"; Value = $AppPackage.MSIXImagePath; }) > $Null
+				$ScriptInformation.Add(@{Data = "Dependencies"; Value = ""; }) > $Null
+				
+				$cnt = -1
+				ForEach($App in $AppPackage.PackagedApps)
+				{
+					$cnt++
+					
+					If($cnt -eq 0)
+					{
+						$ScriptInformation.Add(@{Data = "Applications"; Value = $App.Name; }) > $Null
+					}
+					Else
+					{
+						$ScriptInformation.Add(@{Data = ""; Value = $App.Name; }) > $Null
+					}
+				}
+
+				$ScriptInformation.Add(@{Data = "Last modification by"; Value = $AppPackage.AdminLastMod; }) > $Null
+				$ScriptInformation.Add(@{Data = "Modified on"; Value = (Get-Date -UFormat "%c" $AppPackage.TimeLastMod); }) > $Null
+				$ScriptInformation.Add(@{Data = "Created by"; Value = $AppPackage.AdminCreate; }) > $Null
+				$ScriptInformation.Add(@{Data = "Created on"; Value = (Get-Date -UFormat "%c" $AppPackage.TimeCreate); }) > $Null
+				$ScriptInformation.Add(@{Data = "ID"; Value = $AppPackage.Id.ToString(); }) > $Null
+
+				$Table = AddWordTable -Hashtable $ScriptInformation `
+				-Columns Data,Value `
+				-List `
+				-Format $wdTableGrid `
+				-AutoFit $wdAutoFitFixed
+
+				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+				$Table.Columns.Item(1).Width = 200;
+				$Table.Columns.Item(2).Width = 250;
+
+				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+				FindWordDocumentEnd
+				$Table = $Null
+				WriteWordLine 0 0 ""
+			}
+			If($Text)
+			{
+				Line 2 "Enabled`t`t`t`t: " $AppPackage.Enabled.ToString()
+				Line 2 "Display name`t`t`t: " $AppPackage.DisplayName
+				Line 2 "Version`t`t`t`t: " $AppPackage.Version
+				
+				$cnt = -1
+				ForEach($Tag in $AppPackage.TagIds)
+				{
+					$cnt++
+					$AppTag = $AppTags | Where-Object {$_.id -eq $Tag}
+					
+					If($cnt -eq 0)
+					{
+						Line 2 "Version tag`t`t`t: " $AppTag.Name
+					}
+					Else
+					{
+						Line 6 "  " $AppTag.Name
+					}
+				}
+
+				Line 2 "Publisher`t`t`t: " $AppPackage.Publisher
+				Line 2 "Certificate expiration date`t: " (Get-Date -UFormat "%c" $AppPackage.Certificate.ExpirationDate)
+				Line 2 "Type`t`t`t`t: " "type"
+				Line 2 "Image path`t`t`t: " $AppPackage.MSIXImagePath
+				Line 2 "Dependencies`t`t`t: " "depends"
+				
+				$cnt = -1
+				ForEach($App in $AppPackage.PackagedApps)
+				{
+					$cnt++
+					
+					If($cnt -eq 0)
+					{
+						Line 2 "Applications`t`t`t: " $App.Name
+					}
+					Else
+					{
+						Line 6 "  " $App.Name
+					}
+				}
+
+				Line 2 "Last modification by`t`t: " $AppPackage.AdminLastMod
+				Line 2 "Modified on`t`t`t: " (Get-Date -UFormat "%c" $AppPackage.TimeLastMod)
+				Line 2 "Created by`t`t`t: " $AppPackage.AdminCreate
+				Line 2 "Created on`t`t`t: " (Get-Date -UFormat "%c" $AppPackage.TimeCreate)
+				Line 2 "ID`t`t`t`t: " $AppPackage.Id.ToString()
+				Line 0 ""
+			}
+			If($HTML)
+			{
+				$rowdata = @()
+				$columnHeaders = @("Package",($Script:htmlsb),$AppPackage.PackageName,$htmlwhite)
+				$rowdata += @(,("Enabled",($Script:htmlsb),$AppPackage.Enabled.ToString(),$htmlwhite))
+				$rowdata += @(,("Display name",($Script:htmlsb),$AppPackage.DisplayName,$htmlwhite))
+				$rowdata += @(,("Version",($Script:htmlsb),$AppPackage.Version,$htmlwhite))
+				
+				$cnt = -1
+				ForEach($Tag in $AppPackage.TagIds)
+				{
+					$cnt++
+					$AppTag = $AppTags | Where-Object {$_.id -eq $Tag}
+					
+					If($cnt -eq 0)
+					{
+						$rowdata += @(,("Version tag",($Script:htmlsb),$AppTag.Name,$htmlwhite))
+					}
+					Else
+					{
+						$rowdata += @(,("",($Script:htmlsb),$AppTag.Name,$htmlwhite))
+					}
+				}
+
+				$rowdata += @(,("Publisher",($Script:htmlsb),$AppPackage.Publisher,$htmlwhite))
+				$rowdata += @(,("Certificate expiration date",($Script:htmlsb),(Get-Date -UFormat "%c" $AppPackage.Certificate.ExpirationDate),$htmlwhite))
+				$rowdata += @(,("Type",($Script:htmlsb),"",$htmlwhite))
+				$rowdata += @(,("Image path",($Script:htmlsb),$AppPackage.MSIXImagePath,$htmlwhite))
+				$rowdata += @(,("Dependencies",($Script:htmlsb),"",$htmlwhite))
+				
+				$cnt = -1
+				ForEach($App in $AppPackage.PackagedApps)
+				{
+					$cnt++
+					
+					If($cnt -eq 0)
+					{
+						$rowdata += @(,("Applications",($Script:htmlsb),$App.Name,$htmlwhite))
+					}
+					Else
+					{
+						$rowdata += @(,("",($Script:htmlsb),$App.Name,$htmlwhite))
+					}
+				}
+
+				$rowdata += @(,("Last modification by",($Script:htmlsb),$AppPackage.AdminLastMod,$htmlwhite))
+				$rowdata += @(,("Modified on",($Script:htmlsb),(Get-Date -UFormat "%c" $AppPackage.TimeLastMod),$htmlwhite))
+				$rowdata += @(,("Created by",($Script:htmlsb),$AppPackage.AdminCreate,$htmlwhite))
+				$rowdata += @(,("Created on",($Script:htmlsb),(Get-Date -UFormat "%c" $AppPackage.TimeCreate),$htmlwhite))
+				$rowdata += @(,("ID",($Script:htmlsb),$AppPackage.Id.ToString(),$htmlwhite))
+
+				$msg = ""
+				$columnWidths = @("200","275")
+				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+				WriteHTMLLine 0 0 ""
+			}
+			
+			#General
+			If($MSWord -or $PDF)
+			{
+				WriteWordLine 4 0 "General"
+			}
+			If($Text)
+			{
+				Line 2 "General"
+			}
+			If($HTML)
+			{
+				WriteHTMLLine 4 0 "General"
+			}
+			
+			If($MSWord -or $PDF)
+			{
+				$ScriptInformation = New-Object System.Collections.ArrayList
+				$ScriptInformation.Add(@{Data = "Enable application package in site"; Value = $AppPackage.Enabled.ToString(); }) > $Null
+				$ScriptInformation.Add(@{Data = "Package"; Value = $AppPackage.PackageName; }) > $Null
+				$ScriptInformation.Add(@{Data = "Display name"; Value = $AppPackage.DisplayName; }) > $Null
+				$ScriptInformation.Add(@{Data = "Version"; Value = $AppPackage.Version; }) > $Null
+				$ScriptInformation.Add(@{Data = "Publisher"; Value = $AppPackage.Publisher; }) > $Null
+				$ScriptInformation.Add(@{Data = "MSIX image path"; Value = $AppPackage.MSIXImagePath; }) > $Null
+				
+				$cnt = -1
+				ForEach($Tag in $AppPackage.TagIds)
+				{
+					$cnt++
+					$AppTag = $AppTags | Where-Object {$_.id -eq $Tag}
+					
+					If($cnt -eq 0)
+					{
+						$ScriptInformation.Add(@{Data = "Version tag"; Value = $AppTag.Name; }) > $Null
+					}
+					Else
+					{
+						$ScriptInformation.Add(@{Data = ""; Value = $AppTag.Name; }) > $Null
+					}
+				}
+
+				$cnt = -1
+				ForEach($App in $AppPackage.PackagedApps)
+				{
+					$cnt++
+					
+					If($cnt -eq 0)
+					{
+						$ScriptInformation.Add(@{Data = "Applications"; Value = $App.Name; }) > $Null
+					}
+					Else
+					{
+						$ScriptInformation.Add(@{Data = ""; Value = $App.Name; }) > $Null
+					}
+				}
+
+				$ScriptInformation.Add(@{Data = "Dependencies"; Value = "Depends"; }) > $Null
+				
+				$Table = AddWordTable -Hashtable $ScriptInformation `
+				-Columns Data,Value `
+				-List `
+				-Format $wdTableGrid `
+				-AutoFit $wdAutoFitFixed
+
+				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+				$Table.Columns.Item(1).Width = 200;
+				$Table.Columns.Item(2).Width = 250;
+
+				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+				FindWordDocumentEnd
+				$Table = $Null
+				WriteWordLine 0 0 ""
+			}
+			If($Text)
+			{
+				Line 3 "Enable application package in site`t: " $AppPackage.Enabled.ToString()
+				Line 3 "Package`t`t`t`t`t: " $AppPackage.PackageName
+				Line 3 "Display name`t`t`t`t: " $AppPackage.DisplayName
+				Line 3 "Version`t`t`t`t`t: " $AppPackage.Version
+				Line 3 "Publisher`t`t`t`t: " $AppPackage.Publisher
+				Line 3 "MSIX image path`t`t`t`t: " $AppPackage.MSIXImagePath
+				
+				$cnt = -1
+				ForEach($Tag in $AppPackage.TagIds)
+				{
+					$cnt++
+					$AppTag = $AppTags | Where-Object {$_.id -eq $Tag}
+					
+					If($cnt -eq 0)
+					{
+						Line 3 "Version tag`t`t`t`t: " $AppTag.Name
+					}
+					Else
+					{
+						Line 8 "  " $AppTag.Name
+					}
+				}
+
+				$cnt = -1
+				ForEach($App in $AppPackage.PackagedApps)
+				{
+					$cnt++
+					
+					If($cnt -eq 0)
+					{
+						Line 3 "Applications`t`t`t`t: " $App.Name
+					}
+					Else
+					{
+						Line 8 "  " $App.Name
+					}
+				}
+
+				Line 3 "Dependencies`t`t`t`t: " "depends"
+				Line 0 ""
+			}
+			If($HTML)
+			{
+				$rowdata = @()
+				$columnHeaders = @("Enable application package in site",($Script:htmlsb),$AppPackage.Enabled.ToString(),$htmlwhite)
+				$rowdata += @(,("Package",($Script:htmlsb),$AppPackage.PackageName,$htmlwhite))
+				$rowdata += @(,("Display name",($Script:htmlsb),$AppPackage.DisplayName,$htmlwhite))
+				$rowdata += @(,("Version",($Script:htmlsb),$AppPackage.Version,$htmlwhite))
+				$rowdata += @(,("Publisher",($Script:htmlsb),$AppPackage.Publisher,$htmlwhite))
+				$rowdata += @(,("MSIX image path",($Script:htmlsb),$AppPackage.MSIXImagePath,$htmlwhite))
+				
+				$cnt = -1
+				ForEach($Tag in $AppPackage.TagIds)
+				{
+					$cnt++
+					$AppTag = $AppTags | Where-Object {$_.id -eq $Tag}
+					
+					If($cnt -eq 0)
+					{
+						$rowdata += @(,("Version tag",($Script:htmlsb),$AppTag.Name,$htmlwhite))
+					}
+					Else
+					{
+						$rowdata += @(,("",($Script:htmlsb),$AppTag.Name,$htmlwhite))
+					}
+				}
+
+				$cnt = -1
+				ForEach($App in $AppPackage.PackagedApps)
+				{
+					$cnt++
+					
+					If($cnt -eq 0)
+					{
+						$rowdata += @(,("Applications",($Script:htmlsb),$App.Name,$htmlwhite))
+					}
+					Else
+					{
+						$rowdata += @(,("",($Script:htmlsb),$App.Name,$htmlwhite))
+					}
+				}
+
+				$rowdata += @(,("Dependencies",($Script:htmlsb),"Depends",$htmlwhite))
+				
+				$msg = ""
+				$columnWidths = @("200","275")
+				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+				WriteHTMLLine 0 0 ""
+			}
+			
+			#Certificate
+			<#
+				PS C:\Parallels-RAS-V19.x-Doc-Script-4.00> $apppackage.Certificate | fl
+
+
+				Status         : Expired
+				PublicKey      : -----BEGIN CERTIFICATE-----
+								 MIIGYjCCBUqgAwIBAgIQDBzT7qR+3aegMlc7AU0K/TANBgkqhkiG9w0BAQsFADBy
+								 -----END CERTIFICATE-----
+
+				ExpirationDate : 6/20/2024 1:59:59 AM
+				KeySize        : KeySize4096
+				CommonName     : DigiCert SHA2 Assured ID Code Signing CA
+
+				KeySize1024		1024
+				KeySize2048		2048
+				KeySize4096		4096
+				KeySize3072		3072
+				KeySize521		521
+				KeySizeUnknown	Unknown
+			#>
+
+			If($MSWord -or $PDF)
+			{
+				WriteWordLine 4 0 "Certificate"
+			}
+			If($Text)
+			{
+				Line 2 "Certificate"
+			}
+			If($HTML)
+			{
+				WriteHTMLLine 4 0 "Certificate"
+			}
+			
+			Switch($AppPackage.Certificate.KeySize)
+			{
+				"KeySize1024"		{$CertKeySize = "1024";Break}
+				"KeySize2048"		{$CertKeySize = "2048";Break}
+				"KeySize4096"		{$CertKeySize = "4096";Break}
+				"KeySize3072"		{$CertKeySize = "3072";Break}
+				"KeySize521"		{$CertKeySize = "521";Break}
+				"KeySizeUnknown"	{$CertKeySize = "Unknown";Break}
+				Default				{$CertKeySize = "Unable to determine the Certificate Key Size: $($AppPackage.Certificate.KeySize)";Break}
+			}
+
+			If($MSWord -or $PDF)
+			{
+				$ScriptInformation = New-Object System.Collections.ArrayList
+				$ScriptInformation.Add(@{Data = "Key size"; Value = $CertKeySize; }) > $Null
+				$ScriptInformation.Add(@{Data = "Expiration date"; Value = (Get-Date -UFormat "%c" $AppPackage.Certificate.ExpirationDate); }) > $Null
+				$ScriptInformation.Add(@{Data = "Common name"; Value = $AppPackage.Certificate.CommonName; }) > $Null
+				
+				$Table = AddWordTable -Hashtable $ScriptInformation `
+				-Columns Data,Value `
+				-List `
+				-Format $wdTableGrid `
+				-AutoFit $wdAutoFitFixed
+
+				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+				$Table.Columns.Item(1).Width = 200;
+				$Table.Columns.Item(2).Width = 250;
+
+				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+				FindWordDocumentEnd
+				$Table = $Null
+				WriteWordLine 0 0 ""
+			}
+			If($Text)
+			{
+				Line 3 "Key size`t: " $CertKeySize
+				LIne 3 "Expiration date`t: " (Get-Date -UFormat "%c" $AppPackage.Certificate.ExpirationDate)
+				Line 3 "Common name`t: " $AppPackage.Certificate.CommonName
+				Line 0 ""
+			}
+			If($HTML)
+			{
+				$rowdata = @()
+				$columnHeaders = @("Key size",($Script:htmlsb),$CertKeySize,$htmlwhite)
+				$rowdata += @(,("Expiration date",($Script:htmlsb),(Get-Date -UFormat "%c" $AppPackage.Certificate.ExpirationDate),$htmlwhite))
+				$rowdata += @(,("Common name",($Script:htmlsb),$AppPackage.Certificate.CommonName,$htmlwhite))
+				
+				$msg = ""
+				$columnWidths = @("200","275")
+				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+				WriteHTMLLine 0 0 ""
+			}
+		}
+	}
 }
 
 Function OutputSettingsDetails
@@ -34057,15 +35496,15 @@ Function OutputPublishingSectionPage
 	If($MSWord -or $PDF)
 	{
 		$Script:Selection.InsertNewPage()
-		WriteWordLine 1 0 "Publishing for Site $($SiteName)"
+		WriteWordLine 1 0 "Publishing"
 	}
 	If($Text)
 	{
-		Line 0 "Publishing for Site $($SiteName)"
+		Line 0 "Publishing"
 	}
 	If($HTML)
 	{
-		WriteHTMLLine 1 0 "Publishing for Site $($SiteName)"
+		WriteHTMLLine 1 0 "Publishing"
 	}
 }
 
@@ -61663,8 +63102,8 @@ ProcessScriptEnd
 # SIG # Begin signature block
 # MIIthQYJKoZIhvcNAQcCoIItdjCCLXICAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUC3jmJwVPvReGDO9TNsGn42L9
-# xMyggibfMIIFjTCCBHWgAwIBAgIQDpsYjvnQLefv21DiCEAYWjANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUz5Mey0+++km/UVJI3awL29dY
+# Ld2ggibfMIIFjTCCBHWgAwIBAgIQDpsYjvnQLefv21DiCEAYWjANBgkqhkiG9w0B
 # AQwFADBlMQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYD
 # VQQLExB3d3cuZGlnaWNlcnQuY29tMSQwIgYDVQQDExtEaWdpQ2VydCBBc3N1cmVk
 # IElEIFJvb3QgQ0EwHhcNMjIwODAxMDAwMDAwWhcNMzExMTA5MjM1OTU5WjBiMQsw
@@ -61875,33 +63314,33 @@ ProcessScriptEnd
 # UzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/BgNVBAMTOERpZ2lDZXJ0IFRy
 # dXN0ZWQgRzQgQ29kZSBTaWduaW5nIFJTQTQwOTYgU0hBMzg0IDIwMjEgQ0ExAhAL
 # bN+2Z4EOKufLWhG6HUlwMAkGBSsOAwIaBQCgQDAZBgkqhkiG9w0BCQMxDAYKKwYB
-# BAGCNwIBBDAjBgkqhkiG9w0BCQQxFgQUYPbosadTVnC/wEkC572vu2Vxi7swDQYJ
-# KoZIhvcNAQEBBQAEggIAIuHhUj9FWtMRFWGgLzu3yOrQK2Td4czDGom2y1LILoAU
-# 5PhXsO2W0tKheoFW5NCdrSdLAje4YFHqTyJtDqssHeZs9O9X4RKZwiFFt/G55iwO
-# QI3p28uu+k8lCxZeTSV6/rpg0tHg81ehLGaKAXeh/5huZ5ziZ75OuDIHyYAyuHf1
-# 6qaRp+kpc5J0rdCB7rMeGaJZTt6kfDItt3opPH6pOD83Wbt/2VSxiU5Estlqd0OB
-# CnUdpD9heFpAY+552ZYLF+mDjCTB65y+IE/izDRvYkQOT6upe8jKZNqI69uZUNjP
-# HpTPPjZqBOWgJMnlO7Uo/zmDY8dT5hy44NT4fu9eY8xnEyu1usDO18qhUDek7R74
-# zfDSuigjfmK9N2+LZnPEfu5XglAbqEeTgyVssiUtAYCpfAPan0LLXc1uTv6G3MPX
-# E8tCmlPUq/2DF/KfJCnulkGxQiGNEhhhE09fy6KwDcxZ+3OOc2fvB6J9d5H1yYnd
-# Bhyj9xNcBGIbswChoJ/LtynsbEFq3zUJvw/OMzzxiT38oH5+ZrGvgRTo+czeSFxd
-# 1nr5RwlAzVedNVFbu7cjejkgZqLL/UtclayrGXBbiGUjF/t5vw/gxYXO07ZsaPoj
-# 4CboQmRxSy2m5nZmv2nx19LBAMO2upnUXT30EhAI2Ik9u8Ky0V0Hvy+u2uA31Rmh
+# BAGCNwIBBDAjBgkqhkiG9w0BCQQxFgQUv4VhOXKyHyT5VDIXIYqiJJaksKkwDQYJ
+# KoZIhvcNAQEBBQAEggIA0isiCNgEZrJ3UUmeAjfpBUT1U6G8C4lw84rkPVZR75Vk
+# iXRswh/IsAelK4CrUnl2oUkOdaD7EWEnW8CW8y9h4RIZTgN2UDranButps2Hseky
+# 2lKUKuBeouG1f+eDCwFlShw8WW5g2PdBTGmZkPlGXeIsq0EjVSoQzu5vFXFvGeME
+# KeCKdVaEbmMDnpmr96pOkkzl2ox2jKbFs3wji9ntuP2d8oLKl34pdycl6wd8coYN
+# MD0ZmylhBIm1RETWnuV18kd+Y5W957/XvZXzi6U3uKgFC3vuoQAJhrROv84eWtLk
+# APO1eItiQlXMGpx3PBi/vtW2LSqIgFLziEfbs9I21voA+MPIiOuCDz/7FR3bDnIF
+# kdaf2I7JreatnODwnMZLArB/htT3iYEHC5iiS7iABqHiILUgSAbRbLdIBikL/Gm4
+# pj7c2cY9/pBz0H6JibdIed818K5UdhYjgr7PlLvMpLCMOpJJauNmmJmaeAGHCmWX
+# u2zQkRAWS9HXKTJG/luEfRY42EMkYNGI7PcDnpovqrhwVZKMItwYJm5x/P7866UH
+# pPJpD03dhDZKvc0p+N6rdo81TCHoEe9aEapY1lAft/v0olq9Kg7Ie1YGk0x770aE
+# 6tEeeGbJ8u/sfPNW2xJo6MnHWErPP8JraUTuOc82qc7axqjRPBQ7TbympinlBNqh
 # ggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8CAQEwfTBpMQswCQYDVQQGEwJVUzEX
 # MBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/BgNVBAMTOERpZ2lDZXJ0IFRydXN0
 # ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYgU0hBMjU2IDIwMjUgQ0ExAhAKgO8Y
 # S43xBYLRxHanlXRoMA0GCWCGSAFlAwQCAQUAoGkwGAYJKoZIhvcNAQkDMQsGCSqG
-# SIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjUxMTIxMTc1MjAzWjAvBgkqhkiG9w0B
-# CQQxIgQgtmSUwVj5pbMrxNImeMcxo1U2E+mTtLprbUgIhRYX1QswDQYJKoZIhvcN
-# AQEBBQAEggIAWM4ZMAAgtiN85VxPw/NK4OoTKj5wT2eaQS0QlMLaeIzQg4cE8aT3
-# JlWxaNtTSukAFJsi8El+sbaWVG9ojQK564cuFcJ+SU91elry5v7pITn67dQVzJDS
-# ZvHOzL0SJXgxYJWOc6UOpQuzr+gkzZq12n30lNtl1rD3RYjOBTzq+bypGusM98DE
-# Wrd/GG8sUxdrf4kaI0rmGJ91DCgtF8UjZFdHX30K9ESkwFwE/NkPHfSBY3QfES1y
-# zsAacZe5BLt5WEtYX++c9Ox9mhbkaDSOQBq6uExjf7PvhhYsshCy1deJTN9LxlKN
-# 80n28XMmZAmH73Ja+g4DKtccsMivQ6sV2XrZqiPu0gPlsaJwVqq0zN/S5nFjrejM
-# jm+ePUqb/rfUPhg6MTKBXwLR5FlJJMKCyubdtjCnc5vpTwKELMHlixwPXAu1SavQ
-# bHh/4K0Z/u2xHwkoDOu4aloqbchG89442y6Go8JqjyQBDOs9yWP6+QuL1WC+iB+c
-# GEizhm/Th5qtMT8VMTJhgGQKOUASJjltVZuBzalfSjVemT63ImSqwvKjm52acbBA
-# JnipZnNqVZdHEfsoVRG9cxfI4jDmGig8JCrC9GJDjk1byltRQtTloreZ3WLfVBRi
-# qn95m1LBFCyZJP3zvWEIC5N4WBxQKvs6OdSkO2YSQxpC/JOUFkPmN24=
+# SIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjUxMTI1MTY0MzA5WjAvBgkqhkiG9w0B
+# CQQxIgQg43xTyGfE9YkYiFZWqgVk01ftszGmuGYY/XUasPlDt28wDQYJKoZIhvcN
+# AQEBBQAEggIAwdsE2MYZdwhAvOpGGrcRNMkvsMDYHgv/KK77hwS2CsjMECXmALZU
+# oK0dsnkqUNavp865V5F8VBh9go9UFe/RLgt78dNSKzl6VBSjO3vqDO0alkUbEBPP
+# nnXFfN8+imy37dEoOLiPmkXEJvkD1C0Wp9OiBeqjoj6IDh9q43l/P+3dhgyoNbyp
+# yIcxUzQCB71v644soM7ulISi2VJmJsS/wI60M4Q2GP0SXOJrJrkTRhq6S5vWmkjJ
+# Al/9t/c2u2CXYsS0QuPkwyCX2FogxEFRZclU0eFJHDjEPwhmNCV6UV7c/8xZRyVE
+# w4wYRQcN2vKtlg/nGVbJeaaTkfyWwR98xO1/TeWx3E+DdmSyIwDyZY5m1bYgP0yG
+# Kdoas3S/EyQzfsHMWSe4x9zDaNspHtKim4WrjkdTUB5MjllicS2IvdHbChIvmxB+
+# 0nMF0ngqkrwACj9fI5M6MPkCP+IcTO/sdt+K6caFgS9SXFtV6Cuz1dPTQKZSp9YF
+# IT+RBa1TitjEEiJ5bg7ys6w2R77onJiBgpwUIUA1eePylSNhbPLSlsRZcO80rgpS
+# TD+JhuKAqPlAHQw63jZobmAcCaECgYsDxkueVFYC8CB5AhORaFlnKAEPNf673GR3
+# fE+axx7/UXTBZzssI+5IC7hovNny85XQtHWFou5THVbhR2VgImbx0pg=
 # SIG # End signature block
