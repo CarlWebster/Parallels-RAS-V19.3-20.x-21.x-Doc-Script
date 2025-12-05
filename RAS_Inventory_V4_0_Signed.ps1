@@ -450,9 +450,9 @@
 	text document.
 .NOTES
 	NAME: RAS_Inventory_V4_0.ps1
-	VERSION: 4.00 Beta 30
+	VERSION: 4.00 Beta 31
 	AUTHOR: Carl Webster
-	LASTEDIT: November 25, 2025
+	LASTEDIT: December 5, 2025
 #>
 
 
@@ -630,6 +630,12 @@ Param(
 #			Client options/Advanced/Printing/Advanced client options - Printing settings/Cache printers hardware information
 #			Client options/Advanced/Printing/Advanced client options - Printing settings/Refresh printer hardware information every 30 days
 #
+#	In Function OutputProvidersDetails
+#		Remove the Agent settings section
+#		Remove the RDP printer section
+#		Add the Advanced section
+#		Update the General and Credentials sections to match the console
+#
 #	In Function OutputPubItemFilterSummary
 #		Move check for the default filter setting to this function from Function OutputPublishingSettings
 #		Add test for the default filter
@@ -719,6 +725,7 @@ Param(
 #			For HTML output, rename "Server" to "Name"
 #			Add Application packages
 #			Add Session readiness timeout
+#			In RDP Printers, add the missing "Remove client name from printer name"
 #
 #	In Function OutputSAMLSetting, handle multiple SAML items
 #
@@ -737,6 +744,9 @@ Param(
 #		Workspaces
 #			General
 #		Host pools
+#			General
+#			Auto-upgrade
+#			AVD Agent
 #
 #	In Function OutputVDIDetails:
 #		For Host pools, add:
@@ -756,6 +766,7 @@ Param(
 #					Make the code consistent with all three output formats
 #			Settings
 #			RDP Printer
+#				Add the missing "Remove client name from printer name"
 #			Security
 #
 #	In Function ProcessAdministration
@@ -850,9 +861,9 @@ $ErrorActionPreference    = 'SilentlyContinue'
 $Error.Clear()
 
 $Script:emailCredentials  = $Null
-$script:MyVersion         = '4.00 Beta 30'
+$script:MyVersion         = '4.00 Beta 31'
 $Script:ScriptName        = "RAS_Inventory_V4_0.ps1"
-$tmpdate                  = [datetime] "11/25/2025"
+$tmpdate                  = [datetime] "12/05/2025"
 $Script:ReleaseDate       = $tmpdate.ToUniversalTime().ToShortDateString()
 
 If($MSWord -eq $False -and $PDF -eq $False -and $Text -eq $False -and $HTML -eq $False)
@@ -4980,7 +4991,7 @@ Function GetRASStatus
 		"RASprepInProgress"				{$FullRASStatus = "RASprep in progress on machine"; Break}
 		"RASScheduleInProgress"			{$FullRASStatus = "Disabled (scheduler)"; Break}
 		"RDSRoleDisabled"				{$FullRASStatus = "RD Session Host disabled or denying connections"; Break}
-		"RebootPending"					{$FullRASStatus = "Reboot of machine is pending"; Break}
+		"RebootPending"					{$FullRASStatus = "A server reboot is pendinfg"; Break}
 		"RemovingMembers"				{$FullRASStatus = "Guest being removed from the group"; Break}
 		"ScalingIn"						{$FullRASStatus = "Deprecated: use RemovingMembers instead"; Break}
 		"ScalingOut"					{$FullRASStatus = "Deprecated: use AddingMembers instead"; Break}
@@ -5032,10 +5043,9 @@ Function OutputSiteSummary
 	
 	If(!$?)
 	{
-		Write-Warning "
-		`n
-		Unable to retrieve Tenant Brokers for Site $($Site.Name)`
-		"
+		Write-Host "
+	Unable to retrieve Tenant Brokers for Site $($Site.Name)`
+		" -ForegroundColor Yellow
 		If($MSWord -or $PDF)
 		{
 			WriteWordLine 0 0 ""
@@ -5058,7 +5068,7 @@ Function OutputSiteSummary
 	ElseIf($? -and $Null -eq $TenantBrokers)
 	{
 		Write-Host "
-		No Tenant Brokers retrieved for Site $($Site.Name).
+	No Tenant Brokers retrieved for Site $($Site.Name).
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
@@ -11753,7 +11763,7 @@ Function OutputRDSessionHostsDetails
 							}
 							
 							$RDSRemoveSessionNumberFromPrinter = $GroupDefaults.RemoveSessionNumberFromPrinterName.ToString()
-							$RDSRemoveClientNameFromPrinter          = $GroupDefaults.RemoveClientNameFromPrinterName.ToString()
+							$RDSRemoveClientNameFromPrinter    = $GroupDefaults.RemoveClientNameFromPrinterName.ToString()
 						}
 						Else
 						{
@@ -11779,7 +11789,7 @@ Function OutputRDSessionHostsDetails
 								#unable to retrieve default, use built-in default values
 								$RDSPrinterNameFormat              = "Printername (from Computername) in Session no."
 								$RDSRemoveSessionNumberFromPrinter = "False"
-								$RDSRemoveClientNameFromPrinter          = "False"
+								$RDSRemoveClientNameFromPrinter    = "False"
 							}
 						}
 					}
@@ -11797,7 +11807,7 @@ Function OutputRDSessionHostsDetails
 					}
 					
 					$RDSRemoveSessionNumberFromPrinter = $RDSHost.RemoveSessionNumberFromPrinterName.ToString()
-					$RDSRemoveClientNameFromPrinter          = $RDSHost.RemoveClientNameFromPrinterName.ToString()
+					$RDSRemoveClientNameFromPrinter    = $RDSHost.RemoveClientNameFromPrinterName.ToString()
 				}
 			}
 			Else
@@ -11822,10 +11832,7 @@ Function OutputRDSessionHostsDetails
 				$ScriptInformation.Add(@{Data = "Inherit default settings"; Value = $RDSHost.InheritDefaultPrinterSettings.ToString(); }) > $Null
 				$ScriptInformation.Add(@{Data = "RDP Printer Name Format"; Value = $RDSPrinterNameFormat; }) > $Null
 				$ScriptInformation.Add(@{Data = "Remove session number from printer name"; Value = $RDSRemoveSessionNumberFromPrinter; }) > $Null
-				If($RDSHost.RemoveSessionNumberFromPrinterName)
-				{
-					$ScriptInformation.Add(@{Data = "Remove client name from printer name"; Value = $RDSRemoveClientNameFromPrinter; }) > $Null
-				}
+				$ScriptInformation.Add(@{Data = "Remove client name from printer name"; Value = $RDSRemoveClientNameFromPrinter; }) > $Null
 
 				$Table = AddWordTable -Hashtable $ScriptInformation `
 				-Columns Data,Value `
@@ -11850,10 +11857,7 @@ Function OutputRDSessionHostsDetails
 				Line 4 "Inherit default settings`t`t`t`t: " $RDSHost.InheritDefaultPrinterSettings.ToString()
 				Line 4 "RDP Printer Name Format`t`t`t`t`t: " $RDSPrinterNameFormat
 				Line 4 "Remove session number from printer name`t`t`t: " $RDSRemoveSessionNumberFromPrinter
-				If($RDSHost.RemoveSessionNumberFromPrinterName)
-				{
-					Line 4 "Remove client name from printer name`t`t`t: " $RDSRemoveClientNameFromPrinter
-				}
+				Line 4 "Remove client name from printer name`t`t`t: " $RDSRemoveClientNameFromPrinter
 				Line 0 ""
 			}
 			If($HTML)
@@ -11862,10 +11866,7 @@ Function OutputRDSessionHostsDetails
 				$columnHeaders = @("Inherit default settings",($Script:htmlsb),$RDSHost.InheritDefaultPrinterSettings.ToString(),$htmlwhite)
 				$rowdata += @(,("RDP Printer Name Format",($Script:htmlsb),$RDSPrinterNameFormat,$htmlwhite))
 				$rowdata += @(,("Remove session number from printer name",($Script:htmlsb),$RDSRemoveSessionNumberFromPrinter,$htmlwhite))
-				If($RDSHost.RemoveSessionNumberFromPrinterName)
-				{
-					$rowdata += @(,("Remove client name from printer name",($Script:htmlsb),$RDSRemoveClientNameFromPrinter,$htmlwhite))
-				}
+				$rowdata += @(,("Remove client name from printer name",($Script:htmlsb),$RDSRemoveClientNameFromPrinter,$htmlwhite))
 
 				$msg = "RDP printer"
 				$columnWidths = @("300","275")
@@ -14385,13 +14386,15 @@ Function OutputRDSessionHostsDetails
 						Default					{$RDSPrinterNameFormat = "Unable to determine RDP Printer Name Format: $($RDSFefaults.PrinterNameFormat)"; Break}
 					}
 					
-					$RDSRemoveSessionNumberFromPrinter = $RDSDefaults.RemoveSessionNumberFromPrinterName.ToString()
+					$RDSRemoveSessionNumberFromPrinterName = $RDSDefaults.RemoveSessionNumberFromPrinterName.ToString()
+					$RDSRemoveClientNameFromPrinterName    = $RDSDefaults.RemoveClientNameFromPrinterName.ToString()
 				}
 				Else
 				{
 					#unable to retrieve default, use built-in default values
 					$RDSPrinterNameFormat = "Printername (from Computername) in Session no."
-					$RDSRemoveSessionNumberFromPrinter = "False"
+					$RDSRemoveSessionNumberFromPrinterName = "False"
+					$RDSRemoveClientNameFromPrinterName    = "False"
 				}
 			}
 			Else
@@ -14407,7 +14410,8 @@ Function OutputRDSessionHostsDetails
 					Default					{$RDSPrinterNameFormat = "Unable to determine RDP Printer Name Format: $($RDSFefaults.PrinterNameFormat)"; Break}
 				}
 				
-				$RDSRemoveSessionNumberFromPrinter = $RDSGroupDefaults.RemoveSessionNumberFromPrinterName.ToString()
+				$RDSRemoveSessionNumberFromPrinterName = $RDSGroupDefaults.RemoveSessionNumberFromPrinterName.ToString()
+				$RDSRemoveClientNameFromPrinterName    = $RDSGroupDefaults.RemoveClientNameFromPrinterName.ToString()
 			}
 
 			If($MSWord -or $PDF)
@@ -14415,7 +14419,8 @@ Function OutputRDSessionHostsDetails
 				$ScriptInformation = New-Object System.Collections.ArrayList
 				$ScriptInformation.Add(@{Data = "Inherit default settings"; Value = $RDSGroup.InheritDefaultPrinterSettings.ToString(); }) > $Null
 				$ScriptInformation.Add(@{Data = "RDP Printer Name Format"; Value = $RDSPrinterNameFormat; }) > $Null
-				$ScriptInformation.Add(@{Data = "Remove session number from printer name"; Value = $RDSRemoveSessionNumberFromPrinter; }) > $Null
+				$ScriptInformation.Add(@{Data = "Remove session number from printer name"; Value = $RDSRemoveSessionNumberFromPrinterName; }) > $Null
+				$ScriptInformation.Add(@{Data = "Remove client name from printer name"; Value = $RDSRemoveClientNameFromPrinterName; }) > $Null
 
 				$Table = AddWordTable -Hashtable $ScriptInformation `
 				-Columns Data,Value `
@@ -14439,7 +14444,8 @@ Function OutputRDSessionHostsDetails
 			{
 				Line 4 "Inherit default settings`t`t`t`t: " $RDSGroup.InheritDefaultPrinterSettings.ToString()
 				Line 4 "RDP Printer Name Format`t`t`t`t`t: " $RDSPrinterNameFormat
-				Line 4 "Remove session number from printer name`t`t`t: " $RDSRemoveSessionNumberFromPrinter
+				Line 4 "Remove session number from printer name`t`t`t: " $RDSRemoveSessionNumberFromPrinterName
+				Line 4 "Remove client name from printer name`t`t`t: " $RDSRemoveClientNameFromPrinterName
 				Line 0 ""
 			}
 			If($HTML)
@@ -14447,7 +14453,8 @@ Function OutputRDSessionHostsDetails
 				$rowdata = @()
 				$columnHeaders = @("Inherit default settings",($Script:htmlsb),$RDSGroup.InheritDefaultPrinterSettings.ToString(),$htmlwhite)
 				$rowdata += @(,("RDP Printer Name Format",($Script:htmlsb),$RDSPrinterNameFormat,$htmlwhite))
-				$rowdata += @(,("Remove session number from printer name",($Script:htmlsb),$RDSRemoveSessionNumberFromPrinter,$htmlwhite))
+				$rowdata += @(,("Remove session number from printer name",($Script:htmlsb),$RDSRemoveSessionNumberFromPrinterName,$htmlwhite))
+				$rowdata += @(,("Remove client name from printer name",($Script:htmlsb),$RDSRemoveClientNameFromPrinterName,$htmlwhite))
 
 				$msg = "RDP printer"
 				$columnWidths = @("300","275")
@@ -14604,12 +14611,15 @@ Function OutputRDSessionHostsDetails
 				$ScriptInformation = New-Object System.Collections.ArrayList
 				$ScriptInformation.Add(@{Data = "Inherit default settings"; Value = $RDSGroup.InheritDefaultAutoUpgradeSettings.ToString(); }) > $Null
 				$ScriptInformation.Add(@{Data = "Enable auto-upgrade maintenance window"; Value = $AutoUpgradeEnabled; }) > $Null
-				$ScriptInformation.Add(@{Data = "Date"; Value = $AutoUpgradeDate; }) > $Null
-				$ScriptInformation.Add(@{Data = "Start"; Value = $AutoUpgradeStart; }) > $Null
-				$ScriptInformation.Add(@{Data = "Drain mode duration"; Value = $AutoUpgradeDrainModeDuration; }) > $Null
-				$ScriptInformation.Add(@{Data = "Force logoff session at the end of the drain mode period"; Value = $AutoUpgradeForceLogoff; }) > $Null
-				$ScriptInformation.Add(@{Data = "Recur"; Value = $AutoUpgradeRecur; }) > $Null
-				$ScriptInformation.Add(@{Data = "Send message before maintenance window is triggered"; Value = ""; }) > $Null
+				If($AutoUpgradeEnabled -eq "True")
+				{
+					$ScriptInformation.Add(@{Data = "Date"; Value = $AutoUpgradeDate; }) > $Null
+					$ScriptInformation.Add(@{Data = "Start"; Value = $AutoUpgradeStart; }) > $Null
+					$ScriptInformation.Add(@{Data = "Drain mode duration"; Value = $AutoUpgradeDrainModeDuration; }) > $Null
+					$ScriptInformation.Add(@{Data = "Force logoff session at the end of the drain mode period"; Value = $AutoUpgradeForceLogoff; }) > $Null
+					$ScriptInformation.Add(@{Data = "Recur"; Value = $AutoUpgradeRecur; }) > $Null
+					$ScriptInformation.Add(@{Data = "Send message before maintenance window is triggered"; Value = ""; }) > $Null
+				}
 
 				If($AutoUpgradeMessages.Count -gt 0)
 				{
@@ -14656,12 +14666,15 @@ Function OutputRDSessionHostsDetails
 			{
 				Line 4 "Inherit default settings`t`t`t`t: " $RDSGroup.InheritDefaultAutoUpgradeSettings.ToString()
 				Line 4 "Enable auto-upgrade maintenance window`t`t`t: " $AutoUpgradeEnabled
-				Line 4 "Date`t`t`t`t`t`t`t: " $AutoUpgradeDate
-				Line 4 "Start`t`t`t`t`t`t`t: " $AutoUpgradeStart
-				Line 4 "Drain mode duration`t`t`t`t`t: " $AutoUpgradeDrainModeDuration
-				Line 4 "Force logoff session at the end of the drain mode period: " $AutoUpgradeForceLogoff
-				Line 4 "Recur`t`t`t`t`t`t`t: " $AutoUpgradeRecur
-				Line 4 "Send message before maintenance window is triggered"
+				If($AutoUpgradeEnabled -eq "True")
+				{
+					Line 4 "Date`t`t`t`t`t`t`t: " $AutoUpgradeDate
+					Line 4 "Start`t`t`t`t`t`t`t: " $AutoUpgradeStart
+					Line 4 "Drain mode duration`t`t`t`t`t: " $AutoUpgradeDrainModeDuration
+					Line 4 "Force logoff session at the end of the drain mode period: " $AutoUpgradeForceLogoff
+					Line 4 "Recur`t`t`t`t`t`t`t: " $AutoUpgradeRecur
+					Line 4 "Send message before maintenance window is triggered"
+				}
 				
 				If($AutoUpgradeMessages.Count -gt 0)
 				{
@@ -14693,12 +14706,15 @@ Function OutputRDSessionHostsDetails
 				$rowdata = @()
 				$columnHeaders = @("Inherit default settings",($Script:htmlsb),$RDSGroup.InheritDefaultAutoUpgradeSettings.ToString(),$htmlwhite)
 				$rowdata += @(,("Enable auto-upgrade maintenance window",($Script:htmlsb),$AutoUpgradeEnabled,$htmlwhite))
-				$rowdata += @(,("Date",($Script:htmlsb),$AutoUpgradeDate,$htmlwhite))
-				$rowdata += @(,("Start",($Script:htmlsb),$AutoUpgradeStart,$htmlwhite))
-				$rowdata += @(,("Drain mode duration",($Script:htmlsb),$AutoUpgradeDrainModeDuration,$htmlwhite))
-				$rowdata += @(,("Force logoff session at the end of the drain mode period",($Script:htmlsb),$AutoUpgradeForceLogoff,$htmlwhite))
-				$rowdata += @(,("Recur",($Script:htmlsb),$AutoUpgradeRecur,$htmlwhite))
-				$rowdata += @(,("Send message before maintenance window is triggered",($Script:htmlsb),"",$htmlwhite))
+				If($AutoUpgradeEnabled -eq "True")
+				{
+					$rowdata += @(,("Date",($Script:htmlsb),$AutoUpgradeDate,$htmlwhite))
+					$rowdata += @(,("Start",($Script:htmlsb),$AutoUpgradeStart,$htmlwhite))
+					$rowdata += @(,("Drain mode duration",($Script:htmlsb),$AutoUpgradeDrainModeDuration,$htmlwhite))
+					$rowdata += @(,("Force logoff session at the end of the drain mode period",($Script:htmlsb),$AutoUpgradeForceLogoff,$htmlwhite))
+					$rowdata += @(,("Recur",($Script:htmlsb),$AutoUpgradeRecur,$htmlwhite))
+					$rowdata += @(,("Send message before maintenance window is triggered",($Script:htmlsb),"",$htmlwhite))
+				}
 				
 				If($AutoUpgradeMessages.Count -gt 0)
 				{
@@ -22212,8 +22228,8 @@ Function OutputVDIDetails
 							Default					{$VDIPoolPrinterNameFormat = "Unable to determine RDP Printer Name Format: $($VDIPoolHost.RDPPrinter.$VDIPoolDefaults)"; Break}
 						}
 						
-						$VDIPoolRemoveSessionNumberFromPrinter = $VDIPoolDefaults.RDPPrinter.RemoveSessionNumberFromPrinterName.ToString()
-						$VDIPoolRemoveClientNameFromPrinter    = $VDIPoolDefaults.RDPPrinter.RemoveClientNameFromPrinterName.ToString()
+						$VDIPoolRemoveSessionNumberFromPrinterName = $VDIPoolDefaults.RDPPrinter.RemoveSessionNumberFromPrinterName.ToString()
+						$VDIPoolRemoveClientNameFromPrinterName    = $VDIPoolDefaults.RDPPrinter.RemoveClientNameFromPrinterName.ToString()
 					}
 				}
 				Else
@@ -22228,8 +22244,8 @@ Function OutputVDIDetails
 						Default					{$VDIPoolPrinterNameFormat = "Unable to determine RDP Printer Name Format: $($VDIPool.RDPPrinter.PrinterNameFormat)"; Break}
 					}
 					
-					$VDIPoolRemoveSessionNumberFromPrinter = $VDIPool.RDPPrinter.RemoveSessionNumberFromPrinterName.ToString()
-					$VDIPoolRemoveClientNameFromPrinter    = $VDIPool.RDPPrinter.RemoveClientNameFromPrinterName.ToString()
+					$VDIPoolRemoveSessionNumberFromPrinterName = $VDIPool.RDPPrinter.RemoveSessionNumberFromPrinterName.ToString()
+					$VDIPoolRemoveClientNameFromPrinterName    = $VDIPool.RDPPrinter.RemoveClientNameFromPrinterName.ToString()
 				}
 
 				If($MSWord -or $PDF)
@@ -22237,11 +22253,8 @@ Function OutputVDIDetails
 					$ScriptInformation = New-Object System.Collections.ArrayList
 					$ScriptInformation.Add(@{Data = "Inherit default settings"; Value = $VDIPool.InheritDefaultRDPPrinterSettings.ToString(); }) > $Null
 					$ScriptInformation.Add(@{Data = "RDP Printer Name Format"; Value = $VDIPoolPrinterNameFormat; }) > $Null
-					$ScriptInformation.Add(@{Data = "Remove session number from printer name"; Value = $VDIPoolRemoveSessionNumberFromPrinter; }) > $Null
-					If($VDIPool.RDPPrinter.RemoveSessionNumberFromPrinterName)
-					{
-						$ScriptInformation.Add(@{Data = "Remove client name from printer name"; Value = $VDIPoolRemoveClientNameFromPrinter; }) > $Null
-					}
+					$ScriptInformation.Add(@{Data = "Remove session number from printer name"; Value = $VDIPoolRemoveSessionNumberFromPrinterName; }) > $Null
+					$ScriptInformation.Add(@{Data = "Remove client name from printer name"; Value = $VDIPoolRemoveClientNameFromPrinterName; }) > $Null
 
 					$Table = AddWordTable -Hashtable $ScriptInformation `
 					-Columns Data,Value `
@@ -22265,11 +22278,8 @@ Function OutputVDIDetails
 				{
 					Line 4 "Inherit default settings`t`t`t`t: " $VDIPool.InheritDefaultRDPPrinterSettings.ToString()
 					Line 4 "RDP Printer Name Format`t`t`t`t`t: " $VDIPoolPrinterNameFormat
-					Line 4 "Remove session number from printer name`t`t`t: " $VDIPoolRemoveSessionNumberFromPrinter
-					If($VDIPool.RDPPrinter.RemoveSessionNumberFromPrinterName)
-					{
-						Line 4 "Remove client name from printer name`t`t`t: " $VDIPoolRemoveClientNameFromPrinter
-					}
+					Line 4 "Remove session number from printer name`t`t`t: " $VDIPoolRemoveSessionNumberFromPrinterName
+					Line 4 "Remove client name from printer name`t`t`t: " $VDIPoolRemoveClientNameFromPrinterName
 					Line 0 ""
 				}
 				If($HTML)
@@ -22277,11 +22287,8 @@ Function OutputVDIDetails
 					$rowdata = @()
 					$columnHeaders = @("Inherit default settings",($Script:htmlsb),$VDIPool.InheritDefaultRDPPrinterSettings.ToString(),$htmlwhite)
 					$rowdata += @(,("RDP Printer Name Format",($Script:htmlsb),$VDIPoolPrinterNameFormat,$htmlwhite))
-					$rowdata += @(,("Remove session number from printer name",($Script:htmlsb),$VDIPoolRemoveSessionNumberFromPrinter,$htmlwhite))
-					If($VDIPool.RDPPrinter.RemoveSessionNumberFromPrinterName)
-					{
-						$rowdata += @(,("Remove client name from printer name",($Script:htmlsb),$VDIPoolRemoveClientNameFromPrinter,$htmlwhite))
-					}
+					$rowdata += @(,("Remove session number from printer name",($Script:htmlsb),$VDIPoolRemoveSessionNumberFromPrinterName,$htmlwhite))
+					$rowdata += @(,("Remove client name from printer name",($Script:htmlsb),$VDIPoolRemoveClientNameFromPrinterName,$htmlwhite))
 
 					$msg = "RDP printer"
 					$columnWidths = @("300","275")
@@ -22548,12 +22555,15 @@ Function OutputVDIDetails
 					$ScriptInformation = New-Object System.Collections.ArrayList
 					$ScriptInformation.Add(@{Data = "Inherit default settings"; Value = $VDIPool.InheritDefaultAutoUpgradeSettings.ToString(); }) > $Null
 					$ScriptInformation.Add(@{Data = "Enable auto-upgrade maintenance window"; Value = $AutoUpgradeEnabled; }) > $Null
-					$ScriptInformation.Add(@{Data = "Date"; Value = $AutoUpgradeDate; }) > $Null
-					$ScriptInformation.Add(@{Data = "Start"; Value = $AutoUpgradeStart; }) > $Null
-					$ScriptInformation.Add(@{Data = "Drain mode duration"; Value = $AutoUpgradeDrainModeDuration; }) > $Null
-					$ScriptInformation.Add(@{Data = "Force logoff session at the end of the drain mode period"; Value = $AutoUpgradeForceLogoff; }) > $Null
-					$ScriptInformation.Add(@{Data = "Recur"; Value = $AutoUpgradeRecur; }) > $Null
-					$ScriptInformation.Add(@{Data = "Send message before maintenance window is triggered"; Value = ""; }) > $Null
+					If($AutoUpgradeEnabled -eq "True")
+					{
+						$ScriptInformation.Add(@{Data = "Date"; Value = $AutoUpgradeDate; }) > $Null
+						$ScriptInformation.Add(@{Data = "Start"; Value = $AutoUpgradeStart; }) > $Null
+						$ScriptInformation.Add(@{Data = "Drain mode duration"; Value = $AutoUpgradeDrainModeDuration; }) > $Null
+						$ScriptInformation.Add(@{Data = "Force logoff session at the end of the drain mode period"; Value = $AutoUpgradeForceLogoff; }) > $Null
+						$ScriptInformation.Add(@{Data = "Recur"; Value = $AutoUpgradeRecur; }) > $Null
+						$ScriptInformation.Add(@{Data = "Send message before maintenance window is triggered"; Value = ""; }) > $Null
+					}
 
 					If($AutoUpgradeMessages.Count -gt 0)
 					{
@@ -22600,12 +22610,15 @@ Function OutputVDIDetails
 				{
 					Line 4 "Inherit default settings`t`t`t`t: " $VDIPool.InheritDefaultAutoUpgradeSettings.ToString()
 					Line 4 "Enable auto-upgrade maintenance window`t`t`t: " $AutoUpgradeEnabled
-					Line 4 "Date`t`t`t`t`t`t`t: " $AutoUpgradeDate
-					Line 4 "Start`t`t`t`t`t`t`t: " $AutoUpgradeStart
-					Line 4 "Drain mode duration`t`t`t`t`t: " $AutoUpgradeDrainModeDuration
-					Line 4 "Force logoff session at the end of the drain mode period: " $AutoUpgradeForceLogoff
-					Line 4 "Recur`t`t`t`t`t`t`t: " $AutoUpgradeRecur
-					Line 4 "Send message before maintenance window is triggered"
+					If($AutoUpgradeEnabled -eq "True")
+					{
+						Line 4 "Date`t`t`t`t`t`t`t: " $AutoUpgradeDate
+						Line 4 "Start`t`t`t`t`t`t`t: " $AutoUpgradeStart
+						Line 4 "Drain mode duration`t`t`t`t`t: " $AutoUpgradeDrainModeDuration
+						Line 4 "Force logoff session at the end of the drain mode period: " $AutoUpgradeForceLogoff
+						Line 4 "Recur`t`t`t`t`t`t`t: " $AutoUpgradeRecur
+						Line 4 "Send message before maintenance window is triggered"
+					}
 					
 					If($AutoUpgradeMessages.Count -gt 0)
 					{
@@ -22637,12 +22650,15 @@ Function OutputVDIDetails
 					$rowdata = @()
 					$columnHeaders = @("Inherit default settings",($Script:htmlsb),$VDIPool.InheritDefaultAutoUpgradeSettings.ToString(),$htmlwhite)
 					$rowdata += @(,("Enable auto-upgrade maintenance window",($Script:htmlsb),$AutoUpgradeEnabled,$htmlwhite))
-					$rowdata += @(,("Date",($Script:htmlsb),$AutoUpgradeDate,$htmlwhite))
-					$rowdata += @(,("Start",($Script:htmlsb),$AutoUpgradeStart,$htmlwhite))
-					$rowdata += @(,("Drain mode duration",($Script:htmlsb),$AutoUpgradeDrainModeDuration,$htmlwhite))
-					$rowdata += @(,("Force logoff session at the end of the drain mode period",($Script:htmlsb),$AutoUpgradeForceLogoff,$htmlwhite))
-					$rowdata += @(,("Recur",($Script:htmlsb),$AutoUpgradeRecur,$htmlwhite))
-					$rowdata += @(,("Send message before maintenance window is triggered",($Script:htmlsb),"",$htmlwhite))
+					If($AutoUpgradeEnabled -eq "True")
+					{
+						$rowdata += @(,("Date",($Script:htmlsb),$AutoUpgradeDate,$htmlwhite))
+						$rowdata += @(,("Start",($Script:htmlsb),$AutoUpgradeStart,$htmlwhite))
+						$rowdata += @(,("Drain mode duration",($Script:htmlsb),$AutoUpgradeDrainModeDuration,$htmlwhite))
+						$rowdata += @(,("Force logoff session at the end of the drain mode period",($Script:htmlsb),$AutoUpgradeForceLogoff,$htmlwhite))
+						$rowdata += @(,("Recur",($Script:htmlsb),$AutoUpgradeRecur,$htmlwhite))
+						$rowdata += @(,("Send message before maintenance window is triggered",($Script:htmlsb),"",$htmlwhite))
+					}
 					
 					If($AutoUpgradeMessages.Count -gt 0)
 					{
@@ -27261,7 +27277,7 @@ Function OutputAVDDetails
 					}
 					If($Text)
 					{
-						Line 4 "Name`t`t`t: " $AVDHostPool.Name
+						Line 3 "Name`t`t`t`t: " $AVDHostPool.Name
 					}
 					If($HTML)
 					{
@@ -27312,7 +27328,6 @@ Function OutputAVDDetails
 					}
 					If($Text)
 					{
-						Line 4 "Name`t`t`t: " $AVDHostPool.Name
 						Line 4 "Enabled`t`t`t: " $AVDHostPool.Enabled.ToString()
 						Line 4 "Friendly name`t`t: " $AVDHostPool.FriendlyName
 						Line 4 "Description`t`t: " $AVDHostPool.Description
@@ -27435,6 +27450,1101 @@ Function OutputAVDDetails
 						
 						$msg = "General"
 						$columnWidths = @("200","275")
+						FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+						WriteHTMLLine 0 0 ""
+					}
+					
+					#Hosts
+					If($MSword -or $PDF)
+					{
+						WriteWordLine 5 0 "Hosts"
+					}
+					If($Text)
+					{
+						Line 4 "Hosts"
+					}
+					If($HTML)
+					{
+						#nothing
+					}
+					<#
+					If($MSWord -or $PDF)
+					{
+						$ScriptInformation = New-Object System.Collections.ArrayList
+						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+						$Table = AddWordTable -Hashtable $ScriptInformation `
+						-Columns Data,Value `
+						-List `
+						-Format $wdTableGrid `
+						-AutoFit $wdAutoFitFixed;
+
+						SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+						SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+						$Table.Columns.Item(1).Width = 200;
+						$Table.Columns.Item(2).Width = 250;
+
+						$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+						FindWordDocumentEnd
+						$Table = $Null
+						WriteWordLine 0 0 ""
+					}
+					If($Text)
+					{
+						Line 5 "" ""
+						Line 0 ""
+					}
+					If($HTML)
+					{
+						$rowdata = @()
+						$columnHeaders = @("",($Script:htmlsb),"",$htmlwhite)
+						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+						
+						$msg = "Hosts"
+						$columnWidths = @("200","275")
+						FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+						WriteHTMLLine 0 0 ""
+					}
+					#>
+					
+					#Configuration
+					If($MSword -or $PDF)
+					{
+						WriteWordLine 5 0 "Configuration"
+					}
+					If($Text)
+					{
+						Line 4 "Configuration"
+					}
+					If($HTML)
+					{
+						#nothing
+					}
+					<#
+					If($MSWord -or $PDF)
+					{
+						$ScriptInformation = New-Object System.Collections.ArrayList
+						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+						$Table = AddWordTable -Hashtable $ScriptInformation `
+						-Columns Data,Value `
+						-List `
+						-Format $wdTableGrid `
+						-AutoFit $wdAutoFitFixed;
+
+						SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+						SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+						$Table.Columns.Item(1).Width = 200;
+						$Table.Columns.Item(2).Width = 250;
+
+						$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+						FindWordDocumentEnd
+						$Table = $Null
+						WriteWordLine 0 0 ""
+					}
+					If($Text)
+					{
+						Line 5 "" ""
+						Line 0 ""
+					}
+					If($HTML)
+					{
+						$rowdata = @()
+						$columnHeaders = @("",($Script:htmlsb),"",$htmlwhite)
+						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+						
+						$msg = "Configuration"
+						$columnWidths = @("200","275")
+						FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+						WriteHTMLLine 0 0 ""
+					}
+					#>
+					#Assignment
+					If($MSword -or $PDF)
+					{
+						WriteWordLine 5 0 "Assignment"
+					}
+					If($Text)
+					{
+						Line 4 "Assignment"
+					}
+					If($HTML)
+					{
+						#nothing
+					}
+					<#
+					If($MSWord -or $PDF)
+					{
+						$ScriptInformation = New-Object System.Collections.ArrayList
+						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+						$Table = AddWordTable -Hashtable $ScriptInformation `
+						-Columns Data,Value `
+						-List `
+						-Format $wdTableGrid `
+						-AutoFit $wdAutoFitFixed;
+
+						SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+						SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+						$Table.Columns.Item(1).Width = 200;
+						$Table.Columns.Item(2).Width = 250;
+
+						$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+						FindWordDocumentEnd
+						$Table = $Null
+						WriteWordLine 0 0 ""
+					}
+					If($Text)
+					{
+						Line 5 "" ""
+						Line 0 ""
+					}
+					If($HTML)
+					{
+						$rowdata = @()
+						$columnHeaders = @("",($Script:htmlsb),"",$htmlwhite)
+						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+						
+						$msg = "Assignment"
+						$columnWidths = @("200","275")
+						FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+						WriteHTMLLine 0 0 ""
+					}
+					#>
+					#User profile
+					If($MSword -or $PDF)
+					{
+						WriteWordLine 5 0 "User profile"
+					}
+					If($Text)
+					{
+						Line 4 "User profile"
+					}
+					If($HTML)
+					{
+						#nothing
+					}
+					<#
+					If($MSWord -or $PDF)
+					{
+						$ScriptInformation = New-Object System.Collections.ArrayList
+						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+						$Table = AddWordTable -Hashtable $ScriptInformation `
+						-Columns Data,Value `
+						-List `
+						-Format $wdTableGrid `
+						-AutoFit $wdAutoFitFixed;
+
+						SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+						SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+						$Table.Columns.Item(1).Width = 200;
+						$Table.Columns.Item(2).Width = 250;
+
+						$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+						FindWordDocumentEnd
+						$Table = $Null
+						WriteWordLine 0 0 ""
+					}
+					If($Text)
+					{
+						Line 5 "" ""
+						Line 0 ""
+					}
+					If($HTML)
+					{
+						$rowdata = @()
+						$columnHeaders = @("",($Script:htmlsb),"",$htmlwhite)
+						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+						
+						$msg = "User profile"
+						$columnWidths = @("200","275")
+						FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+						WriteHTMLLine 0 0 ""
+					}
+					#>
+					#Application Packages
+					If($MSword -or $PDF)
+					{
+						WriteWordLine 5 0 "Application Packages"
+					}
+					If($Text)
+					{
+						Line 4 "Application Packages"
+					}
+					If($HTML)
+					{
+						#nothing
+					}
+					<#
+					If($MSWord -or $PDF)
+					{
+						$ScriptInformation = New-Object System.Collections.ArrayList
+						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+						$Table = AddWordTable -Hashtable $ScriptInformation `
+						-Columns Data,Value `
+						-List `
+						-Format $wdTableGrid `
+						-AutoFit $wdAutoFitFixed;
+
+						SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+						SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+						$Table.Columns.Item(1).Width = 200;
+						$Table.Columns.Item(2).Width = 250;
+
+						$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+						FindWordDocumentEnd
+						$Table = $Null
+						WriteWordLine 0 0 ""
+					}
+					If($Text)
+					{
+						Line 5 "" ""
+						Line 0 ""
+					}
+					If($HTML)
+					{
+						$rowdata = @()
+						$columnHeaders = @("",($Script:htmlsb),"",$htmlwhite)
+						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+						
+						$msg = "Application Packages"
+						$columnWidths = @("200","275")
+						FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+						WriteHTMLLine 0 0 ""
+					}
+					#>
+					#Optimization
+					If($MSword -or $PDF)
+					{
+						WriteWordLine 5 0 "Optimization"
+					}
+					If($Text)
+					{
+						Line 4 "Optimization"
+					}
+					If($HTML)
+					{
+						#nothing
+					}
+					<#
+					If($MSWord -or $PDF)
+					{
+						$ScriptInformation = New-Object System.Collections.ArrayList
+						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+						$Table = AddWordTable -Hashtable $ScriptInformation `
+						-Columns Data,Value `
+						-List `
+						-Format $wdTableGrid `
+						-AutoFit $wdAutoFitFixed;
+
+						SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+						SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+						$Table.Columns.Item(1).Width = 200;
+						$Table.Columns.Item(2).Width = 250;
+
+						$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+						FindWordDocumentEnd
+						$Table = $Null
+						WriteWordLine 0 0 ""
+					}
+					If($Text)
+					{
+						Line 5 "" ""
+						Line 0 ""
+					}
+					If($HTML)
+					{
+						$rowdata = @()
+						$columnHeaders = @("",($Script:htmlsb),"",$htmlwhite)
+						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+						
+						$msg = "Optimization"
+						$columnWidths = @("200","275")
+						FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+						WriteHTMLLine 0 0 ""
+					}
+					#>
+					#Settings
+					If($MSword -or $PDF)
+					{
+						WriteWordLine 5 0 "Settings"
+					}
+					If($Text)
+					{
+						Line 4 "Settings"
+					}
+					If($HTML)
+					{
+						#nothing
+					}
+					<#
+					If($MSWord -or $PDF)
+					{
+						$ScriptInformation = New-Object System.Collections.ArrayList
+						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+						$Table = AddWordTable -Hashtable $ScriptInformation `
+						-Columns Data,Value `
+						-List `
+						-Format $wdTableGrid `
+						-AutoFit $wdAutoFitFixed;
+
+						SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+						SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+						$Table.Columns.Item(1).Width = 200;
+						$Table.Columns.Item(2).Width = 250;
+
+						$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+						FindWordDocumentEnd
+						$Table = $Null
+						WriteWordLine 0 0 ""
+					}
+					If($Text)
+					{
+						Line 5 "" ""
+						Line 0 ""
+					}
+					If($HTML)
+					{
+						$rowdata = @()
+						$columnHeaders = @("",($Script:htmlsb),"",$htmlwhite)
+						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+						
+						$msg = "Settings"
+						$columnWidths = @("200","275")
+						FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+						WriteHTMLLine 0 0 ""
+					}
+					#>
+					#RDP printer
+					If($MSword -or $PDF)
+					{
+						WriteWordLine 5 0 "RDP printer"
+					}
+					If($Text)
+					{
+						Line 4 "RDP printer"
+					}
+					If($HTML)
+					{
+						#nothing
+					}
+					
+					If($AVDHostPool.InheritDefaultRDPPrinterSettings)
+					{
+						#do we inherit group or site defaults?
+						#yes we do, get the default settings for the Site
+						#use the Site default settings
+						$AVDHostPoolDefaults = Get-RASAVDDefaultSettings -DefObjType AVDMultiSessionDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
+						
+						If($? -and $Null -ne $AVDHostPoolDefaults)
+						{
+							Switch ($AVDHostPoolDefaults.RDPPrinter.PrinterNameFormat)
+							{
+								"PrnFormat_PRN_CMP_SES"	{$AVDHostPoolPrinterNameFormat = "Printername (from Computername) in Session no."; Break}
+								"PrnFormat_SES_CMP_PRN"	{$AVDHostPoolPrinterNameFormat = "Session no. (Computername from) Printername"; Break}
+								"PrnFormat_PRN_REDSES"	{$AVDHostPoolPrinterNameFormat = "Printername (redirected Session no.)"; Break}
+								Default					{$AVDHostPoolPrinterNameFormat = "Unable to determine RDP Printer Name Format: $($AVDHostPoolDefaults.RDPPrinter.PrinterNameFormat)"; Break}
+							}
+							
+							$AVDHostPoolRemoveSessionNumberFromPrinterName = $AVDHostPoolDefaults.RDPPrinter.RemoveSessionNumberFromPrinterName.ToString()
+							$AVDHostPoolRemoveClientNameFromPrinterName    = $AVDHostPoolDefaults.RDPPrinter.RemoveClientNameFromPrinterName.ToString()
+						}
+						Else
+						{
+							#unable to retrieve default, use built-in default values
+							$AVDHostPoolPrinterNameFormat                  = "Printername (from Computername) in Session no."
+							$AVDHostPoolRemoveSessionNumberFromPrinterName = "False"
+							$AVDHostPoolRemoveClientNameFromPrinterName    = "False"
+						}
+					}
+					Else
+					{
+						#we don't inherit
+						#get the settings for the group
+						$AVDHostPoolDefaults = $AVDHostPool.RDPPrinter
+						Switch ($AVDHostPoolDefaults.PrinterNameFormat)
+						{
+							"PrnFormat_PRN_CMP_SES"	{$AVDHostPoolPrinterNameFormat = "Printername (from Computername) in Session no."; Break}
+							"PrnFormat_SES_CMP_PRN"	{$AVDHostPoolPrinterNameFormat = "Session no. (Computername from) Printername"; Break}
+							"PrnFormat_PRN_REDSES"	{$AVDHostPoolPrinterNameFormat = "Printername (redirected Session no.)"; Break}
+							Default					{$AVDHostPoolPrinterNameFormat = "Unable to determine RDP Printer Name Format: $($AVDHostPoolDefaults.PrinterNameFormat)"; Break}
+						}
+						
+						$AVDHostPoolRemoveSessionNumberFromPrinterName = $AVDHostPoolDefaults.RemoveSessionNumberFromPrinterName.ToString()
+						$AVDHostPoolRemoveClientNameFromPrinterName    = $AVDHostPoolDefaults.RemoveClientNameFromPrinterName.ToString()
+					}
+
+					If($MSWord -or $PDF)
+					{
+						$ScriptInformation = New-Object System.Collections.ArrayList
+						$ScriptInformation.Add(@{Data = "Inherit default settings"; Value = $AVDHostPool.InheritDefaultRDPPrinterSettings.ToString(); }) > $Null
+						$ScriptInformation.Add(@{Data = "RDP Printer Name Format"; Value = $AVDHostPoolPrinterNameFormat; }) > $Null
+						$ScriptInformation.Add(@{Data = "Remove session number from printer name"; Value = $AVDHostPoolRemoveSessionNumberFromPrinterName; }) > $Null
+						$ScriptInformation.Add(@{Data = "Remove client name from printer name"; Value = $AVDHostPoolRemoveClientNameFromPrinterName; }) > $Null
+
+						$Table = AddWordTable -Hashtable $ScriptInformation `
+						-Columns Data,Value `
+						-List `
+						-Format $wdTableGrid `
+						-AutoFit $wdAutoFitFixed;
+
+						SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+						SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+						$Table.Columns.Item(1).Width = 250;
+						$Table.Columns.Item(2).Width = 250;
+
+						$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+						FindWordDocumentEnd
+						$Table = $Null
+						WriteWordLine 0 0 ""
+					}
+					If($Text)
+					{
+						Line 5 "Inherit default settings`t`t`t`t: " $AVDHostPool.InheritDefaultRDPPrinterSettings.ToString()
+						Line 5 "RDP Printer Name Format`t`t`t`t`t: " $AVDHostPoolPrinterNameFormat
+						Line 5 "Remove session number from printer name`t`t`t: " $AVDHostPoolRemoveSessionNumberFromPrinterName
+						Line 5 "Remove client name from printer name`t`t`t: " $AVDHostPoolRemoveClientNameFromPrinterName
+						Line 0 ""
+					}
+					If($HTML)
+					{
+						$rowdata = @()
+						$columnHeaders = @("Inherit default settings",($Script:htmlsb),$AVDHostPool.InheritDefaultRDPPrinterSettings.ToString(),$htmlwhite)
+						$rowdata += @(,("RDP Printer Name Format",($Script:htmlsb),$AVDHostPoolPrinterNameFormat,$htmlwhite))
+						$rowdata += @(,("Remove session number from printer name",($Script:htmlsb),$AVDHostPoolRemoveSessionNumberFromPrinterName,$htmlwhite))
+						$rowdata += @(,("Remove client name from printer name",($Script:htmlsb),$AVDHostPoolRemoveClientNameFromPrinterName,$htmlwhite))
+
+						$msg = "RDP printer"
+						$columnWidths = @("300","275")
+						FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+						WriteHTMLLine 0 0 ""
+					}
+
+					#Auto-upgrade
+					If($MSword -or $PDF)
+					{
+						WriteWordLine 5 0 "Auto-upgrade"
+					}
+					If($Text)
+					{
+						Line 4 "Auto-upgrade"
+					}
+					If($HTML)
+					{
+						#nothing
+					}
+
+					If($AVDHostPool.InheritDefaultAutoUpgradeSettings)
+					{
+						#do we inherit site defaults?
+						#yes we do, get the default settings for the Site
+						#use the Site default settings
+
+						<#
+							PS C:\Parallels-RAS-V19.x-Doc-Script-4.00> $AVDHostPoolDefaults.AutoUpgrade | % {$_.psobject.properties | select name, value | sort name}
+
+							Name                                   Value
+							----                                   -----
+							DrainModeDurationInSecs                  900
+							Enabled                                 True
+							ForceLogoffSessions                     True
+							Messages                                 {1}
+							Repeat                             EveryWeek
+							SpecificDays                           Never
+							StartDateTime           12/2/2025 7:24:26 PM
+
+
+							PS C:\Parallels-RAS-V19.x-Doc-Script-4.00>
+
+							PS C:\Parallels-RAS-V19.x-Doc-Script-4.00> $AVDHostPoolDefaults.AutoUpgrade.Messages | % {$_.psobject.properties | select name, value | sort name}
+
+							Name                                          Value
+							----                                          -----
+							Enabled                                        True
+							Id                                                1
+							Message      hey you! Get off the figgin' server!!!
+							MessageTitle         Message from RAS administrator
+							SendMsgSecs                                     900
+							SendMsgWhen                                  Before
+						#>
+
+						$AVDHostPoolDefaults = Get-RASAVDDefaultSettings -DefObjType AVDMultiSessionDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
+						
+						If($? -and $Null -ne $AVDHostPoolDefaults)
+						{
+							$AutoUpgradeEnabled = $AVDHostPoolDefaults.AutoUpgrade.Enabled.ToString()
+							
+							If($AVDHostPoolDefaults.AutoUpgrade.Enabled)
+							{
+								$AutoUpgradeDate    = $AVDHostPoolDefaults.AutoUpgrade.StartDateTime.ToShortDateString()
+								$AutoUpgradeStart   = $AVDHostPoolDefaults.AutoUpgrade.StartDateTime.ToLongTimeString()
+								Switch ($AVDHostPoolDefaults.AutoUpgrade.DrainModeDurationInSecs)
+								{
+									900		{$AutoUpgradeDrainModeDuration = "15 minutes"; Break}
+									1800	{$AutoUpgradeDrainModeDuration = "30 minutes"; Break}
+									2700	{$AutoUpgradeDrainModeDuration = "45 minutes"; Break}
+									3600	{$AutoUpgradeDrainModeDuration = "1 hour"; Break}
+									7200	{$AutoUpgradeDrainModeDuration = "2 hours"; Break}
+									10800	{$AutoUpgradeDrainModeDuration = "3 hours"; Break}
+									21600	{$AutoUpgradeDrainModeDuration = "6 hours"; Break}
+									43200	{$AutoUpgradeDrainModeDuration = "12 hours"; Break}
+									86400	{$AutoUpgradeDrainModeDuration = "1 day"; Break}
+									Default	{$AutoUpgradeDrainModeDuration = "Unable to determine Drain mode duration: $($AVDHostPoolDefaults.AutoUpgrade.DrainModeDurationInSecs)"; Break}
+								}
+								$AutoUpgradeForceLogoff = $AVDHostPoolDefaults.AutoUpgrade.ForceLogoffSessions.ToString()
+								Switch ($AVDHostPoolDefaults.AutoUpgrade.Repeat)
+								{
+									Never			{$AutoUpgradeRecur = "Never "; Break}
+									EveryDay		{$AutoUpgradeRecur = "Every day"; Break}
+									EveryWeek		{$AutoUpgradeRecur = "Every week"; Break}
+									Every2Weeks		{$AutoUpgradeRecur = "Every 2 weeks"; Break}
+									EveryMonth		{$AutoUpgradeRecur = "Every month"; Break}
+									EveryYear		{$AutoUpgradeRecur = "Every year"; Break}
+									SpecificDays	{$AutoUpgradeRecur = "Every $($AVDHostPoolDefaults.AutoUpgrade.SpecificDays)"; Break}
+									Default			{$AutoUpgradeRecur = "Unable to determine the Recur: $($AVDHostPoolDefaults.AutoUpgrade.Repeat)"; Break}
+								}
+								$AutoUpgradeMessages = $AVDHostPoolDefaults.AutoUpgrade.Messages
+							}
+							Else
+							{
+								$AutoUpgradeEnabled           = "False"
+								$AutoUpgradeDate              = ""
+								$AutoUpgradeStart             = ""
+								$AutoUpgradeDrainModeDuration = ""
+								$AutoUpgradeForceLogoff       = ""
+								$AutoUpgradeRecur             = ""
+								$AutoUpgradeMessages          = @()
+							}
+						}
+						Else
+						{
+							#unable to retrieve default, use built-in default values
+							$AutoUpgradeEnabled           = "False"
+							$AutoUpgradeDate              = ""
+							$AutoUpgradeStart             = ""
+							$AutoUpgradeDrainModeDuration = ""
+							$AutoUpgradeForceLogoff       = ""
+							$AutoUpgradeRecur             = ""
+							$AutoUpgradeMessages          = @()
+						}
+					}
+					Else
+					{
+						#we don't inherit
+						#get the settings for the host pool
+						$Results = Get-RASAutoUpgrade -Name $AVDHostPool.Name -SiteId $Site.Id -ObjType "AVDHostPool" -EA 0 4>$Null
+						
+						If(!$? -or $Null -eq $Results)
+						{
+							$AutoUpgradeEnabled           = "False"
+							$AutoUpgradeDate              = ""
+							$AutoUpgradeStart             = ""
+							$AutoUpgradeDrainModeDuration = ""
+							$AutoUpgradeForceLogoff       = ""
+							$AutoUpgradeRecur             = ""
+							$AutoUpgradeMessages          = @()
+						}
+						Else
+						{
+							$AutoUpgradeEnabled = $Results.Enabled.ToString()
+							
+							If($Results.Enabled)
+							{
+								$AutoUpgradeDate    = $Results.StartDateTime.ToShortDateString()
+								$AutoUpgradeStart   = $Results.StartDateTime.ToLongTimeString()
+								Switch ($Results.DrainModeDurationInSecs)
+								{
+									900		{$AutoUpgradeDrainModeDuration = "15 minutes"; Break}
+									1800	{$AutoUpgradeDrainModeDuration = "30 minutes"; Break}
+									2700	{$AutoUpgradeDrainModeDuration = "45 minutes"; Break}
+									3600	{$AutoUpgradeDrainModeDuration = "1 hour"; Break}
+									7200	{$AutoUpgradeDrainModeDuration = "2 hours"; Break}
+									10800	{$AutoUpgradeDrainModeDuration = "3 hours"; Break}
+									21600	{$AutoUpgradeDrainModeDuration = "6 hours"; Break}
+									43200	{$AutoUpgradeDrainModeDuration = "12 hours"; Break}
+									86400	{$AutoUpgradeDrainModeDuration = "1 day"; Break}
+									Default	{$AutoUpgradeDrainModeDuration = "Unable to determine Drain mode duration: $($Results.DrainModeDurationInSecs)"; Break}
+								}
+								$AutoUpgradeForceLogoff = $Results.ForceLogoffSessions.ToString()
+								Switch ($Results.Repeat)
+								{
+									Never			{$AutoUpgradeRecur = "Never "; Break}
+									EveryDay		{$AutoUpgradeRecur = "Every day"; Break}
+									EveryWeek		{$AutoUpgradeRecur = "Every week"; Break}
+									Every2Weeks		{$AutoUpgradeRecur = "Every 2 weeks"; Break}
+									EveryMonth		{$AutoUpgradeRecur = "Every month"; Break}
+									EveryYear		{$AutoUpgradeRecur = "Every year"; Break}
+									SpecificDays	{$AutoUpgradeRecur = "Every $($Results.SpecificDays)"; Break}
+									Default			{$AutoUpgradeRecur = "Unable to determine the Recur: $($Results.Repeat)"; Break}
+								}
+								$AutoUpgradeMessages = $Results.Messages
+							}
+							Else
+							{
+								$AutoUpgradeEnabled           = "False"
+								$AutoUpgradeDate              = ""
+								$AutoUpgradeStart             = ""
+								$AutoUpgradeDrainModeDuration = ""
+								$AutoUpgradeForceLogoff       = ""
+								$AutoUpgradeRecur             = ""
+								$AutoUpgradeMessages          = @()
+							}
+						}
+					}
+					
+					If($MSWord -or $PDF)
+					{
+						$ScriptInformation = New-Object System.Collections.ArrayList
+						$ScriptInformation.Add(@{Data = "Inherit default settings"; Value = $AVDHostPool.InheritDefaultAutoUpgradeSettings.ToString(); }) > $Null
+						$ScriptInformation.Add(@{Data = "Enable auto-upgrade maintenance window"; Value = $AutoUpgradeEnabled; }) > $Null
+						If($AutoUpgradeEnabled -eq "True")
+						{
+							$ScriptInformation.Add(@{Data = "Date"; Value = $AutoUpgradeDate; }) > $Null
+							$ScriptInformation.Add(@{Data = "Start"; Value = $AutoUpgradeStart; }) > $Null
+							$ScriptInformation.Add(@{Data = "Drain mode duration"; Value = $AutoUpgradeDrainModeDuration; }) > $Null
+							$ScriptInformation.Add(@{Data = "Force logoff session at the end of the drain mode period"; Value = $AutoUpgradeForceLogoff; }) > $Null
+							$ScriptInformation.Add(@{Data = "Recur"; Value = $AutoUpgradeRecur; }) > $Null
+							$ScriptInformation.Add(@{Data = "Send message before maintenance window is triggered"; Value = ""; }) > $Null
+						}
+
+						If($AutoUpgradeMessages.Count -gt 0)
+						{
+							ForEach($Item in $AutoUpgradeMessages)
+							{
+								Switch ($Item.SendMsgSecs)
+								{
+									900		{$MsgTime = "15 minutes $($Item.SendMsgWhen)"; Break}
+									1800	{$MsgTime = "30 minutes $($Item.SendMsgWhen)"; Break}
+									2700	{$MsgTime = "45 minutes $($Item.SendMsgWhen)"; Break}
+									3600	{$MsgTime = "1 hour $($Item.SendMsgWhen)"; Break}
+									7200	{$MsgTime = "2 hours $($Item.SendMsgWhen)"; Break}
+									10800	{$MsgTime = "3 hours $($Item.SendMsgWhen)"; Break}
+									Default	{$MsgTime = "Unable to determine scheduled message Time: $($Item.SendMsgSecs)"; Break}
+								}
+								
+								$ScriptInformation.Add(@{Data = "     Enabled"; Value = $Item.Enabled.ToString(); }) > $Null
+								$ScriptInformation.Add(@{Data = "     Body"; Value = $Item.Message; }) > $Null
+								$ScriptInformation.Add(@{Data = "     Title"; Value = $Item.MessageTitle; }) > $Null
+								$ScriptInformation.Add(@{Data = "     Time"; Value = $MsgTime; }) > $Null
+								$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+							}
+						}
+
+						$Table = AddWordTable -Hashtable $ScriptInformation `
+						-Columns Data,Value `
+						-List `
+						-Format $wdTableGrid `
+						-AutoFit $wdAutoFitFixed;
+
+						SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+						SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+						$Table.Columns.Item(1).Width = 300;
+						$Table.Columns.Item(2).Width = 250;
+
+						$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+						FindWordDocumentEnd
+						$Table = $Null
+						WriteWordLine 0 0 ""
+					}
+					If($Text)
+					{
+						Line 5 "Inherit default settings`t`t`t`t: " $AVDHostPool.InheritDefaultAutoUpgradeSettings.ToString()
+						Line 5 "Enable auto-upgrade maintenance window`t`t`t: " $AutoUpgradeEnabled
+						If($AutoUpgradeEnabled -eq "True")
+						{
+							Line 5 "Date`t`t`t`t`t`t`t: " $AutoUpgradeDate
+							Line 5 "Start`t`t`t`t`t`t`t: " $AutoUpgradeStart
+							Line 5 "Drain mode duration`t`t`t`t`t: " $AutoUpgradeDrainModeDuration
+							Line 5 "Force logoff session at the end of the drain mode period: " $AutoUpgradeForceLogoff
+							Line 5 "Recur`t`t`t`t`t`t`t: " $AutoUpgradeRecur
+							Line 5 "Send message before maintenance window is triggered"
+						}
+						
+						If($AutoUpgradeMessages.Count -gt 0)
+						{
+							ForEach($Item in $AutoUpgradeMessages)
+							{
+								Switch ($Item.SendMsgSecs)
+								{
+									900		{$MsgTime = "15 minutes $($Item.SendMsgWhen)"; Break}
+									1800	{$MsgTime = "30 minutes $($Item.SendMsgWhen)"; Break}
+									2700	{$MsgTime = "45 minutes $($Item.SendMsgWhen)"; Break}
+									3600	{$MsgTime = "1 hour $($Item.SendMsgWhen)"; Break}
+									7200	{$MsgTime = "2 hours $($Item.SendMsgWhen)"; Break}
+									10800	{$MsgTime = "3 hours $($Item.SendMsgWhen)"; Break}
+									Default	{$MsgTime = "Unable to determine scheduled message Time: $($Item.SendMsgSecs)"; Break}
+								}
+								
+								Line 6 "Enabled`t: " $Item.Enabled.ToString()
+								Line 6 "Body`t: " $Item.Message
+								Line 6 "Title`t: " $Item.MessageTitle
+								Line 6 "Time`t: " $MsgTime
+								Line 6 ""
+							}
+						}
+
+						Line 0 ""
+					}
+					If($HTML)
+					{
+						$rowdata = @()
+						$columnHeaders = @("Inherit default settings",($Script:htmlsb),$AVDHostPool.InheritDefaultAutoUpgradeSettings.ToString(),$htmlwhite)
+						$rowdata += @(,("Enable auto-upgrade maintenance window",($Script:htmlsb),$AutoUpgradeEnabled,$htmlwhite))
+						If($AutoUpgradeEnabled -eq "True")
+						{
+							$rowdata += @(,("Date",($Script:htmlsb),$AutoUpgradeDate,$htmlwhite))
+							$rowdata += @(,("Start",($Script:htmlsb),$AutoUpgradeStart,$htmlwhite))
+							$rowdata += @(,("Drain mode duration",($Script:htmlsb),$AutoUpgradeDrainModeDuration,$htmlwhite))
+							$rowdata += @(,("Force logoff session at the end of the drain mode period",($Script:htmlsb),$AutoUpgradeForceLogoff,$htmlwhite))
+							$rowdata += @(,("Recur",($Script:htmlsb),$AutoUpgradeRecur,$htmlwhite))
+							$rowdata += @(,("Send message before maintenance window is triggered",($Script:htmlsb),"",$htmlwhite))
+						}
+						
+						If($AutoUpgradeMessages.Count -gt 0)
+						{
+							ForEach($Item in $AutoUpgradeMessages)
+							{
+								Switch ($Item.SendMsgSecs)
+								{
+									900		{$MsgTime = "15 minutes $($Item.SendMsgWhen)"; Break}
+									1800	{$MsgTime = "30 minutes $($Item.SendMsgWhen)"; Break}
+									2700	{$MsgTime = "45 minutes $($Item.SendMsgWhen)"; Break}
+									3600	{$MsgTime = "1 hour $($Item.SendMsgWhen)"; Break}
+									7200	{$MsgTime = "2 hours $($Item.SendMsgWhen)"; Break}
+									10800	{$MsgTime = "3 hours $($Item.SendMsgWhen)"; Break}
+									Default	{$MsgTime = "Unable to determine scheduled message Time: $($Item.SendMsgSecs)"; Break}
+								}
+								
+								$rowdata += @(,("     Enabled",($Script:htmlsb),$Item.Enabled.ToString(),$htmlwhite))
+								$rowdata += @(,("     Body",($Script:htmlsb),$Item.Message,$htmlwhite))
+								$rowdata += @(,("     Title",($Script:htmlsb),$Item.MessageTitle,$htmlwhite))
+								$rowdata += @(,("     Time",($Script:htmlsb),$MsgTime,$htmlwhite))
+								$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+							}
+						}
+
+						$msg = "Auto-upgrade"
+						$columnWidths = @("300","275")
+						FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+						WriteHTMLLine 0 0 ""
+					}
+
+					#AVD Agent
+					If($MSword -or $PDF)
+					{
+						WriteWordLine 5 0 "AVD Agent"
+					}
+					If($Text)
+					{
+						Line 4 "AVD Agent"
+					}
+					If($HTML)
+					{
+						#nothing
+					}
+					<#
+						PS C:\Parallels-RAS-V19.x-Doc-Script-4.00> $AVDHostPool1.AVDAgent | fl
+
+
+						ScheduleAgentUpdates : False
+						LocalSessionTimeZone : True
+						TimeZone             :
+						ScheduleDay1         : Friday
+						ScheduleTime1        : h00
+						EnableSchedule2      : False
+						ScheduleDay2         : Monday
+						ScheduleTime2        : h00
+
+						ScheduleAgentUpdates : True
+						LocalSessionTimeZone : False
+						TimeZone             : (UTC-06:00) Central Time (US & Canada)
+						ScheduleDay1         : Monday
+						ScheduleTime1        : h01
+						EnableSchedule2      : True
+						ScheduleDay2         : Sunday
+						ScheduleTime2        : h02
+					#>
+					If($MSWord -or $PDF)
+					{
+						$ScriptInformation = New-Object System.Collections.ArrayList
+						If(!($AVDHostPool.AVDAgent.ScheduleAgentUpdates))
+						{
+							$ScriptInformation.Add(@{Data = "Scheduled Microsoft AVD agent updates"; Value = $AVDHostPool.AVDAgent.ScheduleAgentUpdates.ToString(); }) > $Null
+						}
+						Else
+						{
+							$ScriptInformation.Add(@{Data = "Scheduled Microsoft AVD agent updates"; Value = $AVDHostPool.AVDAgent.ScheduleAgentUpdates.ToString(); }) > $Null
+							Switch ($AVDHostPool.AVDAgent.ScheduleTime1)
+							{
+								"h00"	{$ScheduleTime1 = "12:00:00 AM"; Break}
+								"h01"	{$ScheduleTime1 = "01:00:00 AM"; Break}
+								"h02"	{$ScheduleTime1 = "02:00:00 AM"; Break}
+								"h03"	{$ScheduleTime1 = "03:00:00 AM"; Break}
+								"h04"	{$ScheduleTime1 = "04:00:00 AM"; Break}
+								"h05"	{$ScheduleTime1 = "05:00:00 AM"; Break}
+								"h06"	{$ScheduleTime1 = "06:00:00 AM"; Break}
+								"h07"	{$ScheduleTime1 = "07:00:00 AM"; Break}
+								"h08"	{$ScheduleTime1 = "08:00:00 AM"; Break}
+								"h09"	{$ScheduleTime1 = "09:00:00 AM"; Break}
+								"h10"	{$ScheduleTime1 = "10:00:00 AM"; Break}
+								"h11"	{$ScheduleTime1 = "11:00:00 AM"; Break}
+								"h12"	{$ScheduleTime1 = "12:00:00 PM"; Break}
+								"h13"	{$ScheduleTime1 = "01:00:00 PM"; Break}
+								"h14"	{$ScheduleTime1 = "02:00:00 PM"; Break}
+								"h15"	{$ScheduleTime1 = "03:00:00 PM"; Break}
+								"h16"	{$ScheduleTime1 = "04:00:00 PM"; Break}
+								"h17"	{$ScheduleTime1 = "05:00:00 PM"; Break}
+								"h18"	{$ScheduleTime1 = "06:00:00 PM"; Break}
+								"h19"	{$ScheduleTime1 = "07:00:00 PM"; Break}
+								"h20"	{$ScheduleTime1 = "08:00:00 PM"; Break}
+								"h21"	{$ScheduleTime1 = "09:00:00 PM"; Break}
+								"h21"	{$ScheduleTime1 = "10:00:00 PM"; Break}
+								"h23"	{$ScheduleTime1 = "11:00:00 PM"; Break}
+								Default {$ScheduleTime1 = "Unable to determine Schedule Time1: $($AVDHostPool.AVDAgent.ScheduleTime1)"; Break}
+							}
+							$ScriptInformation.Add(@{Data = "Use local session host time zone"; Value = $AVDHostPool.AVDAgent.LocalSessionTimeZone.ToString(); }) > $Null
+							If(!($AVDHostPool.AVDAgent.LocalSessionTimeZone))
+							{
+								$ScriptInformation.Add(@{Data = "Time zone"; Value = $AVDHostPool.AVDAgent.TimeZone; }) > $Null
+							}
+							$ScriptInformation.Add(@{Data = "Maintenance Window 1"; Value = ""; }) > $Null
+							$ScriptInformation.Add(@{Data = "     Day"; Value = $AVDHostPool.AVDAgent.ScheduleDay1.ToString(); }) > $Null
+							$ScriptInformation.Add(@{Data = "     Time"; Value = $ScheduleTime1; }) > $Null
+							$ScriptInformation.Add(@{Data = "Add an additional window"; Value = $AVDHostPool.AVDAgent.EnableSchedule2.ToString(); }) > $Null
+							If($AVDHostPool.AVDAgent.EnableSchedule2)
+							{
+								Switch ($AVDHostPool.AVDAgent.ScheduleTime2)
+								{
+									"h00"	{$ScheduleTime2 = "12:00:00 AM"; Break}
+									"h01"	{$ScheduleTime2 = "01:00:00 AM"; Break}
+									"h02"	{$ScheduleTime2 = "02:00:00 AM"; Break}
+									"h03"	{$ScheduleTime2 = "03:00:00 AM"; Break}
+									"h04"	{$ScheduleTime2 = "04:00:00 AM"; Break}
+									"h05"	{$ScheduleTime2 = "05:00:00 AM"; Break}
+									"h06"	{$ScheduleTime2 = "06:00:00 AM"; Break}
+									"h07"	{$ScheduleTime2 = "07:00:00 AM"; Break}
+									"h08"	{$ScheduleTime2 = "08:00:00 AM"; Break}
+									"h09"	{$ScheduleTime2 = "09:00:00 AM"; Break}
+									"h10"	{$ScheduleTime2 = "10:00:00 AM"; Break}
+									"h11"	{$ScheduleTime2 = "11:00:00 AM"; Break}
+									"h12"	{$ScheduleTime2 = "12:00:00 PM"; Break}
+									"h13"	{$ScheduleTime2 = "01:00:00 PM"; Break}
+									"h14"	{$ScheduleTime2 = "02:00:00 PM"; Break}
+									"h15"	{$ScheduleTime2 = "03:00:00 PM"; Break}
+									"h16"	{$ScheduleTime2 = "04:00:00 PM"; Break}
+									"h17"	{$ScheduleTime2 = "05:00:00 PM"; Break}
+									"h18"	{$ScheduleTime2 = "06:00:00 PM"; Break}
+									"h19"	{$ScheduleTime2 = "07:00:00 PM"; Break}
+									"h20"	{$ScheduleTime2 = "08:00:00 PM"; Break}
+									"h21"	{$ScheduleTime2 = "09:00:00 PM"; Break}
+									"h21"	{$ScheduleTime2 = "10:00:00 PM"; Break}
+									"h23"	{$ScheduleTime2 = "11:00:00 PM"; Break}
+									Default {$ScheduleTime2 = "Unable to determine Schedule Time2: $($AVDHostPool.AVDAgent.ScheduleTime2)"; Break}
+								}
+								$ScriptInformation.Add(@{Data = "     Day"; Value = $AVDHostPool.AVDAgent.ScheduleDay2.ToString(); }) > $Null
+								$ScriptInformation.Add(@{Data = "     Time"; Value = $ScheduleTime2; }) > $Null
+							}
+						}
+
+						$Table = AddWordTable -Hashtable $ScriptInformation `
+						-Columns Data,Value `
+						-List `
+						-Format $wdTableGrid `
+						-AutoFit $wdAutoFitFixed;
+
+						SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+						SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+						$Table.Columns.Item(1).Width = 200;
+						$Table.Columns.Item(2).Width = 250;
+
+						$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+						FindWordDocumentEnd
+						$Table = $Null
+						WriteWordLine 0 0 ""
+					}
+					If($Text)
+					{
+						If(!($AVDHostPool.AVDAgent.ScheduleAgentUpdates))
+						{
+							Line 5 "Scheduled Microsoft AVD agent updates`t: " $AVDHostPool.AVDAgent.ScheduleAgentUpdates.ToString()
+						}
+						Else
+						{
+							Line 5 "Scheduled Microsoft AVD agent updates`t: " $AVDHostPool.AVDAgent.ScheduleAgentUpdates.ToString()
+							Switch ($AVDHostPool.AVDAgent.ScheduleTime1)
+							{
+								"h00"	{$ScheduleTime1 = "12:00:00 AM"; Break}
+								"h01"	{$ScheduleTime1 = "01:00:00 AM"; Break}
+								"h02"	{$ScheduleTime1 = "02:00:00 AM"; Break}
+								"h03"	{$ScheduleTime1 = "03:00:00 AM"; Break}
+								"h04"	{$ScheduleTime1 = "04:00:00 AM"; Break}
+								"h05"	{$ScheduleTime1 = "05:00:00 AM"; Break}
+								"h06"	{$ScheduleTime1 = "06:00:00 AM"; Break}
+								"h07"	{$ScheduleTime1 = "07:00:00 AM"; Break}
+								"h08"	{$ScheduleTime1 = "08:00:00 AM"; Break}
+								"h09"	{$ScheduleTime1 = "09:00:00 AM"; Break}
+								"h10"	{$ScheduleTime1 = "10:00:00 AM"; Break}
+								"h11"	{$ScheduleTime1 = "11:00:00 AM"; Break}
+								"h12"	{$ScheduleTime1 = "12:00:00 PM"; Break}
+								"h13"	{$ScheduleTime1 = "01:00:00 PM"; Break}
+								"h14"	{$ScheduleTime1 = "02:00:00 PM"; Break}
+								"h15"	{$ScheduleTime1 = "03:00:00 PM"; Break}
+								"h16"	{$ScheduleTime1 = "04:00:00 PM"; Break}
+								"h17"	{$ScheduleTime1 = "05:00:00 PM"; Break}
+								"h18"	{$ScheduleTime1 = "06:00:00 PM"; Break}
+								"h19"	{$ScheduleTime1 = "07:00:00 PM"; Break}
+								"h20"	{$ScheduleTime1 = "08:00:00 PM"; Break}
+								"h21"	{$ScheduleTime1 = "09:00:00 PM"; Break}
+								"h21"	{$ScheduleTime1 = "10:00:00 PM"; Break}
+								"h23"	{$ScheduleTime1 = "11:00:00 PM"; Break}
+								Default {$ScheduleTime1 = "Unable to determine Schedule Time1: $($AVDHostPool.AVDAgent.ScheduleTime1)"; Break}
+							}
+							Line 5 "Use local session host time zone`t: " $AVDHostPool.AVDAgent.LocalSessionTimeZone.ToString()
+							If(!($AVDHostPool.AVDAgent.LocalSessionTimeZone))
+							{
+								Line 5 "Time zone`t`t`t`t: " $AVDHostPool.AVDAgent.TimeZone
+							}
+							Line 5 "Maintenance Window 1"
+							Line 6 "Day`t: " $AVDHostPool.AVDAgent.ScheduleDay1.ToString()
+							Line 6 "Time`t: " $ScheduleTime1
+							Line 5 "Add an additional window: " $AVDHostPool.AVDAgent.EnableSchedule2.ToString()
+							If($AVDHostPool.AVDAgent.EnableSchedule2)
+							{
+								Switch ($AVDHostPool.AVDAgent.ScheduleTime2)
+								{
+									"h00"	{$ScheduleTime2 = "12:00:00 AM"; Break}
+									"h01"	{$ScheduleTime2 = "01:00:00 AM"; Break}
+									"h02"	{$ScheduleTime2 = "02:00:00 AM"; Break}
+									"h03"	{$ScheduleTime2 = "03:00:00 AM"; Break}
+									"h04"	{$ScheduleTime2 = "04:00:00 AM"; Break}
+									"h05"	{$ScheduleTime2 = "05:00:00 AM"; Break}
+									"h06"	{$ScheduleTime2 = "06:00:00 AM"; Break}
+									"h07"	{$ScheduleTime2 = "07:00:00 AM"; Break}
+									"h08"	{$ScheduleTime2 = "08:00:00 AM"; Break}
+									"h09"	{$ScheduleTime2 = "09:00:00 AM"; Break}
+									"h10"	{$ScheduleTime2 = "10:00:00 AM"; Break}
+									"h11"	{$ScheduleTime2 = "11:00:00 AM"; Break}
+									"h12"	{$ScheduleTime2 = "12:00:00 PM"; Break}
+									"h13"	{$ScheduleTime2 = "01:00:00 PM"; Break}
+									"h14"	{$ScheduleTime2 = "02:00:00 PM"; Break}
+									"h15"	{$ScheduleTime2 = "03:00:00 PM"; Break}
+									"h16"	{$ScheduleTime2 = "04:00:00 PM"; Break}
+									"h17"	{$ScheduleTime2 = "05:00:00 PM"; Break}
+									"h18"	{$ScheduleTime2 = "06:00:00 PM"; Break}
+									"h19"	{$ScheduleTime2 = "07:00:00 PM"; Break}
+									"h20"	{$ScheduleTime2 = "08:00:00 PM"; Break}
+									"h21"	{$ScheduleTime2 = "09:00:00 PM"; Break}
+									"h21"	{$ScheduleTime2 = "10:00:00 PM"; Break}
+									"h23"	{$ScheduleTime2 = "11:00:00 PM"; Break}
+									Default {$ScheduleTime2 = "Unable to determine Schedule Time2: $($AVDHostPool.AVDAgent.ScheduleTime2)"; Break}
+								}
+								Line 6 "Day`t: " $AVDHostPool.AVDAgent.ScheduleDay2.ToString()
+								Line 6 "Time`t: " $ScheduleTime2
+							}
+						}
+						Line 0 ""
+					}
+					If($HTML)
+					{
+						$rowdata = @()
+						If(!($AVDHostPool.AVDAgent.ScheduleAgentUpdates))
+						{
+							$columnHeaders = @("Scheduled Microsoft AVD agent updates",($Script:htmlsb),$AVDHostPool.AVDAgent.ScheduleAgentUpdates.ToString(),$htmlwhite)
+						}
+						Else
+						{
+							$columnHeaders = @("Scheduled Microsoft AVD agent updates",($Script:htmlsb),$AVDHostPool.AVDAgent.ScheduleAgentUpdates.ToString(),$htmlwhite)
+							Switch ($AVDHostPool.AVDAgent.ScheduleTime1)
+							{
+								"h00"	{$ScheduleTime1 = "12:00:00 AM"; Break}
+								"h01"	{$ScheduleTime1 = "01:00:00 AM"; Break}
+								"h02"	{$ScheduleTime1 = "02:00:00 AM"; Break}
+								"h03"	{$ScheduleTime1 = "03:00:00 AM"; Break}
+								"h04"	{$ScheduleTime1 = "04:00:00 AM"; Break}
+								"h05"	{$ScheduleTime1 = "05:00:00 AM"; Break}
+								"h06"	{$ScheduleTime1 = "06:00:00 AM"; Break}
+								"h07"	{$ScheduleTime1 = "07:00:00 AM"; Break}
+								"h08"	{$ScheduleTime1 = "08:00:00 AM"; Break}
+								"h09"	{$ScheduleTime1 = "09:00:00 AM"; Break}
+								"h10"	{$ScheduleTime1 = "10:00:00 AM"; Break}
+								"h11"	{$ScheduleTime1 = "11:00:00 AM"; Break}
+								"h12"	{$ScheduleTime1 = "12:00:00 PM"; Break}
+								"h13"	{$ScheduleTime1 = "01:00:00 PM"; Break}
+								"h14"	{$ScheduleTime1 = "02:00:00 PM"; Break}
+								"h15"	{$ScheduleTime1 = "03:00:00 PM"; Break}
+								"h16"	{$ScheduleTime1 = "04:00:00 PM"; Break}
+								"h17"	{$ScheduleTime1 = "05:00:00 PM"; Break}
+								"h18"	{$ScheduleTime1 = "06:00:00 PM"; Break}
+								"h19"	{$ScheduleTime1 = "07:00:00 PM"; Break}
+								"h20"	{$ScheduleTime1 = "08:00:00 PM"; Break}
+								"h21"	{$ScheduleTime1 = "09:00:00 PM"; Break}
+								"h21"	{$ScheduleTime1 = "10:00:00 PM"; Break}
+								"h23"	{$ScheduleTime1 = "11:00:00 PM"; Break}
+								Default {$ScheduleTime1 = "Unable to determine Schedule Time1: $($AVDHostPool.AVDAgent.ScheduleTime1)"; Break}
+							}
+							$rowdata += @(,( "Use local session host time zone",($Script:htmlsb), $AVDHostPool.AVDAgent.LocalSessionTimeZone.ToString(),$htmlwhite))
+							If(!($AVDHostPool.AVDAgent.LocalSessionTimeZone))
+							{
+								$rowdata += @(,( "Time zone",($Script:htmlsb), $AVDHostPool.AVDAgent.TimeZone,$htmlwhite))
+							}
+							$rowdata += @(,( "Maintenance Window 1",($Script:htmlsb), "",$htmlwhite))
+							$rowdata += @(,( "     Day",($Script:htmlsb), $AVDHostPool.AVDAgent.ScheduleDay1.ToString(),$htmlwhite))
+							$rowdata += @(,( "     Time",($Script:htmlsb), $ScheduleTime1,$htmlwhite))
+							$rowdata += @(,( "Add an additional window",($Script:htmlsb), $AVDHostPool.AVDAgent.EnableSchedule2.ToString(),$htmlwhite))
+							If($AVDHostPool.AVDAgent.EnableSchedule2)
+							{
+								Switch ($AVDHostPool.AVDAgent.ScheduleTime2)
+								{
+									"h00"	{$ScheduleTime2 = "12:00:00 AM"; Break}
+									"h01"	{$ScheduleTime2 = "01:00:00 AM"; Break}
+									"h02"	{$ScheduleTime2 = "02:00:00 AM"; Break}
+									"h03"	{$ScheduleTime2 = "03:00:00 AM"; Break}
+									"h04"	{$ScheduleTime2 = "04:00:00 AM"; Break}
+									"h05"	{$ScheduleTime2 = "05:00:00 AM"; Break}
+									"h06"	{$ScheduleTime2 = "06:00:00 AM"; Break}
+									"h07"	{$ScheduleTime2 = "07:00:00 AM"; Break}
+									"h08"	{$ScheduleTime2 = "08:00:00 AM"; Break}
+									"h09"	{$ScheduleTime2 = "09:00:00 AM"; Break}
+									"h10"	{$ScheduleTime2 = "10:00:00 AM"; Break}
+									"h11"	{$ScheduleTime2 = "11:00:00 AM"; Break}
+									"h12"	{$ScheduleTime2 = "12:00:00 PM"; Break}
+									"h13"	{$ScheduleTime2 = "01:00:00 PM"; Break}
+									"h14"	{$ScheduleTime2 = "02:00:00 PM"; Break}
+									"h15"	{$ScheduleTime2 = "03:00:00 PM"; Break}
+									"h16"	{$ScheduleTime2 = "04:00:00 PM"; Break}
+									"h17"	{$ScheduleTime2 = "05:00:00 PM"; Break}
+									"h18"	{$ScheduleTime2 = "06:00:00 PM"; Break}
+									"h19"	{$ScheduleTime2 = "07:00:00 PM"; Break}
+									"h20"	{$ScheduleTime2 = "08:00:00 PM"; Break}
+									"h21"	{$ScheduleTime2 = "09:00:00 PM"; Break}
+									"h21"	{$ScheduleTime2 = "10:00:00 PM"; Break}
+									"h23"	{$ScheduleTime2 = "11:00:00 PM"; Break}
+									Default {$ScheduleTime2 = "Unable to determine Schedule Time2: $($AVDHostPool.AVDAgent.ScheduleTime2)"; Break}
+								}
+								$rowdata += @(,( "     Day",($Script:htmlsb), $AVDHostPool.AVDAgent.ScheduleDay2.ToString(),$htmlwhite))
+								$rowdata += @(,( "     Time",($Script:htmlsb), $ScheduleTime2,$htmlwhite))
+							}
+						}
+						
+						$msg = "AVD Agent"
+						$columnWidths = @("250","275")
 						FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 						WriteHTMLLine 0 0 ""
 					}
@@ -27637,7 +28747,7 @@ Function OutputProvidersDetails
 					SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 					SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-					$Table.Columns.Item(1).Width = 200;
+					$Table.Columns.Item(1).Width = 150;
 					$Table.Columns.Item(2).Width = 250;
 
 					$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
@@ -27764,15 +28874,28 @@ Function OutputProvidersDetails
 			{
 				$ScriptInformation = New-Object System.Collections.ArrayList
 				$ScriptInformation.Add(@{Data = "Enable provider in site"; Value = $Provider.Enabled.ToString(); }) > $Null
-				If($VDIType -eq "Azure")
+				If($VDIType -like "*azure*")
 				{
-					$ScriptInformation.Add(@{Data = "Type"; Value = $VDIType; }) > $Null
 					$ScriptInformation.Add(@{Data = "Name"; Value = $Provider.Name; }) > $Null
 					$ScriptInformation.Add(@{Data = "Description"; Value = $Provider.Description; }) > $Null
-					$ScriptInformation.Add(@{Data = "Subscription details"; Value = ""; }) > $Null
+					$ScriptInformation.Add(@{Data = "Type"; Value = $VDIType; }) > $Null
+					$ScriptInformation.Add(@{Data = "Preferred Connection Broker"; Value = $ProviderStatus.PreferredBroker; }) > $Null
+					$ScriptInformation.Add(@{Data = "Microsoft Azure subscription"; Value = ""; }) > $Null
 					$ScriptInformation.Add(@{Data = "     Authentication URL"; Value = $Provider.VDIAzureCloudInfo.AuthenticationURL; }) > $Null
 					$ScriptInformation.Add(@{Data = "     Management URL"; Value = $Provider.VDIAzureCloudInfo.ManagementURL; }) > $Null
 					$ScriptInformation.Add(@{Data = "     Resource URI"; Value = $Provider.VDIAzureCloudInfo.ResourceURI; }) > $Null
+					If(validobject $Provider GraphURL)
+					{
+						$ScriptInformation.Add(@{Data = "     Graph API URL"; Value = $Provider.GraphURL; }) > $Null
+					}
+					If(validobject $Provider FeedURL)
+					{
+						$ScriptInformation.Add(@{Data = "     Feed URL"; Value = $Provider.FeedURL; }) > $Null
+					}
+					If(validobject $Provider WebAccessURL)
+					{
+						$ScriptInformation.Add(@{Data = "     Web access URL"; Value = $Provider.WebAccessURL; }) > $Null
+					}
 					$ScriptInformation.Add(@{Data = "Tenant ID"; Value = $Provider.VDIAzureCloudInfo.TenantID; }) > $Null
 					$ScriptInformation.Add(@{Data = "Subscription ID"; Value = $Provider.VDIAzureCloudInfo.SubscriptionID; }) > $Null
 				}
@@ -27783,7 +28906,6 @@ Function OutputProvidersDetails
 					$ScriptInformation.Add(@{Data = "Type"; Value = $VDIType; }) > $Null
 					$ScriptInformation.Add(@{Data = "Host"; Value = $Provider.Server; }) > $Null
 					$ScriptInformation.Add(@{Data = "Port"; Value = $Provider.VDIPort.ToString(); }) > $Null
-					#$ScriptInformation.Add(@{Data = "Resource pool"; Value = $Provider.ResourcePool; }) > $Null
 				}
 				$ScriptInformation.Add(@{Data = "Dedicated Provider Agent"; Value = $DedicatedVDIAgent.ToString(); }) > $Null
 				If($DedicatedVDIAgent)
@@ -27800,8 +28922,8 @@ Function OutputProvidersDetails
 				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 200;
-				$Table.Columns.Item(2).Width = 250;
+				$Table.Columns.Item(1).Width = 150;
+				$Table.Columns.Item(2).Width = 300;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -27812,15 +28934,28 @@ Function OutputProvidersDetails
 			If($Text)
 			{
 				Line 4 "Enable provider in site`t`t: " $Provider.Enabled.ToString()
-				If($VDIType -eq "Azure")
+				If($VDIType -like "*azure*")
 				{
-					Line 4 "Type`t`t`t`t: " $VDIType
 					Line 4 "Name`t`t`t`t: " $Provider.Name
 					Line 4 "Description`t`t`t: " $Provider.Description
-					Line 4 "Subscription details`t`t: " 
-					Line 5 "Authentication URL: " $Provider.VDIAzureCloudInfo.AuthenticationURL
-					Line 5 "Management URL`t  : " $Provider.VDIAzureCloudInfo.ManagementURL
-					Line 5 "Resource URI`t  : " $Provider.VDIAzureCloudInfo.ResourceURI
+					Line 4 "Type`t`t`t`t: " $VDIType
+					Line 4 "Preferred Connection Broker`t: " $ProviderStatus.PreferredBroker
+					Line 4 "Microsoft Azure subscription" 
+					Line 5 "Authentication URL      : " $Provider.VDIAzureCloudInfo.AuthenticationURL
+					Line 5 "Management URL`t        : " $Provider.VDIAzureCloudInfo.ManagementURL
+					Line 5 "Resource URI`t        : " $Provider.VDIAzureCloudInfo.ResourceURI
+					If(validobject $Provider GraphURL)
+					{
+						Line 5 "Graph API URL`t`t: " $Provider.GraphURL
+					}
+					If(validobject $Provider FeedURL)
+					{
+						Line 5 "Feed URL`t`t: " $Provider.FeedURL
+					}
+					If(validobject $Provider WebAccessURL)
+					{
+						Line 5 "Web access URL`t`t: " $Provider.WebAccessURL
+					}
 					Line 4 "Tenant ID`t`t`t: " $Provider.VDIAzureCloudInfo.TenantID
 					Line 4 "Subscription ID`t`t`t: " $Provider.VDIAzureCloudInfo.SubscriptionID
 				}
@@ -27832,7 +28967,6 @@ Function OutputProvidersDetails
 					Line 4 "Host`t`t`t`t: " $Provider.Server
 					Line 4 "Port`t`t`t`t: " $Provider.VDIPort.ToString()
 					Line 4 "Description`t`t`t: " $Provider.Description
-					#Line 4 "Resource pool`t`t`t: " $Provider.ResourcePool
 				}
 				Line 4 "Dedicated Provider Agent`t: " $DedicatedVDIAgent.ToString()
 				If($DedicatedVDIAgent)
@@ -27845,15 +28979,28 @@ Function OutputProvidersDetails
 			{
 				$rowdata = @()
 				$columnHeaders = @("Enable provider in site",($Script:htmlsb),$Provider.Enabled.ToString(),$htmlwhite)
-				If($VDIType -eq "Azure")
+				If($VDIType -like "*azure*")
 				{
-					$rowdata += @(,("Type",($Script:htmlsb),$VDIType,$htmlwhite))
 					$rowdata += @(,("Name",($Script:htmlsb), $Provider.Name,$htmlwhite))
 					$rowdata += @(,("Description",($Script:htmlsb), $Provider.Description,$htmlwhite))
-					$rowdata += @(,("Subscription details",($Script:htmlsb),"",$htmlwhite))
-					$rowdata += @(,("     Authentication URL",($Script:htmlsb), $Provider.VDIAzureCloudInfo.AuthenticationURL,$htmlwhite))
-					$rowdata += @(,("     Management URL",($Script:htmlsb), $Provider.VDIAzureCloudInfo.ManagementURL,$htmlwhite))
-					$rowdata += @(,("     Resource URI",($Script:htmlsb), $Provider.VDIAzureCloudInfo.ResourceURI,$htmlwhite))
+					$rowdata += @(,("Type",($Script:htmlsb),$VDIType,$htmlwhite))
+					$rowdata += @(,("Preferred Connection Broker",($Script:htmlsb),$ProviderStatus.PreferredBroker,$htmlwhite))
+					$rowdata += @(,("Microsoft Azure subscription",($Script:htmlsb),"",$htmlwhite))
+					$rowdata += @(,("     Authentication URL",($Script:htmlsb),$Provider.VDIAzureCloudInfo.AuthenticationURL,$htmlwhite))
+					$rowdata += @(,("     Management URL",($Script:htmlsb),$Provider.VDIAzureCloudInfo.ManagementURL,$htmlwhite))
+					$rowdata += @(,("     Resource URI",($Script:htmlsb),$Provider.VDIAzureCloudInfo.ResourceURI,$htmlwhite))
+					If(validobject $Provider GraphURL)
+					{
+						$rowdata += @(,("     Graph API URL",($Script:htmlsb),$Provider.GraphURL,$htmlwhite))
+					}
+					If(validobject $Provider FeedURL)
+					{
+						$rowdata += @(,("     Feed URL",($Script:htmlsb),$Provider.FeedURL,$htmlwhite))
+					}
+					If(validobject $Provider WebAccessURL)
+					{
+						$rowdata += @(,("     Web access URL",($Script:htmlsb),$Provider.WebAccessURL,$htmlwhite))
+					}
 					$rowdata += @(,("Tenant ID",($Script:htmlsb), $Provider.VDIAzureCloudInfo.TenantID,$htmlwhite))
 					$rowdata += @(,("Subscription ID",($Script:htmlsb), $Provider.VDIAzureCloudInfo.SubscriptionID,$htmlwhite))
 				}
@@ -27865,7 +29012,6 @@ Function OutputProvidersDetails
 					$rowdata += @(,("Host",($Script:htmlsb),$Provider.Server,$htmlwhite))
 					$rowdata += @(,("Port",($Script:htmlsb),$Provider.VDIPort.ToString(),$htmlwhite))
 					$rowdata += @(,("Description",($Script:htmlsb),$Provider.Description,$htmlwhite))
-					#$rowdata += @(,("Resource pool",($Script:htmlsb),$Provider.ResourcePool,$htmlwhite))
 				}
 				$rowdata += @(,("Dedicated Provider Agent",($Script:htmlsb),$DedicatedVDIAgent.ToString(),$htmlwhite))
 				If($DedicatedVDIAgent)
@@ -27896,16 +29042,52 @@ Function OutputProvidersDetails
 
 			$ProviderUsername = $Provider.ProviderUsername
 			
+			<#
+				ADType                      WindowsServerADDS (Windows Server AD DS (objectGUID)
+				ADType						3 (Windows Server AD DS (objectGUID String)
+				ADType						AzureADDS (Azure AD DS)
+			#>
+			
+			$ADType = ""
+			Switch ($Provider.ADType)
+			{
+				3					{$ADType = "Windows Server AD DS (objectGUID String)"; Break}
+				"AzureADDS"			{$ADType = "Azure AD DS"; Break}
+				"WindowsServerADDS"	{$ADType = "Windows Server AD DS (objectGUID)"; Break}
+				Default				{$ADType = "Unable to determine Active Directory Domain Services type: $($Provider.ADType)"; Break}
+			}
+			
+			
 			If($MSWord -or $PDF)
 			{
 				$ScriptInformation = New-Object System.Collections.ArrayList
-				If($VDIType -eq "Azure")
+				$ScriptInformation.Add(@{Data = "Service principal"; Value = ""; }) > $Null
+				If($VDIType -like "*azure*")
 				{
-					$ScriptInformation.Add(@{Data = "Application ID"; Value = $ProviderUsername; }) > $Null
+					$ScriptInformation.Add(@{Data = "     Application ID"; Value = $ProviderUsername; }) > $Null
 				}
 				Else
 				{
-					$ScriptInformation.Add(@{Data = "Username"; Value = $ProviderUsername; }) > $Null
+					$ScriptInformation.Add(@{Data = "     Username"; Value = $ProviderUsername; }) > $Null
+				}
+				$ScriptInformation.Add(@{Data = "Deployment credentials"; Value = ""; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Active Directory credentials to deploy RAS agents"; Value = ""; }) > $Null
+				ForEach($User in $Provider.VDIAzureCloudInfo.AdminCredentials)
+				{
+					If($User.Username -eq "%CURRENTADMIN%")
+					{
+						$Username = "Current RAS Administrator credentials"
+					}
+					Else
+					{
+						$Username = $User.Username
+					}
+					$ScriptInformation.Add(@{Data = ""; Value = "Enabled: $($User.Enabled.ToString())   Username: $Username"; }) > $Null
+				}
+				If($ADType -ne "")
+				{
+					$ScriptInformation.Add(@{Data = "Active Directory environment"; Value = ""; }) > $Null
+					$ScriptInformation.Add(@{Data = "     Active Directory Domain Services type"; Value = $ADType; }) > $Null
 				}
 
 				$Table = AddWordTable -Hashtable $ScriptInformation `
@@ -27917,7 +29099,7 @@ Function OutputProvidersDetails
 				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 200;
+				$Table.Columns.Item(1).Width = 250;
 				$Table.Columns.Item(2).Width = 250;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
@@ -27928,158 +29110,120 @@ Function OutputProvidersDetails
 			}
 			If($Text)
 			{
-				If($VDIType -eq "Azure")
+				Line 4 "Service principal"
+				If($VDIType -like "*azure*")
 				{
-					Line 4 "Application ID: " $ProviderUsername
+					Line 5 "Application ID: " $ProviderUsername
 				}
 				Else
 				{
-					Line 4 "Username`t`t`t: " $ProviderUsername
+					Line 5 "Username: " $ProviderUsername
+				}
+				Line 4 "Deployment credentials"
+				Line 5 "Active Directory credentials to deploy RAS agents"
+				ForEach($User in $Provider.VDIAzureCloudInfo.AdminCredentials)
+				{
+					If($User.Username -eq "%CURRENTADMIN%")
+					{
+						$Username = "Current RAS Administrator credentials"
+					}
+					Else
+					{
+						$Username = $User.Username
+					}
+					Line 6 "Enabled: $($User.Enabled.ToString())   Username: $Username"
+				}
+				If($ADType -ne "")
+				{
+					Line 4 "Active Directory environment"
+					Line 5 "Active Directory Domain Services type: " $ADType
 				}
 				Line 0 ""
 			}
 			If($HTML)
 			{
 				$rowdata = @()
-				If($VDIType -eq "Azure")
+				$columnHeaders = @("Service principal",($Script:htmlsb),"",$htmlwhite)
+				If($VDIType -like "*azure*")
 				{
-					$columnHeaders = @("Application ID",($Script:htmlsb),$ProviderUsername,$htmlwhite)
+					$rowdata += @(,("     Application ID",($Script:htmlsb),$ProviderUsername,$htmlwhite))
 				}
 				Else
 				{
-					$columnHeaders = @("Username",($Script:htmlsb),$ProviderUsername,$htmlwhite)
+					$rowdata += @(,("     Username",($Script:htmlsb),$ProviderUsername,$htmlwhite))
+				}
+				$rowdata += @(,("Deployment credentials",($Script:htmlsb),"",$htmlwhite))
+				$rowdata += @(,("     Active Directory credentials to deploy RAS agents",($Script:htmlsb),"",$htmlwhite))
+				ForEach($User in $Provider.VDIAzureCloudInfo.AdminCredentials)
+				{
+					If($User.Username -eq "%CURRENTADMIN%")
+					{
+						$Username = "Current RAS Administrator credentials"
+					}
+					Else
+					{
+						$Username = $User.Username
+					}
+					$rowdata += @(,("",($Script:htmlsb),"Enabled: $($User.Enabled.ToString())   Username: $Username",$htmlwhite))
+				}
+				If($ADType -ne "")
+				{
+					$rowdata += @(,("Active Directory environment",($Script:htmlsb),"",$htmlwhite))
+					$rowdata += @(,("     Active Directory Domain Services type",($Script:htmlsb),$ADType,$htmlwhite))
 				}
 
 				$msg = "Credentials"
-				$columnWidths = @("200","275")
+				$columnWidths = @("300","350")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 			}
+			
+			#Advanced
+			<#
+				PS C:\Parallels-RAS-V19.x-Doc-Script-4.00> $x1.VDIAzureCloudInfo | % {$_.psobject.properties | select name, value | sort name}
 
-			#Agent Settings
+				Name                Value
+				----                -----
+				AdminCredentials    {rasadmin, %CURRENTADMIN%}
+				AuthenticationURL   https://login.microsoftonline.com
+				CostOptimizeTimeout 300
+				EnableCostOptimize  False
+				ManagementURL       https://management.azure.com
+				ResourceURI         https://management.core.windows.net
+				SubscriptionID      b4085957-22f0-440f-ac06-71ef3dcd61cb
+				TenantID            c531b8d4-7f12-43c6-85eb-57d0d07c6459
+			#>
 			
 			If($MSWord -or $PDF)
 			{
-				WriteWordLine 4 0 "Agent settings"
+				WriteWordLine 4 0 "Advanced"
 			}
 			If($Text)
 			{
-				Line 3 "Agent settings"
+				Line 3 "Advanced"
 			}
 			If($HTML)
 			{
 				#Nothing
 			}
-			
-			If(validObject $Provider DragAndDropMode)
-			{
-				Switch ($Provider.DragAndDropMode)
-				{
-					"Bidirectional"		{$VDIDragAndDrop = "Bidirectional"; 
-										$VDIAllowDragAndDrop = "True";
-										Break}
-					"Disabled"			{$VDIDragAndDrop = "Disabled"; 
-										$VDIAllowDragAndDrop = "False";
-										Break}
-					"ClientToServer"	{$VDIDragAndDrop = "Client to server only"; 
-										$VDIAllowDragAndDrop = "True";
-										Break}
-					"ServerToClient"	{$VDIDragAndDrop = "Server to client only"; 
-										$VDIAllowDragAndDrop = "True";
-										Break}
-					Default				{$VDIDragAndDrop = "Unable to determine Drag and drop: $($Provider.DragAndDropMode)"; 
-										$VDIAllowDragAndDrop = "False";
-										Break}
-				}
-			}
-			Else
-			{
-				$VDIDragAndDrop = ""
-				$VDIAllowDragAndDrop = ""
-			}
 
-			If(validobject $Provider AllowURLAndMailRedirection)
+			Switch ($Provider.VDIAzureCloudInfo.CostOptimizeTimeout)
 			{
-				Switch($Provider.AllowURLAndMailRedirection)
-				{
-					"Enabled"						{$VDIAllowClientURLMailRedirection = "Enabled"; 
-													 $ReplaceRegisteredApplication = "False";
-													 Break}
-					"Disabled"						{$VDIAllowClientURLMailRedirection = "Disabled"; 
-													 $ReplaceRegisteredApplication = "False";
-													 Break}
-					"EnabledWithAppRegistration"	{$VDIAllowClientURLMailRedirection = "Enabled";
-													 $ReplaceRegisteredApplication = "True";
-													 Break}
-					Default 						{$VDIAllowClientURLMailRedirection = "Unable to determine Allow CLient URL/Mail Redirection: $($Provider.AllowURLAndMailRedirection)"; 
-													 $ReplaceRegisteredApplication = "False";
-													 Break}
-				}
-			}
-			Else
-			{
-				$VDIAllowClientURLMailRedirection = ""
-				$ReplaceRegisteredApplication = "";
-			}
-			
-			If(validobject $Provider FileTransferMode)
-			{
-				Switch ($Provider.FileTransferMode)
-				{
-					"Bidirectional"		{$ProviderFileTransferMode = "Bidirectional"; Break}
-					"Disabled"			{$ProviderFileTransferMode = "Disabled"; Break}
-					"ClientToServer"	{$ProviderFileTransferMode = "Client to server only"; Break}
-					"ServerToClient"	{$ProviderFileTransferMode = "Server to client only"; Break}
-					Default				{$ProviderFileTransferMode = "Unable to determine File Transfer mode: $($Provider.FileTransferMode)"; Break}
-				}
-			}
-			Else
-			{
-				$ProviderFileTransferMode = ""
-			}
-
-			If(validobject $Provider FileTransferLocation)
-			{
-				If($Provider.FileTransferLocation -eq "")
-				{
-					$ProviderFileTransferLocation = "Default download location"
-				}
-				Else
-				{
-					$ProviderFileTransferLocation = $ProviderHost.FileTransferLocation
-				}
-			}
-			Else
-			{
-				$ProviderFileTransferLocation = ""
+				25		{$CostOptimizeTimeout = "25 seconds"; Break}
+				60		{$CostOptimizeTimeout = "1 minute"; Break}
+				300		{$CostOptimizeTimeout = "5 minutes"; Break}
+				3600	{$CostOptimizeTimeout = "1 hour"; Break}
+				Default	{$CostOptimizeTimeout = "Unable to determine Storage Cost Optimization Timeout: $($Provider.VDIAzureCloudInfo.CostOptimizeTimeout)"; Break}
 			}
 
 			If($MSWord -or $PDF)
 			{
 				$ScriptInformation = New-Object System.Collections.ArrayList
-				$ScriptInformation.Add(@{Data = "Preferred Connection Broker"; Value = $Provider.VDIAgent; }) > $Null
-				$ScriptInformation.Add(@{Data = "Allow Client URL/Mail Redirection"; Value = $VDIAllowClientURLMailRedirection; }) > $Null
-				$ScriptInformation.Add(@{Data = "     Replace registered application"; Value = $ReplaceRegisteredApplication; }) > $Null
-				If(validobject $Provider SupportShellURLNamespaceObjects)
+				$ScriptInformation.Add(@{Data = "Disk storage cost optimization"; Value = ""; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Enable disk storage cost optimization"; Value = $Provider.VDIAzureCloudInfo.EnableCostOptimize.ToString(); }) > $Null
+				If($Provider.VDIAzureCloudInfo.EnableCostOptimize)
 				{
-					$ScriptInformation.Add(@{Data = "     Support Windows Shell URL namespace objects"; Value = $Provider.SupportShellURLNamespaceObjects.ToString(); }) > $Null
-				}
-				$ScriptInformation.Add(@{Data = "Enable Drag and drop"; Value = $VDIAllowDragAndDrop; }) > $Null
-				$ScriptInformation.Add(@{Data = "     Direction"; Value = $VDIDragAndDrop; }) > $Null
-				If(validobject $Provider AllowFileTransfer)
-				{
-					$ScriptInformation.Add(@{Data = "Allow file transfer command (Web (HTML5) and Chrome clients)"; Value = $Provider.AllowFileTransfer.ToString(); }) > $Null
-				}
-				$ScriptInformation.Add(@{Data = "     Configure File Transfer"; Value = ""; }) > $Null
-				$ScriptInformation.Add(@{Data = "          Direction"; Value = $ProviderFileTransferMode; }) > $Null
-				$ScriptInformation.Add(@{Data = "          Location"; Value = $ProviderFileTransferLocation; }) > $Null
-				If(validobject $Provider FileTransferLockLocation)
-				{
-					$ScriptInformation.Add(@{Data = "          Do not allow to change location"; Value = $Provider.FileTransferLockLocation.ToString(); }) > $Null
-				}
-				If(validobject $Provider EnableDriveRedirectionCache)
-				{
-					$ScriptInformation.Add(@{Data = "Enable drive redirection cache"; Value = $Provider.EnableDriveRedirectionCache.ToString(); }) > $Null
+					$ScriptInformation.Add(@{Data = "     Set timeout before enabling storage cost optimization"; Value = $CostOptimizeTimeout; }) > $Null
 				}
 
 				$Table = AddWordTable -Hashtable $ScriptInformation `
@@ -28091,8 +29235,8 @@ Function OutputProvidersDetails
 				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 200;
-				$Table.Columns.Item(2).Width = 250;
+				$Table.Columns.Item(1).Width = 275;
+				$Table.Columns.Item(2).Width = 100;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -28102,157 +29246,26 @@ Function OutputProvidersDetails
 			}
 			If($Text)
 			{
-				Line 4 "Preferred Connection Broker`t`t`t`t`t: " $Provider.VDIAgent
-				Line 4 "Allow Client URL/Mail Redirection`t`t`t`t: " $VDIAllowClientURLMailRedirection
-				Line 5 "Replace registered application`t`t`t`t: " $ReplaceRegisteredApplication
-				If(validobject $Provider SupportShellURLNamespaceObjects)
+				Line 4 "Disk storage cost optimization"
+				Line 5 "Enable disk storage cost optimization: " $Provider.VDIAzureCloudInfo.EnableCostOptimize.ToString()
+				If($Provider.VDIAzureCloudInfo.EnableCostOptimize)
 				{
-					Line 5 "Support Windows Shell URL namespace objects`t`t: " $Provider.SupportShellURLNamespaceObjects.ToString()
+					Line 5 "Set timeout before enabling storage cost optimization: " $CostOptimizeTimeout
 				}
-				Line 4 "Enable Drag and drop`t`t`t`t`t`t: " $VDIAllowDragandDrop
-				Line 5 "Direction`t`t`t`t`t`t: " $VDIDragAndDrop
-				If(validobject $Provider AllowFileTransfer)
-				{
-					Line 4 "Allow file transfer command (Web (HTML5) and Chrome clients)`t: " $Provider.AllowFileTransfer.ToString()
-				}
-				Line 5 "Configure File Transfer"
-				Line 6 "Direction`t`t`t: " $ProviderFileTransferMode
-				Line 6 "Location`t`t`t: " $ProviderFileTransferLocation
-				If(validobject $Provider FileTransferLockLocation)
-				{
-					Line 6 "Do not allow to change location : " $Provider.FileTransferLockLocation.ToString()
-				}
-				If(validobject $Provider EnableDriveRedirectionCache)
-				{
-					Line 4 "Enable drive redirection cache`t`t`t`t`t: " $Provider.EnableDriveRedirectionCache.ToString()
-				}
-				
 				Line 0 ""
 			}
 			If($HTML)
 			{
 				$rowdata = @()
-				$columnHeaders = @("Preferred Connection Broker",($Script:htmlsb),$Provider.VDIAgent,$htmlwhite)
-				$rowdata += @(,("Allow Client URL/Mail Redirection",($Script:htmlsb),$VDIAllowClientURLMailRedirection,$htmlwhite))
-				$rowdata += @(,("     Replace registered application",($Script:htmlsb),$ReplaceRegisteredApplication,$htmlwhite))
-				If(validobject $Provider SupportShellURLNamespaceObjects)
+				$columnHeaders = @("Disk storage cost optimization",($Script:htmlsb),"",$htmlwhite)
+				$rowdata += @(,("     Enable disk storage cost optimization",($Script:htmlsb),$Provider.VDIAzureCloudInfo.EnableCostOptimize.ToString(),$htmlwhite))
+				If($Provider.VDIAzureCloudInfo.EnableCostOptimize)
 				{
-					$rowdata += @(,("     Support Windows Shell URL namespace objects",($Script:htmlsb),$Provider.SupportShellURLNamespaceObjects.ToString(),$htmlwhite))
+					$rowdata += @(,("     Set timeout before enabling storage cost optimization",($Script:htmlsb),$CostOptimizeTimeout,$htmlwhite))
 				}
-				$rowdata += @(,("Enable Drag and drop",($Script:htmlsb),$VDIAllowDragAndDrop,$htmlwhite))
-				$rowdata += @(,("     Directon",($Script:htmlsb),$VDIDragAndDrop,$htmlwhite))
-				If(validobject $Provider AllowFileTransfer)
-				{
-					$rowdata += @(,("Allow file transfer command (Web (HTML5) and Chrome clients)",($Script:htmlsb),$Provider.AllowFileTransfer.ToString(),$htmlwhite))
-				}
-				$rowdata += @(,("     Configure File Transfer",($Script:htmlsb),"",$htmlwhite))
-				$rowdata += @(,("          Direction",($Script:htmlsb),$ProviderFileTransferMode,$htmlwhite))
-				$rowdata += @(,("          Location",($Script:htmlsb),$ProviderFileTransferLocation,$htmlwhite))
-				If(validobject $Provider FileTransferLockLocation)
-				{
-					$rowdata += @(,("          Do not allow to change location",($Script:htmlsb),$Provider.FileTransferLockLocation.ToString(),$htmlwhite))
-				}
-				If(validobject $Provider EnableDriveRedirectionCache)
-				{
-					$rowdata += @(,("Enable drive redirection cache",($Script:htmlsb),$Provider.EnableDriveRedirectionCache.ToString(),$htmlwhite))
-				}
-				
 
-				$msg = "Agent settings"
-				$columnWidths = @("200","275")
-				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-				WriteHTMLLine 0 0 ""
-			}
-
-			#RDP Printer
-			
-			If($MSWord -or $PDF)
-			{
-				WriteWordLine 4 0 "RDP printer"
-			}
-			If($Text)
-			{
-				Line 3 "RDP printer"
-			}
-			If($HTML)
-			{
-				#Nothing
-			}
-			
-			If(validobject $Provider PrinterNameFormat)
-			{
-				Switch ($Provider.PrinterNameFormat)
-				{
-					"PrnFormat_PRN_CMP_SES"	{$ProviderPrinterNameFormat = "Printername (from Computername) in Session no."; Break}
-					"PrnFormat_SES_CMP_PRN"	{$ProviderPrinterNameFormat = "Session no. (Computername from) Printername"; Break}
-					"PrnFormat_PRN_REDSES"	{$ProviderPrinterNameFormat = "Printername (redirected Session no.)"; Break}
-					Default					{$ProviderPrinterNameFormat = "Unable to determine RDP Printer Name Format: $($Provider.PrinterNameFormat)"; Break}
-				}
-			}
-			Else
-			{
-				$ProviderPrinterNameFormat = ""
-			}
-			
-			If(validobject $Provider RemoveSessionNumberFromPrinterName)
-			{
-				$ProviderRemoveSessionNumberFromPrinter = $Provider.RemoveSessionNumberFromPrinterName.ToString()
-			}
-			Else
-			{
-				$ProviderRemoveSessionNumberFromPrinter = ""
-			}
-
-			If(validobject $Provider RemoveClientNameFromPrinterName)
-			{
-				$ProviderRemoveClientNameFromPrinter = $Provider.RemoveClientNameFromPrinterName.ToString()
-			}
-			Else
-			{
-				$ProviderRemoveClientNameFromPrinter = ""
-			}
-
-			If($MSWord -or $PDF)
-			{
-				$ScriptInformation = New-Object System.Collections.ArrayList
-				$ScriptInformation.Add(@{Data = "RDP Printer Name Format"; Value = $ProviderPrinterNameFormat; }) > $Null
-				$ScriptInformation.Add(@{Data = "Remove session number from printer name"; Value = $ProviderRemoveSessionNumberFromPrinter; }) > $Null
-				$ScriptInformation.Add(@{Data = "Remove client name from printer name"; Value = $ProviderRemoveClientNameFromPrinter; }) > $Null
-
-				$Table = AddWordTable -Hashtable $ScriptInformation `
-				-Columns Data,Value `
-				-List `
-				-Format $wdTableGrid `
-				-AutoFit $wdAutoFitFixed;
-
-				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
-				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
-				$Table.Columns.Item(1).Width = 200;
-				$Table.Columns.Item(2).Width = 250;
-
-				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-				FindWordDocumentEnd
-				$Table = $Null
-				WriteWordLine 0 0 ""
-			}
-			If($Text)
-			{
-				Line 4 "RDP Printer Name Format`t`t`t`t: " $ProviderPrinterNameFormat
-				Line 4 "Remove session number from printer name`t`t: " $ProviderRemoveSessionNumberFromPrinter
-				Line 4 "Remove client name from printer name`t`t: " $ProviderRemoveClientNameFromPrinter
-				Line 0 ""
-			}
-			If($HTML)
-			{
-				$rowdata = @()
-				$columnHeaders = @("RDP Printer Name Format",($Script:htmlsb),$ProviderPrinterNameFormat,$htmlwhite)
-				$rowdata += @(,("Remove session number from printer name",($Script:htmlsb),$ProviderRemoveSessionNumberFromPrinter,$htmlwhite))
-				$rowdata += @(,("Remove client name from printer name",($Script:htmlsb),$ProviderRemoveClientNameFromPrinter,$htmlwhite))
-
-				$msg = "RDP printer"
-				$columnWidths = @("200","275")
+				$msg = "Advanced"
+				$columnWidths = @("250","100")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 			}
@@ -30488,6 +31501,29 @@ Function OutputEnrollmentServersDetails
 		{
 			Write-Verbose "$(Get-Date -Format G): `t`t$($EnrollmentServer.Server)"
 			
+			<#
+				PS C:\Parallels-RAS-V19.x-Doc-Script-4.00> Get-RASEnrollmentServerStatus | fl
+
+
+				CPULoad             : 32
+				MemLoad             : 75
+				DiskRead            : 0
+				DiskWrite           : 0
+				Enabled             : False
+				Server              : PMMSIRAS03.parallelslabus.local
+				ServerOS            : Windows Server 2019 Datacenter Edition 10.0.17763 (x64) - Hv:Azure
+				ServiceStartTime    :
+				SystemBootTime      :
+				UnhandledExceptions : 0
+				MachineId           :
+				LogLevel            : Standard
+				AgentVer            :
+				Id                  : 3
+				SiteId              : 1
+				AgentState          : RebootPending
+				ServerType          : Enrollment
+			#>
+
 			$ESStatus = Get-RASEnrollmentServerStatus -Server $EnrollmentServer.Server -EA 0 4>$Null
 			
 			If(!$?)
@@ -63102,8 +64138,8 @@ ProcessScriptEnd
 # SIG # Begin signature block
 # MIIthQYJKoZIhvcNAQcCoIItdjCCLXICAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUz5Mey0+++km/UVJI3awL29dY
-# Ld2ggibfMIIFjTCCBHWgAwIBAgIQDpsYjvnQLefv21DiCEAYWjANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUCH5cS1ws+6UfqhBpmMYF0ysG
+# yt2ggibfMIIFjTCCBHWgAwIBAgIQDpsYjvnQLefv21DiCEAYWjANBgkqhkiG9w0B
 # AQwFADBlMQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYD
 # VQQLExB3d3cuZGlnaWNlcnQuY29tMSQwIgYDVQQDExtEaWdpQ2VydCBBc3N1cmVk
 # IElEIFJvb3QgQ0EwHhcNMjIwODAxMDAwMDAwWhcNMzExMTA5MjM1OTU5WjBiMQsw
@@ -63314,33 +64350,33 @@ ProcessScriptEnd
 # UzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/BgNVBAMTOERpZ2lDZXJ0IFRy
 # dXN0ZWQgRzQgQ29kZSBTaWduaW5nIFJTQTQwOTYgU0hBMzg0IDIwMjEgQ0ExAhAL
 # bN+2Z4EOKufLWhG6HUlwMAkGBSsOAwIaBQCgQDAZBgkqhkiG9w0BCQMxDAYKKwYB
-# BAGCNwIBBDAjBgkqhkiG9w0BCQQxFgQUv4VhOXKyHyT5VDIXIYqiJJaksKkwDQYJ
-# KoZIhvcNAQEBBQAEggIA0isiCNgEZrJ3UUmeAjfpBUT1U6G8C4lw84rkPVZR75Vk
-# iXRswh/IsAelK4CrUnl2oUkOdaD7EWEnW8CW8y9h4RIZTgN2UDranButps2Hseky
-# 2lKUKuBeouG1f+eDCwFlShw8WW5g2PdBTGmZkPlGXeIsq0EjVSoQzu5vFXFvGeME
-# KeCKdVaEbmMDnpmr96pOkkzl2ox2jKbFs3wji9ntuP2d8oLKl34pdycl6wd8coYN
-# MD0ZmylhBIm1RETWnuV18kd+Y5W957/XvZXzi6U3uKgFC3vuoQAJhrROv84eWtLk
-# APO1eItiQlXMGpx3PBi/vtW2LSqIgFLziEfbs9I21voA+MPIiOuCDz/7FR3bDnIF
-# kdaf2I7JreatnODwnMZLArB/htT3iYEHC5iiS7iABqHiILUgSAbRbLdIBikL/Gm4
-# pj7c2cY9/pBz0H6JibdIed818K5UdhYjgr7PlLvMpLCMOpJJauNmmJmaeAGHCmWX
-# u2zQkRAWS9HXKTJG/luEfRY42EMkYNGI7PcDnpovqrhwVZKMItwYJm5x/P7866UH
-# pPJpD03dhDZKvc0p+N6rdo81TCHoEe9aEapY1lAft/v0olq9Kg7Ie1YGk0x770aE
-# 6tEeeGbJ8u/sfPNW2xJo6MnHWErPP8JraUTuOc82qc7axqjRPBQ7TbympinlBNqh
+# BAGCNwIBBDAjBgkqhkiG9w0BCQQxFgQUkxAXCe3F7ZqIP4NpwCnzbHh63TUwDQYJ
+# KoZIhvcNAQEBBQAEggIApWHUyGFgUIxRlbeS8SOuae6J3b9YIHq/wLZPj7dW8+CL
+# CJUoRc9p1ea1kwKAvDRR7BhAgi+7YqpqYzL/NPbjQDWhJm5bjJH+RdBq93Baa88y
+# dlVJD1WRyUg2negY0W5bZAzrW906wNYK3+eKLNEAYPAPUdreDmS84E+p9wSjuotz
+# gukmW607xOAPrdXxiSI675Gu78loZ0oU5ptToGBcPcfgGFqUrDfJLjn1PLGGIFYD
+# vttAzIBaz/V1dkxnFeFkPVWeUUhSBNNvjoT//mPqvLvNmT9vDpVJyIaWoQNMTdsX
+# UssnYt+bitTFW1MZULPGN9Y4gWzhS0Fqa+z9auQnCfdIquE0wC5lpyFt0HEnjJ1h
+# b7fW3E+ERZxuEIRMGvqjFqcFkar0Uzwj/ncozpDFXnlc8EGPzJW7reIx1rKHuylH
+# qv5rBNA3cGb4j0yn9HbTvqbLhLXN7PpLy1zh+WWL3REfGWVbDKQIonW8cEHk6wYp
+# WPXXQvY0Bo5PivjCIl3BCfYu98iBRyo+gM7ti1rMn8UToNQBMDYsQjbsjMLrsG8R
+# PWQ6cc2QHIepQQ/k1wO4doskdwEhQRAip0/Nmh7LwNBUWZIwsDBZeDXvcmLwzKTT
+# QeaCq9NwE+x6g7NLhF73/j9stc65rySFN8KoJ3RDoWChxrAjWCe7BGXNzSkz3PGh
 # ggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8CAQEwfTBpMQswCQYDVQQGEwJVUzEX
 # MBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/BgNVBAMTOERpZ2lDZXJ0IFRydXN0
 # ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYgU0hBMjU2IDIwMjUgQ0ExAhAKgO8Y
 # S43xBYLRxHanlXRoMA0GCWCGSAFlAwQCAQUAoGkwGAYJKoZIhvcNAQkDMQsGCSqG
-# SIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjUxMTI1MTY0MzA5WjAvBgkqhkiG9w0B
-# CQQxIgQg43xTyGfE9YkYiFZWqgVk01ftszGmuGYY/XUasPlDt28wDQYJKoZIhvcN
-# AQEBBQAEggIAwdsE2MYZdwhAvOpGGrcRNMkvsMDYHgv/KK77hwS2CsjMECXmALZU
-# oK0dsnkqUNavp865V5F8VBh9go9UFe/RLgt78dNSKzl6VBSjO3vqDO0alkUbEBPP
-# nnXFfN8+imy37dEoOLiPmkXEJvkD1C0Wp9OiBeqjoj6IDh9q43l/P+3dhgyoNbyp
-# yIcxUzQCB71v644soM7ulISi2VJmJsS/wI60M4Q2GP0SXOJrJrkTRhq6S5vWmkjJ
-# Al/9t/c2u2CXYsS0QuPkwyCX2FogxEFRZclU0eFJHDjEPwhmNCV6UV7c/8xZRyVE
-# w4wYRQcN2vKtlg/nGVbJeaaTkfyWwR98xO1/TeWx3E+DdmSyIwDyZY5m1bYgP0yG
-# Kdoas3S/EyQzfsHMWSe4x9zDaNspHtKim4WrjkdTUB5MjllicS2IvdHbChIvmxB+
-# 0nMF0ngqkrwACj9fI5M6MPkCP+IcTO/sdt+K6caFgS9SXFtV6Cuz1dPTQKZSp9YF
-# IT+RBa1TitjEEiJ5bg7ys6w2R77onJiBgpwUIUA1eePylSNhbPLSlsRZcO80rgpS
-# TD+JhuKAqPlAHQw63jZobmAcCaECgYsDxkueVFYC8CB5AhORaFlnKAEPNf673GR3
-# fE+axx7/UXTBZzssI+5IC7hovNny85XQtHWFou5THVbhR2VgImbx0pg=
+# SIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjUxMjA1MTc1NjE5WjAvBgkqhkiG9w0B
+# CQQxIgQg5hxqBv5FysJgu3l9NyQSYwXEY8WDBI7qs0Yed/COWgUwDQYJKoZIhvcN
+# AQEBBQAEggIAopgPQKbK9sWsqRK+itbo5Jyreh+CJ1G/XC1wq067f245GGBrZpEY
+# EKnJTCbSYs+QugKuZ54sM58X/J+vb88iBLDFH6d7jIzl8tEG7V7+OveblhgmSwaD
+# 6K9Wkg3TYuSsbrMR52NvQAGm7Hm0/ktdXvlxGavgZ4FyU8wjsJXnu6oBbank/qqd
+# alcGLft3TI9G6u4pk7j9hz4Yy0en+/SmkLrfV0BxQB+ycuKWRfXpbXD/IwI0cOvX
+# ZCZ5ijhgr00HQg3giA/1l5DrkfcTsosJ4yhth7n7Exa5Z6to0rDUs7uTZ+YkMDEX
+# J8xjtlyuTJOAa/qff3oEJOG+t97dgGugRbLp09jhHgCOCBl4SLZBR7EqqWJyeDnW
+# 4Vx7duYiK/JeeTebQ8PNMMR/NSB2N8UWcoCjd9O+lzLDBYpaKoWmn3u8gT/fhWhu
+# OmIq1W/LZmYmndl8nUi1rDyW+fh6a9lBCIWp/BU3oNcZCzJR8DrNuP6ODSwZQ57Y
+# 45Dt4Xrwj2Iyn6SSEA/LNt9VciLrKjhN0Yn7KvTq8GfJTsqaAgTPxNGp0HfgTv9K
+# V5lxlAqWteBPQGJoa3tV/GkMNl92L+XKUfXSUxkAutkpI7pm3siPy3UTRp4ksEGX
+# MIeIXjRgXD0JYc/Aop+Dny3G8azdox24q9NmHsHj3xolA/IIAKmkL8A=
 # SIG # End signature block
