@@ -54,6 +54,8 @@
 #		Host pools
 #			General
 #			Configuration
+#			Assignment
+#			User profile
 #			Application Packages
 #			Settings
 #			RDP printer
@@ -140,7 +142,9 @@
 #		Change function to use two parameters: $RASHelpdesk and $RASSupport
 #		Add output for "Overwrite support actions with the following URL"
 #
-#	In Function OutputRASLicense, update output to match the 19.4 console
+#	In Function OutputRASLicense
+#		Add missing section header 
+#		Update output to match the 19.4 console
 #
 #	In Function OutputRASMailboxSettings, 
 #		Add the "Use TLS 1.3 if available" option
