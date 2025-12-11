@@ -48,6 +48,18 @@
 #			General
 #			Certificate
 #
+#	In Function OutputAVDDetails, add:
+#		Workspaces
+#			General
+#		Host pools
+#			General
+#			Configuration
+#			Application Packages
+#			Settings
+#			RDP printer
+#			Auto-upgrade
+#			AVD Agent
+#
 #	In Function OutputLogonHours
 #		Add General data
 #		Add logon hours schedule's criteria
@@ -175,16 +187,10 @@
 #		If the Theme's MFA ID is not found, use "Unable to determine MFA provider"
 #
 #	In Function OutputSiteSummary:
-#		Added basic information for Tenant Brokers
 #		Changed "VDI Host" to "Provider"
 #
-#	In Function OutputAVDDetails, add:
-#		Workspaces
-#			General
-#		Host pools
-#			General
-#			Auto-upgrade
-#			AVD Agent
+#	In Function OutputThemesDetails
+#		Change HTML5 URL to User Portal URL
 #
 #	In Function OutputVDIDetails:
 #		For Host pools, add:
@@ -236,4 +242,3 @@
 #
 #	Working on updating Function OutputMFASetting
 #		Fixed issues with RADIUS output
-

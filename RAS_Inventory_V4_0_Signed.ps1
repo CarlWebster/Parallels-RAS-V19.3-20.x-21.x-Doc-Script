@@ -450,9 +450,9 @@
 	text document.
 .NOTES
 	NAME: RAS_Inventory_V4_0.ps1
-	VERSION: 4.00 Beta 31
+	VERSION: 4.00 Beta 32
 	AUTHOR: Carl Webster
-	LASTEDIT: December 5, 2025
+	LASTEDIT: December 11, 2025
 #>
 
 
@@ -610,6 +610,18 @@ Param(
 #			General
 #			Certificate
 #
+#	In Function OutputAVDDetails, add:
+#		Workspaces
+#			General
+#		Host pools
+#			General
+#			Configuration
+#			Application Packages
+#			Settings
+#			RDP printer
+#			Auto-upgrade
+#			AVD Agent
+#
 #	In Function OutputLogonHours
 #		Add General data
 #		Add logon hours schedule's criteria
@@ -737,16 +749,10 @@ Param(
 #		If the Theme's MFA ID is not found, use "Unable to determine MFA provider"
 #
 #	In Function OutputSiteSummary:
-#		Added basic information for Tenant Brokers
 #		Changed "VDI Host" to "Provider"
 #
-#	In Function OutputAVDDetails, add:
-#		Workspaces
-#			General
-#		Host pools
-#			General
-#			Auto-upgrade
-#			AVD Agent
+#	In Function OutputThemesDetails
+#		Change HTML5 URL to User Portal URL
 #
 #	In Function OutputVDIDetails:
 #		For Host pools, add:
@@ -861,9 +867,9 @@ $ErrorActionPreference    = 'SilentlyContinue'
 $Error.Clear()
 
 $Script:emailCredentials  = $Null
-$script:MyVersion         = '4.00 Beta 31'
+$script:MyVersion         = '4.00 Beta 32'
 $Script:ScriptName        = "RAS_Inventory_V4_0.ps1"
-$tmpdate                  = [datetime] "12/05/2025"
+$tmpdate                  = [datetime] "12/11/2025"
 $Script:ReleaseDate       = $tmpdate.ToUniversalTime().ToShortDateString()
 
 If($MSWord -eq $False -and $PDF -eq $False -and $Text -eq $False -and $HTML -eq $False)
@@ -5038,182 +5044,6 @@ Function OutputSiteSummary
 		WriteHTMLLine 1 0 "Site - $($Site.Name)"
 	}
 
-	#Tenant broker goes here
-	$TenantBrokers = Get-RASTenant -EA 0 4> $Null
-	
-	If(!$?)
-	{
-		Write-Host "
-	Unable to retrieve Tenant Brokers for Site $($Site.Name)`
-		" -ForegroundColor Yellow
-		If($MSWord -or $PDF)
-		{
-			WriteWordLine 0 0 ""
-			WriteWordLine 0 0 "Unable to retrieve Tenant Brokers for Site $($Site.Name)"
-			WriteWordLine 0 0 ""
-		}
-		If($Text)
-		{
-			Line 0 ""
-			Line 0 "Unable to retrieve Tenant Brokers for Site $($Site.Name)"
-			Line 0 ""
-		}
-		If($HTML)
-		{
-			WriteHTMLLine 0 0 ""
-			WriteHTMLLine 0 0 "Unable to retrieve Tenant Brokers for Site $($Site.Name)"
-			WriteHTMLLine 0 0 ""
-		}
-	}
-	ElseIf($? -and $Null -eq $TenantBrokers)
-	{
-		Write-Host "
-	No Tenant Brokers retrieved for Site $($Site.Name).
-		" -ForegroundColor White
-		If($MSWord -or $PDF)
-		{
-			WriteWordLine 0 0 ""
-			WriteWordLine 0 0 "No Tenant Brokers retrieved for Site $($Site.Name)"
-			WriteWordLine 0 0 ""
-		}
-		If($Text)
-		{
-			Line 0 ""
-			Line 0 "No Tenant Brokers retrieved for Site $($Site.Name)"
-			Line 0 ""
-		}
-		If($HTML)
-		{
-			WriteHTMLLine 0 0 ""
-			WriteHTMLLine 0 0 "No Tenant Brokers retrieved for Site $($Site.Name)"
-			WriteHTMLLine 0 0 ""
-		}
-	}
-	Else
-	{
-		If($MSWord -or $PDF)
-		{
-			WriteWordLine 2 0 "Tenant Brokers"
-		}
-		If($Text)
-		{
-			Line 1 "Tenant Brokers"
-		}
-		If($HTML)
-		{
-			WriteHTMLLine 2 0 "Tenant Brokers"
-		}
-
-		Write-Verbose "$(Get-Date -Format G): `tOutput Tenant Brokers (Site Summary)"
-		ForEach($TenantBroker in $TenantBrokers)
-		{
-			Write-Verbose "$(Get-Date -Format G): `t`t$($TenantBroker.Name)"
-			<#
-			$TenantBrokerStatus = Get-RASRDSHostStatus -Id $RDSHost.Id -EA 0 4>$Null
-			
-			If(!$?)
-			{
-				Write-Warning "
-				`n
-				Unable to retrieve RDS Status for RDS Host $($RDSHost.Server)`
-				"
-				If($MSWord -or $PDF)
-				{
-					WriteWordLine 0 0 "Unable to retrieve RDS Status for RDS Host $($RDSHost.Server)"
-				}
-				If($Text)
-				{
-					Line 0 "Unable to retrieve RDS Status for RDS Host $($RDSHost.Server)"
-				}
-				If($HTML)
-				{
-					WriteHTMLLine 0 0 "Unable to retrieve RDS Status for RDS Host $($RDSHost.Server)"
-				}
-			}
-			ElseIf($? -and $Null -eq $RDSStatus)
-			{
-				Write-Host "
-				No RDS Status retrieved for RDS Host $($RDSHost.Server)`
-				" -ForegroundColor White
-				If($MSWord -or $PDF)
-				{
-					WriteWordLine 0 0 "No RDS Status retrieved for RDS Host $($RDSHost.Server)"
-				}
-				If($Text)
-				{
-					Line 0 "No RDS Status retrieved for RDS Host $($RDSHost.Server)"
-				}
-				If($HTML)
-				{
-					WriteHTMLLine 0 0 "No RDS Status retrieved for RDS Host $($RDSHost.Server)"
-				}
-			}
-			Else
-			{
-				#>
-				#$TenantBrokerStatusAgentState = GetRASStatus $TenantBrokerStatus.AgentState
-				#If($Null -ne $TenantBrokerStatus.ServerOS)
-				#{
-				#	$TenantBrokerOS = $TenantBrokerStatus.ServerOS -Replace '\s*-.*$'
-				#	$TmpArray = $TenantBrokerStatus.ServerOS.Split(":")
-				#	$TenantBrokerHypervisor = $TmpArray[$TmpArray.Count -1]
-				#}
-				#Else
-				#{
-				#	$TenantBrokerOS = "Unable to determine because $TenantBrokerStatusAgentState"
-				#	$TenantBrokerHypervisor = "Unable to determine because $TenantBrokerStatusAgentState"
-				#}
-				$TenantBrokerOS = ""
-				$TenantBrokerHypervisor = ""
-				
-				If($MSWord -or $PDF)
-				{
-					$ScriptInformation = New-Object System.Collections.ArrayList
-					$ScriptInformation.Add(@{Data = "Name"; Value = $TenantBroker.Name; }) > $Null
-					$ScriptInformation.Add(@{Data = "Operating system"; Value = $TenantBrokerOS; }) > $Null
-					$ScriptInformation.Add(@{Data = "Hypervisor"; Value = $TenantBrokerHostHypervisor; }) > $Null
-
-					$Table = AddWordTable -Hashtable $ScriptInformation `
-					-Columns Data,Value `
-					-List `
-					-Format $wdTableGrid `
-					-AutoFit $wdAutoFitFixed;
-
-					SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
-					SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
-					$Table.Columns.Item(1).Width = 200;
-					$Table.Columns.Item(2).Width = 300;
-
-					$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-					FindWordDocumentEnd
-					$Table = $Null
-					WriteWordLine 0 0 ""
-				}
-				If($Text)
-				{
-					Line 2 "Name`t`t`t`t: " $TenantBroker.Name
-					Line 2 "Operating system`t`t: " $TenantBrokertOS
-					Line 2 "Hypervisor`t`t`t: " $TenantBrokerHypervisor
-					Line 0 ""
-				}
-				If($HTML)
-				{
-					$rowdata = @()
-					$columnHeaders = @("Name",($Script:htmlsb),$TenantBroker.Name,$htmlwhite)
-					$rowdata += @(,("Operating system",($Script:htmlsb),$TenantBrokerOS,$htmlwhite))
-					$rowdata += @(,("Hypervisor",($Script:htmlsb),$TenantBrokerHypervisor,$htmlwhite))
-
-					$msg = ""
-					$columnWidths = @("200","350")
-					FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-					WriteHTMLLine 0 0 ""
-				}
-			#}
-		}
-	}
-	
 	$RDSHosts = Get-RASRDSHost -Siteid $Site.Id -EA 0 4> $Null
 	
 	If(!$?)
@@ -6212,11 +6042,11 @@ Function OutputSiteSummary
 				-Format $wdTableGrid `
 				-AutoFit $wdAutoFitFixed;
 
-				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 				$Table.Columns.Item(1).Width = 200;
-				$Table.Columns.Item(2).Width = 300;
+				$Table.Columns.Item(2).Width = 350;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -6251,7 +6081,7 @@ Function OutputSiteSummary
 				$rowdata += @(,("Hypervisor",($Script:htmlsb),$ESHypervisor,$htmlwhite))
 
 				$msg = ""
-				$columnWidths = @("200","350")
+				$columnWidths = @("200","400")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 			}
@@ -8652,7 +8482,7 @@ Function OutputRDSessionHostsDetails
 					If($Result.InheritDefaultAppPackageSettings -eq $False)
 					{
 						#no we don't, so get the default settings for the group
-						[array]$AppPackagesAssigned = $Result.RDSDefSettings.AppPackagesAssigned
+						$AppPackagesAssigned = $Result.RDSDefSettings.AppPackagesAssigned
 					}
 					Else
 					{
@@ -8662,12 +8492,12 @@ Function OutputRDSessionHostsDetails
 						
 						If($? -and $Null -ne $RDSDefaults)
 						{
-							[array]$AppPackagesAssigned = $RDSDefaults.AppPackagesAssigned
+							$AppPackagesAssigned = $RDSDefaults.AppPackagesAssigned
 						}
 						Else
 						{
 							#unable to retrieve default, use built-in default values
-							[array]$AppPackagesAssigned = @()
+							$AppPackagesAssigned = @()
 						}
 					}
 				}
@@ -8675,14 +8505,14 @@ Function OutputRDSessionHostsDetails
 				{
 					#RDS Host is not in a group
 					#get the settings for the host
-					[array]$AppPackagesAssigned = $RDSHost.AppPackagesAssigned
+					$AppPackagesAssigned = $RDSHost.AppPackagesAssigned
 				}
 			}
 			Else
 			{
 				#we don't inherit
 				#get the settings for the host
-				[array]$AppPackagesAssigned = $RDSHost.AppPackagesAssigned
+				$AppPackagesAssigned = $RDSHost.AppPackagesAssigned
 			}
 
 			If($MSWord -or $PDF)
@@ -9142,9 +8972,9 @@ Function OutputRDSessionHostsDetails
 							-Format $wdTableGrid `
 							-AutoFit $wdAutoFitFixed;
 
-							SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+							SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Size 9 -Bold -BackgroundColor $wdColorGray15;
 
-							$Table.Columns.Item(1).Width = 200;
+							$Table.Columns.Item(1).Width = 350;
 							$Table.Columns.Item(2).Width = 100;
 							$Table.Columns.Item(3).Width = 50;
 							
@@ -9229,7 +9059,7 @@ Function OutputRDSessionHostsDetails
 
 							$Table.Columns.Item(1).Width = 200;
 							$Table.Columns.Item(2).Width = 50;
-							$Table.Columns.Item(3).Width = 250;
+							$Table.Columns.Item(3).Width = 300;
 							
 							$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -10503,7 +10333,7 @@ Function OutputRDSessionHostsDetails
 						)
 
 						$msg = "Disable services:"
-						$columnWidths = @("200","100","50")
+						$columnWidths = @("300","100","50")
 						FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 						WriteHTMLLine 0 0 ""
 					}
@@ -10531,7 +10361,7 @@ Function OutputRDSessionHostsDetails
 						)
 
 						$msg = "Disable tasks:"
-						$columnWidths = @("200","50","250")
+						$columnWidths = @("200","50","350")
 						FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 						WriteHTMLLine 0 0 ""
 					}
@@ -10610,7 +10440,7 @@ Function OutputRDSessionHostsDetails
 						)
 
 						$msg = ""
-						$columnWidths = @("300","50","200")
+						$columnWidths = @("325","50","200")
 						FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 						WriteHTMLLine 0 0 ""
 					}
@@ -10839,7 +10669,7 @@ Function OutputRDSessionHostsDetails
 						)
 
 						$msg = ""
-						$columnWidths = @("275","50")
+						$columnWidths = @("325","50")
 						FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 						WriteHTMLLine 0 0 ""
 					}
@@ -11654,8 +11484,8 @@ Function OutputRDSessionHostsDetails
 				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 250;
-				$Table.Columns.Item(2).Width = 250;
+				$Table.Columns.Item(1).Width = 325;
+				$Table.Columns.Item(2).Width = 175;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -11718,7 +11548,7 @@ Function OutputRDSessionHostsDetails
 				$rowdata += @(,("Enable drive redirection cache",($Script:htmlsb),$RDSEnableDriveRedirectionCache,$htmlwhite))
 
 				$msg = "Settings"
-				$columnWidths = @("300","275")
+				$columnWidths = @("400","200")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 			}
@@ -11964,7 +11794,7 @@ Function OutputRDSessionHostsDetails
 			}
 			If($Text)
 			{
-				Line 4 "Name`t`t`t: " $RDSGroup.Name
+				Line 3 "Name: " $RDSGroup.Name
 			}
 			If($HTML)
 			{
@@ -13716,11 +13546,11 @@ Function OutputRDSessionHostsDetails
 			#Application Packages
 			If($MSWord -or $PDF)
 			{
-				WriteWordLine 4 0 "Application Packages"
+				WriteWordLine 5 0 "Application Packages"
 			}
 			If($Text)
 			{
-				Line 3 "Application Packages"
+				Line 4 "Application Packages"
 			}
 			If($HTML)
 			{
@@ -13736,14 +13566,14 @@ Function OutputRDSessionHostsDetails
 				
 				If($? -and $Null -ne $RDSGroupDefaults)
 				{
-					[array]$AppPackagesAssigned = $RDSGroupDefaults.AppPackagesAssigned
+					$AppPackagesAssigned = $RDSGroupDefaults.AppPackagesAssigned
 				}
 			}
 			Else
 			{
 				#we don't inherit
 				#get the settings for the vdi host
-				[array]$AppPackagesAssigned = $RDSGroup.AppPackagesAssigned
+				$AppPackagesAssigned = $RDSGroup.AppPackagesAssigned
 			}
 
 			If($MSWord -or $PDF)
@@ -13792,7 +13622,7 @@ Function OutputRDSessionHostsDetails
 			}
 			If($Text)
 			{
-				Line 4 "Inherit default settings`t: " $RDSGroup.InheritDefaultAppPackageSettings.ToString()
+				Line 5 "Inherit default settings`t: " $RDSGroup.InheritDefaultAppPackageSettings.ToString()
 				Line 5 ""
 
 				If(validObject $AppPackagesAssigned ApplicationPackagesAssigned)
@@ -13803,15 +13633,15 @@ Function OutputRDSessionHostsDetails
 						
 						If($? -and $Null -ne $Result)
 						{
-							Line 4 "Name`t`t: " $Result.PackageName
-							Line 4 "Status`t`t: "
-							Line 4 "Version`t`t: " $Result.Version
-							Line 4 "Display name`t: " $Result.DisplayName
-							Line 4 ""
+							Line 5 "Name`t`t: " $Result.PackageName
+							Line 5 "Status`t`t: "
+							Line 5 "Version`t`t: " $Result.Version
+							Line 5 "Display name`t: " $Result.DisplayName
+							Line 5 ""
 						}
 						Else
 						{
-							Line 4 "Unable to retrieve data for: " $Result.PackageName
+							Line 5 "Unable to retrieve data for: " $Result.PackageName
 						}
 					}
 				}
@@ -13857,7 +13687,7 @@ Function OutputRDSessionHostsDetails
 			}
 			If($Text)
 			{
-				Line 3 "Desktop access"
+				Line 4 "Desktop access"
 			}
 			If($HTML)
 			{
@@ -13950,19 +13780,19 @@ Function OutputRDSessionHostsDetails
 			}
 			If($Text)
 			{
-				Line 4 "Inherit default settings`t`t`t`t: " $RDSGroup.InheritDefaultDesktopAccessSettings.ToString()
-				Line 4 "Restrict direct desktop access to the following users`t: " $RDSRestrictDesktopAccess
+				Line 5 "Inherit default settings`t`t`t`t: " $RDSGroup.InheritDefaultDesktopAccessSettings.ToString()
+				Line 5 "Restrict direct desktop access to the following users`t: " $RDSRestrictDesktopAccess
 				$cnt = -1
 				ForEach($Item in $RDSRestrictedUsers)
 				{
 					$cnt++
 					If($cnt -eq 0)
 					{
-						Line 10 "Users`t: " $Item
+						Line 11 "Users`t: " $Item
 					}
 					Else
 					{
-						Line 11 "  " $Item
+						Line 12 "  " $Item
 					}
 				}
 				Line 0 ""
@@ -14001,7 +13831,7 @@ Function OutputRDSessionHostsDetails
 			}
 			If($Text)
 			{
-				Line 3 "Settings"
+				Line 4 "Settings"
 			}
 			If($HTML)
 			{
@@ -14285,8 +14115,8 @@ Function OutputRDSessionHostsDetails
 				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 250;
-				$Table.Columns.Item(2).Width = 250;
+				$Table.Columns.Item(1).Width = 325;
+				$Table.Columns.Item(2).Width = 175;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -14296,29 +14126,29 @@ Function OutputRDSessionHostsDetails
 			}
 			If($Text)
 			{
-				Line 4 "Inherit default settings`t`t`t`t`t: " $RDSGroup.InheritDefaultAgentSettings.ToString()
-				Line 4 "Application session lingering"
-				Line 5 "Disconnect active session after`t`t`t`t: " $RDSPublishingSessionDisconnectTimeout
-				Line 5 "Logoff disconnected session after`t`t`t: " $RDSPublishingSessionResetTime
-				Line 4 "Other settings"
-				Line 5 "Session readiness timeout: " $RDSSessionReadinessTimeout
-				Line 5 "Port`t`t`t`t`t`t`t: " $RDSPort
-				Line 5 "Max Sessions`t`t`t`t`t`t: " $RDSMaxSessions
-				Line 5 "Preferred Connection Broker`t`t`t`t: " $RDSPreferredPublishingAgent
-				Line 4 "Allow Client URL/Mail Redirection`t`t`t`t: " $RDSAllowClientURLMailRedirection
-				Line 5 "Replace registered application`t`t`t`t: " $ReplaceRegisteredApplication
-				Line 5 "Support Windows Shell URL namespace objects`t`t: " $RDSSupportShellURLNamespaceObject
-				Line 4 "Enable Drag and drop`t`t`t`t`t`t: " $RDSAllowDragandDrop
-				Line 5 "Direction`t`t`t`t`t`t: " $RDSDragAndDrop
-				Line 4 "Allow 2xRemoteExec to send command to the client`t`t: " $RDSAllowRemoteExec
-				Line 4 "Use RemoteApp if available`t`t`t`t`t: " $RDSUseRemoteApps
-				Line 4 "Enable applications monitoring`t`t`t`t`t: " $RDSEnableAppMonitoring
-				Line 4 "Allow file transfer command (Web (HTML5) and Chrome clients)`t: " $RDSAllowFileTransfer
-				Line 5 "Configure File Transfer"
-				Line 6 "Direction`t`t`t: " $RDSFileTransferMode
-				Line 6 "Location`t`t`t: " $RDSFileTransferLocation
-				Line 6 "Do not allow to change location : " $RDSFileTransferChangeLocation
-				Line 4 "Enable drive redirection cache`t`t`t`t`t: " $RDSEnableDriveRedirectionCache
+				Line 5 "Inherit default settings`t`t`t`t`t: " $RDSGroup.InheritDefaultAgentSettings.ToString()
+				Line 5 "Application session lingering"
+				Line 6 "Disconnect active session after`t`t`t`t: " $RDSPublishingSessionDisconnectTimeout
+				Line 6 "Logoff disconnected session after`t`t`t: " $RDSPublishingSessionResetTime
+				Line 5 "Other settings"
+				Line 6 "Session readiness timeout: " $RDSSessionReadinessTimeout
+				Line 6 "Port`t`t`t`t`t`t`t: " $RDSPort
+				Line 6 "Max Sessions`t`t`t`t`t`t: " $RDSMaxSessions
+				Line 6 "Preferred Connection Broker`t`t`t`t: " $RDSPreferredPublishingAgent
+				Line 5 "Allow Client URL/Mail Redirection`t`t`t`t: " $RDSAllowClientURLMailRedirection
+				Line 6 "Replace registered application`t`t`t`t: " $ReplaceRegisteredApplication
+				Line 6 "Support Windows Shell URL namespace objects`t`t: " $RDSSupportShellURLNamespaceObject
+				Line 5 "Enable Drag and drop`t`t`t`t`t`t: " $RDSAllowDragandDrop
+				Line 6 "Direction`t`t`t`t`t`t: " $RDSDragAndDrop
+				Line 5 "Allow 2xRemoteExec to send command to the client`t`t: " $RDSAllowRemoteExec
+				Line 5 "Use RemoteApp if available`t`t`t`t`t: " $RDSUseRemoteApps
+				Line 5 "Enable applications monitoring`t`t`t`t`t: " $RDSEnableAppMonitoring
+				Line 5 "Allow file transfer command (Web (HTML5) and Chrome clients)`t: " $RDSAllowFileTransfer
+				Line 6 "Configure File Transfer"
+				Line 7 "Direction`t`t`t: " $RDSFileTransferMode
+				Line 7 "Location`t`t`t: " $RDSFileTransferLocation
+				Line 7 "Do not allow to change location : " $RDSFileTransferChangeLocation
+				Line 5 "Enable drive redirection cache`t`t`t`t`t: " $RDSEnableDriveRedirectionCache
 				Line 0 ""
 			}
 			If($HTML)
@@ -14349,7 +14179,7 @@ Function OutputRDSessionHostsDetails
 				$rowdata += @(,("Enable drive redirection cache",($Script:htmlsb),$RDSEnableDriveRedirectionCache,$htmlwhite))
 
 				$msg = "Settings"
-				$columnWidths = @("300","275")
+				$columnWidths = @("400","200")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 			}
@@ -14362,7 +14192,7 @@ Function OutputRDSessionHostsDetails
 			}
 			If($Text)
 			{
-				Line 3 "RDP printer"
+				Line 4 "RDP printer"
 			}
 			If($HTML)
 			{
@@ -14442,10 +14272,10 @@ Function OutputRDSessionHostsDetails
 			}
 			If($Text)
 			{
-				Line 4 "Inherit default settings`t`t`t`t: " $RDSGroup.InheritDefaultPrinterSettings.ToString()
-				Line 4 "RDP Printer Name Format`t`t`t`t`t: " $RDSPrinterNameFormat
-				Line 4 "Remove session number from printer name`t`t`t: " $RDSRemoveSessionNumberFromPrinterName
-				Line 4 "Remove client name from printer name`t`t`t: " $RDSRemoveClientNameFromPrinterName
+				Line 5 "Inherit default settings`t`t`t`t: " $RDSGroup.InheritDefaultPrinterSettings.ToString()
+				Line 5 "RDP Printer Name Format`t`t`t`t`t: " $RDSPrinterNameFormat
+				Line 5 "Remove session number from printer name`t`t`t: " $RDSRemoveSessionNumberFromPrinterName
+				Line 5 "Remove client name from printer name`t`t`t: " $RDSRemoveClientNameFromPrinterName
 				Line 0 ""
 			}
 			If($HTML)
@@ -14470,7 +14300,7 @@ Function OutputRDSessionHostsDetails
 			}
 			If($Text)
 			{
-				Line 3 "Auto-upgrade"
+				Line 4 "Auto-upgrade"
 			}
 			If($HTML)
 			{
@@ -14650,10 +14480,10 @@ Function OutputRDSessionHostsDetails
 				-Format $wdTableGrid `
 				-AutoFit $wdAutoFitFixed;
 
-				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 300;
+				$Table.Columns.Item(1).Width = 350;
 				$Table.Columns.Item(2).Width = 250;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
@@ -14664,16 +14494,16 @@ Function OutputRDSessionHostsDetails
 			}
 			If($Text)
 			{
-				Line 4 "Inherit default settings`t`t`t`t: " $RDSGroup.InheritDefaultAutoUpgradeSettings.ToString()
-				Line 4 "Enable auto-upgrade maintenance window`t`t`t: " $AutoUpgradeEnabled
+				Line 5 "Inherit default settings`t`t`t`t: " $RDSGroup.InheritDefaultAutoUpgradeSettings.ToString()
+				Line 5 "Enable auto-upgrade maintenance window`t`t`t: " $AutoUpgradeEnabled
 				If($AutoUpgradeEnabled -eq "True")
 				{
-					Line 4 "Date`t`t`t`t`t`t`t: " $AutoUpgradeDate
-					Line 4 "Start`t`t`t`t`t`t`t: " $AutoUpgradeStart
-					Line 4 "Drain mode duration`t`t`t`t`t: " $AutoUpgradeDrainModeDuration
-					Line 4 "Force logoff session at the end of the drain mode period: " $AutoUpgradeForceLogoff
-					Line 4 "Recur`t`t`t`t`t`t`t: " $AutoUpgradeRecur
-					Line 4 "Send message before maintenance window is triggered"
+					Line 5 "Date`t`t`t`t`t`t`t: " $AutoUpgradeDate
+					Line 5 "Start`t`t`t`t`t`t`t: " $AutoUpgradeStart
+					Line 5 "Drain mode duration`t`t`t`t`t: " $AutoUpgradeDrainModeDuration
+					Line 5 "Force logoff session at the end of the drain mode period: " $AutoUpgradeForceLogoff
+					Line 5 "Recur`t`t`t`t`t`t`t: " $AutoUpgradeRecur
+					Line 5 "Send message before maintenance window is triggered"
 				}
 				
 				If($AutoUpgradeMessages.Count -gt 0)
@@ -14691,11 +14521,11 @@ Function OutputRDSessionHostsDetails
 							Default	{$MsgTime = "Unable to determine scheduled message Time: $($Item.SendMsgSecs)"; Break}
 						}
 						
-						Line 5 "Enabled`t: " $Item.Enabled.ToString()
-						Line 5 "Body`t: " $Item.Message
-						Line 5 "Title`t: " $Item.MessageTitle
-						Line 5 "Time`t: " $MsgTime
-						Line 5 ""
+						Line 6 "Enabled`t: " $Item.Enabled.ToString()
+						Line 6 "Body`t: " $Item.Message
+						Line 6 "Title`t: " $Item.MessageTitle
+						Line 6 "Time`t: " $MsgTime
+						Line 6 ""
 					}
 				}
 
@@ -14740,7 +14570,7 @@ Function OutputRDSessionHostsDetails
 				}
 
 				$msg = "Options"
-				$columnWidths = @("300","275")
+				$columnWidths = @("350","275")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 			}
@@ -14893,15 +14723,15 @@ Function OutputRDSessionHostsDetails
 			}
 			If($Text)
 			{
-				Line 3 "Name: " $RDSTemplate.Name
-				Line 3 "Power state`t`t: " $TemplatePowerState
-				Line 3 "Provider`t`t: " $TemplateProviderName
-				Line 3 "Provider type`t`t: " $TemplateProviderType
-				Line 3 "Last modification by`t: " $RDSTemplate.AdminLastMod
-				Line 3 "Modified on`t`t: " (Get-Date -UFormat "%c" $RDSTemplate.TimeLastMod)
-				Line 3 "Created by`t`t: " $RDSTemplate.AdminCreate
-				Line 3 "Created on`t`t: " (Get-Date -UFormat "%c" $RDSTemplate.TimeCreate)
-				Line 3 "ID`t`t`t: " $RDSTemplate.Id.ToString()
+				Line 4 "Name: " $RDSTemplate.Name
+				Line 4 "Power state`t`t: " $TemplatePowerState
+				Line 4 "Provider`t`t: " $TemplateProviderName
+				Line 4 "Provider type`t`t: " $TemplateProviderType
+				Line 4 "Last modification by`t: " $RDSTemplate.AdminLastMod
+				Line 4 "Modified on`t`t: " (Get-Date -UFormat "%c" $RDSTemplate.TimeLastMod)
+				Line 4 "Created by`t`t: " $RDSTemplate.AdminCreate
+				Line 4 "Created on`t`t: " (Get-Date -UFormat "%c" $RDSTemplate.TimeCreate)
+				Line 4 "ID`t`t`t: " $RDSTemplate.Id.ToString()
 				Line 0 ""
 			}
 			If($HTML)
@@ -14931,7 +14761,7 @@ Function OutputRDSessionHostsDetails
 			}
 			If($Text)
 			{
-				Line 2 "General"
+				Line 3 "General"
 			}
 			If($HTML)
 			{
@@ -14987,12 +14817,12 @@ Function OutputRDSessionHostsDetails
 			}
 			If($Text)
 			{
-				Line 3 "Template name`t`t`t`t`t: " $RDSTemplate.Name
-				Line 3 "Maximum guest VMs`t`t`t`t: " $RDSTemplate.MaxVMs.ToString()
-				Line 3 "Keep available buffer`t`t`t`t: " $RDSTemplate.PreCreatedVMs.ToString()
-				Line 3 "Guest VM name`t`t`t`t`t: " $RDSTemplate.VMNameFormat
-				Line 3 "Delete unused guest VMs after`t`t`t: " $DeleteVMTime
-				Line 3 "Clone method`t`t`t`t`t: " $CloneMethod
+				Line 4 "Template name`t`t`t`t`t: " $RDSTemplate.Name
+				Line 4 "Maximum guest VMs`t`t`t`t: " $RDSTemplate.MaxVMs.ToString()
+				Line 4 "Keep available buffer`t`t`t`t: " $RDSTemplate.PreCreatedVMs.ToString()
+				Line 4 "Guest VM name`t`t`t`t`t: " $RDSTemplate.VMNameFormat
+				Line 4 "Delete unused guest VMs after`t`t`t: " $DeleteVMTime
+				Line 4 "Clone method`t`t`t`t`t: " $CloneMethod
 				Line 0 ""
 			}
 			If($HTML)
@@ -15019,7 +14849,7 @@ Function OutputRDSessionHostsDetails
 			}
 			If($Text)
 			{
-				Line 2 "Advanced"
+				Line 3 "Advanced"
 			}
 			If($HTML)
 			{
@@ -15054,11 +14884,11 @@ Function OutputRDSessionHostsDetails
 			}
 			If($Text)
 			{
-				Line 3 "Folder`t`t`t`t: " $RDSTemplate.FolderName
-				Line 3 "Resource pool`t`t`t: " $RDSTemplate.NativePoolName
-				Line 3 "Physical Host`t`t`t: " $RDSTemplate.PhysicalHostName
-				Line 3 "Enable hardware acceleration "
-				Line 3 "graphics licensing support`t: " $RDSTemplate.HWGPU.ToString()
+				Line 4 "Folder`t`t`t`t: " $RDSTemplate.FolderName
+				Line 4 "Resource pool`t`t`t: " $RDSTemplate.NativePoolName
+				Line 4 "Physical Host`t`t`t: " $RDSTemplate.PhysicalHostName
+				Line 4 "Enable hardware acceleration "
+				Line 4 "graphics licensing support`t: " $RDSTemplate.HWGPU.ToString()
 				Line 0 ""
 			}
 			If($HTML)
@@ -15083,7 +14913,7 @@ Function OutputRDSessionHostsDetails
 			}
 			If($Text)
 			{
-				Line 2 "Preparation"
+				Line 3 "Preparation"
 			}
 			If($HTML)
 			{
@@ -15122,14 +14952,14 @@ Function OutputRDSessionHostsDetails
 			}
 			If($Text)
 			{
-				Line 3 "Image preparation tool`t: " $RDSTemplate.ImagePrepTool.ToString()
-				Line 3 "Computer name`t`t: " $RDSTemplate.ComputerName
-				Line 3 "Owner name`t`t: " $RDSTemplate.OwnerName
-				Line 3 "Organization`t`t: " $RDSTemplate.Organization
-				Line 3 "Active Directory domain"
-				Line 4 "Domain`t`t: " $RDSTemplate.Domain
-				Line 4 "Administrator`t: " $RDSTemplate.Administrator
-				Line 4 "Target OU`t: " $RDSTemplate.DomainOrgUnit
+				Line 4 "Image preparation tool`t: " $RDSTemplate.ImagePrepTool.ToString()
+				Line 4 "Computer name`t`t: " $RDSTemplate.ComputerName
+				Line 4 "Owner name`t`t: " $RDSTemplate.OwnerName
+				Line 4 "Organization`t`t: " $RDSTemplate.Organization
+				Line 4 "Active Directory domain"
+				Line 5 "Domain`t`t: " $RDSTemplate.Domain
+				Line 5 "Administrator`t: " $RDSTemplate.Administrator
+				Line 5 "Target OU`t: " $RDSTemplate.DomainOrgUnit
 				Line 0 ""
 			}
 			If($HTML)
@@ -15158,7 +14988,7 @@ Function OutputRDSessionHostsDetails
 			}
 			If($Text)
 			{
-				Line 2 "Optimization"
+				Line 3 "Optimization"
 			}
 			If($HTML)
 			{
@@ -15561,7 +15391,7 @@ Function OutputRDSessionHostsDetails
 
 						$Table.Columns.Item(1).Width = 200;
 						$Table.Columns.Item(2).Width = 50;
-						$Table.Columns.Item(3).Width = 250;
+						$Table.Columns.Item(3).Width = 300;
 						
 						$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -16082,71 +15912,71 @@ Function OutputRDSessionHostsDetails
 			}
 			If($Text)
 			{
-				Line 3 "Inherit default settings`t: " $RDSTemplate.InheritDefaultOptimizationSettings.ToString()
-				Line 3 "Enable optimization`t`t: " $OPTEnableOptimization
-				Line 3 "Optimization type`t`t: " $OPTOptimizationType
-				Line 3 "Category"
+				Line 4 "Inherit default settings`t: " $RDSTemplate.InheritDefaultOptimizationSettings.ToString()
+				Line 4 "Enable optimization`t`t: " $OPTEnableOptimization
+				Line 4 "Optimization type`t`t: " $OPTOptimizationType
+				Line 4 "Category"
 				
-				Line 4 "Windows Defender ATP: " $OPTWindowsDefenderATPEnabled
+				Line 5 "Windows Defender ATP: " $OPTWindowsDefenderATPEnabled
 				If($OPTWindowsDefenderATPEnabled -eq "True")
 				{
-					Line 5 "Windows Defender ATP Optimizations"
+					Line 6 "Windows Defender ATP Optimizations"
 					If($RDSTemplate.Optimization.WindowsDefenderATP.WinDefATPTurnOffOn.ToString() -eq "TurnOffWindowsDefenderATP")
 					{
-						Line 6 "Turn off Windows Defender ATP (I use my own ATP solution)"
+						Line 7 "Turn off Windows Defender ATP (I use my own ATP solution)"
 					}
 					Else
 					{
-						Line 6 "Turn on Windows Defender ATP and set process and folder exclusions"
-						Line 6 "Disable real-time protection: " $RDSTemplate.Optimization.WindowsDefenderATP.DisableRealTimeProtection.ToString()
+						Line 7 "Turn on Windows Defender ATP and set process and folder exclusions"
+						Line 7 "Disable real-time protection: " $RDSTemplate.Optimization.WindowsDefenderATP.DisableRealTimeProtection.ToString()
 						Line 0 ""
-						Line 6 "Exclude files and folders:"
+						Line 7 "Exclude files and folders:"
 						ForEach($item in $RDSTemplate.Optimization.WindowsDefenderATP.ExcludeFolders)
 						{
-							Line 7 $item
+							Line 8 $item
 						}
 
-						Line 6 "Exclude processes:"
+						Line 7 "Exclude processes:"
 						ForEach($item in $RDSTemplate.Optimization.WindowsDefenderATP.ExcludeProcesses)
 						{
-							Line 7 $item
+							Line 8 $item
 						}
 						
-						Line 6 "Exclude extensions:"
+						Line 7 "Exclude extensions:"
 						ForEach($item in $RDSTemplate.Optimization.WindowsDefenderATP.ExcludeExtension)
 						{
-							Line 7 $item
+							Line 8 $item
 						}
 					}
 					
 					Line 0 ""
 				}
 				
-				Line 4 "Windows Components: " $OPTWindowsComponentsEnabled
+				Line 5 "Windows Components: " $OPTWindowsComponentsEnabled
 				If($OPTWindowsComponentsEnabled -eq "True")
 				{
-					Line 5 "Windows Components Optimizations"
-					Line 6 "Disable (remove) components:"
+					Line 6 "Windows Components Optimizations"
+					Line 7 "Disable (remove) components:"
 					Line 0 ""
-					Line 6 "Display name                                        Component                                         "
-					Line 6 "======================================================================================================"
+					Line 7 "Display name                                        Component                                         "
+					Line 7 "======================================================================================================"
 					#		12345678901234567890123456789012345678901234567890SS12345678901234567890123456789012345678901234567890
 					#		Printing-XPSServices-Features                       SMB 1.0/CIFS File sharing support component
 					ForEach($item in $RDSTemplate.Optimization.WindowsComponents.WindowsComponentsList)
 					{
-						Line 6 ( "{0,-50}  {1,-50}" -f $item.DisplayName, $item.ComponentName)
+						Line 7 ( "{0,-50}  {1,-50}" -f $item.DisplayName, $item.ComponentName)
 					}
 					Line 0 ""
 				}
 				
-				Line 4 "Windows Services: " $OPTWindowsServicesEnabled       
+				Line 5 "Windows Services: " $OPTWindowsServicesEnabled       
 				If($OPTWindowsServicesEnabled -eq "True")
 				{
-					Line 5 "Windows Services Optimizations"
-					Line 6 "Disable services:"
+					Line 6 "Windows Services Optimizations"
+					Line 7 "Disable services:"
 					Line 0 ""
-					Line 6 "Display name                                        Service                         Aliases             "
-					Line 6 "========================================================================================================"
+					Line 7 "Display name                                        Service                         Aliases             "
+					Line 7 "========================================================================================================"
 					#		12345678901234567890123456789012345678901234567890SS123456789012345678901234567890SS12345678901234567890
 					#		Windows Media Player Network Sharing Service        TabletInputService              Superfecth
 					ForEach($item in $RDSTemplate.Optimization.WindowsServices.WindowsServicesList)
@@ -16183,83 +16013,83 @@ Function OutputRDSessionHostsDetails
 						{
 							$Aliases = $item.Aliases
 						}
-						Line 6 ( "{0,-50}  {1,-30}  {2,-20}" -f $DisplayName, $ServiceName, $Aliases)
+						Line 7 ( "{0,-50}  {1,-30}  {2,-20}" -f $DisplayName, $ServiceName, $Aliases)
 					}
 					Line 0 ""
 				}
 				
-				Line 4 "Windows Scheduled Tasks: " $OPTWinodwsScheduledTasksEnabled 
+				Line 5 "Windows Scheduled Tasks: " $OPTWinodwsScheduledTasksEnabled 
 				If($OPTWinodwsScheduledTasksEnabled -eq "True")
 				{
-					Line 5 "Windows Scheduled Tasks Optimizations"
-					Line 6 "Disable tasks:"
+					Line 6 "Windows Scheduled Tasks Optimizations"
+					Line 7 "Disable tasks:"
 					Line 0 ""
-					Line 6 "Task                                                Type    Location                                          "
-					Line 6 "=============================================================================================================="
+					Line 7 "Task                                                Type    Location                                          "
+					Line 7 "=============================================================================================================="
 					#		12345678901234567890123456789012345678901234567890SS123456SS12345678901234567890123456789012345678901234567890
 					#		MNO Metadata Parser                                 Folder  \Microsoft\Windows\Mobile Broadband Accounts\
 					ForEach($item in $RDSTemplate.Optimization.WindowsScheduledTasks.WindowsScheduledTasksList)
 					{
-						Line 6 ( "{0,-50}  {1,-6}  {2,-50}" -f $item.Task, $item.Type.ToString(), $item.Location)
+						Line 7 ( "{0,-50}  {1,-6}  {2,-50}" -f $item.Task, $item.Type.ToString(), $item.Location)
 					}
 					Line 0 ""
 				}
 
-				Line 4 "Windows advanced options: " $OPTWindowsAdvancedOptionsEnabled
+				Line 5 "Windows advanced options: " $OPTWindowsAdvancedOptionsEnabled
 				If($OPTWindowsAdvancedOptionsEnabled -eq "True")
 				{
-					Line 5 "Windows Advanced Options"
+					Line 6 "Windows Advanced Options"
 					Line 0 ""
-					Line 6 "Setting                                           Enabled  Value                                             "
-					Line 6 "============================================================================================================="
+					Line 7 "Setting                                           Enabled  Value                                             "
+					Line 7 "============================================================================================================="
 					#		123456789012345678901234567890123456789012345678SS1234567SS12345678901234567890123456789012345678901234567890
 					#		Remove Common program groups from the start menu  False    SomeConfigFile.xml
-					Line 6 ( "{0,-48}  {1,-7}  {2,-50}" -f `
+					Line 7 ( "{0,-48}  {1,-7}  {2,-50}" -f `
 					"Disable Hibernate", `
 					$RDSTemplate.Optimization.WindowsAdvancedOptions.Hibernate.ToString(), `
 					"")
 					
-					Line 6 ( "{0,-48}  {1,-7}  {2,-50}" -f `
+					Line 7 ( "{0,-48}  {1,-7}  {2,-50}" -f `
 					"Disable Telemetry collection", `
 					$RDSTemplate.Optimization.WindowsAdvancedOptions.TeleCollection.ToString(), `
 					"")
 					
-					Line 6 ( "{0,-48}  {1,-7}  {2,-50}" -f `
+					Line 7 ( "{0,-48}  {1,-7}  {2,-50}" -f `
 					"Disable System Restore", `
 					$RDSTemplate.Optimization.WindowsAdvancedOptions.SystemRestore.ToString(), `
 					"")
 					
-					Line 6 ( "{0,-48}  {1,-7}  {2,-50}" -f `
+					Line 7 ( "{0,-48}  {1,-7}  {2,-50}" -f `
 					"Disable error reporting to send additional data", `
 					$RDSTemplate.Optimization.WindowsAdvancedOptions.AdditionalErrorReport.ToString(), `
 					"")
 					
-					Line 6 ( "{0,-48}  {1,-7}  {2,-50}" -f `
+					Line 7 ( "{0,-48}  {1,-7}  {2,-50}" -f `
 					"Disable Tiles", `
 					$RDSTemplate.Optimization.WindowsAdvancedOptions.Tiles.ToString(), `
 					"")
 					
-					Line 6 ( "{0,-48}  {1,-7}  {2,-50}" -f `
+					Line 7 ( "{0,-48}  {1,-7}  {2,-50}" -f `
 					"Disable Cortana digital assistant", `
 					$RDSTemplate.Optimization.WindowsAdvancedOptions.Cortana.ToString(), `
 					"")
 					
-					Line 6 ( "{0,-48}  {1,-7}  {2,-50}" -f `
+					Line 7 ( "{0,-48}  {1,-7}  {2,-50}" -f `
 					"Turn off Microsoft consumer experience", `
 					$RDSTemplate.Optimization.WindowsAdvancedOptions.MicrosoftConsumerExperience.ToString(), `
 					"")
 					
-					Line 6 ( "{0,-48}  {1,-7}  {2,-50}" -f `
+					Line 7 ( "{0,-48}  {1,-7}  {2,-50}" -f `
 					"Do not show Windows tips", `
 					$RDSTemplate.Optimization.WindowsAdvancedOptions.WindowsTips.ToString(), `
 					"")
 					
-					Line 6 ( "{0,-48}  {1,-7}  {2,-50}" -f `
+					Line 7 ( "{0,-48}  {1,-7}  {2,-50}" -f `
 					"Remove Common program groups from the Start Menu", `
 					$RDSTemplate.Optimization.WindowsAdvancedOptions.CommonProgramGroups.ToString(), `
 					"")
 					
-					Line 6 ( "{0,-48}  {1,-7}  {2,-50}" -f `
+					Line 7 ( "{0,-48}  {1,-7}  {2,-50}" -f `
 					"Partial Start Menu layout", `
 					$RDSTemplate.Optimization.WindowsAdvancedOptions.PartialStartMenu.ToString(), `
 					$RDSTemplate.Optimization.WindowsAdvancedOptions.PartialStartLayoutContent)
@@ -16267,51 +16097,51 @@ Function OutputRDSessionHostsDetails
 					Line 0 ""
 				}
 
-				Line 4 "Network performance: " $OPTNetworkPerformanceEnabled
+				Line 5 "Network performance: " $OPTNetworkPerformanceEnabled
 				If($OPTNetworkPerformanceEnabled -eq "True")
 				{
-					Line 5 "Network Performance Optimizations"
+					Line 6 "Network Performance Optimizations"
 					Line 0 ""
-					Line 6 "Setting                      Enabled  Value"
-					Line 6 "==========================================="
+					Line 7 "Setting                      Enabled  Value"
+					Line 7 "==========================================="
 					#		123456789012345678901234567SS1234567SS12345
 					#		FileNotFoundCacheEntriesMax  False    32768
-					Line 6 ( "{0,-27}  {1,-7}  {2,-5}" -f `
+					Line 7 ( "{0,-27}  {1,-7}  {2,-5}" -f `
 					"FileInfoCacheEntriesMax", `
 					$RDSTemplate.Optimization.NetworkPerformance.FileInfoCacheEnable.ToString(), `
 					$RDSTemplate.Optimization.NetworkPerformance.FileInfoCache)
 					
-					Line 6 ( "{0,-27}  {1,-7}  {2,-5}" -f `
+					Line 7 ( "{0,-27}  {1,-7}  {2,-5}" -f `
 					"DirectoryCacheEntriesMax", `
 					$RDSTemplate.Optimization.NetworkPerformance.DirectoryCacheEnable.ToString(), `
 					$RDSTemplate.Optimization.NetworkPerformance.DirCacheMax)
 					
-					Line 6 ( "{0,-27}  {1,-7}  {2,-5}" -f `
+					Line 7 ( "{0,-27}  {1,-7}  {2,-5}" -f `
 					"FileNotFoundCacheEntriesMax", `
 					$RDSTemplate.Optimization.NetworkPerformance.FileNotFoundCacheEnable.ToString(), `
 					$RDSTemplate.Optimization.NetworkPerformance.FileNotFoundCache)
 					
-					Line 6 ( "{0,-27}  {1,-7}  {2,-5}" -f `
+					Line 7 ( "{0,-27}  {1,-7}  {2,-5}" -f `
 					"DormantFileLimit", `
 					$RDSTemplate.Optimization.NetworkPerformance.DormantFileLimitEnable.ToString(), `
 					$RDSTemplate.Optimization.NetworkPerformance.DormantFileLimit)
 					
-					Line 6 ( "{0,-27}  {1,-7}  {2,-5}" -f `
+					Line 7 ( "{0,-27}  {1,-7}  {2,-5}" -f `
 					"Disable TCP/IP Task Offload", `
 					$RDSTemplate.Optimization.NetworkPerformance.DisableTCP.ToString(), `
 					"")
 					
-					Line 6 ( "{0,-27}  {1,-7}  {2,-5}" -f `
+					Line 7 ( "{0,-27}  {1,-7}  {2,-5}" -f `
 					"Disable IPv6 Components", `
 					$RDSTemplate.Optimization.NetworkPerformance.DisableIPv6CompEnable.ToString(), `
 					"")
 					
-					Line 6 ( "{0,-27}  {1,-7}  {2,-5}" -f `
+					Line 7 ( "{0,-27}  {1,-7}  {2,-5}" -f `
 					"Disable IPv6 to IPv4", `
 					$RDSTemplate.Optimization.NetworkPerformance.DisableIPv6ToIPv4.ToString(), `
 					"")
 					
-					Line 6 ( "{0,-27}  {1,-7}  {2,-5}" -f `
+					Line 7 ( "{0,-27}  {1,-7}  {2,-5}" -f `
 					"Disables isatap for IPv6", `
 					$RDSTemplate.Optimization.NetworkPerformance.DisableIsaTap.ToString(), `
 					"")
@@ -16319,27 +16149,27 @@ Function OutputRDSessionHostsDetails
 					Line 0 ""
 				}
 
-				Line 4 "Registry: " $OPTRegistryEnabled
+				Line 5 "Registry: " $OPTRegistryEnabled
 				If($OPTRegistryEnabled -eq "True")
 				{
-					Line 5 "Registry Optimizations"
+					Line 6 "Registry Optimizations"
 					Line 0 ""
 					#		123456789012345678901234567SS1234567SS12345
 					#		FileNotFoundCacheEntriesMax  False    32768
-					Line 6 "Registry                                  Action  Value                 Type           Data                  Path                                                        "
-					Line 6 "========================================================================================================================================================================="
+					Line 7 "Registry                                  Action  Value                 Type           Data                  Path                                                        "
+					Line 7 "========================================================================================================================================================================="
 					#		1234567890123456789012345678901234567890SS123456SS12345678901234567890SS1234567890123SS12345678901234567890SS123456789012345678901234567890123456789012345678901234567890
 					#		Increase service startup timeouts         Modify  99999999999999999999  REG_EXPAND_SZ  99999999999999999999  HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services\Disk
 					ForEach($item in $RDSHost.Optimization.Registry.RegistryList)
 					{
 						If($item.RegType.ToString() -eq "REG_SZ" -or $item.RegType.ToString() -eq "REG_EXPAND_SZ")
 						{
-							Line 7 ( "{0,-40}  {1,-6}  {2,-20}  {3,-13}  {4,-20}  {5,-60}" -f `
+							Line 8 ( "{0,-40}  {1,-6}  {2,-20}  {3,-13}  {4,-20}  {5,-60}" -f `
 							$item.DisplayName, $item.Action, $item.RegistryName, $item.RegType.ToString(), $item.StringValue, "$($item.HiveType)\$($item.Path)")
 						}
 						ElseIf($item.RegType.ToString() -eq "REG_DWORD" -or $item.RegType.ToString() -eq "REG_QWORD")
 						{
-							Line 7 ( "{0,-40}  {1,-6}  {2,-20}  {3,-13}  {4,-20}  {5,-60}" -f `
+							Line 8 ( "{0,-40}  {1,-6}  {2,-20}  {3,-13}  {4,-20}  {5,-60}" -f `
 							$item.DisplayName, $item.Action, $item.RegistryName, $item.RegType.ToString(), $item.DWORDValue, "$($item.HiveType)\$($item.Path)")
 						}
 						ElseIf($item.RegType.ToString() -eq "REG_MULTI_SZ")
@@ -16352,7 +16182,7 @@ Function OutputRDSessionHostsDetails
 								
 								If($cnt -eq 0)
 								{
-									Line 7 ( "{0,-40}  {1,-6}  {2,-20}  {3,-13}  {4,-20}  {5,-60}" -f `
+									Line 8 ( "{0,-40}  {1,-6}  {2,-20}  {3,-13}  {4,-20}  {5,-60}" -f `
 									$item.DisplayName, $item.Action, $item.RegistryName, $item.RegType.ToString(), $SubItem, "$($item.HiveType)\$($item.Path)")
 								}
 								Else
@@ -16365,10 +16195,10 @@ Function OutputRDSessionHostsDetails
 					Line 0 ""
 				}
 
-				Line 4 "Visual Effects: " $OPTVisualEffectsEnabled
+				Line 5 "Visual Effects: " $OPTVisualEffectsEnabled
 				If($OPTVisualEffectsEnabled -eq "True")
 				{
-					Line 5 "Visual Effects Optimizations"
+					Line 6 "Visual Effects Optimizations"
 					Line 0 ""
 					
 					Switch ($RDSTemplate.Optimization.VisualEffects.VisualEffectsTypes)
@@ -16379,126 +16209,126 @@ Function OutputRDSessionHostsDetails
 						"Custom"					{$VisualEffectsType = "Custom"; Break}
 						Default						{$VisualEffectsType = "Unable to determine Visual Effects Optimization type: $($RDSTemplate.Optimization.VisualEffects.VisualEffectsTypes)"; Break}
 					}
-					Line 6 $VisualEffectsType
+					Line 7 $VisualEffectsType
 					Line 0 ""
-					Line 6 "Setting                                             Enabled"
-					Line 6 "==========================================================="
+					Line 7 "Setting                                             Enabled"
+					Line 7 "==========================================================="
 					#		12345678901234567890123456789012345678901234567890SS1234567
 					#		Use drop shadows for icon labels on the desktop     False  
-					Line 6 ( "{0,-50}  {1,-7}" -f `
+					Line 7 ( "{0,-50}  {1,-7}" -f `
 					"Animate controls and elements inside windows", `
 					$RDSTemplate.Optimization.VisualEffects.AnimateControlSelectElements.ToString())
 					
-					Line 6 ( "{0,-50}  {1,-7}" -f `
+					Line 7 ( "{0,-50}  {1,-7}" -f `
 					"Animate windows when minimizing and maximizing", `
 					$RDSTemplate.Optimization.VisualEffects.AnimateWindowsWhenMinimizingMaximizing.ToString())
 					
-					Line 6 ( "{0,-50}  {1,-7}" -f `
+					Line 7 ( "{0,-50}  {1,-7}" -f `
 					"Animations in the taskbar", `
 					$RDSTemplate.Optimization.VisualEffects.AnimateTaskbar.ToString())
 					
-					Line 6 ( "{0,-50}  {1,-7}" -f `
+					Line 7 ( "{0,-50}  {1,-7}" -f `
 					"Enable Peek", `
 					$RDSTemplate.Optimization.VisualEffects.EnablePeek.ToString())
 					
-					Line 6 ( "{0,-50}  {1,-7}" -f `
+					Line 7 ( "{0,-50}  {1,-7}" -f `
 					"Fade or slide menus into view", `
 					$RDSTemplate.Optimization.VisualEffects.FadeSlideMenus.ToString())
 					
-					Line 6 ( "{0,-50}  {1,-7}" -f `
+					Line 7 ( "{0,-50}  {1,-7}" -f `
 					"Fade or slide Tooltips into view", `
 					$RDSTemplate.Optimization.VisualEffects.FadeSlideToolTips.ToString())
 					
-					Line 6 ( "{0,-50}  {1,-7}" -f `
+					Line 7 ( "{0,-50}  {1,-7}" -f `
 					"Fade out menu items after clicking", `
 					$RDSTemplate.Optimization.VisualEffects.FadeOutMenuItems.ToString())
 					
-					Line 6 ( "{0,-50}  {1,-7}" -f `
+					Line 7 ( "{0,-50}  {1,-7}" -f `
 					"Save taskbar thumbnail previews", `
 					$RDSTemplate.Optimization.VisualEffects.SaveTaskbarThumbnail.ToString())
 					
-					Line 6 ( "{0,-50}  {1,-7}" -f `
+					Line 7 ( "{0,-50}  {1,-7}" -f `
 					"Show shadows under mouse pointer", `
 					$RDSTemplate.Optimization.VisualEffects.ShowShadowUnderMouse.ToString())
 					
-					Line 6 ( "{0,-50}  {1,-7}" -f `
+					Line 7 ( "{0,-50}  {1,-7}" -f `
 					"Show shadows under windows", `
 					$RDSTemplate.Optimization.VisualEffects.ShadowUnderWindows.ToString())
 					
-					Line 6 ( "{0,-50}  {1,-7}" -f `
+					Line 7 ( "{0,-50}  {1,-7}" -f `
 					"Show thumbnails instead of icons", `
 					$RDSTemplate.Optimization.VisualEffects.ThumbnailsInsteadOfIcons.ToString())
 					
-					Line 6 ( "{0,-50}  {1,-7}" -f `
+					Line 7 ( "{0,-50}  {1,-7}" -f `
 					"Show translucent selection rectangle", `
 					$RDSTemplate.Optimization.VisualEffects.ShowTranslucentSelection.ToString())
 					
-					Line 6 ( "{0,-50}  {1,-7}" -f `
+					Line 7 ( "{0,-50}  {1,-7}" -f `
 					"Show window contents while dragging", `
 					$RDSTemplate.Optimization.VisualEffects.ShowWindowsContentWhilstDragging.ToString())
 					
-					Line 6 ( "{0,-50}  {1,-7}" -f `
+					Line 7 ( "{0,-50}  {1,-7}" -f `
 					"Slide open combo boxes", `
 					$RDSTemplate.Optimization.VisualEffects.SlideOpenComboBoxes.ToString())
 					
-					Line 6 ( "{0,-50}  {1,-7}" -f `
+					Line 7 ( "{0,-50}  {1,-7}" -f `
 					"Smooth edges of screen fonts", `
 					$RDSTemplate.Optimization.VisualEffects.SmoothEdgesScreenFonts.ToString())
 					
-					Line 6 ( "{0,-50}  {1,-7}" -f `
+					Line 7 ( "{0,-50}  {1,-7}" -f `
 					"Smooth-scroll list boxes", `
 					$RDSTemplate.Optimization.VisualEffects.SmoothScrollListBoxes.ToString())
 					
-					Line 6 ( "{0,-50}  {1,-7}" -f `
+					Line 7 ( "{0,-50}  {1,-7}" -f `
 					"Use drop shadows for icon labels on the desktop", `
 					$RDSTemplate.Optimization.VisualEffects.DropShadowsIcon.ToString())
 					
 					Line 0 ""
 				}
 
-				Line 4 "Disk cleanup: " $OPTDiskCleanupEnabled
+				Line 5 "Disk cleanup: " $OPTDiskCleanupEnabled
 				If($OPTDiskCleanupEnabled -eq "True")
 				{
-					Line 5 "Disk Cleanup Optimizations"
+					Line 6 "Disk Cleanup Optimizations"
 					Line 0 ""
 					
-					Line 6 "Setting                            Enabled"
-					Line 6 "=========================================="
+					Line 7 "Setting                            Enabled"
+					Line 7 "=========================================="
 					#		123456789012345678901234567890123SS1234567
 					#		Clean up temporary files and logs  False  
-					Line 6 ( "{0,-33}  {1,-7}" -f `
+					Line 7 ( "{0,-33}  {1,-7}" -f `
 					"Clean up redundant system files", `
 					$RDSTemplate.Optimization.DiskCleanup.CleanupSystemFiles.ToString())
 					
-					Line 6 ( "{0,-33}  {1,-7}" -f `
+					Line 7 ( "{0,-33}  {1,-7}" -f `
 					"Clean up the WinSxS Folder", `
 					$RDSTemplate.Optimization.DiskCleanup.CleanupWinSxSFolder.ToString())
 					
-					Line 6 ( "{0,-33}  {1,-7}" -f `
+					Line 7 ( "{0,-33}  {1,-7}" -f `
 					"Clean up temporary files and logs", `
 					$RDSTemplate.Optimization.DiskCleanup.CleanupTemporaryFileLogs.ToString())
 					
-					Line 6 ( "{0,-33}  {1,-7}" -f `
+					Line 7 ( "{0,-33}  {1,-7}" -f `
 					"Remove OneDrive", `
 					$RDSTemplate.Optimization.DiskCleanup.RemoveOneDrive.ToString())
 					
-					Line 6 ( "{0,-33}  {1,-7}" -f `
+					Line 7 ( "{0,-33}  {1,-7}" -f `
 					"Delete users' profiles", `
 					$RDSTemplate.Optimization.DiskCleanup.DeleteUserProfiles.ToString())
 					
 					Line 0 ""
 				}
 
-				Line 4 "Custom script: " $OPTCustomScriptEnabled
+				Line 5 "Custom script: " $OPTCustomScriptEnabled
 				If($OPTCustomScriptEnabled  -eq "True")
 				{
-					Line 5 "Custom Script"
+					Line 6 "Custom Script"
 					Line 0 ""
 					
-					Line 6 "Command`t`t : " $RDSTemplate.Optimization.CustomScript.Command
-					Line 6 "Arguments`t : " $RDSTemplate.Optimization.CustomScript.Arguments
-					Line 6 "Initial directory: " $RDSTemplate.Optimization.CustomScript.InitDir
-					Line 6 "Username`t : " $RDSTemplate.Optimization.CustomScript.User
+					Line 7 "Command`t`t : " $RDSTemplate.Optimization.CustomScript.Command
+					Line 7 "Arguments`t : " $RDSTemplate.Optimization.CustomScript.Arguments
+					Line 7 "Initial directory: " $RDSTemplate.Optimization.CustomScript.InitDir
+					Line 7 "Username`t : " $RDSTemplate.Optimization.CustomScript.User
 					Line 0 ""
 				}
 				Line 0 ""
@@ -16662,7 +16492,7 @@ Function OutputRDSessionHostsDetails
 					)
 
 					$msg = "Disable services:"
-					$columnWidths = @("200","100","50")
+					$columnWidths = @("300","100","50")
 					FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 					WriteHTMLLine 0 0 ""
 				}
@@ -16690,7 +16520,7 @@ Function OutputRDSessionHostsDetails
 					)
 
 					$msg = "Disable tasks:"
-					$columnWidths = @("200","50","250")
+					$columnWidths = @("200","50","300")
 					FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 					WriteHTMLLine 0 0 ""
 				}
@@ -16769,7 +16599,7 @@ Function OutputRDSessionHostsDetails
 					)
 
 					$msg = ""
-					$columnWidths = @("300","50","200")
+					$columnWidths = @("325","50","200")
 					FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 					WriteHTMLLine 0 0 ""
 				}
@@ -16998,7 +16828,7 @@ Function OutputRDSessionHostsDetails
 					)
 
 					$msg = ""
-					$columnWidths = @("275","50")
+					$columnWidths = @("325","50")
 					FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 					WriteHTMLLine 0 0 ""
 				}
@@ -17071,7 +16901,7 @@ Function OutputRDSessionHostsDetails
 			}
 			If($Text)
 			{
-				Line 2 "License Keys"
+				Line 3 "License Keys"
 			}
 			If($HTML)
 			{
@@ -17121,18 +16951,18 @@ Function OutputRDSessionHostsDetails
 			{
 				If($RDSTemplate.LicenseKeyType.ToString() -eq "KMS")
 				{
-					Line 3 "License key management type: " "Key Management Service (KMS)"
+					Line 4 "License key management type: " "Key Management Service (KMS)"
 				}
 				Else
 				{
-					Line 3 "License key management type: " "Multple Activation Key (MAK)"
+					Line 4 "License key management type: " "Multple Activation Key (MAK)"
 					
 					$LicenseKeys = Get-RASVDITemplateLicenseKey -Id $RDSTemplate.Id -EA 0 4>$Null
 
 					ForEach($Item in $LicenseKeys)
 					{
-						Line 3 "License Key`t: " $Item.LicenseKey
-						Line 3 "Key Limit`t: " $Item.KeyLimit
+						Line 4 "License Key`t: " $Item.LicenseKey
+						Line 4 "Key Limit`t: " $Item.KeyLimit
 					}
 				}
 				Line 0 ""
@@ -17677,10 +17507,10 @@ Function OutputRDSessionHostsDetails
 				-Format $wdTableGrid `
 				-AutoFit $wdAutoFitFixed;
 
-				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 200;
+				$Table.Columns.Item(1).Width = 300;
 				$Table.Columns.Item(2).Width = 250;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
@@ -17779,7 +17609,7 @@ Function OutputRDSessionHostsDetails
 				}
 
 				$msg = "Options"
-				$columnWidths = @("200","275")
+				$columnWidths = @("350","275")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 			}
@@ -19543,7 +19373,7 @@ Function OutputVDIDetails
 				#Application Packages
 				If($MSWord -or $PDF)
 				{
-					WriteWordLine 5 0 "Application Packages"
+					WriteWordLine 4 0 "Application Packages"
 				}
 				If($Text)
 				{
@@ -19563,14 +19393,14 @@ Function OutputVDIDetails
 					
 					If($? -and $Null -ne $VDIPoolDefaults)
 					{
-						[array]$AppPackagesAssigned = $VDIPoolDefaults.AppPackagesAssigned
+						$AppPackagesAssigned = $VDIPoolDefaults.AppPackagesAssigned
 					}
 				}
 				Else
 				{
 					#we don't inherit
 					#get the settings for the vdi host
-					[array]$AppPackagesAssigned = $VDIPool.AppPackagesAssigned
+					$AppPackagesAssigned = $VDIPool.AppPackagesAssigned
 				}
 
 				If($MSWord -or $PDF)
@@ -19878,10 +19708,10 @@ Function OutputVDIDetails
 							-AutoFit $wdAutoFitFixed;
 
 							#SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
-							SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+							SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Size 9 -Bold -BackgroundColor $wdColorGray15;
 
 							$Table.Columns.Item(1).Width = 250;
-							$Table.Columns.Item(2).Width = 250;
+							$Table.Columns.Item(2).Width = 300;
 
 							$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -20128,7 +19958,7 @@ Function OutputVDIDetails
 
 								$Table.Columns.Item(1).Width = 200;
 								$Table.Columns.Item(2).Width = 50;
-								$Table.Columns.Item(3).Width = 250;
+								$Table.Columns.Item(3).Width = 300;
 								
 								$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -21317,7 +21147,7 @@ Function OutputVDIDetails
 
 
 							$msg = ""
-							$columnWidths = @("300","275")
+							$columnWidths = @("300","350")
 							FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 							WriteHTMLLine 0 0 ""
 						}
@@ -21404,7 +21234,7 @@ Function OutputVDIDetails
 							)
 
 							$msg = "Disable services:"
-							$columnWidths = @("200","100","50")
+							$columnWidths = @("300","100","50")
 							FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 							WriteHTMLLine 0 0 ""
 						}
@@ -21511,7 +21341,7 @@ Function OutputVDIDetails
 							)
 
 							$msg = ""
-							$columnWidths = @("300","50","200")
+							$columnWidths = @("325","50","300")
 							FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 							WriteHTMLLine 0 0 ""
 						}
@@ -21740,7 +21570,7 @@ Function OutputVDIDetails
 							)
 
 							$msg = ""
-							$columnWidths = @("275","50")
+							$columnWidths = @("325","50")
 							FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 							WriteHTMLLine 0 0 ""
 						}
@@ -22134,8 +21964,8 @@ Function OutputVDIDetails
 					SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 					SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-					$Table.Columns.Item(1).Width = 250;
-					$Table.Columns.Item(2).Width = 250;
+					$Table.Columns.Item(1).Width = 325;
+					$Table.Columns.Item(2).Width = 175;
 
 					$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -22188,7 +22018,7 @@ Function OutputVDIDetails
 					$rowdata += @(,("     Enable Z-Order (Experimental)",($Script:htmlsb),$VDIPoolEnableZOrder,$htmlwhite))
 
 					$msg = "Settings"
-					$columnWidths = @("300","275")
+					$columnWidths = @("400","200")
 					FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 					WriteHTMLLine 0 0 ""
 				}
@@ -22368,9 +22198,9 @@ Function OutputVDIDetails
 					-Format $wdTableGrid `
 					-AutoFit $wdAutoFitFixed;
 
-					SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+					SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Size 9 -Bold -BackgroundColor $wdColorGray15;
 
-					$Table.Columns.Item(1).Width = 200;
+					$Table.Columns.Item(1).Width = 300;
 					$Table.Columns.Item(2).Width = 250;
 
 					$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
@@ -22401,7 +22231,7 @@ Function OutputVDIDetails
 					}
 
 					$msg = "Security"
-					$columnWidths = @("200","275")
+					$columnWidths = @("400","275")
 					FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 					WriteHTMLLine 0 0 ""
 				}
@@ -22594,10 +22424,10 @@ Function OutputVDIDetails
 					-Format $wdTableGrid `
 					-AutoFit $wdAutoFitFixed;
 
-					SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+					SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 					SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-					$Table.Columns.Item(1).Width = 300;
+					$Table.Columns.Item(1).Width = 350;
 					$Table.Columns.Item(2).Width = 250;
 
 					$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
@@ -22684,7 +22514,7 @@ Function OutputVDIDetails
 					}
 
 					$msg = "Auto-upgrade"
-					$columnWidths = @("300","275")
+					$columnWidths = @("350","275")
 					FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 					WriteHTMLLine 0 0 ""
 				}
@@ -24760,7 +24590,7 @@ Function OutputVDIDetails
 
 							$Table.Columns.Item(1).Width = 200;
 							$Table.Columns.Item(2).Width = 50;
-							$Table.Columns.Item(3).Width = 250;
+							$Table.Columns.Item(3).Width = 300;
 							
 							$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -25871,7 +25701,7 @@ Function OutputVDIDetails
 						)
 
 						$msg = "Disable services:"
-						$columnWidths = @("200","100","50")
+						$columnWidths = @("300","100","50")
 						FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 						WriteHTMLLine 0 0 ""
 					}
@@ -25899,7 +25729,7 @@ Function OutputVDIDetails
 						)
 
 						$msg = "Disable tasks:"
-						$columnWidths = @("200","50","250")
+						$columnWidths = @("200","50","300")
 						FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 						WriteHTMLLine 0 0 ""
 					}
@@ -25978,7 +25808,7 @@ Function OutputVDIDetails
 						)
 
 						$msg = ""
-						$columnWidths = @("300","50","200")
+						$columnWidths = @("325","50","200")
 						FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 						WriteHTMLLine 0 0 ""
 					}
@@ -26207,7 +26037,7 @@ Function OutputVDIDetails
 						)
 
 						$msg = ""
-						$columnWidths = @("275","50")
+						$columnWidths = @("325","50")
 						FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 						WriteHTMLLine 0 0 ""
 					}
@@ -26591,9 +26421,9 @@ Function OutputVDIDetails
 					-Format $wdTableGrid `
 					-AutoFit $wdAutoFitFixed;
 
-					SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+					SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Size 9 -Bold -BackgroundColor $wdColorGray15;
 
-					$Table.Columns.Item(1).Width = 200;
+					$Table.Columns.Item(1).Width = 300;
 					$Table.Columns.Item(2).Width = 250;
 
 					$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
@@ -26624,7 +26454,7 @@ Function OutputVDIDetails
 					}
 
 					$msg = "Security"
-					$columnWidths = @("200","275")
+					$columnWidths = @("400","275")
 					FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 					WriteHTMLLine 0 0 ""
 				}
@@ -26908,7 +26738,7 @@ Function OutputAVDDetails
 
 			If($MSWord -or $PDF)
 			{
-				WriteWordLine 4 0 "General"
+				WriteWordLine 5 0 "General"
 			}
 			If($Text)
 			{
@@ -27139,6 +26969,19 @@ Function OutputAVDDetails
 
 
 						PS C:\Parallels-RAS-V19.x-Doc-Script-4.00>
+
+						PS C:\Parallels-RAS-V19.x-Doc-Script-4.00> $AVDHostPool.Configuration | % {$_.psobject.properties | select name, value | sort name}
+
+						Name                          Value
+						----                          -----
+						DefaultLicenseType    WindowsClient
+						LimitHosts                        5
+						LoadBalancerType       BreadthFirst
+						PoolType                     Pooled
+						PowerOnHost                    True
+						ProvisioningType           Template
+						PublishingType              Desktop
+						ValidationEnvironment         False
 					#>
 					
 					If($Null -ne $AVDHostPool.TemplateSettings)
@@ -27271,18 +27114,54 @@ Function OutputAVDDetails
 						$AVDWorkspace = "Unable to retrieve Workspace"
 					}
 					
+					Switch($AVDHostPool.Configuration.PublishingType)
+					{
+						"RemoteApp"	{$PublishingType = "Remote Application"; Break}
+						"Desktop"	{$PublishingType = "Desktop"; Break}
+						Default		{$PublishingType = "Unable to determine Publishing Type: $($AVDHostPool.Configuration.PublishingType)"; Break}
+					}
+					
+					Switch($AVDHostPool.Configuration.LoadBalancerType)
+					{
+						"BreadthFirst"	{$LoadBalancerType = "Breadth First"; Break}
+						"DepthFirst"	{$LoadBalancerType = "Depth First"; Break}
+						"Persistent"	{$LoadBalancerType = "Persistent"; Break}
+						Default			{$LoadBalancerType = "Unable to determine Load Balancer Type: $($AVDHostPool.Configuration.LoadBalancerType)"; Break}
+					}
+
+
+					Switch($AVDHostPool.Configuration.DefaultLicenseType)
+					{
+						"WindowsClient"		{$DefaultLicenseType = "Windows client"; Break}
+						"WindowsServer"		{$DefaultLicenseType = "Windows server"; Break}
+						"DoNotConfigure"	{$DefaultLicenseType = "Do not configure"; Break}
+						Default				{$DefaultLicenseType = "Unable to determine Default License Type: $($AVDHostPool.Configuration.DefaultLicenseType)"; Break}
+					}
+
+					If($Null -ne $AVDHostPool.LinkedDesktopApplicationGroup)
+					{
+						$LastIndex = $AVDHostPool.LinkedDesktopApplicationGroup.LastIndexOf("/") + 1
+						$ApplicationGroup = $AVDHostPool.LinkedDesktopApplicationGroup.SubString($LastIndex)
+					}
+					ElseIf($Null -ne $AVDHostPool.LinkedRemoteApplicationGroup)
+					{
+						$LastIndex = $AVDHostPool.LinkedRemoteApplicationGroup.LastIndexOf("/") + 1
+						$ApplicationGroup = $AVDHostPool.LinkedRemoteApplicationGroup.SubString($LastIndex)
+					}
+					
 					If($MSWord -or $PDF)
 					{
 						WriteWordLine 4 0 "Pool $($AVDHostPool.Name)"
 					}
 					If($Text)
 					{
-						Line 3 "Name`t`t`t`t: " $AVDHostPool.Name
+						Line 3 "Name: " $AVDHostPool.Name
 					}
 					If($HTML)
 					{
 						WriteHTMLLine 4 0 "Pool $($AVDHostPool.Name)"
 					}
+					
 					If($MSWord -or $PDF)
 					{
 						$ScriptInformation = New-Object System.Collections.ArrayList
@@ -27297,11 +27176,11 @@ Function OutputAVDDetails
 						$ScriptInformation.Add(@{Data = "Location"; Value = $AVDLocation; }) > $Null
 						$ScriptInformation.Add(@{Data = "Validation environment"; Value = $ValidationEnvironment; }) > $Null
 						$ScriptInformation.Add(@{Data = "Workspace"; Value = $AVDWorkspace; }) > $Null
-						$ScriptInformation.Add(@{Data = "Type"; Value = "Can't find"; }) > $Null
-						$ScriptInformation.Add(@{Data = "Publishing type"; Value = "Can't find"; }) > $Null
-						$ScriptInformation.Add(@{Data = "Provisioning type"; Value = "Can't find"; }) > $Null
-						$ScriptInformation.Add(@{Data = "Session limit"; Value = "Can't find"; }) > $Null
-						$ScriptInformation.Add(@{Data = "Load balancer"; Value = "Can't find"; }) > $Null
+						$ScriptInformation.Add(@{Data = "Type"; Value = $AVDHostPool.Configuration.PoolType.ToString(); }) > $Null
+						$ScriptInformation.Add(@{Data = "Publishing type"; Value = $PublishingType; }) > $Null
+						$ScriptInformation.Add(@{Data = "Provisioning type"; Value = $AVDHostPool.Configuration.ProvisioningType.ToString(); }) > $Null
+						$ScriptInformation.Add(@{Data = "Session limit"; Value = $AVDHostPool.Configuration.LimitHosts.ToString(); }) > $Null
+						$ScriptInformation.Add(@{Data = "Load balancer"; Value = $LoadBalancerType; }) > $Null
 						$ScriptInformation.Add(@{Data = "Last modification by"; Value = $AVDHostPool.AdminLastMod; }) > $Null
 						$ScriptInformation.Add(@{Data = "Modified on"; Value = (Get-Date -UFormat "%c" $AVDHostPool.TimeLastMod); }) > $Null
 						$ScriptInformation.Add(@{Data = "Created by"; Value = $AVDHostPool.AdminCreate; }) > $Null
@@ -27338,11 +27217,11 @@ Function OutputAVDDetails
 						Line 4 "Location`t`t: " $AVDLocation
 						Line 4 "Validation environment`t: " $ValidationEnvironment
 						Line 4 "Workspace`t`t: " $AVDWorkspace
-						Line 4 "Type`t`t`t: " "Can't find"
-						Line 4 "Publishing type`t`t: " "Can't find"
-						Line 4 "Provisioning type`t: " "Can't find"
-						Line 4 "Session limit`t`t: " "Can't find"
-						Line 4 "Load balancer`t`t: " "Can't find"
+						Line 4 "Type`t`t`t: " $AVDHostPool.Configuration.PoolType.ToString()
+						Line 4 "Publishing type`t`t: " $PublishingType
+						Line 4 "Provisioning type`t: " $AVDHostPool.Configuration.ProvisioningType.ToString()
+						Line 4 "Session limit`t`t: " $AVDHostPool.Configuration.LimitHosts.ToString()
+						Line 4 "Load balancer`t`t: " $LoadBalancerType
 						Line 4 "Last modification by`t: " $AVDHostPool.AdminLastMod
 						Line 4 "Modified on`t`t: " (Get-Date -UFormat "%c" $AVDHostPool.TimeLastMod)
 						Line 4 "Created by`t`t: " $AVDHostPool.AdminCreate
@@ -27364,11 +27243,11 @@ Function OutputAVDDetails
 						$rowdata += @(,("Location",($Script:htmlsb),$AVDLocation,$htmlwhite))
 						$rowdata += @(,("Validation environment",($Script:htmlsb),$ValidationEnvironment,$htmlwhite))
 						$rowdata += @(,("Workspace",($Script:htmlsb),$AVDWorkspace,$htmlwhite))
-						$rowdata += @(,("Type",($Script:htmlsb),"Can't find",$htmlwhite))
-						$rowdata += @(,("Publishing type",($Script:htmlsb),"Can't find",$htmlwhite))
-						$rowdata += @(,("Provisioning type",($Script:htmlsb),"Can't find",$htmlwhite))
-						$rowdata += @(,("Session limit",($Script:htmlsb),"Can't find",$htmlwhite))
-						$rowdata += @(,("Load balancer",($Script:htmlsb),"Can't find",$htmlwhite))
+						$rowdata += @(,("Type",($Script:htmlsb),$AVDHostPool.Configuration.PoolType.ToString(),$htmlwhite))
+						$rowdata += @(,("Publishing type",($Script:htmlsb),$PublishingType,$htmlwhite))
+						$rowdata += @(,("Provisioning type",($Script:htmlsb),$AVDHostPool.Configuration.ProvisioningType.ToString(),$htmlwhite))
+						$rowdata += @(,("Session limit",($Script:htmlsb),$AVDHostPool.Configuration.LimitHosts.ToString(),$htmlwhite))
+						$rowdata += @(,("Load balancer",($Script:htmlsb),$LoadBalancerType,$htmlwhite))
 						$rowdata += @(,("Last modification by",($Script:htmlsb), $AVDHostPool.AdminLastMod,$htmlwhite))
 						$rowdata += @(,("Modified on",($Script:htmlsb), (Get-Date -UFormat "%c" $AVDHostPool.TimeLastMod),$htmlwhite))
 						$rowdata += @(,("Created by",($Script:htmlsb), $AVDHostPool.AdminCreate,$htmlwhite))
@@ -27406,6 +27285,7 @@ Function OutputAVDDetails
 						$ScriptInformation.Add(@{Data = "Location"; Value = $AVDLocation; }) > $Null
 						$ScriptInformation.Add(@{Data = "Provider"; Value = $AVDProviderName; }) > $Null
 						$ScriptInformation.Add(@{Data = "Workspace"; Value = $AVDWorkspace; }) > $Null
+						$ScriptInformation.Add(@{Data = "Application group"; Value = $ApplicationGroup; }) > $Null
 						$Table = AddWordTable -Hashtable $ScriptInformation `
 						-Columns Data,Value `
 						-List `
@@ -27434,6 +27314,7 @@ Function OutputAVDDetails
 						Line 5 "Location`t`t: " $AVDLocation
 						Line 5 "Provider`t`t: " $AVDProviderName
 						Line 5 "Workspace`t`t: " $AVDWorkspace
+						Line 5 "Application group`t: " $ApplicationGroup
 						Line 0 ""
 					}
 					If($HTML)
@@ -27447,6 +27328,7 @@ Function OutputAVDDetails
 						$rowdata += @(,("Location",($Script:htmlsb),$AVDLocation,$htmlwhite))
 						$rowdata += @(,("Provider",($Script:htmlsb),$AVDProviderName,$htmlwhite))
 						$rowdata += @(,("Workspace",($Script:htmlsb),$AVDWorkspace,$htmlwhite))
+						$rowdata += @(,("Application group",($Script:htmlsb),$ApplicationGroup,$htmlwhite))
 						
 						$msg = "General"
 						$columnWidths = @("200","275")
@@ -27521,11 +27403,21 @@ Function OutputAVDDetails
 					{
 						#nothing
 					}
-					<#
+
 					If($MSWord -or $PDF)
 					{
 						$ScriptInformation = New-Object System.Collections.ArrayList
-						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+						$ScriptInformation.Add(@{Data = "Host pool configuration"; Value = ""; }) > $Null
+						$ScriptInformation.Add(@{Data = "     Host pool type"; Value = $AVDHostPool.Configuration.PoolType.ToString(); }) > $Null
+						$ScriptInformation.Add(@{Data = "     Publishing type"; Value = $PublishingType; }) > $Null
+						$ScriptInformation.Add(@{Data = "     Provisioning type"; Value = $AVDHostPool.Configuration.ProvisioningType.ToString(); }) > $Null
+						$ScriptInformation.Add(@{Data = "     Load balancer"; Value = $LoadBalancerType; }) > $Null
+						$ScriptInformation.Add(@{Data = "     Limit number of sessions on host"; Value = $AVDHostPool.Configuration.LimitHosts.ToString(); }) > $Null
+						$ScriptInformation.Add(@{Data = "     Power on host on-demand"; Value = $AVDHostPool.Configuration.PowerOnHost.ToString(); }) > $Null
+						$ScriptInformation.Add(@{Data = "     Default license type"; Value = $DefaultLicenseType; }) > $Null
+						$ScriptInformation.Add(@{Data = "Service updates validation"; Value = ""; }) > $Null
+						$ScriptInformation.Add(@{Data = "     Validation environment"; Value = $ValidationEnvironment; }) > $Null
+
 						$Table = AddWordTable -Hashtable $ScriptInformation `
 						-Columns Data,Value `
 						-List `
@@ -27535,7 +27427,7 @@ Function OutputAVDDetails
 						SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 						SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-						$Table.Columns.Item(1).Width = 200;
+						$Table.Columns.Item(1).Width = 250;
 						$Table.Columns.Item(2).Width = 250;
 
 						$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
@@ -27546,21 +27438,38 @@ Function OutputAVDDetails
 					}
 					If($Text)
 					{
-						Line 5 "" ""
+						Line 5 "Host pool configuration"
+						Line 6 "Host pool type`t`t`t: " $AVDHostPool.Configuration.PoolType.ToString()
+						Line 6 "Publishing type`t`t: " $PublishingType
+						Line 6 "Provisioning type`t`t`t: " $AVDHostPool.Configuration.ProvisioningType.ToString()
+						Line 6 "Load balancer`t`t`t: " $LoadBalancerType
+						Line 6 "Limit number of sessions on host: " $AVDHostPool.Configuration.LimitHosts.ToString()
+						Line 6 "Power on host on-demand`t`t: " $AVDHostPool.Configuration.PowerOnHost.ToString()
+						Line 6 "Default license type`t`t: " $DefaultLicenseType
+						Line 5 "Service updates validation" 
+						Line 6 "Validation environment`t`t: " $ValidationEnvironment
 						Line 0 ""
 					}
 					If($HTML)
 					{
 						$rowdata = @()
-						$columnHeaders = @("",($Script:htmlsb),"",$htmlwhite)
-						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
-						
+						$columnHeaders = @("Host pool configuration",($Script:htmlsb),"",$htmlwhite)
+						$rowdata += @(,("     Host pool type",($Script:htmlsb), $AVDHostPool.Configuration.PoolType.ToString(),$htmlwhite))
+						$rowdata += @(,("     Publishing type",($Script:htmlsb), $PublishingType,$htmlwhite))
+						$rowdata += @(,("     Provisioning type",($Script:htmlsb), $AVDHostPool.Configuration.ProvisioningType.ToString(),$htmlwhite))
+						$rowdata += @(,("     Load balancer",($Script:htmlsb), $LoadBalancerType,$htmlwhite))
+						$rowdata += @(,("     Limit number of sessions on host",($Script:htmlsb), $AVDHostPool.Configuration.LimitHosts.ToString(),$htmlwhite))
+						$rowdata += @(,("     Power on host on-demand",($Script:htmlsb), $AVDHostPool.Configuration.PowerOnHost.ToString(),$htmlwhite))
+						$rowdata += @(,("     Default license type",($Script:htmlsb), $DefaultLicenseType,$htmlwhite))
+						$rowdata += @(,("Service updates validation",($Script:htmlsb), "",$htmlwhite))
+						$rowdata += @(,("     Validation environment",($Script:htmlsb), $ValidationEnvironment,$htmlwhite))
+
 						$msg = "Configuration"
-						$columnWidths = @("200","275")
+						$columnWidths = @("300","275")
 						FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 						WriteHTMLLine 0 0 ""
 					}
-					#>
+
 					#Assignment
 					If($MSword -or $PDF)
 					{
@@ -27680,18 +27589,59 @@ Function OutputAVDDetails
 					{
 						#nothing
 					}
-					<#
+
+					If($AVDHostPool.InheritDefaultAppPackageSettings)
+					{
+						#do we inherit site defaults?
+						#yes we do, get the default settings for the Site
+						#use the Site default settings
+						$AVDHostPoolDefaults = Get-RASAVDDefaultSettings -DefObjType AVDMultiSessionDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
+						
+						If($? -and $Null -ne $AVDHostPoolDefaults)
+						{
+							$AppPackagesAssigned = $AVDHostPoolDefaults.AppPackagesAssigned
+						}
+					}
+					Else
+					{
+						#we don't inherit
+						#get the settings for the vdi host
+						$AppPackagesAssigned = $AVDHostPool.AppPackagesAssigned
+					}
+
 					If($MSWord -or $PDF)
 					{
 						$ScriptInformation = New-Object System.Collections.ArrayList
+						$ScriptInformation.Add(@{Data = "Inherit default settings"; Value = $AVDHostPool.InheritDefaultAppPackageSettings.ToString(); }) > $Null
 						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+
+						If(validObject $AppPackagesAssigned ApplicationPackagesAssigned)
+						{
+							ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
+							{
+								$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4>$Null
+								
+								If($? -and $Null -ne $Result)
+								{
+									$ScriptInformation.Add(@{Data = "Name"; Value = $Result.PackageName; }) > $Null
+									$ScriptInformation.Add(@{Data = "Status"; Value = ""; }) > $Null
+									$ScriptInformation.Add(@{Data = "Version"; Value = $Result.Version; }) > $Null
+									$ScriptInformation.Add(@{Data = "Display name"; Value = $Result.DisplayName; }) > $Null
+									$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+								}
+								Else
+								{
+									$ScriptInformation.Add(@{Data = "Unable to retrieve data for"; Value = $Result.PackageName; }) > $Null
+								}
+							}
+						}
+
 						$Table = AddWordTable -Hashtable $ScriptInformation `
 						-Columns Data,Value `
 						-List `
 						-Format $wdTableGrid `
-						-AutoFit $wdAutoFitFixed;
+						-AutoFit $wdAutoFitFixed
 
-						SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 						SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 						$Table.Columns.Item(1).Width = 200;
@@ -27705,74 +27655,63 @@ Function OutputAVDDetails
 					}
 					If($Text)
 					{
-						Line 5 "" ""
-						Line 0 ""
+						Line 5 "Inherit default settings: " $AVDHostPool.InheritDefaultAppPackageSettings.ToString()
+						Line 5 ""
+
+						If(validObject $AppPackagesAssigned ApplicationPackagesAssigned)
+						{
+							ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
+							{
+								$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4>$Null
+								
+								If($? -and $Null -ne $Result)
+								{
+									Line 6 "Name`t`t: " $Result.PackageName
+									Line 6 "Status`t`t: "
+									Line 6 "Version`t`t: " $Result.Version
+									Line 6 "Display name`t: " $Result.DisplayName
+									Line 6 ""
+								}
+								Else
+								{
+									Line 6 "Unable to retrieve data for: " $Result.PackageName
+								}
+							}
+						}
 					}
 					If($HTML)
 					{
 						$rowdata = @()
-						$columnHeaders = @("",($Script:htmlsb),"",$htmlwhite)
+						$columnHeaders = @("Inherit default settings",($Script:htmlsb),$AVDHostPool.InheritDefaultAppPackageSettings.ToString(),$htmlwhite)
 						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
-						
+
+						If(validObject $AppPackagesAssigned ApplicationPackagesAssigned)
+						{
+							ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
+							{
+								$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4>$Null
+								
+								If($? -and $Null -ne $Result)
+								{
+									$rowdata += @(,("Name",($Script:htmlsb),$Result.PackageName,$htmlwhite))
+									$rowdata += @(,("Status",($Script:htmlsb),"",$htmlwhite))
+									$rowdata += @(,("Version",($Script:htmlsb),$Result.Version,$htmlwhite))
+									$rowdata += @(,("Display name",($Script:htmlsb),$Result.DisplayName,$htmlwhite))
+									$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+								}
+								Else
+								{
+									$rowdata += @(,("Unable to retrieve data for",($Script:htmlsb),$Result.PackageName,$htmlwhite))
+								}
+							}
+						}
+
 						$msg = "Application Packages"
 						$columnWidths = @("200","275")
 						FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 						WriteHTMLLine 0 0 ""
 					}
-					#>
-					#Optimization
-					If($MSword -or $PDF)
-					{
-						WriteWordLine 5 0 "Optimization"
-					}
-					If($Text)
-					{
-						Line 4 "Optimization"
-					}
-					If($HTML)
-					{
-						#nothing
-					}
-					<#
-					If($MSWord -or $PDF)
-					{
-						$ScriptInformation = New-Object System.Collections.ArrayList
-						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
-						$Table = AddWordTable -Hashtable $ScriptInformation `
-						-Columns Data,Value `
-						-List `
-						-Format $wdTableGrid `
-						-AutoFit $wdAutoFitFixed;
 
-						SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
-						SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
-						$Table.Columns.Item(1).Width = 200;
-						$Table.Columns.Item(2).Width = 250;
-
-						$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-						FindWordDocumentEnd
-						$Table = $Null
-						WriteWordLine 0 0 ""
-					}
-					If($Text)
-					{
-						Line 5 "" ""
-						Line 0 ""
-					}
-					If($HTML)
-					{
-						$rowdata = @()
-						$columnHeaders = @("",($Script:htmlsb),"",$htmlwhite)
-						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
-						
-						$msg = "Optimization"
-						$columnWidths = @("200","275")
-						FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-						WriteHTMLLine 0 0 ""
-					}
-					#>
 					#Settings
 					If($MSword -or $PDF)
 					{
@@ -27786,11 +27725,342 @@ Function OutputAVDDetails
 					{
 						#nothing
 					}
-					<#
+					
+					If($AVDHostPool.InheritDefaultAgentSettings)
+					{
+						#do we inherit site defaults?
+						#yes we do, get the default settings for the Site
+						#use the Site default settings
+						<#
+							PS C:\Users\carl.webster> $x = Get-RASAVDDefaultSettings -DefObjType AVDMultiSessionDefaultSettings
+							PS C:\Users\carl.webster> $x | % {$_.psobject.properties | select name, value | sort name}
+
+							Name                Value
+							----                -----
+							Action
+							Agent               RASAdminEngine.Core.OutputModels.HostPool.HostPoolAgentSettings
+							AppPackagesAssigned RASAdminEngine.Core.OutputModels.AppPackagesAssigned
+							AutoUpgrade         RASAdminEngine.Core.OutputModels.HostPool.AutoUpgradeSettings
+							DefObjType          AVDMultiSessionDefaultSettings
+							Optimization        RASAdminEngine.Core.OutputModels.ImagesOptimization.ImageOptimization
+							RDPPrinter          RASAdminEngine.Core.OutputModels.HostPool.RDPPrinterSettings
+							SiteId              1
+							UserProfile         RASAdminEngine.Core.OutputModels.UserProfile.UserProfileSettings
+
+
+							PS C:\Users\carl.webster> $x.agent | % {$_.psobject.properties | select name, value | sort name}
+
+							Name                                    Value
+							----                                    -----
+							AllowRemoteExec                          True
+							AllowURLAndMailRedirection            Enabled
+							AppMonitor                               True
+							DisconnectActiveSessionAfter               25
+							DragAndDropMode                 Bidirectional
+							EnableDriveRedirectionCache              True
+							EnableZOrder                            False
+							FileTransferLocation
+							FileTransferLockLocation                False
+							FileTransferMode                Bidirectional
+							LogoffDisconnectedSessionAfter              1
+							ManageRDPShortpath                      False
+							ManageRDPTransportProtocol           Disabled
+							MaxRDPShortpathPort                     39299
+							MinRDPShortpathPort                     38300
+							SessionReadinessTimeout                   300
+							SupportShellURLNamespaceObjects          True
+							UseRDPShortpath                         False
+							UseSmallerPortRange                     False
+						#>
+						$AVDHostPoolDefaults = Get-RASAVDDefaultSettings -DefObjType AVDMultiSessionDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
+						
+						If($? -and $Null -ne $AVDHostPoolDefaults)
+						{
+							#application session lingering
+							Switch ($AVDHostPoolDefaults.Agent.DisconnectActiveSessionAfter)
+							{
+								0		{$AVDHostPoolDisconnectActiveSessionAfter = "Never"; Break}
+								1		{$AVDHostPoolDisconnectActiveSessionAfter = "1 minute"; Break}
+								5		{$AVDHostPoolDisconnectActiveSessionAfter = "5 minutes"; Break}
+								25		{$AVDHostPoolDisconnectActiveSessionAfter = "25 seconds"; Break}
+								60		{$AVDHostPoolDisconnectActiveSessionAfter = "1 minute"; Break}
+								300		{$AVDHostPoolDisconnectActiveSessionAfter = "5 minutes"; Break}
+								3600	{$AVDHostPoolDisconnectActiveSessionAfter = "1 hour"; Break}
+								Default	{$AVDHostPoolDisconnectActiveSessionAfter = "Unable to determine Application session lingering Disconnect active session timeout: $($AVDHostPoolDefaults.Agent.DisconnectActiveSessionAfter)"; Break}
+							}
+							
+							Switch ($AVDHostPoolDefaults.Agent.LogoffDisconnectedSessionAfter)
+							{
+								0		{$AVDHostPoolLogoffDisconnectedSessionAfter = "Never"; Break}
+								1		{$AVDHostPoolLogoffDisconnectedSessionAfter = "Immediate"; Break}
+								25		{$AVDHostPoolLogoffDisconnectedSessionAfter = "25 seconds"; Break}
+								60		{$AVDHostPoolLogoffDisconnectedSessionAfter = "1 minute"; Break}
+								300		{$AVDHostPoolLogoffDisconnectedSessionAfter = "5 minutes"; Break}
+								3600	{$AVDHostPoolLogoffDisconnectedSessionAfter = "1 hour"; Break}
+								Default	{$AVDHostPoolLogoffDisconnectedSessionAfter = "Unable to determine Application session lingering logoff disconnection session timeout: $($AVDHostPoolDefaults.Agent.LogoffDisconnectedSessionAfter)"; Break}
+							}
+							
+							#Other settings
+							Switch ($AVDHostPoolDefaults.Agent.SessionReadinessTimeout)
+							{
+								25		{$AVDHostPoolSessionReadinessTimeout = "25 seconds"; Break}
+								60		{$AVDHostPoolSessionReadinessTimeout = "1 minute"; Break}
+								300		{$AVDHostPoolSessionReadinessTimeout = "5 minutes"; Break}
+								3600	{$AVDHostPoolSessionReadinessTimeout = "1 hour"; Break}
+								Default	{$AVDHostPoolSessionReadinessTimeout = "Unable to determine session readiness timeout: $($AVDHostPoolDefaults.Agent.SessionReadinessTimeout)"; Break}
+							}
+							
+							Switch($AVDHostPoolDefaults.Agent.AllowURLAndMailRedirection)
+							{
+								"Disabled"						{$AVDHostPoolAllowClientURLMailRedirection = "Disabled"; 
+																 $AVDHostPoolReplaceRegisteredApplication = "False";
+																 $AVDHostPoolSupportShellURLNamespaceObjects = $AVDHostPoolDefaults.Agent.SupportShellURLNamespaceObjects.ToString();
+																 Break}
+								"Enabled"						{$AVDHostPoolAllowClientURLMailRedirection = "Enabled"; 
+																 $AVDHostPoolReplaceRegisteredApplication = "False";
+																 $AVDHostPoolSupportShellURLNamespaceObjects = $AVDHostPoolDefaults.Agent.SupportShellURLNamespaceObjects.ToString();
+																 Break}
+								"EnabledWithAppRegistration"	{$AVDHostPoolAllowClientURLMailRedirection = "Enabled";
+																 $AVDHostPoolReplaceRegisteredApplication = "True";
+																 $AVDHostPoolSupportShellURLNamespaceObjects = "N/A";
+																 Break}
+								Default 						{$AVDHostPoolAllowClientURLMailRedirection = "Unable to determine Allow client URL/Mail redirection: $($AVDHostPoolDefaults.Agent.AllowURLAndMailRedirection)"; 
+																 $AVDHostPoolReplaceRegisteredApplication = "False";
+																 $AVDHostPoolSupportShellURLNamespaceObjects = "False";
+																 Break}
+							}
+							
+							Switch ($AVDHostPoolDefaults.Agent.DragAndDropMode)
+							{
+								"Bidirectional"		{$AVDHostPoolDragAndDrop = "Bidirectional"; 
+													$AVDHostPoolAllowDragAndDrop = "True";
+													Break}
+								"ClientToServer"	{$AVDHostPoolDragAndDrop = "Client to server only"; 
+													$AVDHostPoolAllowDragAndDrop = "True";
+													Break}
+								"Disabled"			{$AVDHostPoolDragAndDrop = "Disabled"; 
+													$AVDHostPoolAllowDragAndDrop = "False";
+													Break}
+								"ServerToClient"	{$AVDHostPoolDragAndDrop = "Server to client only"; 
+													$AVDHostPoolAllowDragAndDrop = "True";
+													Break}
+								Default				{$AVDHostPoolDragAndDrop = "Unable to determine Drag and drop: $($AVDHostPoolDefaults.Agent.DragAndDropMode)"; 
+													$AVDHostPoolAllowDragAndDrop = "False";
+								Break}
+							}
+							
+							If($AVDHostPoolDefaults.Agent.AllowRemoteExec)
+							{
+								$AVDHostPoolAllowRemoteExec = "True"
+							}
+							Else
+							{
+								$AVDHostPoolAllowRemoteExec = "False"
+							}
+							
+							$AVDHostPoolManageRDPShortpath  = $AVDHostPoolDefaults.Agent.ManageRDPShortpath.ToString()
+							$AVDHostPoolUseRDPShortpath     = $AVDHostPoolDefaults.Agent.UseRDPShortpath.ToString()
+							$AVDHostPoolUseSmallerPortRange = $AVDHostPoolDefaults.Agent.UseSmallerPortRange.ToString()
+							$AVDHostPoolMinRDPShortpathPort = $AVDHostPoolDefaults.Agent.MinRDPShortpathPort.ToString()
+							$AVDHostPoolMaxRDPShortpathPort = $AVDHostPoolDefaults.Agent.MaxRDPShortpathPort.ToString()
+
+							Switch ($AVDHostPoolDefaults.Agent.FileTransferMode)
+							{
+								"Bidirectional"		{$AVDHostPoolFileTransferMode = "Bidirectional"; Break}
+								"ClientToServer"	{$AVDHostPoolFileTransferMode = "Client to server only"; Break}
+								"Disabled"			{$AVDHostPoolFileTransferMode = "Disabled"; Break}
+								"ServerToClient"	{$AVDHostPoolFileTransferMode = "Server to client only"; Break}
+								Default				{$AVDHostPoolFileTransferMode = "Unable to determine File Transfer mode: $($AVDHostPoolDefaults.Agent.FileTransferMode)"; Break}
+							}
+
+							If($AVDHostPoolDefaults.Agent.FileTransferLocation -eq "")
+							{
+								$AVDHostPoolFileTransferLocation = "Default download location"
+							}
+							Else
+							{
+								$AVDHostPoolFileTransferLocation = $AVDHostPoolDefaults.FileTransferLocation
+							}
+							
+							$AVDHostPoolFileTransferChangeLocation  = $AVDHostPoolDefaults.Agent.FileTransferLockLocation.ToString()
+							$AVDHostPoolEnableDriveRedirectionCache = $AVDHostPoolDefaults.Agent.EnableDriveRedirectionCache.ToString()
+							$AVDHostPoolEnableZOrder                = $AVDHostPoolDefaults.Agent.EnableZOrder.ToString()
+							
+						}
+						Else
+						{
+							#unable to retrieve default, use built-in default values
+							$AVDHostPoolDisconnectActiveSessionAfter    = "25 seconds"
+							$AVDHostPoolLogoffDisconnectedSessionAfter  = "Immediate"
+							$AVDHostPoolSessionReadinessTimeout         = "25 seconds"
+							$AVDHostPoolAllowClientURLMailRedirection   = "Enabled"
+							$AVDHostPoolReplaceRegisteredApplication    = "False"
+							$AVDHostPoolSupportShellURLNamespaceObjects = "False"
+							$AVDHostPoolDragAndDrop                     = "Bidirectional"
+							$AVDHostPoolAllowDragAndDrop                = "True"
+							$AVDHostPoolAllowRemoteExec                 = "False"
+							$AVDHostPoolManageRDPShortpath              = "False"
+							$AVDHostPoolUseRDPShortpath                 = "False"
+							$AVDHostPoolUseSmallerPortRange             = "False"
+							$AVDHostPoolMinRDPShortpathPort             = "38300"
+							$AVDHostPoolMaxRDPShortpathPort             = "39299"
+							$AVDHostPoolFileTransferMode                = "Bidirectional"
+							$AVDHostPoolFileTransferLocation            = "Default download location"
+							$AVDHostPoolFileTransferChangeLocation      = "False"
+							$AVDHostPoolEnableDriveRedirectionCache     = "False"
+							$AVDHostPoolEnableZOrder                    = "False"
+						}
+					}
+					Else
+					{
+						#we don't inherit settings
+						#get the settings configured for this VDI Pool
+
+						#application session lingering
+						Switch ($AVDHostPool.Agent.DisconnectActiveSessionAfter)
+						{
+							0		{$AVDHostPoolDisconnectActiveSessionAfter = "Never"; Break}
+							1		{$AVDHostPoolDisconnectActiveSessionAfter = "1 minute"; Break}
+							5		{$AVDHostPoolDisconnectActiveSessionAfter = "5 minutes"; Break}
+							25		{$AVDHostPoolDisconnectActiveSessionAfter = "25 seconds"; Break}
+							60		{$AVDHostPoolDisconnectActiveSessionAfter = "1 minute"; Break}
+							300		{$AVDHostPoolDisconnectActiveSessionAfter = "5 minutes"; Break}
+							3600	{$AVDHostPoolDisconnectActiveSessionAfter = "1 hour"; Break}
+							Default	{$AVDHostPoolDisconnectActiveSessionAfter = "Unable to determine Application session lingering Disconnect active session timeout: $($AVDHostPool.Agent.DisconnectActiveSessionAfter)"; Break}
+						}
+						
+						Switch ($AVDHostPool.Agent.LogoffDisconnectedSessionAfter)
+						{
+							0		{$AVDHostPoolLogoffDisconnectedSessionAfter = "Never"; Break}
+							1		{$AVDHostPoolLogoffDisconnectedSessionAfter = "Immediate"; Break}
+							25		{$AVDHostPoolLogoffDisconnectedSessionAfter = "25 seconds"; Break}
+							60		{$AVDHostPoolLogoffDisconnectedSessionAfter = "1 minute"; Break}
+							300		{$AVDHostPoolLogoffDisconnectedSessionAfter = "5 minutes"; Break}
+							3600	{$AVDHostPoolLogoffDisconnectedSessionAfter = "1 hour"; Break}
+							Default	{$AVDHostPoolLogoffDisconnectedSessionAfter = "Unable to determine Application session lingering logoff disconnection session timeout: $($AVDHostPool.Agent.LogoffDisconnectedSessionAfter)"; Break}
+						}
+						
+						#Other settings
+						Switch ($AVDHostPool.Agent.SessionReadinessTimeout)
+						{
+							25		{$AVDHostPoolSessionReadinessTimeout = "25 seconds"; Break}
+							60		{$AVDHostPoolSessionReadinessTimeout = "1 minute"; Break}
+							300		{$AVDHostPoolSessionReadinessTimeout = "5 minutes"; Break}
+							3600	{$AVDHostPoolSessionReadinessTimeout = "1 hour"; Break}
+							Default	{$AVDHostPoolSessionReadinessTimeout = "Unable to determine session readiness timeout: $($AVDHostPool.Agent.SessionReadinessTimeout)"; Break}
+						}
+						
+						Switch($AVDHostPool.Agent.AllowURLAndMailRedirection)
+						{
+							"Disabled"						{$AVDHostPoolAllowClientURLMailRedirection = "Disabled"; 
+															 $AVDHostPoolReplaceRegisteredApplication = "False";
+															 $AVDHostPoolSupportShellURLNamespaceObjects = $AVDHostPool.Agent.SupportShellURLNamespaceObjects.ToString();
+															 Break}
+							"Enabled"						{$AVDHostPoolAllowClientURLMailRedirection = "Enabled"; 
+															 $AVDHostPoolReplaceRegisteredApplication = "False";
+															 $AVDHostPoolSupportShellURLNamespaceObjects = $AVDHostPool.Agent.SupportShellURLNamespaceObjects.ToString();
+															 Break}
+							"EnabledWithAppRegistration"	{$AVDHostPoolAllowClientURLMailRedirection = "Enabled";
+															 $AVDHostPoolReplaceRegisteredApplication = "True";
+															 $AVDHostPoolSupportShellURLNamespaceObjects = "N/A";
+															 Break}
+							Default 						{$AVDHostPoolAllowClientURLMailRedirection = "Unable to determine Allow client URL/Mail redirection: $($AVDHostPool.Agent.AllowURLAndMailRedirection)"; 
+															 $AVDHostPoolReplaceRegisteredApplication = "False";
+															 $AVDHostPoolSupportShellURLNamespaceObjects = "False";
+															 Break}
+						}
+						
+						Switch ($AVDHostPool.Agent.DragAndDropMode)
+						{
+							"Bidirectional"		{$AVDHostPoolDragAndDrop = "Bidirectional"; 
+												$AVDHostPoolAllowDragAndDrop = "True";
+												Break}
+							"ClientToServer"	{$AVDHostPoolDragAndDrop = "Client to server only"; 
+												$AVDHostPoolAllowDragAndDrop = "True";
+												Break}
+							"Disabled"			{$AVDHostPoolDragAndDrop = "Disabled"; 
+												$AVDHostPoolAllowDragAndDrop = "False";
+												Break}
+							"ServerToClient"	{$AVDHostPoolDragAndDrop = "Server to client only"; 
+												$AVDHostPoolAllowDragAndDrop = "True";
+												Break}
+							Default				{$AVDHostPoolDragAndDrop = "Unable to determine Drag and drop: $($AVDHostPool.Agent.DragAndDropMode)"; 
+												$AVDHostPoolAllowDragAndDrop = "False";
+												Break}
+						}
+						
+						If($AVDHostPool.Agent.AllowRemoteExec)
+						{
+							$AVDHostPoolAllowRemoteExec = "True"
+						}
+						Else
+						{
+							$AVDHostPoolAllowRemoteExec = "False"
+						}
+						
+						$AVDHostPoolManageRDPShortpath  = $AVDHostPool.Agent.ManageRDPShortpath.ToString()
+						$AVDHostPoolUseRDPShortpath     = $AVDHostPool.Agent.UseRDPShortpath.ToString()
+						$AVDHostPoolUseSmallerPortRange = $AVDHostPool.Agent.UseSmallerPortRange.ToString()
+						$AVDHostPoolMinRDPShortpathPort = $AVDHostPool.Agent.MinRDPShortpathPort.ToString()
+						$AVDHostPoolMaxRDPShortpathPort = $AVDHostPool.Agent.MaxRDPShortpathPort.ToString()
+
+						Switch ($AVDHostPool.Agent.FileTransferMode)
+						{
+							"Bidirectional"		{$AVDHostPoolFileTransferMode = "Bidirectional"; Break}
+							"ClientToServer"	{$AVDHostPoolFileTransferMode = "Client to server only"; Break}
+							"Disabled"			{$AVDHostPoolFileTransferMode = "Disabled"; Break}
+							"ServerToClient"	{$AVDHostPoolFileTransferMode = "Server to client only"; Break}
+							Default				{$AVDHostPoolFileTransferMode = "Unable to determine File Transfer mode: $($AVDHostPool.Agent.FileTransferMode)"; Break}
+						}
+
+						If($AVDHostPool.Agent.FileTransferLocation -eq "")
+						{
+							$AVDHostPoolFileTransferLocation = "Default download location"
+						}
+						Else
+						{
+							$AVDHostPoolFileTransferLocation = $AVDHostPool.Agent.FileTransferLocation
+						}
+						
+						$AVDHostPoolFileTransferChangeLocation  = $AVDHostPool.Agent.FileTransferLockLocation.ToString()
+						$AVDHostPoolEnableDriveRedirectionCache = $AVDHostPool.Agent.EnableDriveRedirectionCache.ToString()
+						$AVDHostPoolEnableZOrder                = $AVDHostPool.Agent.EnableZOrder.ToString()
+					}
+					
 					If($MSWord -or $PDF)
 					{
 						$ScriptInformation = New-Object System.Collections.ArrayList
-						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+						$ScriptInformation.Add(@{Data = "Inherit default settings"; Value = $AVDHostPool.InheritDefaultAgentSettings.ToString(); }) > $Null
+						$ScriptInformation.Add(@{Data = "Application session lingering"; Value = ""; }) > $Null
+						$ScriptInformation.Add(@{Data = "     Disconnect active session after"; Value = $AVDHostPoolDisconnectActiveSessionAfter; }) > $Null
+						$ScriptInformation.Add(@{Data = "     Logoff disconnected session after"; Value = $AVDHostPoolLogoffDisconnectedSessionAfter; }) > $Null
+						$ScriptInformation.Add(@{Data = "Other settings"; Value = ""; }) > $Null
+						$ScriptInformation.Add(@{Data = "     Session readiness timeout"; Value = $AVDHostPoolSessionReadinessTimeout; }) > $Null
+						$ScriptInformation.Add(@{Data = "     Allow client URL/Mail redirection"; Value = $AVDHostPoolAllowClientURLMailRedirection; }) > $Null
+						$ScriptInformation.Add(@{Data = "          Replace registered application"; Value = $AVDHostPoolReplaceRegisteredApplication; }) > $Null
+						$ScriptInformation.Add(@{Data = "          Support Windows Shell URL namespace objects"; Value = $AVDHostPoolSupportShellURLNamespaceObjects; }) > $Null
+						$ScriptInformation.Add(@{Data = "     Enable Drag and drop"; Value = $AVDHostPoolAllowDragandDrop; }) > $Null
+						$ScriptInformation.Add(@{Data = "          Direction"; Value = $AVDHostPoolDragAndDrop; }) > $Null
+						$ScriptInformation.Add(@{Data = "     Allow 2xRemoteExec to send command to the client"; Value = $AVDHostPoolAllowRemoteExec; }) > $Null
+						$ScriptInformation.Add(@{Data = "     Manage RDP Shortpath"; Value = $AVDHostPoolManageRDPShortpath; }) > $Null
+						If($AVDHostPoolManageRDPShortpath -eq "True")
+						{
+							$ScriptInformation.Add(@{Data = "          Use RDP Shortpath"; Value = $AVDHostPoolUseRDPShortpath; }) > $Null
+							If($AVDHostPoolUseRDPShortpath -eq "True")
+							{
+								$ScriptInformation.Add(@{Data = "          Use a smaller default range of ports"; Value = $AVDHostPoolUseSmallerPortRange; }) > $Null
+								If($AVDHostPoolUseSmallerPortRange -eq "True")
+								{
+									$ScriptInformation.Add(@{Data = ""; Value = "$($AVDHostPoolMinRDPShortpathPort) - $($AVDHostPoolMaxRDPShortpathPort)"; }) > $Null
+								}
+							}
+						}
+						$ScriptInformation.Add(@{Data = "     Allow file transfer command (Web and ChromeOS clients)"; Value = $AVDHostPoolFileTransferMode; }) > $Null
+						$ScriptInformation.Add(@{Data = "          Location"; Value = $AVDHostPoolFileTransferLocation; }) > $Null
+						$ScriptInformation.Add(@{Data = "          Do not allow to change location"; Value = $AVDHostPoolFileTransferChangeLocation; }) > $Null
+						$ScriptInformation.Add(@{Data = "     Enable drive redirection cache"; Value = $AVDHostPoolEnableDriveRedirectionCache; }) > $Null
+						$ScriptInformation.Add(@{Data = "     Enable Z-Order (Experimental)"; Value = $AVDHostPoolEnableZOrder; }) > $Null
+
 						$Table = AddWordTable -Hashtable $ScriptInformation `
 						-Columns Data,Value `
 						-List `
@@ -27800,8 +28070,8 @@ Function OutputAVDDetails
 						SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 						SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-						$Table.Columns.Item(1).Width = 200;
-						$Table.Columns.Item(2).Width = 250;
+						$Table.Columns.Item(1).Width = 325;
+						$Table.Columns.Item(2).Width = 175;
 
 						$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -27811,21 +28081,78 @@ Function OutputAVDDetails
 					}
 					If($Text)
 					{
-						Line 5 "" ""
+						Line 5 "Inherit default settings`t`t`t`t`t: " $AVDHostPool.InheritDefaultAgentSettings.ToString()
+						Line 5 "Application session lingering: " ""
+						Line 6 "Disconnect active session after`t`t`t`t: " $AVDHostPoolDisconnectActiveSessionAfter
+						Line 6 "Logoff disconnected session after`t`t`t: " $AVDHostPoolLogoffDisconnectedSessionAfter
+						Line 5 "Other settings: " ""
+						Line 6 "Session readiness timeout`t`t`t`t: " $AVDHostPoolSessionReadinessTimeout
+						Line 6 "Allow client URL/Mail redirection`t`t`t: " $AVDHostPoolAllowClientURLMailRedirection
+						Line 7 "Replace registered application`t`t`t: " $AVDHostPoolReplaceRegisteredApplication
+						Line 7 "Support Windows Shell URL namespace objects`t: " $AVDHostPoolSupportShellURLNamespaceObjects
+						Line 6 "Enable Drag and drop`t`t`t`t`t: " $AVDHostPoolAllowDragandDrop
+						Line 7 "Direction`t`t`t`t`t: " $AVDHostPoolDragAndDrop
+						Line 6 "Allow 2xRemoteExec to send command to the client`t: " $AVDHostPoolAllowRemoteExec
+						Line 6 "Manage RDP Shortpath`t`t`t`t`t: " $AVDHostPoolManageRDPShortpath
+						If($AVDHostPoolManageRDPShortpath -eq "True")
+						{
+							Line 7 "Use RDP Shortpath`t`t`t`t: " $AVDHostPoolUseRDPShortpath
+							If($AVDHostPoolUseRDPShortpath -eq "True")
+							{
+								Line 7 "Use a smaller default range of ports`t`t: " $AVDHostPoolUseSmallerPortRange
+								If($AVDHostPoolUseSmallerPortRange -eq "True")
+								{
+									Line 12 "  $($AVDHostPoolMinRDPShortpathPort) - $($AVDHostPoolMaxRDPShortpathPort)"
+								}
+							}
+						}
+						Line 6 "Allow file transfer command (Web and ChromeOS clients)`t: " $AVDHostPoolFileTransferMode
+						Line 7 "Location`t`t`t`t`t: "  $AVDHostPoolFileTransferLocation
+						Line 7 "Do not allow to change location`t`t`t: " $AVDHostPoolFileTransferChangeLocation
+						Line 6 "Enable drive redirection cache`t`t`t`t: " $AVDHostPoolEnableDriveRedirectionCache
+						Line 6 "Enable Z-Order (Experimental)`t`t`t`t: " $AVDHostPoolEnableZOrder
 						Line 0 ""
 					}
 					If($HTML)
 					{
 						$rowdata = @()
-						$columnHeaders = @("",($Script:htmlsb),"",$htmlwhite)
-						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
-						
+						$columnHeaders = @("Inherit default settings",($Script:htmlsb),$AVDHostPool.InheritDefaultAgentSettings.ToString(),$htmlwhite)
+						$rowdata += @(,("Application session lingering",($Script:htmlsb),"",$htmlwhite))
+						$rowdata += @(,("     Disconnect active session after",($Script:htmlsb),$AVDHostPoolDisconnectActiveSessionAfter,$htmlwhite))
+						$rowdata += @(,("     Logoff disconnected session after",($Script:htmlsb),$AVDHostPoolLogoffDisconnectedSessionAfter,$htmlwhite))
+						$rowdata += @(,("Other settings",($Script:htmlsb),"",$htmlwhite))
+						$rowdata += @(,("     Session readiness timeout",($Script:htmlsb),$AVDHostPoolSessionReadinessTimeout,$htmlwhite))
+						$rowdata += @(,("     Allow client URL/Mail redirection",($Script:htmlsb),$AVDHostPoolAllowClientURLMailRedirection,$htmlwhite))
+						$rowdata += @(,("          Replace registered application",($Script:htmlsb),$AVDHostPoolReplaceRegisteredApplication,$htmlwhite))
+						$rowdata += @(,("          Support Windows Shell URL namespace objects",($Script:htmlsb),$AVDHostPoolSupportShellURLNamespaceObjects,$htmlwhite))
+						$rowdata += @(,("     Enable Drag and drop",($Script:htmlsb),$AVDHostPoolAllowDragandDrop,$htmlwhite))
+						$rowdata += @(,("          Direction",($Script:htmlsb),$AVDHostPoolDragAndDrop,$htmlwhite))
+						$rowdata += @(,("     Allow 2xRemoteExec to send command to the client",($Script:htmlsb),$AVDHostPoolAllowRemoteExec,$htmlwhite))
+						$rowdata += @(,("     Manage RDP Shortpath",($Script:htmlsb),$AVDHostPoolManageRDPShortpath,$htmlwhite))
+						If($AVDHostPoolManageRDPShortpath -eq "True")
+						{
+							$rowdata += @(,("          Use RDP Shortpath",($Script:htmlsb),$AVDHostPoolUseRDPShortpath,$htmlwhite))
+							If($AVDHostPoolUseRDPShortpath -eq "True")
+							{
+								$rowdata += @(,("          Use a smaller default range of ports",($Script:htmlsb),$AVDHostPoolUseSmallerPortRange,$htmlwhite))
+								If($AVDHostPoolUseSmallerPortRange -eq "True")
+								{
+									$rowdata += @(,("",($Script:htmlsb),"$($AVDHostPoolMinRDPShortpathPort) - $($AVDHostPoolMaxRDPShortpathPort)",$htmlwhite))
+								}
+							}
+						}
+						$rowdata += @(,("     Allow file transfer command (Web and ChromeOS clients)",($Script:htmlsb),$AVDHostPoolFileTransferMode,$htmlwhite))
+						$rowdata += @(,("          Location",($Script:htmlsb),$AVDHostPoolFileTransferLocation,$htmlwhite))
+						$rowdata += @(,("          Do not allow to change location",($Script:htmlsb),$AVDHostPoolFileTransferChangeLocation,$htmlwhite))
+						$rowdata += @(,("     Enable drive redirection cache",($Script:htmlsb),$AVDHostPoolEnableDriveRedirectionCache,$htmlwhite))
+						$rowdata += @(,("     Enable Z-Order (Experimental)",($Script:htmlsb),$AVDHostPoolEnableZOrder,$htmlwhite))
+
 						$msg = "Settings"
-						$columnWidths = @("200","275")
+						$columnWidths = @("400","200")
 						FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 						WriteHTMLLine 0 0 ""
 					}
-					#>
+
 					#RDP printer
 					If($MSword -or $PDF)
 					{
@@ -28149,10 +28476,10 @@ Function OutputAVDDetails
 						-Format $wdTableGrid `
 						-AutoFit $wdAutoFitFixed;
 
-						SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+						SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 						SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-						$Table.Columns.Item(1).Width = 300;
+						$Table.Columns.Item(1).Width = 350;
 						$Table.Columns.Item(2).Width = 250;
 
 						$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
@@ -28239,7 +28566,7 @@ Function OutputAVDDetails
 						}
 
 						$msg = "Auto-upgrade"
-						$columnWidths = @("300","275")
+						$columnWidths = @("350","275")
 						FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 						WriteHTMLLine 0 0 ""
 					}
@@ -29020,7 +29347,7 @@ Function OutputProvidersDetails
 				}
 
 				$msg = "General"
-				$columnWidths = @("200","275")
+				$columnWidths = @("200","400")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 			}
@@ -29048,13 +29375,19 @@ Function OutputProvidersDetails
 				ADType						AzureADDS (Azure AD DS)
 			#>
 			
-			$ADType = ""
-			Switch ($Provider.ADType)
+			If(ValidObject $Provider ADType)
 			{
-				3					{$ADType = "Windows Server AD DS (objectGUID String)"; Break}
-				"AzureADDS"			{$ADType = "Azure AD DS"; Break}
-				"WindowsServerADDS"	{$ADType = "Windows Server AD DS (objectGUID)"; Break}
-				Default				{$ADType = "Unable to determine Active Directory Domain Services type: $($Provider.ADType)"; Break}
+				Switch ($Provider.ADType)
+				{
+					3					{$ADType = "Windows Server AD DS (objectGUID String)"; Break}
+					"AzureADDS"			{$ADType = "Azure AD DS"; Break}
+					"WindowsServerADDS"	{$ADType = "Windows Server AD DS (objectGUID)"; Break}
+					Default				{$ADType = "Unable to determine Active Directory Domain Services type: $($Provider.ADType)"; Break}
+				}
+			}
+			Else
+			{
+				$ADType = ""
 			}
 			
 			
@@ -29099,7 +29432,7 @@ Function OutputProvidersDetails
 				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 250;
+				$Table.Columns.Item(1).Width = 350;
 				$Table.Columns.Item(2).Width = 250;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
@@ -29173,7 +29506,7 @@ Function OutputProvidersDetails
 				}
 
 				$msg = "Credentials"
-				$columnWidths = @("300","350")
+				$columnWidths = @("350","350")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 			}
@@ -31497,9 +31830,35 @@ Function OutputEnrollmentServersDetails
 	}
 	Else
 	{
+		If($MSWord -or $PDF)
+		{
+			WriteWordLine 3 0 "Enrollment Servers"
+		}
+		If($Text)
+		{
+			Line 2 "Enrollment Servers"
+		}
+		If($HTML)
+		{
+			WriteHTMLLine 3 0 "Enrollment Servers"
+		}
+
 		ForEach($EnrollmentServer in $EnrollmentServers)
 		{
 			Write-Verbose "$(Get-Date -Format G): `t`t$($EnrollmentServer.Server)"
+			
+			If($MSWord -or $PDF)
+			{
+				WriteWordLine 4 0 "Enrollment Server $($EnrollmentServer.Server)"
+			}
+			If($Text)
+			{
+				Line 3 "Enrollment Server $($EnrollmentServer.Server)"
+			}
+			If($HTML)
+			{
+				WriteHTMLLine 4 0 "Enrollment Server $($EnrollmentServer.Server)"
+			}
 			
 			<#
 				PS C:\Parallels-RAS-V19.x-Doc-Script-4.00> Get-RASEnrollmentServerStatus | fl
@@ -31579,10 +31938,9 @@ Function OutputEnrollmentServersDetails
 			{
 				$EnrollmentServerStatus = GetRASStatus $ESStatus.AgentState
 			}
-
+			
 			If($MSWord -or $PDF)
 			{
-				WriteWordLine 3 0 "Enrollment Server $($EnrollmentServer.Server)"
 				$ScriptInformation = New-Object System.Collections.ArrayList
 				$ScriptInformation.Add(@{Data = "Name"; Value = $EnrollmentServer.Server; }) > $Null
 				$ScriptInformation.Add(@{Data = "Enabled"; Value = $EnrollmentServer.Enabled.ToString(); }) > $Null
@@ -31615,22 +31973,20 @@ Function OutputEnrollmentServersDetails
 			}
 			If($Text)
 			{
-				Line 2 "Enrollment Server $($EnrollmentServer.Server)"
-				Line 3 "Name`t`t`t: " $EnrollmentServer.Server
-				Line 3 "Enabled`t`t`t: " $EnrollmentServer.Enabled.ToString()
-				Line 3 "Status`t`t`t: " $EnrollmentServerStatus
-				Line 3 "Description`t`t: " $EnrollmentServer.Description
-				Line 3 "Log level`t`t: " $ESStatus.LogLevel
-				Line 3 "Last modification by`t: " $EnrollmentServer.AdminLastMod
-				Line 3 "Modified on`t`t: " (Get-Date -UFormat "%c" $EnrollmentServer.TimeLastMod)
-				Line 3 "Created by`t`t: " $EnrollmentServer.AdminCreate
-				Line 3 "Created on`t`t: " (Get-Date -UFormat "%c" $EnrollmentServer.TimeCreate)
-				Line 3 "ID`t`t`t: " $EnrollmentServer.Id.ToString()
+				Line 4 "Name`t`t`t: " $EnrollmentServer.Server
+				Line 4 "Enabled`t`t`t: " $EnrollmentServer.Enabled.ToString()
+				Line 4 "Status`t`t`t: " $EnrollmentServerStatus
+				Line 4 "Description`t`t: " $EnrollmentServer.Description
+				Line 4 "Log level`t`t: " $ESStatus.LogLevel
+				Line 4 "Last modification by`t: " $EnrollmentServer.AdminLastMod
+				Line 4 "Modified on`t`t: " (Get-Date -UFormat "%c" $EnrollmentServer.TimeLastMod)
+				Line 4 "Created by`t`t: " $EnrollmentServer.AdminCreate
+				Line 4 "Created on`t`t: " (Get-Date -UFormat "%c" $EnrollmentServer.TimeCreate)
+				Line 4 "ID`t`t`t: " $EnrollmentServer.Id.ToString()
 				Line 0 ""
 			}
 			If($HTML)
 			{
-				WriteHTMLLine 3 0 "Enrollment Server $($EnrollmentServer.Server)"
 				$rowdata = @()
 				$columnHeaders = @("Name",($Script:htmlsb),$EnrollmentServer.Server,$htmlwhite)
 				$rowdata += @(,("Enabled",($Script:htmlsb),$EnrollmentServer.Enabled.ToString(),$htmlwhite))
@@ -31651,11 +32007,11 @@ Function OutputEnrollmentServersDetails
 			
 			If($MSWord -or $PDF)
 			{
-				WriteWordLine 4 0 "Properties"
+				WriteWordLine 4 0 "General"
 			}
 			If($Text)
 			{
-				Line 2 "Properties"
+				Line 4 "General"
 			}
 			If($HTML)
 			{
@@ -31699,10 +32055,10 @@ Function OutputEnrollmentServersDetails
 			}
 			If($Text)
 			{
-				Line 3 "Enable Enrollment Server`t: " $EnrollmentServer.Enabled.ToString()
-				Line 3 "Server`t`t`t`t: " $EnrollmentServer.Server
-				Line 3 "Description`t`t`t: " $EnrollmentServer.Description
-				Line 3 "Preferred Connection Broker`t: " $EnrollmentServerPreferredConnectionBroker
+				Line 5 "Enable Enrollment Server`t: " $EnrollmentServer.Enabled.ToString()
+				Line 5 "Server`t`t`t`t: " $EnrollmentServer.Server
+				Line 5 "Description`t`t`t: " $EnrollmentServer.Description
+				Line 5 "Preferred Connection Broker`t: " $EnrollmentServerPreferredConnectionBroker
 				Line 0 ""
 			}
 			If($HTML)
@@ -31713,7 +32069,7 @@ Function OutputEnrollmentServersDetails
 				$rowdata += @(,("Description",($Script:htmlsb),$EnrollmentServer.Description,$htmlwhite))
 				$rowdata += @(,("Preferred Connection Broker",($Script:htmlsb),$EnrollmentServerPreferredConnectionBroker,$htmlwhite))
 
-				$msg = "Properties"
+				$msg = "General"
 				$columnWidths = @("200","275")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
@@ -31780,7 +32136,7 @@ Function OutputEnrollmentServersDetails
 			}
 			If($Text)
 			{
-				Line 1 "AD Integration"
+				Line 2 "AD Integration"
 			}
 			If($HTML)
 			{
@@ -31807,7 +32163,7 @@ Function OutputEnrollmentServersDetails
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 				$Table.Columns.Item(1).Width = 200;
-				$Table.Columns.Item(2).Width = 250;
+				$Table.Columns.Item(2).Width = 300;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -31817,12 +32173,12 @@ Function OutputEnrollmentServersDetails
 			}
 			If($Text)
 			{
-				Line 2 "Certificate authority (CA)"
-				Line 3 "Certificate authority`t: " $ADIntegration.CertificateAuthority
-				Line 2 "Enrollment agent"
-				Line 3 "Username`t`t: " $ADIntegration.EnrollmentAgentUsername
-				Line 2 "NLA user"
-				Line 3 "Username`t`t: " $ADIntegration.NLAUsername
+				Line 3 "Certificate authority (CA)"
+				Line 4 "Certificate authority`t: " $ADIntegration.CertificateAuthority
+				Line 3 "Enrollment agent"
+				Line 4 "Username`t`t: " $ADIntegration.EnrollmentAgentUsername
+				Line 3 "NLA user"
+				Line 4 "Username`t`t: " $ADIntegration.NLAUsername
 				Line 0 ""
 			}
 			If($HTML)
@@ -31836,7 +32192,7 @@ Function OutputEnrollmentServersDetails
 				$rowdata += @(,("     Username",($Script:htmlsb),$ADIntegration.NLAUsername,$htmlwhite))
 
 				$msg = "AD Integration"
-				$columnWidths = @("200","275")
+				$columnWidths = @("200","350")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 			}
@@ -32905,8 +33261,9 @@ Function OutputThemesDetails
 				WriteWordLine 3 0 "Theme $($Theme.Name)"
 				$ScriptInformation = New-Object System.Collections.ArrayList
 				$ScriptInformation.Add(@{Data = "Name"; Value = $Theme.Name; }) > $Null
+				$ScriptInformation.Add(@{Data = "Enabled"; Value = $Theme.Enabled.ToString(); }) > $Null
 				$ScriptInformation.Add(@{Data = "Description"; Value = $Theme.Description; }) > $Null
-				$ScriptInformation.Add(@{Data = "HTML5 URL"; Value = $ThemeUserPortalURL; }) > $Null
+				$ScriptInformation.Add(@{Data = "User Portal URL"; Value = $ThemeUserPortalURL; }) > $Null
 				$ScriptInformation.Add(@{Data = "Last modification by"; Value = $Theme.AdminLastMod; }) > $Null
 				$ScriptInformation.Add(@{Data = "Modified on"; Value = (Get-Date -UFormat "%c" $Theme.TimeLastMod); }) > $Null
 				$ScriptInformation.Add(@{Data = "Created by"; Value = $Theme.AdminCreate; }) > $Null
@@ -32936,7 +33293,7 @@ Function OutputThemesDetails
 				Line 2 "Theme $($Theme.Name)"
 				Line 3 "Name`t`t`t: " $Theme.Name
 				Line 3 "Description`t`t: " $Theme.Description
-				Line 3 "HTML5 URL`t`t: " $ThemeUserPortalURL
+				Line 3 "User Portal URL`t`t: " $ThemeUserPortalURL
 				Line 3 "Last modification by`t: " $Theme.AdminLastMod
 				Line 3 "Modified on`t`t: " (Get-Date -UFormat "%c" $Theme.TimeLastMod)
 				Line 3 "Created by`t`t: " $Theme.AdminCreate
@@ -32952,7 +33309,7 @@ Function OutputThemesDetails
 				$rowdata = @()
 				$columnHeaders = @("Name",($Script:htmlsb),$ThemeName,$htmlwhite)
 				$rowdata += @(,("Description",($Script:htmlsb),$Theme.Description,$htmlwhite))
-				$rowdata += @(,("HTML5 URL",($Script:htmlsb),$ThemeUserPortalURL,$htmlwhite))
+				$rowdata += @(,("User Portal URL",($Script:htmlsb),$ThemeUserPortalURL,$htmlwhite))
 				$rowdata += @(,("Last modification by",($Script:htmlsb), $Theme.AdminLastMod,$htmlwhite))
 				$rowdata += @(,("Modified on",($Script:htmlsb), (Get-Date -UFormat "%c" $Theme.TimeLastMod),$htmlwhite))
 				$rowdata += @(,("Created by",($Script:htmlsb), $Theme.AdminCreate,$htmlwhite))
@@ -33004,10 +33361,10 @@ Function OutputThemesDetails
 				-Format $wdTableGrid `
 				-AutoFit $wdAutoFitFixed;
 
-				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 200;
+				$Table.Columns.Item(1).Width = 300;
 				$Table.Columns.Item(2).Width = 250;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
@@ -33108,10 +33465,10 @@ Function OutputThemesDetails
 				-Format $wdTableGrid `
 				-AutoFit $wdAutoFitFixed;
 
-				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 200;
+				$Table.Columns.Item(1).Width = 300;
 				$Table.Columns.Item(2).Width = 250;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
@@ -33161,7 +33518,7 @@ Function OutputThemesDetails
 				$rowdata += @(,("SAML Single Sign-in IdP",($Script:htmlsb),$SAMLProvider,$htmlwhite))
 				
 				$msg = "Access"
-				$columnWidths = @("200","400")
+				$columnWidths = @("350","400")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 			}
@@ -33284,10 +33641,10 @@ Function OutputThemesDetails
 				-Format $wdTableGrid `
 				-AutoFit $wdAutoFitFixed;
 
-				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 200;
+				$Table.Columns.Item(1).Width = 300;
 				$Table.Columns.Item(2).Width = 250;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
@@ -33378,7 +33735,7 @@ Function OutputThemesDetails
 				$rowdata += @(,("Override download URL for branded Parallels Client (Windows)",($Script:htmlsb),$ThemeOverrideDownloadURL,$htmlwhite))
 
 				$msg = "User Portal (Web client)/URLs"
-				$columnWidths = @("200","400")
+				$columnWidths = @("350","400")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 
@@ -33439,11 +33796,11 @@ Function OutputThemesDetails
 				-Format $wdTableGrid `
 				-AutoFit $wdAutoFitFixed;
 
-				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 				$Table.Columns.Item(1).Width = 200;
-				$Table.Columns.Item(2).Width = 250;
+				$Table.Columns.Item(2).Width = 400;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -33468,7 +33825,7 @@ Function OutputThemesDetails
 				$rowdata += @(,("Favicon icon",($Script:htmlsb),$ThemeFaviconIcon,$htmlwhite))
 
 				$msg = "User Portal (Web client)/Branding"
-				$columnWidths = @("200","275")
+				$columnWidths = @("200","500")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 			}
@@ -33991,10 +34348,10 @@ Function OutputThemesDetails
 				-Format $wdTableGrid `
 				-AutoFit $wdAutoFitFixed;
 
-				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 200;
+				$Table.Columns.Item(1).Width = 300;
 				$Table.Columns.Item(2).Width = 250;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
@@ -34102,7 +34459,7 @@ Function OutputThemesDetails
 				}
 
 				$msg = "User Portal (Web client)/Secure Gateway"
-				$columnWidths = @("300","300")
+				$columnWidths = @("350","300")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 			}
@@ -34195,11 +34552,11 @@ Function OutputThemesDetails
 				-Format $wdTableGrid `
 				-AutoFit $wdAutoFitFixed;
 
-				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 				$Table.Columns.Item(1).Width = 200;
-				$Table.Columns.Item(2).Width = 250;
+				$Table.Columns.Item(2).Width = 400;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -34224,7 +34581,7 @@ Function OutputThemesDetails
 				$rowdata += @(,("Application icon",($Script:htmlsb),$ThemeApplicationIcon,$htmlwhite))
 
 				$msg = "Windows client/Branding"
-				$columnWidths = @("200","275")
+				$columnWidths = @("200","400")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 			}
@@ -34909,7 +35266,7 @@ Function OutputApplicationPackagesDetails
 
 				$ScriptInformation.Add(@{Data = "Publisher"; Value = $AppPackage.Publisher; }) > $Null
 				$ScriptInformation.Add(@{Data = "Certificate expiration date"; Value = (Get-Date -UFormat "%c" $AppPackage.Certificate.ExpirationDate); }) > $Null
-				$ScriptInformation.Add(@{Data = "Type"; Value = ""; }) > $Null
+				#$ScriptInformation.Add(@{Data = "Type"; Value = ""; }) > $Null
 				$ScriptInformation.Add(@{Data = "Image path"; Value = $AppPackage.MSIXImagePath; }) > $Null
 				$ScriptInformation.Add(@{Data = "Dependencies"; Value = ""; }) > $Null
 				
@@ -34975,7 +35332,7 @@ Function OutputApplicationPackagesDetails
 
 				Line 2 "Publisher`t`t`t: " $AppPackage.Publisher
 				Line 2 "Certificate expiration date`t: " (Get-Date -UFormat "%c" $AppPackage.Certificate.ExpirationDate)
-				Line 2 "Type`t`t`t`t: " "type"
+				#Line 2 "Type`t`t`t`t: " "type"
 				Line 2 "Image path`t`t`t: " $AppPackage.MSIXImagePath
 				Line 2 "Dependencies`t`t`t: " "depends"
 				
@@ -35027,7 +35384,7 @@ Function OutputApplicationPackagesDetails
 
 				$rowdata += @(,("Publisher",($Script:htmlsb),$AppPackage.Publisher,$htmlwhite))
 				$rowdata += @(,("Certificate expiration date",($Script:htmlsb),(Get-Date -UFormat "%c" $AppPackage.Certificate.ExpirationDate),$htmlwhite))
-				$rowdata += @(,("Type",($Script:htmlsb),"",$htmlwhite))
+				#$rowdata += @(,("Type",($Script:htmlsb),"",$htmlwhite))
 				$rowdata += @(,("Image path",($Script:htmlsb),$AppPackage.MSIXImagePath,$htmlwhite))
 				$rowdata += @(,("Dependencies",($Script:htmlsb),"",$htmlwhite))
 				
@@ -36342,7 +36699,7 @@ Function OutputCPUOptimizationSettings
 		SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 		SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-		$Table.Columns.Item(1).Width = 275;
+		$Table.Columns.Item(1).Width = 300;
 		$Table.Columns.Item(2).Width = 150;
 
 		$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
@@ -36425,7 +36782,7 @@ Function OutputCPUOptimizationSettings
 
 		$rowdata += @(,("Settings are replicated to all Sites",($Script:htmlsb),$RASCPUSettings.Replicate.ToString(),$htmlwhite))
 		$msg = ""
-		$columnWidths = @("300","175")
+		$columnWidths = @("350","175")
 		FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 		WriteHTMLLine 0 0 ""
 	}
@@ -37327,10 +37684,10 @@ Function OutputPublishingSettings
 				-Format $wdTableGrid `
 				-AutoFit $wdAutoFitFixed;
 
-				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 200;
+				$Table.Columns.Item(1).Width = 300;
 				$Table.Columns.Item(2).Width = 300;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
@@ -37724,7 +38081,7 @@ Function OutputPublishingSettings
 				$rowdata += @(,("Exclude from session prelaunch",($Script:htmlsb),$PubItem.ExcludePrelaunch.ToString(),$htmlwhite))
 
 				$msg = "Application"
-				$columnWidths = @("200","300")
+				$columnWidths = @("250","300")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 				
@@ -37981,10 +38338,10 @@ Function OutputPublishingSettings
 				-Format $wdTableGrid `
 				-AutoFit $wdAutoFitFixed;
 
-				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 200;
+				$Table.Columns.Item(1).Width = 300;
 				$Table.Columns.Item(2).Width = 300;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
@@ -38386,7 +38743,7 @@ Function OutputPublishingSettings
 				$rowdata += @(,("Exclude from session prelaunch",($Script:htmlsb),$PubItem.ExcludePrelaunch.ToString(),$htmlwhite))
 
 				$msg = ""
-				$columnWidths = @("200","300")
+				$columnWidths = @("250","300")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 
@@ -38679,10 +39036,10 @@ Function OutputPublishingSettings
 				-Format $wdTableGrid `
 				-AutoFit $wdAutoFitFixed;
 
-				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 200;
+				$Table.Columns.Item(1).Width = 300;
 				$Table.Columns.Item(2).Width = 300;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
@@ -38777,10 +39134,10 @@ Function OutputPublishingSettings
 				-Format $wdTableGrid `
 				-AutoFit $wdAutoFitFixed;
 
-				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 200;
+				$Table.Columns.Item(1).Width = 300;
 				$Table.Columns.Item(2).Width = 300;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
@@ -39510,7 +39867,7 @@ Function OutputPublishingSettings
 				}
 
 				$msg = ""
-				$columnWidths = @("200","300")
+				$columnWidths = @("300","300")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 
@@ -39580,7 +39937,7 @@ Function OutputPublishingSettings
 				$rowdata += @(,("Exclude from session prelaunch",($Script:htmlsb),$PubItem.ExcludePrelaunch.ToString(),$htmlwhite))
 
 				$msg = "Application"
-				$columnWidths = @("200","300")
+				$columnWidths = @("300","300")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 				
@@ -40019,10 +40376,10 @@ Function OutputPublishingSettings
 				-Format $wdTableGrid `
 				-AutoFit $wdAutoFitFixed;
 
-				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 200;
+				$Table.Columns.Item(1).Width = 300;
 				$Table.Columns.Item(2).Width = 300;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
@@ -40455,7 +40812,7 @@ Function OutputPublishingSettings
 				}
 
 				$msg = ""
-				$columnWidths = @("200","300")
+				$columnWidths = @("300","300")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 
@@ -40559,7 +40916,7 @@ Function OutputPublishingSettings
 				$rowdata += @(,("Multi-Monitor",($Script:htmlsb),$AllowMultiMonitor,$htmlwhite))
 
 				$msg = "Properties"
-				$columnWidths = @("200","300")
+				$columnWidths = @("300","300")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 
@@ -40729,10 +41086,10 @@ Function OutputPublishingSettings
 				-Format $wdTableGrid `
 				-AutoFit $wdAutoFitFixed;
 
-				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 200;
+				$Table.Columns.Item(1).Width = 300;
 				$Table.Columns.Item(2).Width = 300;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
@@ -40865,10 +41222,10 @@ Function OutputPublishingSettings
 				-Format $wdTableGrid `
 				-AutoFit $wdAutoFitFixed;
 
-				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 200;
+				$Table.Columns.Item(1).Width = 300;
 				$Table.Columns.Item(2).Width = 300;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
@@ -41267,7 +41624,7 @@ Function OutputPublishingSettings
 				}
 
 				$msg = ""
-				$columnWidths = @("200","300")
+				$columnWidths = @("300","300")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 
@@ -41362,7 +41719,7 @@ Function OutputPublishingSettings
 				$rowdata += @(,("Start automatically when user logs on",($Script:htmlsb),$PubItem.StartOnLogon.ToString(),$htmlwhite))
 
 				$msg = "Application"
-				$columnWidths = @("200","300")
+				$columnWidths = @("300","300")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 				
@@ -41681,10 +42038,10 @@ Function OutputPublishingSettings
 				-Format $wdTableGrid `
 				-AutoFit $wdAutoFitFixed;
 
-				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 200;
+				$Table.Columns.Item(1).Width = 300;
 				$Table.Columns.Item(2).Width = 300;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
@@ -42143,7 +42500,7 @@ Function OutputPublishingSettings
 				$rowdata += @(,("Start automatically when user logs on",($Script:htmlsb),$PubItem.StartOnLogon.ToString(),$htmlwhite))
 
 				$msg = "Desktop"
-				$columnWidths = @("200","300")
+				$columnWidths = @("300","300")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 				
@@ -42480,10 +42837,10 @@ Function OutputPublishingSettings
 				-Format $wdTableGrid `
 				-AutoFit $wdAutoFitFixed;
 
-				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 200;
+				$Table.Columns.Item(1).Width = 300;
 				$Table.Columns.Item(2).Width = 300;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
@@ -43121,7 +43478,7 @@ Function OutputPublishingSettings
 				$rowdata += @(,("Exclude from session prelaunch",($Script:htmlsb),$PubItem.ExcludePrelaunch.ToString(),$htmlwhite))
 
 				$msg = "Application"
-				$columnWidths = @("200","300")
+				$columnWidths = @("300","300")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 				
@@ -43512,10 +43869,10 @@ Function OutputPublishingSettings
 				-Format $wdTableGrid `
 				-AutoFit $wdAutoFitFixed;
 
-				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 200;
+				$Table.Columns.Item(1).Width = 300;
 				$Table.Columns.Item(2).Width = 300;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
@@ -43883,7 +44240,7 @@ Function OutputPublishingSettings
 				$rowdata += @(,("Exclude from session prelaunch",($Script:htmlsb),$PubItem.ExcludePrelaunch.ToString(),$htmlwhite))
 
 				$msg = "Desktop"
-				$columnWidths = @("200","300")
+				$columnWidths = @("300","300")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 				
@@ -44135,10 +44492,10 @@ Function OutputPublishingSettings
 				-Format $wdTableGrid `
 				-AutoFit $wdAutoFitFixed;
 
-				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 200;
+				$Table.Columns.Item(1).Width = 300;
 				$Table.Columns.Item(2).Width = 300;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
@@ -44163,10 +44520,10 @@ Function OutputPublishingSettings
 				-Format $wdTableGrid `
 				-AutoFit $wdAutoFitFixed;
 
-				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 200;
+				$Table.Columns.Item(1).Width = 300;
 				$Table.Columns.Item(2).Width = 300;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
@@ -44670,7 +45027,7 @@ Function OutputPublishingSettings
 				}
 			
 				$msg = ""
-				$columnWidths = @("200","300")
+				$columnWidths = @("300","300")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 
@@ -44684,7 +45041,7 @@ Function OutputPublishingSettings
 				$rowdata += @(,("Start automatically when user logs on",($Script:htmlsb),$PubItem.StartOnLogon.ToString(),$htmlwhite))
 
 				$msg = ""
-				$columnWidths = @("200","300")
+				$columnWidths = @("300","300")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 
@@ -47509,8 +47866,8 @@ Function OutputUniversalPrinterDriversSettings
 			SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 			SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-			$Table.Columns.Item(1).Width = 275;
-			$Table.Columns.Item(2).Width = 100;
+			$Table.Columns.Item(1).Width = 225;
+			$Table.Columns.Item(2).Width = 275;
 
 			$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -47531,7 +47888,7 @@ Function OutputUniversalPrinterDriversSettings
 			$rowdata += @(,("Settings are replicated to all Sites",($Script:htmlsb),$RASPrinterSettings.ReplicatePrinterDrivers.ToString(),$htmlwhite))
 
 			$msg = ""
-			$columnWidths = @("300","100")
+			$columnWidths = @("300","275")
 			FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 			WriteHTMLLine 0 0 ""
 		}
@@ -55411,10 +55768,10 @@ Function OutputMFASetting
 				-Format $wdTableGrid `
 				-AutoFit $wdAutoFitFixed;
 
-				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 250;
+				$Table.Columns.Item(1).Width = 325;
 				$Table.Columns.Item(2).Width = 175;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
@@ -56069,7 +56426,7 @@ Function OutputMFASetting
 				}
 
 				$msg = "Provider settings"
-				$columnWidths = @("300","175")
+				$columnWidths = @("425","175")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 			}
@@ -56292,10 +56649,10 @@ Function OutputSAMLSetting
 			-Format $wdTableGrid `
 			-AutoFit $wdAutoFitFixed;
 
-			SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+			SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 			SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-			$Table.Columns.Item(1).Width = 200;
+			$Table.Columns.Item(1).Width = 250;
 			$Table.Columns.Item(2).Width = 250;
 
 			$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
@@ -56323,7 +56680,7 @@ Function OutputSAMLSetting
 			$rowdata += @(,("Allow unencrypted assertion",($Script:htmlsb),$SAMLSetting.AllowUnencryptedAssertion.ToString(),$htmlwhite))
 
 			$msg = "IdP"
-			$columnWidths = @("200","275")
+			$columnWidths = @("250","275")
 			FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 			WriteHTMLLine 0 0 ""
 		}
@@ -56727,7 +57084,7 @@ Function OutputRASAllowedDevicesSetting
 		$columnHeaders = @("Mode",($Script:htmlsb),$RASAllowedDevicesAllowClientMode,$htmlwhite)
 
 		$msg = "Device Access"
-		$columnWidths = @("300","175")
+		$columnWidths = @("100","350")
 		FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 		WriteHTMLLine 0 0 ""
 
@@ -64138,8 +64495,8 @@ ProcessScriptEnd
 # SIG # Begin signature block
 # MIIthQYJKoZIhvcNAQcCoIItdjCCLXICAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUCH5cS1ws+6UfqhBpmMYF0ysG
-# yt2ggibfMIIFjTCCBHWgAwIBAgIQDpsYjvnQLefv21DiCEAYWjANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUHdzdT92ETGHaJs/lpM2tnTDI
+# iuKggibfMIIFjTCCBHWgAwIBAgIQDpsYjvnQLefv21DiCEAYWjANBgkqhkiG9w0B
 # AQwFADBlMQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYD
 # VQQLExB3d3cuZGlnaWNlcnQuY29tMSQwIgYDVQQDExtEaWdpQ2VydCBBc3N1cmVk
 # IElEIFJvb3QgQ0EwHhcNMjIwODAxMDAwMDAwWhcNMzExMTA5MjM1OTU5WjBiMQsw
@@ -64350,33 +64707,33 @@ ProcessScriptEnd
 # UzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/BgNVBAMTOERpZ2lDZXJ0IFRy
 # dXN0ZWQgRzQgQ29kZSBTaWduaW5nIFJTQTQwOTYgU0hBMzg0IDIwMjEgQ0ExAhAL
 # bN+2Z4EOKufLWhG6HUlwMAkGBSsOAwIaBQCgQDAZBgkqhkiG9w0BCQMxDAYKKwYB
-# BAGCNwIBBDAjBgkqhkiG9w0BCQQxFgQUkxAXCe3F7ZqIP4NpwCnzbHh63TUwDQYJ
-# KoZIhvcNAQEBBQAEggIApWHUyGFgUIxRlbeS8SOuae6J3b9YIHq/wLZPj7dW8+CL
-# CJUoRc9p1ea1kwKAvDRR7BhAgi+7YqpqYzL/NPbjQDWhJm5bjJH+RdBq93Baa88y
-# dlVJD1WRyUg2negY0W5bZAzrW906wNYK3+eKLNEAYPAPUdreDmS84E+p9wSjuotz
-# gukmW607xOAPrdXxiSI675Gu78loZ0oU5ptToGBcPcfgGFqUrDfJLjn1PLGGIFYD
-# vttAzIBaz/V1dkxnFeFkPVWeUUhSBNNvjoT//mPqvLvNmT9vDpVJyIaWoQNMTdsX
-# UssnYt+bitTFW1MZULPGN9Y4gWzhS0Fqa+z9auQnCfdIquE0wC5lpyFt0HEnjJ1h
-# b7fW3E+ERZxuEIRMGvqjFqcFkar0Uzwj/ncozpDFXnlc8EGPzJW7reIx1rKHuylH
-# qv5rBNA3cGb4j0yn9HbTvqbLhLXN7PpLy1zh+WWL3REfGWVbDKQIonW8cEHk6wYp
-# WPXXQvY0Bo5PivjCIl3BCfYu98iBRyo+gM7ti1rMn8UToNQBMDYsQjbsjMLrsG8R
-# PWQ6cc2QHIepQQ/k1wO4doskdwEhQRAip0/Nmh7LwNBUWZIwsDBZeDXvcmLwzKTT
-# QeaCq9NwE+x6g7NLhF73/j9stc65rySFN8KoJ3RDoWChxrAjWCe7BGXNzSkz3PGh
+# BAGCNwIBBDAjBgkqhkiG9w0BCQQxFgQU62sqwZim2FD6SKXWMZFSwfyf/2QwDQYJ
+# KoZIhvcNAQEBBQAEggIArKNzqH0KY2YtnW2bbs6ShGMuOeH2Ns3aXG0NigR4vObu
+# EIbCVTkjypUMethoFTLX297Hoo3klINS+Ys4ddvOiL8OKEAa7tuQARv1jGU1JEHl
+# C+nlwEtJjUj+9y/oJP43DJ8KYrX7r2LoVkJh4T2CKhL0qfmmhUZJzdsW1ViUzPtx
+# 31In3p3WUXtbBk07RnymP3xCHDrE612IV/r+r3pXnuK8apR43qNNfJiHqJMAn0eb
+# r+zbFdp/eYDnGLNLnY5iqNye8InYFiKdTnM2Np4HEq3rN7LwxF0PZNvkrMlCnmwO
+# tnubvhA9kD//9DSqdjF5oLnOEEgj5piX8UtnPtfeFlgSK6btNKYCnEWrb7ppHLw3
+# JcN1HYSNXU9IwK2m0EdnqO5DjQwCa1VtR1vxzJFs2BXIJOLUIommBgH1C7SjZjOU
+# +yd//dK/SBqI6BM1ooRJJO/bGKxZ99J2HPGSpBqGtEhX1OgnvAYERvXP/p0QagaY
+# 3S3mhFbylsxVZYFe3zUF4dlyH4WpEdwYA85AE6IRCwgrUBHqGRhTuwlMgQeSJlFN
+# mOqZe1XgKbtnGmTctR3XazNKMzvFTPRCyTek7SrwLw2V7dnAHNbHnIa25oOESOuf
+# GBVFgEV22p+y545m0Ai8NaaSkd5hCdpJdOGawKGFdMdWdBdXf/uIComMKlBpVZih
 # ggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8CAQEwfTBpMQswCQYDVQQGEwJVUzEX
 # MBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/BgNVBAMTOERpZ2lDZXJ0IFRydXN0
 # ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYgU0hBMjU2IDIwMjUgQ0ExAhAKgO8Y
 # S43xBYLRxHanlXRoMA0GCWCGSAFlAwQCAQUAoGkwGAYJKoZIhvcNAQkDMQsGCSqG
-# SIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjUxMjA1MTc1NjE5WjAvBgkqhkiG9w0B
-# CQQxIgQg5hxqBv5FysJgu3l9NyQSYwXEY8WDBI7qs0Yed/COWgUwDQYJKoZIhvcN
-# AQEBBQAEggIAopgPQKbK9sWsqRK+itbo5Jyreh+CJ1G/XC1wq067f245GGBrZpEY
-# EKnJTCbSYs+QugKuZ54sM58X/J+vb88iBLDFH6d7jIzl8tEG7V7+OveblhgmSwaD
-# 6K9Wkg3TYuSsbrMR52NvQAGm7Hm0/ktdXvlxGavgZ4FyU8wjsJXnu6oBbank/qqd
-# alcGLft3TI9G6u4pk7j9hz4Yy0en+/SmkLrfV0BxQB+ycuKWRfXpbXD/IwI0cOvX
-# ZCZ5ijhgr00HQg3giA/1l5DrkfcTsosJ4yhth7n7Exa5Z6to0rDUs7uTZ+YkMDEX
-# J8xjtlyuTJOAa/qff3oEJOG+t97dgGugRbLp09jhHgCOCBl4SLZBR7EqqWJyeDnW
-# 4Vx7duYiK/JeeTebQ8PNMMR/NSB2N8UWcoCjd9O+lzLDBYpaKoWmn3u8gT/fhWhu
-# OmIq1W/LZmYmndl8nUi1rDyW+fh6a9lBCIWp/BU3oNcZCzJR8DrNuP6ODSwZQ57Y
-# 45Dt4Xrwj2Iyn6SSEA/LNt9VciLrKjhN0Yn7KvTq8GfJTsqaAgTPxNGp0HfgTv9K
-# V5lxlAqWteBPQGJoa3tV/GkMNl92L+XKUfXSUxkAutkpI7pm3siPy3UTRp4ksEGX
-# MIeIXjRgXD0JYc/Aop+Dny3G8azdox24q9NmHsHj3xolA/IIAKmkL8A=
+# SIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjUxMjExMTI0OTQwWjAvBgkqhkiG9w0B
+# CQQxIgQg34XWicPKdMZ6EWVN+Ti/HlCGCBq8D3/+RpA183qSEvQwDQYJKoZIhvcN
+# AQEBBQAEggIAQQtl/AvYsXr6IEGA+3zOD/IfjKZxK3dOsDNZj/+piLM2HApjgLSB
+# AnDEqaYs0HjsAGb8rYu0rhRt8BkrcR/XuyCUXin143m7e8xiXSNdES6QnVLNh5bp
+# cjQfS1eYg0dMN+cjNJaG39cXhDlq4g1SdGFJocHY2tTs8djJwj6QS2wff/U4cfUt
+# 1sQFXF8tdn9Ai5W5HOxPLUCoBws8UXp5PoH6hHailzOsjfXntXIm/TUrH9vbo+hg
+# SjudME/4RghS/vfPyNJnOPx8e1K/Yde3ncAZmy1Wy1gDIB35Nf/U9iXCPZsuF0yV
+# ipj+V+yTVn5XZN0TbHG4dKlZVkcmj8ZbZr5OqlUbp6AnEx7UgZFvyLlMIhQOHdCO
+# RLtqVGcZhaAKcHOjEnRCpk31H/BAd8yeoKLYZRsu5RXmuk5xvko2Enc17VWH3uAI
+# 5YnnUBnshf5wlsX9nLQlA/rZj1vk5oF6CYr5wyfDrghAVOiV741FyaIUkiI44xjg
+# fUKasKQZqqD5+PNGI7jhYtuN4gRzP+lXW4Fs/eW3a2uT2aRDVjJcfHdYOMFi7Qc3
+# JcylygzCFRvRO+AEy9BgJmWCsIqAILCnlW9OqnjEh/w5NIOzBTwYj6oTxH02zapq
+# HNIeUjXXaZlKsNAfLCfNVOqBdD2AA52atD+X3ml7RtjMpqE7djXnsTc=
 # SIG # End signature block
