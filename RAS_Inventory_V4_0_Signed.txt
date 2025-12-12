@@ -450,9 +450,9 @@
 	text document.
 .NOTES
 	NAME: RAS_Inventory_V4_0.ps1
-	VERSION: 4.00 Beta 33
+	VERSION: 4.00 Beta 34
 	AUTHOR: Carl Webster
-	LASTEDIT: December 11, 2025
+	LASTEDIT: December 12, 2025
 #>
 
 
@@ -616,6 +616,8 @@ Param(
 #		Host pools
 #			General
 #			Configuration
+#			Template
+#			Provisioning
 #			Assignment
 #			User profile
 #			Application Packages
@@ -871,9 +873,9 @@ $ErrorActionPreference    = 'SilentlyContinue'
 $Error.Clear()
 
 $Script:emailCredentials  = $Null
-$script:MyVersion         = '4.00 Beta 33'
+$script:MyVersion         = '4.00 Beta 34'
 $Script:ScriptName        = "RAS_Inventory_V4_0.ps1"
-$tmpdate                  = [datetime] "12/11/2025"
+$tmpdate                  = [datetime] "12/12/2025"
 $Script:ReleaseDate       = $tmpdate.ToUniversalTime().ToShortDateString()
 
 If($MSWord -eq $False -and $PDF -eq $False -and $Text -eq $False -and $HTML -eq $False)
@@ -27450,8 +27452,8 @@ Function OutputAVDDetails
 					{
 						Line 5 "Host pool configuration"
 						Line 6 "Host pool type`t`t`t: " $AVDHostPool.Configuration.PoolType.ToString()
-						Line 6 "Publishing type`t`t: " $PublishingType
-						Line 6 "Provisioning type`t`t`t: " $AVDHostPool.Configuration.ProvisioningType.ToString()
+						Line 6 "Publishing type`t`t`t: " $PublishingType
+						Line 6 "Provisioning type`t`t: " $AVDHostPool.Configuration.ProvisioningType.ToString()
 						Line 6 "Load balancer`t`t`t: " $LoadBalancerType
 						Line 6 "Limit number of sessions on host: " $AVDHostPool.Configuration.LimitHosts.ToString()
 						Line 6 "Power on host on-demand`t`t: " $AVDHostPool.Configuration.PowerOnHost.ToString()
@@ -27481,112 +27483,274 @@ Function OutputAVDDetails
 					}
 
 					#Template
-					If($MSword -or $PDF)
+					If($Null -ne $AVDHostPool.TemplateSettings)
 					{
-						WriteWordLine 5 0 "Template"
-					}
-					If($Text)
-					{
-						Line 4 "Template"
-					}
-					If($HTML)
-					{
-						#nothing
-					}
-					<#
-					If($MSWord -or $PDF)
-					{
-						$ScriptInformation = New-Object System.Collections.ArrayList
-						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
-						$Table = AddWordTable -Hashtable $ScriptInformation `
-						-Columns Data,Value `
-						-List `
-						-Format $wdTableGrid `
-						-AutoFit $wdAutoFitFixed;
+						If($MSword -or $PDF)
+						{
+							WriteWordLine 5 0 "Template"
+						}
+						If($Text)
+						{
+							Line 4 "Template"
+						}
+						If($HTML)
+						{
+							#nothing
+						}
 
-						SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
-						SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
-						$Table.Columns.Item(1).Width = 200;
-						$Table.Columns.Item(2).Width = 250;
-
-						$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-						FindWordDocumentEnd
-						$Table = $Null
-						WriteWordLine 0 0 ""
-					}
-					If($Text)
-					{
-						Line 5 "" ""
-						Line 0 ""
-					}
-					If($HTML)
-					{
-						$rowdata = @()
-						$columnHeaders = @("",($Script:htmlsb),"",$htmlwhite)
-						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+						$AVDHostPoolTemplate = Get-RASTemplate -Id $AVDHostPool.TemplateSettings.TemplateId -ObjType AVDTemplate -EA 0 4> $Null
 						
-						$msg = "Template"
-						$columnWidths = @("200","275")
-						FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-						WriteHTMLLine 0 0 ""
+						If($?)
+						{
+							$AVDHostPoolTemplateName = $AVDHostPoolTemplate.Name
+							
+							$AVDHostPoolTemplateVersion  = Get-RASTemplateVersion -Id $AVDHostPool.TemplateSettings.TemplateVersionId `
+								-TemplateId $AVDHostPool.TemplateSettings.TemplateId `
+								-ObjType AVDTemplateVersion `
+								-EA 0 4> $Null
+								
+							If($?)
+							{
+								$AVDHostPoolTemplateVersionName = $AVDHostPoolTemplateVersion.Name
+							}
+							Else
+							{
+								$AVDHostPoolTemplateVersionName = "Unable to retrieve AVD host pool template version"
+							}
+						}
+						Else
+						{
+							$AVDHostPoolTemplateName         = "Unable to retrieve AVD host pool template"
+							$AVDHostPoolTemplateVersionName  = "N/A"
+						}
+						<#
+							PS C:\Users\carl.webster> $AVDHostPool.TemplateSettings | % {$_.psobject.properties | select name, value | sort name}
+
+							Name                   Value
+							----                   -----
+							TemplateId        1107296294
+							TemplateTagId              0
+							TemplateVersionId          2
+
+							PS C:\Users\carl.webster> $AVDHostPoolTemplate = Get-RASTemplate -id 1107296294 -ObjType AVDTemplate
+							PS C:\Users\carl.webster> $AVDHostPoolTemplateVersion  = Get-RASTemplateVersion -id 2 -ObjType AVDTemplateVersion
+
+							cmdlet Get-RASTemplateVersion at command pipeline position 1
+							Supply values for the following parameters:
+							TemplateId: 1107296294
+							PS C:\Users\carl.webster> $AVDHostPoolTemplateVersion |fl
+
+
+							Name         : Updated Agents Dec 2023
+							Id           : 2
+							TemplateId   : 1107296294
+							Description  : Updated Agents Dec 2023
+							AdminCreate  : rasadmin
+							AdminLastMod : rasadmin
+							TimeCreate   : 12/29/2023 7:27:13 PM
+							TimeLastMod  : 12/29/2023 7:27:13 PM
+
+
+
+							PS C:\Users\carl.webster> $AVDHostPoolTemplate |fl
+
+
+							ObjType                            : AVDTemplate
+							Name                               : PM-Win11-T0
+							SiteId                             : 1
+							Description                        : Windows 11 Ent Multi-Session Template
+							ProviderId                         : 1056964609
+							TemplateType                       : MultiSession
+							VMId                               : 79590e09-51fe-44e2-b39d-d9300cacedd3
+							CloneMethod                        :
+							AvailabilitySet                    : False
+							Advanced                           : RASAdminEngine.Core.OutputModels.Template.TemplateAdvanced
+							Preparation                        : RASAdminEngine.Core.OutputModels.Template.TemplatePreparation
+							InheritDefaultOptimizationSettings : False
+							Optimization                       : RASAdminEngine.Core.OutputModels.ImagesOptimization.ImageOptimization
+							LicenseKeys                        :
+							AzureId                            : /subscriptions/b4085957-22f0-440f-ac06-71ef3dcd61cb/resourceGroups/PM_MSI_RG01/pro
+																 viders/Microsoft.Compute/virtualMachines/PM-Win11-T01
+							Distribution                       :
+							AdminCreate                        : devadmin@parallelslabus
+							AdminLastMod                       : rasadmin
+							TimeCreate                         : 10/16/2023 11:27:43 AM
+							TimeLastMod                        : 1/16/2025 5:04:02 PM
+							Id                                 : 1107296294
+						#>
+						
+						If($MSWord -or $PDF)
+						{
+							$ScriptInformation = New-Object System.Collections.ArrayList
+							$ScriptInformation.Add(@{Data = "Host pool provisioning - Template"; Value = ""; }) > $Null
+							$ScriptInformation.Add(@{Data = "     Template"; Value = $AVDHostPoolTemplateName; }) > $Null
+							$ScriptInformation.Add(@{Data = "     Version"; Value = $AVDHostPoolTemplateVersionName; }) > $Null
+							$Table = AddWordTable -Hashtable $ScriptInformation `
+							-Columns Data,Value `
+							-List `
+							-Format $wdTableGrid `
+							-AutoFit $wdAutoFitFixed;
+
+							SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+							SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+							$Table.Columns.Item(1).Width = 175;
+							$Table.Columns.Item(2).Width = 250;
+
+							$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+							FindWordDocumentEnd
+							$Table = $Null
+							WriteWordLine 0 0 ""
+						}
+						If($Text)
+						{
+							Line 5 "Host pool provisioning - Template"
+							Line 6 "Template: " $AVDHostPoolTemplateName
+							Line 6 "Version`t: " $AVDHostPoolTemplateVersionName
+							Line 0 ""
+						}
+						If($HTML)
+						{
+							$rowdata = @()
+							$columnHeaders = @("Host pool provisioning - Template",($Script:htmlsb),"",$htmlwhite)
+							$rowdata += @(,("     Template",($Script:htmlsb),$AVDHostPoolTemplateName,$htmlwhite))
+							$rowdata += @(,("     Version",($Script:htmlsb),$AVDHostPoolTemplateVersionName,$htmlwhite))
+							
+							$msg = "Template"
+							$columnWidths = @("200","275")
+							FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+							WriteHTMLLine 0 0 ""
+						}
 					}
-					#>
 
 					#Provisioning
-					If($MSword -or $PDF)
+					If($Null -ne $AVDHostPool.ProvisioningSettings)
 					{
-						WriteWordLine 5 0 "Provisioning"
-					}
-					If($Text)
-					{
-						Line 4 "Provisioning"
-					}
-					If($HTML)
-					{
-						#nothing
-					}
-					<#
-					If($MSWord -or $PDF)
-					{
-						$ScriptInformation = New-Object System.Collections.ArrayList
-						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
-						$Table = AddWordTable -Hashtable $ScriptInformation `
-						-Columns Data,Value `
-						-List `
-						-Format $wdTableGrid `
-						-AutoFit $wdAutoFitFixed;
-
-						SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
-						SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
-						$Table.Columns.Item(1).Width = 200;
-						$Table.Columns.Item(2).Width = 250;
-
-						$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-						FindWordDocumentEnd
-						$Table = $Null
-						WriteWordLine 0 0 ""
-					}
-					If($Text)
-					{
-						Line 5 "" ""
-						Line 0 ""
-					}
-					If($HTML)
-					{
-						$rowdata = @()
-						$columnHeaders = @("",($Script:htmlsb),"",$htmlwhite)
-						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+						If($MSword -or $PDF)
+						{
+							WriteWordLine 5 0 "Provisioning"
+						}
+						If($Text)
+						{
+							Line 4 "Provisioning"
+						}
+						If($HTML)
+						{
+							#nothing
+						}
 						
-						$msg = "Provisioning"
-						$columnWidths = @("200","275")
-						FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-						WriteHTMLLine 0 0 ""
+						Switch($AVDHostPool.ProvisioningSettings.DefaultPowerState)
+						{
+							"PoweredOn"		{$PoweredOnState = "Powered On"; Break}
+							"PoweredOff"	{$PoweredOnState = "Powered Off"; Break}
+							"Suspended"		{$PoweredOnState = "Suspended"; Break}
+							Default			{$PoweredOnState = "Unable to determine Powered on state: $($AVDHostPool.ProvisioningSettings.DefaultPowerState)"; Break}
+						}
+
+						Switch($AVDHostPool.ProvisioningSettings.AutoScale.DrainRemainsBelowSec)
+						{
+							1		{$DrainRemainsBelowSec = "Immediate"; Break}
+							900		{$DrainRemainsBelowSec = "15 minutes"; Break}
+							1800	{$DrainRemainsBelowSec = "30 minutes"; Break}
+							2700	{$DrainRemainsBelowSec = "45 minutes"; Break}
+							3600	{$DrainRemainsBelowSec = "1 hour"; Break}
+							54001	{$DrainRemainsBelowSec = "1 hour, 30 minutes"; Break}
+							10800	{$DrainRemainsBelowSec = "3 hours"; Break}
+							21600	{$DrainRemainsBelowSec = "6 hours"; Break}
+							28800	{$DrainRemainsBelowSec = "8 hours"; Break}
+							Default	{$DrainRemainsBelowSec = "Unable to determine Workload remains below this level: $($AVDHostPool.ProvisioningSettings.AutoScale.DrainRemainsBelowSec)"; Break}
+						}
+						
+						If($MSWord -or $PDF)
+						{
+							$ScriptInformation = New-Object System.Collections.ArrayList
+							$ScriptInformation.Add(@{Data = "Host settings"; Value = ""; }) > $Null
+							$ScriptInformation.Add(@{Data = "     Template name"; Value = $AVDTemplateName; }) > $Null
+							$ScriptInformation.Add(@{Data = "     Host name"; Value = $AVDHostPool.ProvisioningSettings.HostName; }) > $Null
+							$ScriptInformation.Add(@{Data = "     Host state after the preparation"; Value = $PoweredOnState; }) > $Null
+							$ScriptInformation.Add(@{Data = "Autoscale settings"; Value = ""; }) > $Null
+							$ScriptInformation.Add(@{Data = "     Enable autoscale"; Value = $AVDHostPool.ProvisioningSettings.AutoScale.AutoScaleEnabled.ToString(); }) > $Null
+							If($AVDHostPool.ProvisioningSettings.AutoScale.AutoScaleEnabled)
+							{
+								$ScriptInformation.Add(@{Data = "     Min number of hosts to be added to the host pool from Template"; Value = $AVDHostPool.ProvisioningSettings.AutoScale.MinServersFromTemplate.ToString(); }) > $Null
+								$ScriptInformation.Add(@{Data = "     Max number of hosts to be added to the host pool from Template"; Value = $AVDHostPool.ProvisioningSettings.AutoScale.MaxServersFromTemplate.ToString(); }) > $Null
+								$ScriptInformation.Add(@{Data = "     Add new or power on existing hosts when workload is above (%)"; Value = $AVDHostPool.ProvisioningSettings.AutoScale.WorkloadThreshold.ToString(); }) > $Null
+								$ScriptInformation.Add(@{Data = "     Number of hosts to be added to the host pool per request"; Value = $AVDHostPool.ProvisioningSettings.AutoScale.ServersToAddPerRequest.ToString(); }) > $Null
+								$ScriptInformation.Add(@{Data = "     Drain and power off hosts from host pool when workload is below (%)"; Value = $AVDHostPool.ProvisioningSettings.AutoScale.WorkLoadDrain.ToString(); }) > $Null
+								$ScriptInformation.Add(@{Data = "          Workload remains below this level"; Value = $DrainRemainsBelowSec; }) > $Null
+								$ScriptInformation.Add(@{Data = "     Remove hosts from host pool after drain and power off"; Value = $AVDHostPool.ProvisioningSettings.AutoScale.RemoveServersAfterDrainAndPowerOff.ToString(); }) > $Null
+							}
+							$ScriptInformation.Add(@{Data = "Specifications"; Value = ""; }) > $Null
+							$ScriptInformation.Add(@{Data = "     Override the size specified"; Value = $AVDHostPool.ProvisioningSettings.OverwriteSize.ToString(); }) > $Null
+							$Table = AddWordTable -Hashtable $ScriptInformation `
+							-Columns Data,Value `
+							-List `
+							-Format $wdTableGrid `
+							-AutoFit $wdAutoFitFixed;
+
+							SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
+							SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+							$Table.Columns.Item(1).Width = 300;
+							$Table.Columns.Item(2).Width = 200;
+
+							$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+							FindWordDocumentEnd
+							$Table = $Null
+							WriteWordLine 0 0 ""
+						}
+						If($Text)
+						{
+							Line 5 "Host settings"
+							Line 6 "Template name`t`t`t: " $AVDTemplateName
+							Line 6 "Host name`t`t`t: " $AVDHostPool.ProvisioningSettings.HostName
+							Line 6 "Host state after the preparation: " $PoweredOnState
+							Line 5 "Autoscale settings"
+							Line 6 "Enable autoscale: " $AVDHostPool.ProvisioningSettings.AutoScale.AutoScaleEnabled.ToString()
+							If($AVDHostPool.ProvisioningSettings.AutoScale.AutoScaleEnabled)
+							{
+								Line 7 "Min number of hosts to be added to the host pool from Template`t`t: " $AVDHostPool.ProvisioningSettings.AutoScale.MinServersFromTemplate.ToString()
+								Line 7 "Max number of hosts to be added to the host pool from Template`t`t: " $AVDHostPool.ProvisioningSettings.AutoScale.MaxServersFromTemplate.ToString()
+								Line 7 "Add new or power on existing hosts when workload is above (%)`t`t: " $AVDHostPool.ProvisioningSettings.AutoScale.WorkloadThreshold.ToString()
+								Line 7 "Number of hosts to be added to the host pool per request`t`t: " $AVDHostPool.ProvisioningSettings.AutoScale.ServersToAddPerRequest.ToString()
+								Line 7 "Drain and power off hosts from host pool when workload is below (%)`t: " $AVDHostPool.ProvisioningSettings.AutoScale.WorkLoadDrain.ToString()
+								Line 8 "Workload remains below this level`t`t`t`t: " $DrainRemainsBelowSec
+								Line 7 "Remove hosts from host pool after drain and power off`t`t`t: " $AVDHostPool.ProvisioningSettings.AutoScale.RemoveServersAfterDrainAndPowerOff.ToString()
+							}
+							Line 5 "Specifications"
+							Line 6 "Override the size specified: " $AVDHostPool.ProvisioningSettings.OverwriteSize.ToString()
+							Line 0 ""
+						}
+						If($HTML)
+						{
+							$rowdata = @()
+							$columnHeaders = @("Host settings",($Script:htmlsb),"",$htmlwhite)
+							$rowdata += @(,("     Template name",($Script:htmlsb),$AVDTemplateName,$htmlwhite))
+							$rowdata += @(,("     Host name",($Script:htmlsb),$AVDHostPool.ProvisioningSettings.HostName,$htmlwhite))
+							$rowdata += @(,("     Host state after the preparation",($Script:htmlsb),$PoweredOnState,$htmlwhite))
+							$rowdata += @(,("Autoscale settings",($Script:htmlsb),$PoweredOnState,$htmlwhite))
+							$rowdata += @(,("     Enable autoscale",($Script:htmlsb),$AVDHostPool.ProvisioningSettings.AutoScale.AutoScaleEnabled.ToString(),$htmlwhite))
+							If($AVDHostPool.ProvisioningSettings.AutoScale.AutoScaleEnabled)
+							{
+								$rowdata += @(,("     Min number of hosts to be added to the host pool from Template",($Script:htmlsb),$AVDHostPool.ProvisioningSettings.AutoScale.MinServersFromTemplate.ToString(),$htmlwhite))
+								$rowdata += @(,("     Max number of hosts to be added to the host pool from Template",($Script:htmlsb),$AVDHostPool.ProvisioningSettings.AutoScale.MaxServersFromTemplate.ToString(),$htmlwhite))
+								$rowdata += @(,("     Add new or power on existing hosts when workload is above (%)",($Script:htmlsb),$AVDHostPool.ProvisioningSettings.AutoScale.WorkloadThreshold.ToString(),$htmlwhite))
+								$rowdata += @(,("     Number of hosts to be added to the host pool per request",($Script:htmlsb),$AVDHostPool.ProvisioningSettings.AutoScale.ServersToAddPerRequest.ToString(),$htmlwhite))
+								$rowdata += @(,("     Drain and power off hosts from host pool when workload is below (%)",($Script:htmlsb),$AVDHostPool.ProvisioningSettings.AutoScale.WorkLoadDrain.ToString(),$htmlwhite))
+								$rowdata += @(,("          Workload remains below this level",($Script:htmlsb),$DrainRemainsBelowSec,$htmlwhite))
+								$rowdata += @(,("     Remove hosts from host pool after drain and power off",($Script:htmlsb),$AVDHostPool.ProvisioningSettings.AutoScale.RemoveServersAfterDrainAndPowerOff.ToString(),$htmlwhite))
+							}
+							$rowdata += @(,("Specifications",($Script:htmlsb),$PoweredOnState,$htmlwhite))
+							$rowdata += @(,("     Override the size specified",($Script:htmlsb),$AVDHostPool.ProvisioningSettings.OverwriteSize.ToString(),$htmlwhite))
+							
+							$msg = "Provisioning"
+							$columnWidths = @("425","300")
+							FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+							WriteHTMLLine 0 0 ""
+						}
 					}
-					#>
 
 					#Assignment
 					
@@ -65900,8 +66064,8 @@ ProcessScriptEnd
 # SIG # Begin signature block
 # MIIthQYJKoZIhvcNAQcCoIItdjCCLXICAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUqxm1jJqkmRFBN+xEpRjLf6wL
-# i3uggibfMIIFjTCCBHWgAwIBAgIQDpsYjvnQLefv21DiCEAYWjANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUum/1/T7QEAsN1wWDzER0s5It
+# gCqggibfMIIFjTCCBHWgAwIBAgIQDpsYjvnQLefv21DiCEAYWjANBgkqhkiG9w0B
 # AQwFADBlMQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYD
 # VQQLExB3d3cuZGlnaWNlcnQuY29tMSQwIgYDVQQDExtEaWdpQ2VydCBBc3N1cmVk
 # IElEIFJvb3QgQ0EwHhcNMjIwODAxMDAwMDAwWhcNMzExMTA5MjM1OTU5WjBiMQsw
@@ -66112,33 +66276,33 @@ ProcessScriptEnd
 # UzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/BgNVBAMTOERpZ2lDZXJ0IFRy
 # dXN0ZWQgRzQgQ29kZSBTaWduaW5nIFJTQTQwOTYgU0hBMzg0IDIwMjEgQ0ExAhAL
 # bN+2Z4EOKufLWhG6HUlwMAkGBSsOAwIaBQCgQDAZBgkqhkiG9w0BCQMxDAYKKwYB
-# BAGCNwIBBDAjBgkqhkiG9w0BCQQxFgQU4fln7B+/7rOOeWcome+/ictJuZMwDQYJ
-# KoZIhvcNAQEBBQAEggIAHAdYXCZkPCkI0fP4djWkvXOJVC3MTN5kgkJY5k+qRbW6
-# LlxGlupfQjL5k7oEOaxvZQJ8yc74xcVonyn9+L+1MPHjbPMVPysewyj+dlLhKvso
-# 7HsguB4s0adgezmQRjsyZzolxRqBT0KkeNDo1KkC/ptPeqMvJkV+9Zjvh4JOM6eo
-# ea4LkTS8dJgwz+t0IERMEfZ1R/rYUMUDg1I0HG/8MnugPl6sJp+7scy1Gspp5Y2u
-# PG2Zga/69Hd7r0D0swqXBhQr/xs+bFS4R2Du2kp3E77PVawaeHswsp5USgj1bpxl
-# y38mXkjfVDyDnkHxzdB3UpdjDGKqBNZvYEQlG59hjFfoCGnrw1isE2BT3r268ffU
-# 53WO+bg8l9pwyP/xfz67keNSeC6aDldqA2ASHj3Dt5XCktstRhzyHJy3+6hJXn6i
-# 86tCcCsvDavn188RJXVvrURc+uvNIm3ggtHcPQ1faLkzOz2RoR4gZQckPBQIU0uI
-# gwTUQ3BL6BlhkO9klZRzVr2KfEs1B6wImdflv6szjQQZInbMRD7Zi5i1tJfO46Ki
-# ke4Oe+ceN75h6KgqQDcjHyuRVr6wayv8psIE84WKeeDcYci/LOT6b5+wqs5E/A9d
-# mWRb/04FSoi1iiR8cbawpoVoSiBlQe2h88gx4ecQZLfWmVYOxMRiz6XaJa0ncAah
+# BAGCNwIBBDAjBgkqhkiG9w0BCQQxFgQUrdcifZQQD+HbYRnUQ5IM56VhpQswDQYJ
+# KoZIhvcNAQEBBQAEggIAYSi9VpI0qhQ5Ptbl7xWME3Fli/X+q+8htaulSXvxLpFG
+# 6nabcdc6vwnq+h2/Rl/sLszhgZ1ZGdTN1TpL9H4RjI3jBZ2ANvHcijgHK8LcXNsp
+# h4bZXsgdsmEDKzPFdQSkZlzO/xwpV5ZsJmzkR2SA1wQ+thyaalTnASSQI8w2LexW
+# 3EdHiZyUuC3p8IRLCrsv3+opjfucs8wfzmyGgOyRysXSSuDjfqDt9SAfNYkB23ud
+# nfvA8CuDZApiPvI/og8WnfbWVQt03hVk+MmoVN9EqI1TvmVhN+7csTCgC7Q3AI/M
+# RrV7dbbvBLY4Nmb4Q4OvIjmONUEDv0bUZhzffh6vV5ZJwh3PIMCfqUtBIQiMrhv6
+# LPr0o7fOTbtIVmu98/oZoXxTA2HN9ha/kbATXMyEv+YGKf7yqJPm7N+45CAWlS5z
+# jeAUKt8kHebbuy5bLbMlgFID3glWPUG0dcOTlSVNbtJKj7r0A+ybAexMBhwXGFo8
+# o6HvP6B2a6me6kMAjFjkvRcsXNIDov0TUaYmOIzs8pPLF5TLZKqmjO3v35BJ1Igl
+# hhNZpxnmUxScttlHFIdPZYKYUVGZ8K10iQK44TxWwlrBnj/YrWCTrvkMOEhwdSgR
+# /b9wv1DcIzar6xRyUXON02UbFqCp29k59z70gArQDY+bGdNfsRTH08qJoqaJPnuh
 # ggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8CAQEwfTBpMQswCQYDVQQGEwJVUzEX
 # MBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/BgNVBAMTOERpZ2lDZXJ0IFRydXN0
 # ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYgU0hBMjU2IDIwMjUgQ0ExAhAKgO8Y
 # S43xBYLRxHanlXRoMA0GCWCGSAFlAwQCAQUAoGkwGAYJKoZIhvcNAQkDMQsGCSqG
-# SIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjUxMjExMTc1MDA2WjAvBgkqhkiG9w0B
-# CQQxIgQgsjBKSbakoB5i0U6RMBsIrwIB5g3jLq6SyGaZG1NK5JEwDQYJKoZIhvcN
-# AQEBBQAEggIAd6qoRwc/+uGggkkjI0IqPpg7CUFKoMtdf1nongNVt8InwUUPlKzv
-# tchelhdc0M4BYsaSmIHkDA04qg1p8tskj6nu1F2NPHHq4gQe34fwGBd92+4PO1PF
-# SoGNKycnZIYy1tfwQE7RA2czUqLD8RB3BYxNYGl9LGddjyI+qMHMMJIbwtBjzieR
-# mY2Vkf31OO1Cf9EbFRvxypfyd5f+S3SwW4eHLbU5NRj+dDAiCMjEzWRsKnlyy7ad
-# VBUd8X8lTzsjOjpJPKd3Q2v+pG3yxJGatL+wo0JoDfCNlWiD6P6Rq+lULnCOcEhn
-# LCIRrhTCRpgxGIHUWq+msOxuA/3spFmsDa4L9kT4YqRgyT55ztoY5T28VZVp3tYT
-# PRxT56YjKLnYwaeWsFo9VLpuKQ1GqSSaiSND0QzoTL6Y49J9Mp7Wq8cGY5ma8ZE/
-# xm2ea7lPz4jMUvOXlW2FXz0XFBmp2KxVVSW7onplmREpR/r/no+sShA77nhIvBK2
-# yKsbrFmrlf10ilE8utJLn1SFtFnNhsImEUT3eKwacW1HoppcGX2UJ8j/oXivmYpp
-# PpS4+GZLTmesZqr/I6DBthMCb56y5VoXZ2ljRPPkWlpSg/hxK1xK0DRq2zJkqukW
-# 82ueMPd23e0xwVQao0+o/GaG6oG4c3bgb+YcdUstXx+J60BaSC83bXg=
+# SIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjUxMjEyMTM0MTEzWjAvBgkqhkiG9w0B
+# CQQxIgQgiYzg9A2y58vf5jvDStg8bp4YrU/9uWnZ2y7RCVaKR9AwDQYJKoZIhvcN
+# AQEBBQAEggIAInvZh64qPGT0UPuUfXR7KYWAaxSQtzUZn+QXOf09FxbmTxP7B2zV
+# GGkgt5guaGnmiOhywKp6oXf18ttgHFkNHSXPEoARlR7ddOFMmrMWC27dDwGiRnjw
+# tC1A+hP/0rGEgzq+Dt2rad82FdozqvlIwjEYib8SiiIdBCxlqi6XahxtZqFP3w46
+# 65Hlw//HKVUQ1XucsB7PSbxo3yzv8LnhliCP9C2zD45jTU1nKXtPdo5Tnfk/8UMp
+# gU5rJiL30ivAQWF8f3w4Fh9ZtMVwHAT/UBqW3NWxtCUmkpUrOAzruIssL5WpgvM0
+# 2ujq2/0qIuhdVIjX3CHJHiNJebe943HflWxXvWRzuYcbubAZkPIRN5AVv+kmW9Lp
+# s84GH9Z2tvk8O8W4aNtPZBHsLhbx1EE+FafImWhbylo2e56DpfmKIW8G0inaL2hz
+# bliBcgha7ArQwhBMm78oNfODEVxq2lxww+P6VFdAt1BW6Hc8g0+XwMMK/KPxi6Gz
+# LUbb4WC7ynu0tCLwgtarWJykw4hzO9hsu7lTx/VbUMoD8sfV0TFPPhLMQ68BC6ZL
+# PG52Q8AeWg1D8p95KT3nI5aSdEztgV2kSyjG6+71Pf2YmRkTaZC21NvawlmivhSW
+# CSm/ZWOxq051thOWf8TPnlG5LbThzJprKdmpUqo2P56q7Yn+bG5U+us=
 # SIG # End signature block

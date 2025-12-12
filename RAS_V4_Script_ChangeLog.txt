@@ -54,6 +54,8 @@
 #		Host pools
 #			General
 #			Configuration
+#			Template
+#			Provisioning
 #			Assignment
 #			User profile
 #			Application Packages
