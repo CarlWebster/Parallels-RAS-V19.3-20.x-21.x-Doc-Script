@@ -64,7 +64,11 @@
 #			RDP printer
 #			Auto-upgrade
 #			AVD Agent
-#		Templates (placeholder for now)
+#		Templates
+#			General
+#			Hosts
+#			Preparation
+#			Optimization
 #		Hosts (placeholder for now)
 #		Scheduler (placeholder for now)
 #
