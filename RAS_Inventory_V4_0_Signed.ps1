@@ -450,9 +450,9 @@
 	text document.
 .NOTES
 	NAME: RAS_Inventory_V4_0.ps1
-	VERSION: 4.00 Beta 34
+	VERSION: 4.00 Beta 35
 	AUTHOR: Carl Webster
-	LASTEDIT: December 12, 2025
+	LASTEDIT: December 15, 2025
 #>
 
 
@@ -615,6 +615,7 @@ Param(
 #			General
 #		Host pools
 #			General
+#			Hosts
 #			Configuration
 #			Template
 #			Provisioning
@@ -625,6 +626,9 @@ Param(
 #			RDP printer
 #			Auto-upgrade
 #			AVD Agent
+#		Templates (placeholder for now)
+#		Hosts (placeholder for now)
+#		Scheduler (placeholder for now)
 #
 #	In Function OutputLogonHours
 #		Add General data
@@ -873,9 +877,9 @@ $ErrorActionPreference    = 'SilentlyContinue'
 $Error.Clear()
 
 $Script:emailCredentials  = $Null
-$script:MyVersion         = '4.00 Beta 34'
+$script:MyVersion         = '4.00 Beta 35'
 $Script:ScriptName        = "RAS_Inventory_V4_0.ps1"
-$tmpdate                  = [datetime] "12/12/2025"
+$tmpdate                  = [datetime] "12/15/2025"
 $Script:ReleaseDate       = $tmpdate.ToUniversalTime().ToShortDateString()
 
 If($MSWord -eq $False -and $PDF -eq $False -and $Text -eq $False -and $HTML -eq $False)
@@ -4934,6 +4938,77 @@ Function GetVDIType
 	Return $VDIType
 }
 
+Function GetRASLocation
+{
+	Param([string] $RASLocation)
+	
+	Switch($RASLocation)
+	{
+		"australiacentral"		{$AVDLocation = "Australia Central"; Break}
+		"australiacentral2"		{$AVDLocation = "Australia Central 2"; Break}
+		"australiaeast"			{$AVDLocation = "Australia East"; Break}
+		"australiasoutheast"	{$AVDLocation = "Australia Southeast"; Break}
+		"austriaeast"			{$AVDLocation = "Austria East"; Break}
+		"belgiumcentral"		{$AVDLocation = "Belgium Central"; Break}
+		"brazilsouth"			{$AVDLocation = "Brazil South"; Break}
+		"brazilsoutheast"		{$AVDLocation = "Brazil Southeast"; Break}
+		"canadacentral"			{$AVDLocation = "Canada Central"; Break}
+		"canadaeast"			{$AVDLocation = "Canada East"; Break}
+		"centralindia"			{$AVDLocation = "Central India"; Break}
+		"centralus"				{$AVDLocation = "Central US"; Break}
+		"chilecentral"			{$AVDLocation = "Chile Central"; Break}
+		"eastasia"				{$AVDLocation = "East Asia"; Break}
+		"eastus"				{$AVDLocation = "East US"; Break}
+		"eastus2"				{$AVDLocation = "East US 2"; Break}
+		"eastusstg"				{$AVDLocation = "East US STG"; Break}
+		"francecentral"			{$AVDLocation = "France Central"; Break}
+		"francesouth"			{$AVDLocation = "France South"; Break}
+		"germanynorth"			{$AVDLocation = "Germany North"; Break}
+		"germanywestcentral"	{$AVDLocation = "Germany West Central"; Break}
+		"indonesiacentral"		{$AVDLocation = "Indonesia Central"; Break}
+		"israelcentral"			{$AVDLocation = "Israel Central"; Break}
+		"italynorth"			{$AVDLocation = "Italy North"; Break}
+		"japaneast"				{$AVDLocation = "Japan East"; Break}
+		"japanwest"				{$AVDLocation = "Japan West"; Break}
+		"jioindiacentral"		{$AVDLocation = "Jio India Central"; Break}
+		"jioindiawest"			{$AVDLocation = "Jio India West"; Break}
+		"koreacentral"			{$AVDLocation = "Korea Central"; Break}
+		"koreasouth"			{$AVDLocation = "Korea South"; Break}
+		"malaysiawest"			{$AVDLocation = "Malaysia West"; Break}
+		"mexicocentral"			{$AVDLocation = "Mexico Central"; Break}
+		"newzealandnorth"		{$AVDLocation = "New Zealand North"; Break}
+		"northcentralus"		{$AVDLocation = "North Central US"; Break}
+		"northeurope"			{$AVDLocation = "North Europe"; Break}
+		"norwayeast"			{$AVDLocation = "Norway East"; Break}
+		"norwaywest"			{$AVDLocation = "Norway West"; Break}
+		"polandcentral"			{$AVDLocation = "Poland Central"; Break}
+		"qatarcentral"			{$AVDLocation = "Qatar Central"; Break}
+		"southafricanorth"		{$AVDLocation = "South Africa North"; Break}
+		"southafricawest"		{$AVDLocation = "South Africa West"; Break}
+		"southcentralus"		{$AVDLocation = "South Central US"; Break}
+		"southcentralusstg"		{$AVDLocation = "South Central US STG"; Break}
+		"southeastasia"			{$AVDLocation = "Southeast Asia"; Break}
+		"southindia"			{$AVDLocation = "South India"; Break}
+		"spaincentral"			{$AVDLocation = "Spain Central"; Break}
+		"swedencentral"			{$AVDLocation = "Sweden Central"; Break}
+		"switzerlandnorth"		{$AVDLocation = "Switzerland North"; Break}
+		"switzerlandwest"		{$AVDLocation = "Switzerland West"; Break}
+		"uaecentral"			{$AVDLocation = "UAE Central"; Break}
+		"uaenorth"				{$AVDLocation = "UAE North"; Break}
+		"uksouth"				{$AVDLocation = "UK South"; Break}
+		"ukwest"				{$AVDLocation = "UK West"; Break}
+		"westcentralus"			{$AVDLocation = "West Central US"; Break}
+		"westeurope"			{$AVDLocation = "West Europe"; Break}
+		"westindia"				{$AVDLocation = "West India"; Break}
+		"westus"				{$AVDLocation = "West US"; Break}
+		"westus2"				{$AVDLocation = "West US 2"; Break}
+		"westus3"				{$AVDLocation = "West US 3"; Break}
+		Default					{$AVDLocation = "Unable to determine AVD Location: $($RASLocation)"; Break}
+	}
+	
+	Return $AVDLocation
+}
+
 Function GetRASStatus
 {
 	Param([string] $RASStatus)
@@ -8933,12 +9008,16 @@ Function OutputRDSessionHostsDetails
 						{
 							If($Null -eq $item.DisplayName)
 							{
-								$DispName = Get-Service -Name $item.ServiceName -EA 0
-								If($? -and $Null -ne $DispName)
+								Try
 								{
-									$DisplayName = $DispName.DisplayName
+									$DispName = Get-Service -Name $item.ServiceName -EA 0
+									If(ValidObject $DispName DisplayName)
+									{
+										$DisplayName = $DispName.DisplayName
+									}
 								}
-								Else
+
+								Catch
 								{
 									$DisplayName = ""
 								}
@@ -9718,12 +9797,16 @@ Function OutputRDSessionHostsDetails
 						{
 							If($Null -eq $item.DisplayName)
 							{
-								$DispName = Get-Service -Name $item.ServiceName -EA 0
-								If($? -and $Null -ne $DispName)
+								Try
 								{
-									$DisplayName = $DispName.DisplayName
+									$DispName = Get-Service -Name $item.ServiceName -EA 0
+									If(ValidObject $DispName DisplayName)
+									{
+										$DisplayName = $DispName.DisplayName
+									}
 								}
-								Else
+
+								Catch
 								{
 									$DisplayName = ""
 								}
@@ -10296,12 +10379,16 @@ Function OutputRDSessionHostsDetails
 						{
 							If($Null -eq $item.DisplayName)
 							{
-								$DispName = Get-Service -Name $item.ServiceName -EA 0
-								If($? -and $Null -ne $DispName)
+								Try
 								{
-									$DisplayName = $DispName.DisplayName
+									$DispName = Get-Service -Name $item.ServiceName -EA 0
+									If(ValidObject $DispName DisplayName)
+									{
+										$DisplayName = $DispName.DisplayName
+									}
 								}
-								Else
+
+								Catch
 								{
 									$DisplayName = ""
 								}
@@ -15267,12 +15354,16 @@ Function OutputRDSessionHostsDetails
 					{
 							If($Null -eq $item.DisplayName)
 							{
-								$DispName = Get-Service -Name $item.ServiceName -EA 0
-								If($? -and $Null -ne $DispName)
+								Try
 								{
-									$DisplayName = $DispName.DisplayName
+									$DispName = Get-Service -Name $item.ServiceName -EA 0
+									If(ValidObject $DispName DisplayName)
+									{
+										$DisplayName = $DispName.DisplayName
+									}
 								}
-								Else
+
+								Catch
 								{
 									$DisplayName = ""
 								}
@@ -15990,12 +16081,16 @@ Function OutputRDSessionHostsDetails
 					{
 						If($Null -eq $item.DisplayName)
 						{
-							$DispName = Get-Service -Name $item.ServiceName -EA 0
-							If($? -and $Null -ne $DispName)
+							Try
 							{
-								$DisplayName = $DispName.DisplayName
+								$DispName = Get-Service -Name $item.ServiceName -EA 0
+								If(ValidObject $DispName DisplayName)
+								{
+									$DisplayName = $DispName.DisplayName
+								}
 							}
-							Else
+
+							Catch
 							{
 								$DisplayName = ""
 							}
@@ -16455,12 +16550,16 @@ Function OutputRDSessionHostsDetails
 					{
 							If($Null -eq $item.DisplayName)
 							{
-								$DispName = Get-Service -Name $item.ServiceName -EA 0
-								If($? -and $Null -ne $DispName)
+								Try
 								{
-									$DisplayName = $DispName.DisplayName
+									$DispName = Get-Service -Name $item.ServiceName -EA 0
+									If(ValidObject $DispName DisplayName)
+									{
+										$DisplayName = $DispName.DisplayName
+									}
 								}
-								Else
+
+								Catch
 								{
 									$DisplayName = ""
 								}
@@ -19835,7 +19934,10 @@ Function OutputVDIDetails
 									Try
 									{
 										$DispName = Get-Service -Name $item.ServiceName -EA 0
-										$DisplayName = $DispName.DisplayName
+										If(ValidObject $DispName DisplayName)
+										{
+											$DisplayName = $DispName.DisplayName
+										}
 									}
 
 									Catch
@@ -20620,7 +20722,10 @@ Function OutputVDIDetails
 									Try
 									{
 										$DispName = Get-Service -Name $item.ServiceName -EA 0
-										$DisplayName = $DispName.DisplayName
+										If(ValidObject $DispName DisplayName)
+										{
+											$DisplayName = $DispName.DisplayName
+										}
 									}
 
 									Catch
@@ -21199,7 +21304,11 @@ Function OutputVDIDetails
 									Try
 									{
 										$DispName = Get-Service -Name $item.ServiceName -EA 0
-										$DisplayName = $DispName.DisplayName
+										
+										If(ValidObject $DispName DisplayName)
+										{
+											$DisplayName = $DispName.DisplayName
+										}
 									}
 
 									Catch
@@ -24471,7 +24580,10 @@ Function OutputVDIDetails
 								Try
 								{
 									$DispName = Get-Service -Name $item.ServiceName -EA 0
-									$DisplayName = $DispName.DisplayName
+									If(ValidObject $DispName DisplayName)
+									{
+										$DisplayName = $DispName.DisplayName
+									}
 								}
 
 								Catch
@@ -25196,7 +25308,10 @@ Function OutputVDIDetails
 								Try
 								{
 									$DispName = Get-Service -Name $item.ServiceName -EA 0
-									$DisplayName = $DispName.DisplayName
+									If(ValidObject $DispName DisplayName)
+									{
+										$DisplayName = $DispName.DisplayName
+									}
 								}
 
 								Catch
@@ -25670,7 +25785,10 @@ Function OutputVDIDetails
 								Try
 								{
 									$DispName = Get-Service -Name $item.ServiceName -EA 0
-									$DisplayName = $DispName.DisplayName
+									If(ValidObject $DispName DisplayName)
+									{
+										$DisplayName = $DispName.DisplayName
+									}
 								}
 
 								Catch
@@ -26493,6 +26611,7 @@ Function OutputAVDDetails
 		WriteHTMLLine 2 0 "Azure Virtual Desktop"
 	}
 
+	#Workspaces
 	$AVDs = Get-RASAVDWorkspace -SiteId $Site.Id -EA 0 4>$Null
 	
 	If(!($?))
@@ -26684,69 +26803,7 @@ Function OutputAVDDetails
 			}
 			
 			#general
-			Switch($WorkspaceStatus.Location)
-			{
-				"australiacentral"		{$AVDLocation = "Australia Central"; Break}
-				"australiacentral2"		{$AVDLocation = "Australia Central 2"; Break}
-				"australiaeast"			{$AVDLocation = "Australia East"; Break}
-				"australiasoutheast"	{$AVDLocation = "Australia Southeast"; Break}
-				"austriaeast"			{$AVDLocation = "Austria East"; Break}
-				"belgiumcentral"		{$AVDLocation = "Belgium Central"; Break}
-				"brazilsouth"			{$AVDLocation = "Brazil South"; Break}
-				"brazilsoutheast"		{$AVDLocation = "Brazil Southeast"; Break}
-				"canadacentral"			{$AVDLocation = "Canada Central"; Break}
-				"canadaeast"			{$AVDLocation = "Canada East"; Break}
-				"centralindia"			{$AVDLocation = "Central India"; Break}
-				"centralus"				{$AVDLocation = "Central US"; Break}
-				"chilecentral"			{$AVDLocation = "Chile Central"; Break}
-				"eastasia"				{$AVDLocation = "East Asia"; Break}
-				"eastus"				{$AVDLocation = "East US"; Break}
-				"eastus2"				{$AVDLocation = "East US 2"; Break}
-				"eastusstg"				{$AVDLocation = "East US STG"; Break}
-				"francecentral"			{$AVDLocation = "France Central"; Break}
-				"francesouth"			{$AVDLocation = "France South"; Break}
-				"germanynorth"			{$AVDLocation = "Germany North"; Break}
-				"germanywestcentral"	{$AVDLocation = "Germany West Central"; Break}
-				"indonesiacentral"		{$AVDLocation = "Indonesia Central"; Break}
-				"israelcentral"			{$AVDLocation = "Israel Central"; Break}
-				"italynorth"			{$AVDLocation = "Italy North"; Break}
-				"japaneast"				{$AVDLocation = "Japan East"; Break}
-				"japanwest"				{$AVDLocation = "Japan West"; Break}
-				"jioindiacentral"		{$AVDLocation = "Jio India Central"; Break}
-				"jioindiawest"			{$AVDLocation = "Jio India West"; Break}
-				"koreacentral"			{$AVDLocation = "Korea Central"; Break}
-				"koreasouth"			{$AVDLocation = "Korea South"; Break}
-				"malaysiawest"			{$AVDLocation = "Malaysia West"; Break}
-				"mexicocentral"			{$AVDLocation = "Mexico Central"; Break}
-				"newzealandnorth"		{$AVDLocation = "New Zealand North"; Break}
-				"northcentralus"		{$AVDLocation = "North Central US"; Break}
-				"northeurope"			{$AVDLocation = "North Europe"; Break}
-				"norwayeast"			{$AVDLocation = "Norway East"; Break}
-				"norwaywest"			{$AVDLocation = "Norway West"; Break}
-				"polandcentral"			{$AVDLocation = "Poland Central"; Break}
-				"qatarcentral"			{$AVDLocation = "Qatar Central"; Break}
-				"southafricanorth"		{$AVDLocation = "South Africa North"; Break}
-				"southafricawest"		{$AVDLocation = "South Africa West"; Break}
-				"southcentralus"		{$AVDLocation = "South Central US"; Break}
-				"southcentralusstg"		{$AVDLocation = "South Central US STG"; Break}
-				"southeastasia"			{$AVDLocation = "Southeast Asia"; Break}
-				"southindia"			{$AVDLocation = "South India"; Break}
-				"spaincentral"			{$AVDLocation = "Spain Central"; Break}
-				"swedencentral"			{$AVDLocation = "Sweden Central"; Break}
-				"switzerlandnorth"		{$AVDLocation = "Switzerland North"; Break}
-				"switzerlandwest"		{$AVDLocation = "Switzerland West"; Break}
-				"uaecentral"			{$AVDLocation = "UAE Central"; Break}
-				"uaenorth"				{$AVDLocation = "UAE North"; Break}
-				"uksouth"				{$AVDLocation = "UK South"; Break}
-				"ukwest"				{$AVDLocation = "UK West"; Break}
-				"westcentralus"			{$AVDLocation = "West Central US"; Break}
-				"westeurope"			{$AVDLocation = "West Europe"; Break}
-				"westindia"				{$AVDLocation = "West India"; Break}
-				"westus"				{$AVDLocation = "West US"; Break}
-				"westus2"				{$AVDLocation = "West US 2"; Break}
-				"westus3"				{$AVDLocation = "West US 3"; Break}
-				Default					{$AVDLocation = "Unable to determine AVD Location: $($WorkspaceStatus.Location)"; Break}
-			}
+			$AVDLocation = GetRASLocation $WorkspaceStatus.Location
 
 			If($MSWord -or $PDF)
 			{
@@ -26816,688 +26873,570 @@ Function OutputAVDDetails
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 			}
-			
-			#host pools
-			Write-Verbose "$(Get-Date -Format G): `tOutput Azure Virtual Desktop Host Pools"
+		}		
+	}	
 
+	#host pools
+	Write-Verbose "$(Get-Date -Format G): `tOutput Azure Virtual Desktop Host Pools"
+
+	If($MSWord -or $PDF)
+	{
+		WriteWordLine 3 0 "Host pools"
+	}
+	If($Text)
+	{
+		Line 2 "Host pools"
+	}
+	If($HTML)
+	{
+		WriteHTMLLine 3 0 "Host pools"
+	}
+
+	$AVDHostPools = Get-RASAVDHostPool -Siteid $Site.Id -EA 0 4> $Null
+	
+	If(!($?))
+	{
+		Write-Warning "
+		`n
+		Unable to retrieve Azure Virtual Desktop Host Pools for Site $($Site.Name)`
+		"
+		If($MSWord -or $PDF)
+		{
+			WriteWordLine 0 0 ""
+			WriteWordLine 0 0 "Unable to retrieve Azure Virtual Desktop Host Pools for Site $($Site.Name)"
+			WriteWordLine 0 0 ""
+		}
+		If($Text)
+		{
+			Line 0 ""
+			Line 0 "Unable to retrieve Azure Virtual Desktop Host Pools for Site $($Site.Name)"
+			Line 0 ""
+		}
+		If($HTML)
+		{
+			WriteHTMLLine 0 0 ""
+			WriteHTMLLine 0 0 "Unable to retrieve Azure Virtual Desktop Host Pools for Site $($Site.Name)"
+			WriteHTMLLine 0 0 ""
+		}
+	}
+	ElseIf($? -and $Null -eq $AVDHostPools)
+	{
+		Write-Host "
+	No Azure Virtual Desktop Host Pools retrieved for Site $($Site.Name).`
+		" -ForegroundColor White
+		If($MSWord -or $PDF)
+		{
+			WriteWordLine 0 0 ""
+			WriteWordLine 0 0 "No Azure Virtual Desktop Host Pools retrieved for Site $($Site.Name)"
+			WriteWordLine 0 0 ""
+		}
+		If($Text)
+		{
+			Line 0 ""
+			Line 0 "No Azure Virtual Desktop Host Pools retrieved for Site $($Site.Name)"
+			Line 0 ""
+		}
+		If($HTML)
+		{
+			WriteHTMLLine 0 0 ""
+			WriteHTMLLine 0 0 "No Azure Virtual Desktop Host Pools retrieved for Site $($Site.Name)"
+			WriteHTMLLine 0 0 ""
+		}
+	}
+	Else
+	{
+		ForEach($AVDHostPool in $AVDHostPools)
+		{
+			Write-Verbose "$(Get-Date -Format G): `t`t$($AVDHostPool.Name)"
+
+			<#
+				PS C:\Parallels-RAS-V19.x-Doc-Script-4.00> $AVDHostPool | % {$_.psobject.properties | select name, value | sort name}
+
+				Name                               Value
+				----                               -----
+				Action
+				AdminCreate                        rasadmin
+				AdminLastMod                       Microsoft Azure
+				Agent                              RASAdminEngine.Core.OutputModels.HostPool.HostPoolAgentSettings
+				AppPackagesAssigned                RASAdminEngine.Core.OutputModels.AppPackagesAssigned
+				Assignments                        {73e0791f-07a6-47e1-9c92-b3ea97925abc, db8d7adc-bae1-4055-89fe-ea491f7dd71e, 1aca...
+				AutoUpgrade                        RASAdminEngine.Core.OutputModels.HostPool.AutoUpgradeSettings
+				AVDAgent                           RASAdminEngine.Core.OutputModels.AVD.AVDAgent
+				AzureId                            /subscriptions/b4085957-22f0-440f-ac06-71ef3dcd61cb/resourcegroups/PM_MSI_RG01/pr...
+				Configuration                      RASAdminEngine.Core.OutputModels.AVD.Configuration
+				Description                        Managed by Parallels RAS
+				Enabled                            True
+				FriendlyName                       PM Hostpool 01
+				Id                                 1
+				InheritDefaultActionsSettings
+				InheritDefaultAgentSettings        False
+				InheritDefaultAppPackageSettings   True
+				InheritDefaultAutoUpgradeSettings  True
+				InheritDefaultOptimizationSettings False
+				InheritDefaultRDPPrinterSettings   True
+				InheritDefaultUserProfileSettings  False
+				LinkedDesktopApplicationGroup      /subscriptions/b4085957-22f0-440f-ac06-71ef3dcd61cb/resourcegroups/PM_MSI_RG01/pr...
+				LinkedRemoteApplicationGroup
+				Location                           eastus
+				Name                               PM_MSI_DSK_HP01
+				Optimization                       RASAdminEngine.Core.OutputModels.ImagesOptimization.ImageOptimization
+				ProvisioningSettings
+				RDPPrinter                         RASAdminEngine.Core.OutputModels.HostPool.RDPPrinterSettings
+				ResourceGroup                      PM_MSI_RG01
+				SiteId                             1
+				TemplateSettings
+				TimeCreate                         11/12/2020 12:28:03 PM
+				TimeLastMod                        3/24/2025 6:09:08 PM
+				UserProfile                        RASAdminEngine.Core.OutputModels.UserProfile.UserProfileSettings
+				WorkspaceId                        1
+
+				PS C:\Parallels-RAS-V19.x-Doc-Script-4.00> $avdhostpool.TemplateSettings |fl
+
+
+				TemplateId        : 1107296294
+				TemplateVersionId : 2
+				TemplateTagId     : 0
+
+				PS C:\Parallels-RAS-V19.x-Doc-Script-4.00> $AVDTemplate = get-rastemplate -Id 1107296294 -ObjType "AVDTemplate"
+				PS C:\Parallels-RAS-V19.x-Doc-Script-4.00> $AVDTemplate | % {$_.psobject.properties | select name, value | sort name}
+
+				Name                               Value
+				----                               -----
+				AdminCreate                        devadmin@parallelslabus
+				AdminLastMod                       rasadmin
+				Advanced                           RASAdminEngine.Core.OutputModels.Template.TemplateAdvanced
+				AvailabilitySet                    False
+				AzureId                            /subscriptions/b4085957-22f0-440f-ac06-71ef3dcd61cb/resourceGroups/PM_MSI_RG01/pr...
+				CloneMethod
+				Description                        Windows 11 Ent Multi-Session Template
+				Distribution
+				Id                                 1107296294
+				InheritDefaultOptimizationSettings False
+				LicenseKeys
+				Name                               PM-Win11-T0
+				ObjType                            AVDTemplate
+				Optimization                       RASAdminEngine.Core.OutputModels.ImagesOptimization.ImageOptimization
+				Preparation                        RASAdminEngine.Core.OutputModels.Template.TemplatePreparation
+				ProviderId                         1056964609
+				SiteId                             1
+				TemplateType                       MultiSession
+				TimeCreate                         10/16/2023 11:27:43 AM
+				TimeLastMod                        1/16/2025 5:04:02 PM
+				VMId                               79590e09-51fe-44e2-b39d-d9300cacedd3
+
+				PS C:\Parallels-RAS-V19.x-Doc-Script-4.00> $AVDTemplateVersion = Get-RASTemplateVersion -id 2 -TemplateId 1107296294 -ObjType "AVDTemplate"
+				PS C:\Parallels-RAS-V19.x-Doc-Script-4.00> $AVDTemplateVersion |fl
+
+
+				Name         : Updated Agents Dec 2023
+				Id           : 2
+				TemplateId   : 1107296294
+				Description  : Updated Agents Dec 2023
+				AdminCreate  : rasadmin
+				AdminLastMod : rasadmin
+				TimeCreate   : 12/29/2023 7:27:13 PM
+				TimeLastMod  : 12/29/2023 7:27:13 PM
+
+
+
+				PS C:\Parallels-RAS-V19.x-Doc-Script-4.00>
+
+				PS C:\Parallels-RAS-V19.x-Doc-Script-4.00> $AVDHostPool.Configuration | % {$_.psobject.properties | select name, value | sort name}
+
+				Name                          Value
+				----                          -----
+				DefaultLicenseType    WindowsClient
+				LimitHosts                        5
+				LoadBalancerType       BreadthFirst
+				PoolType                     Pooled
+				PowerOnHost                    True
+				ProvisioningType           Template
+				PublishingType              Desktop
+				ValidationEnvironment         False
+			#>
+			
+			If($Null -ne $AVDHostPool.TemplateSettings)
+			{
+				$AVDTemplate = Get-RASTemplate -Id $AVDHostPool.TemplateSettings.TemplateId -ObjType "AVDTemplate" -EA 0 4> $Null
+				
+				If($? -and $Null -ne $AVDTemplate)
+				{
+					$AVDTemplateName = $AVDTemplate.Name
+					
+					$AVDTemplateVersion = Get-RASTemplateVersion -Id $AVDHostPool.TemplateSettings.TemplateVersionId -TemplateId $AVDHostPool.TemplateSettings.TemplateId -ObjType "AVDTemplate" -EA 0 4> $Null
+
+					If($? -and $Null -ne $AVDTemplateVersion)
+					{
+						$AVDTemplateVersionName = $AVDTemplateVersion.Name
+					}
+					Else
+					{
+						$AVDTemplateVersionName = "Unable to retrieve template version name"
+					}
+				}
+				Else
+				{
+					$AVDTemplateName        = "Unable to retrieve template data"
+					$AVDTemplateVersionName = "Unable to retrieve template data"
+				}
+			}
+			Else
+			{
+				$AVDTemplateName        = ""
+				$AVDTemplateVersionName = ""
+			}
+			
+			If($AVDHostPool.Configuration.ValidationEnvironment)
+			{
+				$ValidationEnvironment = "Yes"
+			}
+			Else
+			{
+				$ValidationEnvironment = "No"
+			}
+			
+			$AVDLocation = GetRASLocation $AVDHostPool.Location
+			
+			$Results = Get-RASAVDWorkspace -Id $AVDHostPool.WorkspaceId -EA 0 4> $Null
+			
+			If($? -and $Null -ne $Results)
+			{
+				$AVDWorkspace = $Results.Name
+				
+				$AVDProvider = Get-RASProvider -Id $Results.ProviderId  -EA 0 4>$Null
+				
+				If(!($?))
+				{
+					$AVDProviderName = "Unable to retrieve AVD Provider Name"
+				}
+				ElseIf($? -and $Null -eq $AVDStatus)
+				{
+					$AVDProviderName = "No AVD Provider Name retrieved"
+				}
+				Else
+				{
+					$AVDProviderName = $AVDProvider.Name
+				}
+			}
+			Else
+			{
+				$AVDWorkspace = "Unable to retrieve Workspace"
+			}
+			
+			Switch($AVDHostPool.Configuration.PublishingType)
+			{
+				"RemoteApp"	{$PublishingType = "Remote Application"; Break}
+				"Desktop"	{$PublishingType = "Desktop"; Break}
+				Default		{$PublishingType = "Unable to determine Publishing Type: $($AVDHostPool.Configuration.PublishingType)"; Break}
+			}
+			
+			Switch($AVDHostPool.Configuration.LoadBalancerType)
+			{
+				"BreadthFirst"	{$LoadBalancerType = "Breadth First"; Break}
+				"DepthFirst"	{$LoadBalancerType = "Depth First"; Break}
+				"Persistent"	{$LoadBalancerType = "Persistent"; Break}
+				Default			{$LoadBalancerType = "Unable to determine Load Balancer Type: $($AVDHostPool.Configuration.LoadBalancerType)"; Break}
+			}
+
+
+			Switch($AVDHostPool.Configuration.DefaultLicenseType)
+			{
+				"WindowsClient"		{$DefaultLicenseType = "Windows client"; Break}
+				"WindowsServer"		{$DefaultLicenseType = "Windows server"; Break}
+				"DoNotConfigure"	{$DefaultLicenseType = "Do not configure"; Break}
+				Default				{$DefaultLicenseType = "Unable to determine Default License Type: $($AVDHostPool.Configuration.DefaultLicenseType)"; Break}
+			}
+
+			If($Null -ne $AVDHostPool.LinkedDesktopApplicationGroup)
+			{
+				$LastIndex = $AVDHostPool.LinkedDesktopApplicationGroup.LastIndexOf("/") + 1
+				$ApplicationGroup = $AVDHostPool.LinkedDesktopApplicationGroup.SubString($LastIndex)
+			}
+			ElseIf($Null -ne $AVDHostPool.LinkedRemoteApplicationGroup)
+			{
+				$LastIndex = $AVDHostPool.LinkedRemoteApplicationGroup.LastIndexOf("/") + 1
+				$ApplicationGroup = $AVDHostPool.LinkedRemoteApplicationGroup.SubString($LastIndex)
+			}
+			
 			If($MSWord -or $PDF)
 			{
-				WriteWordLine 3 0 "Host pools"
+				WriteWordLine 4 0 "Pool $($AVDHostPool.Name)"
 			}
 			If($Text)
 			{
-				Line 2 "Host pools"
+				Line 3 "Name: " $AVDHostPool.Name
 			}
 			If($HTML)
 			{
-				WriteHTMLLine 3 0 "Host pools"
+				WriteHTMLLine 4 0 "Pool $($AVDHostPool.Name)"
 			}
 			
-			$AVDHostPools = Get-RASAVDHostPool -Siteid $Site.Id -EA 0 4> $Null
+			If($MSWord -or $PDF)
+			{
+				$ScriptInformation = New-Object System.Collections.ArrayList
+				$ScriptInformation.Add(@{Data = "Name"; Value = $AVDHostPool.Name; }) > $Null
+				$ScriptInformation.Add(@{Data = "Enabled"; Value = $AVDHostPool.Enabled.ToString(); }) > $Null
+				$ScriptInformation.Add(@{Data = "Friendly name"; Value = $AVDHostPool.FriendlyName; }) > $Null
+				$ScriptInformation.Add(@{Data = "Description"; Value = $AVDHostPool.Description; }) > $Null
+				$ScriptInformation.Add(@{Data = "Status"; Value = ""; }) > $Null
+				$ScriptInformation.Add(@{Data = "Template"; Value = $AVDTemplateName; }) > $Null
+				$ScriptInformation.Add(@{Data = "Template version"; Value = $AVDTemplateVersionName; }) > $Null
+				$ScriptInformation.Add(@{Data = "Resource group"; Value = $AVDHostPool.ResourceGroup; }) > $Null
+				$ScriptInformation.Add(@{Data = "Location"; Value = $AVDLocation; }) > $Null
+				$ScriptInformation.Add(@{Data = "Validation environment"; Value = $ValidationEnvironment; }) > $Null
+				$ScriptInformation.Add(@{Data = "Workspace"; Value = $AVDWorkspace; }) > $Null
+				$ScriptInformation.Add(@{Data = "Type"; Value = $AVDHostPool.Configuration.PoolType.ToString(); }) > $Null
+				$ScriptInformation.Add(@{Data = "Publishing type"; Value = $PublishingType; }) > $Null
+				$ScriptInformation.Add(@{Data = "Provisioning type"; Value = $AVDHostPool.Configuration.ProvisioningType.ToString(); }) > $Null
+				$ScriptInformation.Add(@{Data = "Session limit"; Value = $AVDHostPool.Configuration.LimitHosts.ToString(); }) > $Null
+				$ScriptInformation.Add(@{Data = "Load balancer"; Value = $LoadBalancerType; }) > $Null
+				$ScriptInformation.Add(@{Data = "Last modification by"; Value = $AVDHostPool.AdminLastMod; }) > $Null
+				$ScriptInformation.Add(@{Data = "Modified on"; Value = (Get-Date -UFormat "%c" $AVDHostPool.TimeLastMod); }) > $Null
+				$ScriptInformation.Add(@{Data = "Created by"; Value = $AVDHostPool.AdminCreate; }) > $Null
+				$ScriptInformation.Add(@{Data = "Created on"; Value = (Get-Date -UFormat "%c" $AVDHostPool.TimeCreate); }) > $Null
+				$ScriptInformation.Add(@{Data = "ID"; Value = $AVDHostPool.Id.ToString(); }) > $Null
+
+				$Table = AddWordTable -Hashtable $ScriptInformation `
+				-Columns Data,Value `
+				-List `
+				-Format $wdTableGrid `
+				-AutoFit $wdAutoFitFixed;
+
+				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+				$Table.Columns.Item(1).Width = 250;
+				$Table.Columns.Item(2).Width = 250;
+
+				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+				FindWordDocumentEnd
+				$Table = $Null
+				WriteWordLine 0 0 ""
+			}
+			If($Text)
+			{
+				Line 4 "Enabled`t`t`t: " $AVDHostPool.Enabled.ToString()
+				Line 4 "Friendly name`t`t: " $AVDHostPool.FriendlyName
+				Line 4 "Description`t`t: " $AVDHostPool.Description
+				Line 4 "Status`t`t`t: " ""
+				Line 4 "Template`t`t: " $AVDTemplateName
+				Line 4 "Template version`t: " $AVDTemplateVersionName
+				Line 4 "Resource group`t`t: " $AVDHostPool.ResourceGroup
+				Line 4 "Location`t`t: " $AVDLocation
+				Line 4 "Validation environment`t: " $ValidationEnvironment
+				Line 4 "Workspace`t`t: " $AVDWorkspace
+				Line 4 "Type`t`t`t: " $AVDHostPool.Configuration.PoolType.ToString()
+				Line 4 "Publishing type`t`t: " $PublishingType
+				Line 4 "Provisioning type`t: " $AVDHostPool.Configuration.ProvisioningType.ToString()
+				Line 4 "Session limit`t`t: " $AVDHostPool.Configuration.LimitHosts.ToString()
+				Line 4 "Load balancer`t`t: " $LoadBalancerType
+				Line 4 "Last modification by`t: " $AVDHostPool.AdminLastMod
+				Line 4 "Modified on`t`t: " (Get-Date -UFormat "%c" $AVDHostPool.TimeLastMod)
+				Line 4 "Created by`t`t: " $AVDHostPool.AdminCreate
+				Line 4 "Created on`t`t: " (Get-Date -UFormat "%c" $AVDHostPool.TimeCreate)
+				Line 4 "ID`t`t`t: " $AVDHostPool.Id.ToString()
+				Line 0 ""
+			}
+			If($HTML)
+			{
+				$rowdata = @()
+				$columnHeaders = @("Name",($Script:htmlsb),$AVDHostPool.Name,$htmlwhite)
+				$rowdata += @(,("Enabled",($Script:htmlsb),$AVDHostPool.Enabled.ToString(),$htmlwhite))
+				$rowdata += @(,("Friendly name",($Script:htmlsb),$AVDHostPool.FriendlyName,$htmlwhite))
+				$rowdata += @(,("Description",($Script:htmlsb),$AVDHostPool.Description,$htmlwhite))
+				$rowdata += @(,("Status",($Script:htmlsb),"",$htmlwhite))
+				$rowdata += @(,("Template",($Script:htmlsb),$AVDTemplateName,$htmlwhite))
+				$rowdata += @(,("Template version",($Script:htmlsb),$AVDTemplateVersionName,$htmlwhite))
+				$rowdata += @(,("Resource group",($Script:htmlsb),$AVDHostPool.ResourceGroup,$htmlwhite))
+				$rowdata += @(,("Location",($Script:htmlsb),$AVDLocation,$htmlwhite))
+				$rowdata += @(,("Validation environment",($Script:htmlsb),$ValidationEnvironment,$htmlwhite))
+				$rowdata += @(,("Workspace",($Script:htmlsb),$AVDWorkspace,$htmlwhite))
+				$rowdata += @(,("Type",($Script:htmlsb),$AVDHostPool.Configuration.PoolType.ToString(),$htmlwhite))
+				$rowdata += @(,("Publishing type",($Script:htmlsb),$PublishingType,$htmlwhite))
+				$rowdata += @(,("Provisioning type",($Script:htmlsb),$AVDHostPool.Configuration.ProvisioningType.ToString(),$htmlwhite))
+				$rowdata += @(,("Session limit",($Script:htmlsb),$AVDHostPool.Configuration.LimitHosts.ToString(),$htmlwhite))
+				$rowdata += @(,("Load balancer",($Script:htmlsb),$LoadBalancerType,$htmlwhite))
+				$rowdata += @(,("Last modification by",($Script:htmlsb), $AVDHostPool.AdminLastMod,$htmlwhite))
+				$rowdata += @(,("Modified on",($Script:htmlsb), (Get-Date -UFormat "%c" $AVDHostPool.TimeLastMod),$htmlwhite))
+				$rowdata += @(,("Created by",($Script:htmlsb), $AVDHostPool.AdminCreate,$htmlwhite))
+				$rowdata += @(,("Created on",($Script:htmlsb), (Get-Date -UFormat "%c" $AVDHostPool.TimeCreate),$htmlwhite))
+				$rowdata += @(,("ID",($Script:htmlsb),$AVDHostPool.Id.ToString(),$htmlwhite))
+
+				$msg = ""
+				$columnWidths = @("300","275")
+				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+				WriteHTMLLine 0 0 ""
+			}
 			
+			#General
+			If($MSword -or $PDF)
+			{
+				WriteWordLine 5 0 "General"
+			}
+			If($Text)
+			{
+				Line 4 "General"
+			}
+			If($HTML)
+			{
+				#nothing
+			}
+
+			If($MSWord -or $PDF)
+			{
+				$ScriptInformation = New-Object System.Collections.ArrayList
+				$ScriptInformation.Add(@{Data = "Enable host pool in site"; Value = $AVDHostPool.Enabled.ToString(); }) > $Null
+				$ScriptInformation.Add(@{Data = "Name"; Value = $AVDHostPool.Name; }) > $Null
+				$ScriptInformation.Add(@{Data = "Friendly name"; Value = $AVDHostPool.FriendlyName; }) > $Null
+				$ScriptInformation.Add(@{Data = "Description"; Value = $AVDHostPool.Description; }) > $Null
+				$ScriptInformation.Add(@{Data = "Resource group"; Value = $AVDHostPool.ResourceGroup; }) > $Null
+				$ScriptInformation.Add(@{Data = "Location"; Value = $AVDLocation; }) > $Null
+				$ScriptInformation.Add(@{Data = "Provider"; Value = $AVDProviderName; }) > $Null
+				$ScriptInformation.Add(@{Data = "Workspace"; Value = $AVDWorkspace; }) > $Null
+				$ScriptInformation.Add(@{Data = "Application group"; Value = $ApplicationGroup; }) > $Null
+				$Table = AddWordTable -Hashtable $ScriptInformation `
+				-Columns Data,Value `
+				-List `
+				-Format $wdTableGrid `
+				-AutoFit $wdAutoFitFixed;
+
+				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+				$Table.Columns.Item(1).Width = 200;
+				$Table.Columns.Item(2).Width = 250;
+
+				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+				FindWordDocumentEnd
+				$Table = $Null
+				WriteWordLine 0 0 ""
+			}
+			If($Text)
+			{
+				Line 5 "Enable host pool in site: " $AVDHostPool.Enabled.ToString()
+				Line 5 "Name`t`t`t: " $AVDHostPool.Name
+				Line 5 "Friendly name`t`t: " $AVDHostPool.FriendlyName
+				Line 5 "Description`t`t: " $AVDHostPool.Description
+				Line 5 "Resource group`t`t: " $AVDHostPool.ResourceGroup
+				Line 5 "Location`t`t: " $AVDLocation
+				Line 5 "Provider`t`t: " $AVDProviderName
+				Line 5 "Workspace`t`t: " $AVDWorkspace
+				Line 5 "Application group`t: " $ApplicationGroup
+				Line 0 ""
+			}
+			If($HTML)
+			{
+				$rowdata = @()
+				$columnHeaders = @("Enable host pool in site",($Script:htmlsb),$AVDHostPool.Enabled.ToString(),$htmlwhite)
+				$rowdata += @(,("Name",($Script:htmlsb),$AVDHostPool.Name,$htmlwhite))
+				$rowdata += @(,("Friendly name",($Script:htmlsb),$AVDHostPool.FriendlyName,$htmlwhite))
+				$rowdata += @(,("Description",($Script:htmlsb),$AVDHostPool.Description,$htmlwhite))
+				$rowdata += @(,("Resource group",($Script:htmlsb),$AVDHostPool.ResourceGroup,$htmlwhite))
+				$rowdata += @(,("Location",($Script:htmlsb),$AVDLocation,$htmlwhite))
+				$rowdata += @(,("Provider",($Script:htmlsb),$AVDProviderName,$htmlwhite))
+				$rowdata += @(,("Workspace",($Script:htmlsb),$AVDWorkspace,$htmlwhite))
+				$rowdata += @(,("Application group",($Script:htmlsb),$ApplicationGroup,$htmlwhite))
+				
+				$msg = "General"
+				$columnWidths = @("200","275")
+				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+				WriteHTMLLine 0 0 ""
+			}
+			
+			#Hosts
+			If($MSword -or $PDF)
+			{
+				WriteWordLine 5 0 "Hosts"
+			}
+			If($Text)
+			{
+				Line 4 "Hosts"
+			}
+			If($HTML)
+			{
+				#nothing
+			}
+			
+			$AVDHostPoolHosts = Get-RASAVDHost -ProviderId $AVD.ProviderId -EA 0 4> $Null | `
+								Where-Object {$_.HostPool -eq $AVDHostPool.Name} | `
+								Sort-Object Host
+			
+			<#
+				Host          : PM-Win11-05
+				AvdAgent      : 1.0.10673.700
+				HostPool      : PM_MSI_DSK_HP03
+				Workspace     : PM-Workspace01
+				Location      : eastus2
+				ResourceGroup : PM_MSI_RG01
+				SiteId        : 1
+				Id            : 0F795A23-86C3-4761-ABF6-C9BFB593C254
+				ProviderId    : 1056964609
+			#>
+
 			If(!($?))
 			{
-				Write-Warning "
-				`n
-				Unable to retrieve Azure Virtual Desktop Host Pools for Site $($Site.Name)`
-				"
 				If($MSWord -or $PDF)
 				{
 					WriteWordLine 0 0 ""
-					WriteWordLine 0 0 "Unable to retrieve Azure Virtual Desktop Host Pools for Site $($Site.Name)"
+					WriteWordLine 0 0 "Unable to retrieve AVD Host Pool Hosts"
 					WriteWordLine 0 0 ""
 				}
 				If($Text)
 				{
 					Line 0 ""
-					Line 0 "Unable to retrieve Azure Virtual Desktop Host Pools for Site $($Site.Name)"
+					Line 0 "Unable to retrieve AVD Host Pool Hosts"
 					Line 0 ""
 				}
 				If($HTML)
 				{
 					WriteHTMLLine 0 0 ""
-					WriteHTMLLine 0 0 "Unable to retrieve Azure Virtual Desktop Host Pools for Site $($Site.Name)"
+					WriteHTMLLine 0 0 "Unable to retrieve AVD Host Pool Hosts"
 					WriteHTMLLine 0 0 ""
 				}
 			}
-			ElseIf($? -and $Null -eq $AVDHostPools)
+			ElseIf($? -and $Null -eq $AVDHostPoolHosts)
 			{
-				Write-Host "
-			No Azure Virtual Desktop Host Pools retrieved for Site $($Site.Name).`
-				" -ForegroundColor White
 				If($MSWord -or $PDF)
 				{
 					WriteWordLine 0 0 ""
-					WriteWordLine 0 0 "No Azure Virtual Desktop Host Pools retrieved for Site $($Site.Name)"
+					WriteWordLine 0 0 "No AVD Host Pool Hosts retrieved"
 					WriteWordLine 0 0 ""
 				}
 				If($Text)
 				{
 					Line 0 ""
-					Line 0 "No Azure Virtual Desktop Host Pools retrieved for Site $($Site.Name)"
+					Line 0 "No AVD Host Pool Hosts retrieved"
 					Line 0 ""
 				}
 				If($HTML)
 				{
 					WriteHTMLLine 0 0 ""
-					WriteHTMLLine 0 0 "No Azure Virtual Desktop Host Pools retrieved for Site $($Site.Name)"
+					WriteHTMLLine 0 0 "No AVD Host Pool Hosts retrieved"
 					WriteHTMLLine 0 0 ""
 				}
 			}
 			Else
 			{
-				ForEach($AVDHostPool in $AVDHostPools)
+				ForEach($AVDHostPoolHost in $AVDHostPoolHosts)
 				{
-					Write-Verbose "$(Get-Date -Format G): `t`t$($AVDHostPool.Name)"
+					$Status = Get-RASAVDHostStatus -ProviderId $AVDHostPoolHost.ProviderId `
+					-HostId $AVDHostPoolHost.Id `
+					-StatusLevel Level1 `
+					-EA 0 4> $Null
 
-					<#
-						PS C:\Parallels-RAS-V19.x-Doc-Script-4.00> $AVDHostPool | % {$_.psobject.properties | select name, value | sort name}
+					If($?)
+					{
+						$FullStatus = GetRASStatus $Status.AgentState
+					}
+					Else
+					{
+						$FullStatus = "Unable to retrieve the agent state"
+					}
 
-						Name                               Value
-						----                               -----
-						Action
-						AdminCreate                        rasadmin
-						AdminLastMod                       Microsoft Azure
-						Agent                              RASAdminEngine.Core.OutputModels.HostPool.HostPoolAgentSettings
-						AppPackagesAssigned                RASAdminEngine.Core.OutputModels.AppPackagesAssigned
-						Assignments                        {73e0791f-07a6-47e1-9c92-b3ea97925abc, db8d7adc-bae1-4055-89fe-ea491f7dd71e, 1aca...
-						AutoUpgrade                        RASAdminEngine.Core.OutputModels.HostPool.AutoUpgradeSettings
-						AVDAgent                           RASAdminEngine.Core.OutputModels.AVD.AVDAgent
-						AzureId                            /subscriptions/b4085957-22f0-440f-ac06-71ef3dcd61cb/resourcegroups/PM_MSI_RG01/pr...
-						Configuration                      RASAdminEngine.Core.OutputModels.AVD.Configuration
-						Description                        Managed by Parallels RAS
-						Enabled                            True
-						FriendlyName                       PM Hostpool 01
-						Id                                 1
-						InheritDefaultActionsSettings
-						InheritDefaultAgentSettings        False
-						InheritDefaultAppPackageSettings   True
-						InheritDefaultAutoUpgradeSettings  True
-						InheritDefaultOptimizationSettings False
-						InheritDefaultRDPPrinterSettings   True
-						InheritDefaultUserProfileSettings  False
-						LinkedDesktopApplicationGroup      /subscriptions/b4085957-22f0-440f-ac06-71ef3dcd61cb/resourcegroups/PM_MSI_RG01/pr...
-						LinkedRemoteApplicationGroup
-						Location                           eastus
-						Name                               PM_MSI_DSK_HP01
-						Optimization                       RASAdminEngine.Core.OutputModels.ImagesOptimization.ImageOptimization
-						ProvisioningSettings
-						RDPPrinter                         RASAdminEngine.Core.OutputModels.HostPool.RDPPrinterSettings
-						ResourceGroup                      PM_MSI_RG01
-						SiteId                             1
-						TemplateSettings
-						TimeCreate                         11/12/2020 12:28:03 PM
-						TimeLastMod                        3/24/2025 6:09:08 PM
-						UserProfile                        RASAdminEngine.Core.OutputModels.UserProfile.UserProfileSettings
-						WorkspaceId                        1
-
-						PS C:\Parallels-RAS-V19.x-Doc-Script-4.00> $avdhostpool.TemplateSettings |fl
-
-
-						TemplateId        : 1107296294
-						TemplateVersionId : 2
-						TemplateTagId     : 0
-
-						PS C:\Parallels-RAS-V19.x-Doc-Script-4.00> $AVDTemplate = get-rastemplate -Id 1107296294 -ObjType "AVDTemplate"
-						PS C:\Parallels-RAS-V19.x-Doc-Script-4.00> $AVDTemplate | % {$_.psobject.properties | select name, value | sort name}
-
-						Name                               Value
-						----                               -----
-						AdminCreate                        devadmin@parallelslabus
-						AdminLastMod                       rasadmin
-						Advanced                           RASAdminEngine.Core.OutputModels.Template.TemplateAdvanced
-						AvailabilitySet                    False
-						AzureId                            /subscriptions/b4085957-22f0-440f-ac06-71ef3dcd61cb/resourceGroups/PM_MSI_RG01/pr...
-						CloneMethod
-						Description                        Windows 11 Ent Multi-Session Template
-						Distribution
-						Id                                 1107296294
-						InheritDefaultOptimizationSettings False
-						LicenseKeys
-						Name                               PM-Win11-T0
-						ObjType                            AVDTemplate
-						Optimization                       RASAdminEngine.Core.OutputModels.ImagesOptimization.ImageOptimization
-						Preparation                        RASAdminEngine.Core.OutputModels.Template.TemplatePreparation
-						ProviderId                         1056964609
-						SiteId                             1
-						TemplateType                       MultiSession
-						TimeCreate                         10/16/2023 11:27:43 AM
-						TimeLastMod                        1/16/2025 5:04:02 PM
-						VMId                               79590e09-51fe-44e2-b39d-d9300cacedd3
-
-						PS C:\Parallels-RAS-V19.x-Doc-Script-4.00> $AVDTemplateVersion = Get-RASTemplateVersion -id 2 -TemplateId 1107296294 -ObjType "AVDTemplate"
-						PS C:\Parallels-RAS-V19.x-Doc-Script-4.00> $AVDTemplateVersion |fl
-
-
-						Name         : Updated Agents Dec 2023
-						Id           : 2
-						TemplateId   : 1107296294
-						Description  : Updated Agents Dec 2023
-						AdminCreate  : rasadmin
-						AdminLastMod : rasadmin
-						TimeCreate   : 12/29/2023 7:27:13 PM
-						TimeLastMod  : 12/29/2023 7:27:13 PM
-
-
-
-						PS C:\Parallels-RAS-V19.x-Doc-Script-4.00>
-
-						PS C:\Parallels-RAS-V19.x-Doc-Script-4.00> $AVDHostPool.Configuration | % {$_.psobject.properties | select name, value | sort name}
-
-						Name                          Value
-						----                          -----
-						DefaultLicenseType    WindowsClient
-						LimitHosts                        5
-						LoadBalancerType       BreadthFirst
-						PoolType                     Pooled
-						PowerOnHost                    True
-						ProvisioningType           Template
-						PublishingType              Desktop
-						ValidationEnvironment         False
-					#>
-					
 					If($Null -ne $AVDHostPool.TemplateSettings)
 					{
-						$AVDTemplate = Get-RASTemplate -Id $AVDHostPool.TemplateSettings.TemplateId -ObjType "AVDTemplate" -EA 0 4> $Null
-						
-						If($? -and $Null -ne $AVDTemplate)
-						{
-							$AVDTemplateName = $AVDTemplate.Name
-							
-							$AVDTemplateVersion = Get-RASTemplateVersion -Id $AVDHostPool.TemplateSettings.TemplateVersionId -TemplateId $AVDHostPool.TemplateSettings.TemplateId -ObjType "AVDTemplate" -EA 0 4> $Null
-
-							If($? -and $Null -ne $AVDTemplateVersion)
-							{
-								$AVDTemplateVersionName = $AVDTemplateVersion.Name
-							}
-							Else
-							{
-								$AVDTemplateVersionName = "Unable to retrieve template version name"
-							}
-						}
-						Else
-						{
-							$AVDTemplateName        = "Unable to retrieve template data"
-							$AVDTemplateVersionName = "Unable to retrieve template data"
-						}
-					}
-					Else
-					{
-						$AVDTemplateName        = ""
-						$AVDTemplateVersionName = ""
-					}
-					
-					If($AVDHostPool.Configuration.ValidationEnvironment)
-					{
-						$ValidationEnvironment = "Yes"
-					}
-					Else
-					{
-						$ValidationEnvironment = "No"
-					}
-					
-					Switch($AVDHostPool.Location)
-					{
-						"australiacentral"		{$AVDLocation = "Australia Central"; Break}
-						"australiacentral2"		{$AVDLocation = "Australia Central 2"; Break}
-						"australiaeast"			{$AVDLocation = "Australia East"; Break}
-						"australiasoutheast"	{$AVDLocation = "Australia Southeast"; Break}
-						"austriaeast"			{$AVDLocation = "Austria East"; Break}
-						"belgiumcentral"		{$AVDLocation = "Belgium Central"; Break}
-						"brazilsouth"			{$AVDLocation = "Brazil South"; Break}
-						"brazilsoutheast"		{$AVDLocation = "Brazil Southeast"; Break}
-						"canadacentral"			{$AVDLocation = "Canada Central"; Break}
-						"canadaeast"			{$AVDLocation = "Canada East"; Break}
-						"centralindia"			{$AVDLocation = "Central India"; Break}
-						"centralus"				{$AVDLocation = "Central US"; Break}
-						"chilecentral"			{$AVDLocation = "Chile Central"; Break}
-						"eastasia"				{$AVDLocation = "East Asia"; Break}
-						"eastus"				{$AVDLocation = "East US"; Break}
-						"eastus2"				{$AVDLocation = "East US 2"; Break}
-						"eastusstg"				{$AVDLocation = "East US STG"; Break}
-						"francecentral"			{$AVDLocation = "France Central"; Break}
-						"francesouth"			{$AVDLocation = "France South"; Break}
-						"germanynorth"			{$AVDLocation = "Germany North"; Break}
-						"germanywestcentral"	{$AVDLocation = "Germany West Central"; Break}
-						"indonesiacentral"		{$AVDLocation = "Indonesia Central"; Break}
-						"israelcentral"			{$AVDLocation = "Israel Central"; Break}
-						"italynorth"			{$AVDLocation = "Italy North"; Break}
-						"japaneast"				{$AVDLocation = "Japan East"; Break}
-						"japanwest"				{$AVDLocation = "Japan West"; Break}
-						"jioindiacentral"		{$AVDLocation = "Jio India Central"; Break}
-						"jioindiawest"			{$AVDLocation = "Jio India West"; Break}
-						"koreacentral"			{$AVDLocation = "Korea Central"; Break}
-						"koreasouth"			{$AVDLocation = "Korea South"; Break}
-						"malaysiawest"			{$AVDLocation = "Malaysia West"; Break}
-						"mexicocentral"			{$AVDLocation = "Mexico Central"; Break}
-						"newzealandnorth"		{$AVDLocation = "New Zealand North"; Break}
-						"northcentralus"		{$AVDLocation = "North Central US"; Break}
-						"northeurope"			{$AVDLocation = "North Europe"; Break}
-						"norwayeast"			{$AVDLocation = "Norway East"; Break}
-						"norwaywest"			{$AVDLocation = "Norway West"; Break}
-						"polandcentral"			{$AVDLocation = "Poland Central"; Break}
-						"qatarcentral"			{$AVDLocation = "Qatar Central"; Break}
-						"southafricanorth"		{$AVDLocation = "South Africa North"; Break}
-						"southafricawest"		{$AVDLocation = "South Africa West"; Break}
-						"southcentralus"		{$AVDLocation = "South Central US"; Break}
-						"southcentralusstg"		{$AVDLocation = "South Central US STG"; Break}
-						"southeastasia"			{$AVDLocation = "Southeast Asia"; Break}
-						"southindia"			{$AVDLocation = "South India"; Break}
-						"spaincentral"			{$AVDLocation = "Spain Central"; Break}
-						"swedencentral"			{$AVDLocation = "Sweden Central"; Break}
-						"switzerlandnorth"		{$AVDLocation = "Switzerland North"; Break}
-						"switzerlandwest"		{$AVDLocation = "Switzerland West"; Break}
-						"uaecentral"			{$AVDLocation = "UAE Central"; Break}
-						"uaenorth"				{$AVDLocation = "UAE North"; Break}
-						"uksouth"				{$AVDLocation = "UK South"; Break}
-						"ukwest"				{$AVDLocation = "UK West"; Break}
-						"westcentralus"			{$AVDLocation = "West Central US"; Break}
-						"westeurope"			{$AVDLocation = "West Europe"; Break}
-						"westindia"				{$AVDLocation = "West India"; Break}
-						"westus"				{$AVDLocation = "West US"; Break}
-						"westus2"				{$AVDLocation = "West US 2"; Break}
-						"westus3"				{$AVDLocation = "West US 3"; Break}
-						Default					{$AVDLocation = "Unable to determine AVD Location: $($AVDHostPool.Location)"; Break}
-					}
-					
-					$Results = Get-RASAVDWorkspace -Id $AVDHostPool.WorkspaceId -EA 0 4> $Null
-					
-					If($? -and $Null -ne $Results)
-					{
-						$AVDWorkspace = $Results.Name
-						
-						$AVDProvider = Get-RASProvider -Id $Results.ProviderId  -EA 0 4>$Null
-						
-						If(!($?))
-						{
-							$AVDProviderName = "Unable to retrieve AVD Provider Name"
-						}
-						ElseIf($? -and $Null -eq $AVDStatus)
-						{
-							$AVDProviderName = "No AVD Provider Name retrieved"
-						}
-						Else
-						{
-							$AVDProviderName = $AVDProvider.Name
-						}
-					}
-					Else
-					{
-						$AVDWorkspace = "Unable to retrieve Workspace"
-					}
-					
-					Switch($AVDHostPool.Configuration.PublishingType)
-					{
-						"RemoteApp"	{$PublishingType = "Remote Application"; Break}
-						"Desktop"	{$PublishingType = "Desktop"; Break}
-						Default		{$PublishingType = "Unable to determine Publishing Type: $($AVDHostPool.Configuration.PublishingType)"; Break}
-					}
-					
-					Switch($AVDHostPool.Configuration.LoadBalancerType)
-					{
-						"BreadthFirst"	{$LoadBalancerType = "Breadth First"; Break}
-						"DepthFirst"	{$LoadBalancerType = "Depth First"; Break}
-						"Persistent"	{$LoadBalancerType = "Persistent"; Break}
-						Default			{$LoadBalancerType = "Unable to determine Load Balancer Type: $($AVDHostPool.Configuration.LoadBalancerType)"; Break}
-					}
-
-
-					Switch($AVDHostPool.Configuration.DefaultLicenseType)
-					{
-						"WindowsClient"		{$DefaultLicenseType = "Windows client"; Break}
-						"WindowsServer"		{$DefaultLicenseType = "Windows server"; Break}
-						"DoNotConfigure"	{$DefaultLicenseType = "Do not configure"; Break}
-						Default				{$DefaultLicenseType = "Unable to determine Default License Type: $($AVDHostPool.Configuration.DefaultLicenseType)"; Break}
-					}
-
-					If($Null -ne $AVDHostPool.LinkedDesktopApplicationGroup)
-					{
-						$LastIndex = $AVDHostPool.LinkedDesktopApplicationGroup.LastIndexOf("/") + 1
-						$ApplicationGroup = $AVDHostPool.LinkedDesktopApplicationGroup.SubString($LastIndex)
-					}
-					ElseIf($Null -ne $AVDHostPool.LinkedRemoteApplicationGroup)
-					{
-						$LastIndex = $AVDHostPool.LinkedRemoteApplicationGroup.LastIndexOf("/") + 1
-						$ApplicationGroup = $AVDHostPool.LinkedRemoteApplicationGroup.SubString($LastIndex)
-					}
-					
-					If($MSWord -or $PDF)
-					{
-						WriteWordLine 4 0 "Pool $($AVDHostPool.Name)"
-					}
-					If($Text)
-					{
-						Line 3 "Name: " $AVDHostPool.Name
-					}
-					If($HTML)
-					{
-						WriteHTMLLine 4 0 "Pool $($AVDHostPool.Name)"
-					}
-					
-					If($MSWord -or $PDF)
-					{
-						$ScriptInformation = New-Object System.Collections.ArrayList
-						$ScriptInformation.Add(@{Data = "Name"; Value = $AVDHostPool.Name; }) > $Null
-						$ScriptInformation.Add(@{Data = "Enabled"; Value = $AVDHostPool.Enabled.ToString(); }) > $Null
-						$ScriptInformation.Add(@{Data = "Friendly name"; Value = $AVDHostPool.FriendlyName; }) > $Null
-						$ScriptInformation.Add(@{Data = "Description"; Value = $AVDHostPool.Description; }) > $Null
-						$ScriptInformation.Add(@{Data = "Status"; Value = ""; }) > $Null
-						$ScriptInformation.Add(@{Data = "Template"; Value = $AVDTemplateName; }) > $Null
-						$ScriptInformation.Add(@{Data = "Template version"; Value = $AVDTemplateVersionName; }) > $Null
-						$ScriptInformation.Add(@{Data = "Resource group"; Value = $AVDHostPool.ResourceGroup; }) > $Null
-						$ScriptInformation.Add(@{Data = "Location"; Value = $AVDLocation; }) > $Null
-						$ScriptInformation.Add(@{Data = "Validation environment"; Value = $ValidationEnvironment; }) > $Null
-						$ScriptInformation.Add(@{Data = "Workspace"; Value = $AVDWorkspace; }) > $Null
-						$ScriptInformation.Add(@{Data = "Type"; Value = $AVDHostPool.Configuration.PoolType.ToString(); }) > $Null
-						$ScriptInformation.Add(@{Data = "Publishing type"; Value = $PublishingType; }) > $Null
-						$ScriptInformation.Add(@{Data = "Provisioning type"; Value = $AVDHostPool.Configuration.ProvisioningType.ToString(); }) > $Null
-						$ScriptInformation.Add(@{Data = "Session limit"; Value = $AVDHostPool.Configuration.LimitHosts.ToString(); }) > $Null
-						$ScriptInformation.Add(@{Data = "Load balancer"; Value = $LoadBalancerType; }) > $Null
-						$ScriptInformation.Add(@{Data = "Last modification by"; Value = $AVDHostPool.AdminLastMod; }) > $Null
-						$ScriptInformation.Add(@{Data = "Modified on"; Value = (Get-Date -UFormat "%c" $AVDHostPool.TimeLastMod); }) > $Null
-						$ScriptInformation.Add(@{Data = "Created by"; Value = $AVDHostPool.AdminCreate; }) > $Null
-						$ScriptInformation.Add(@{Data = "Created on"; Value = (Get-Date -UFormat "%c" $AVDHostPool.TimeCreate); }) > $Null
-						$ScriptInformation.Add(@{Data = "ID"; Value = $AVDHostPool.Id.ToString(); }) > $Null
-
-						$Table = AddWordTable -Hashtable $ScriptInformation `
-						-Columns Data,Value `
-						-List `
-						-Format $wdTableGrid `
-						-AutoFit $wdAutoFitFixed;
-
-						SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
-						SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
-						$Table.Columns.Item(1).Width = 250;
-						$Table.Columns.Item(2).Width = 250;
-
-						$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-						FindWordDocumentEnd
-						$Table = $Null
-						WriteWordLine 0 0 ""
-					}
-					If($Text)
-					{
-						Line 4 "Enabled`t`t`t: " $AVDHostPool.Enabled.ToString()
-						Line 4 "Friendly name`t`t: " $AVDHostPool.FriendlyName
-						Line 4 "Description`t`t: " $AVDHostPool.Description
-						Line 4 "Status`t`t`t: " ""
-						Line 4 "Template`t`t: " $AVDTemplateName
-						Line 4 "Template version`t: " $AVDTemplateVersionName
-						Line 4 "Resource group`t`t: " $AVDHostPool.ResourceGroup
-						Line 4 "Location`t`t: " $AVDLocation
-						Line 4 "Validation environment`t: " $ValidationEnvironment
-						Line 4 "Workspace`t`t: " $AVDWorkspace
-						Line 4 "Type`t`t`t: " $AVDHostPool.Configuration.PoolType.ToString()
-						Line 4 "Publishing type`t`t: " $PublishingType
-						Line 4 "Provisioning type`t: " $AVDHostPool.Configuration.ProvisioningType.ToString()
-						Line 4 "Session limit`t`t: " $AVDHostPool.Configuration.LimitHosts.ToString()
-						Line 4 "Load balancer`t`t: " $LoadBalancerType
-						Line 4 "Last modification by`t: " $AVDHostPool.AdminLastMod
-						Line 4 "Modified on`t`t: " (Get-Date -UFormat "%c" $AVDHostPool.TimeLastMod)
-						Line 4 "Created by`t`t: " $AVDHostPool.AdminCreate
-						Line 4 "Created on`t`t: " (Get-Date -UFormat "%c" $AVDHostPool.TimeCreate)
-						Line 4 "ID`t`t`t: " $AVDHostPool.Id.ToString()
-						Line 0 ""
-					}
-					If($HTML)
-					{
-						$rowdata = @()
-						$columnHeaders = @("Name",($Script:htmlsb),$AVDHostPool.Name,$htmlwhite)
-						$rowdata += @(,("Enabled",($Script:htmlsb),$AVDHostPool.Enabled.ToString(),$htmlwhite))
-						$rowdata += @(,("Friendly name",($Script:htmlsb),$AVDHostPool.FriendlyName,$htmlwhite))
-						$rowdata += @(,("Description",($Script:htmlsb),$AVDHostPool.Description,$htmlwhite))
-						$rowdata += @(,("Status",($Script:htmlsb),"",$htmlwhite))
-						$rowdata += @(,("Template",($Script:htmlsb),$AVDTemplateName,$htmlwhite))
-						$rowdata += @(,("Template version",($Script:htmlsb),$AVDTemplateVersionName,$htmlwhite))
-						$rowdata += @(,("Resource group",($Script:htmlsb),$AVDHostPool.ResourceGroup,$htmlwhite))
-						$rowdata += @(,("Location",($Script:htmlsb),$AVDLocation,$htmlwhite))
-						$rowdata += @(,("Validation environment",($Script:htmlsb),$ValidationEnvironment,$htmlwhite))
-						$rowdata += @(,("Workspace",($Script:htmlsb),$AVDWorkspace,$htmlwhite))
-						$rowdata += @(,("Type",($Script:htmlsb),$AVDHostPool.Configuration.PoolType.ToString(),$htmlwhite))
-						$rowdata += @(,("Publishing type",($Script:htmlsb),$PublishingType,$htmlwhite))
-						$rowdata += @(,("Provisioning type",($Script:htmlsb),$AVDHostPool.Configuration.ProvisioningType.ToString(),$htmlwhite))
-						$rowdata += @(,("Session limit",($Script:htmlsb),$AVDHostPool.Configuration.LimitHosts.ToString(),$htmlwhite))
-						$rowdata += @(,("Load balancer",($Script:htmlsb),$LoadBalancerType,$htmlwhite))
-						$rowdata += @(,("Last modification by",($Script:htmlsb), $AVDHostPool.AdminLastMod,$htmlwhite))
-						$rowdata += @(,("Modified on",($Script:htmlsb), (Get-Date -UFormat "%c" $AVDHostPool.TimeLastMod),$htmlwhite))
-						$rowdata += @(,("Created by",($Script:htmlsb), $AVDHostPool.AdminCreate,$htmlwhite))
-						$rowdata += @(,("Created on",($Script:htmlsb), (Get-Date -UFormat "%c" $AVDHostPool.TimeCreate),$htmlwhite))
-						$rowdata += @(,("ID",($Script:htmlsb),$AVDHostPool.Id.ToString(),$htmlwhite))
-
-						$msg = ""
-						$columnWidths = @("300","275")
-						FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-						WriteHTMLLine 0 0 ""
-					}
-					
-					#General
-					If($MSword -or $PDF)
-					{
-						WriteWordLine 5 0 "General"
-					}
-					If($Text)
-					{
-						Line 4 "General"
-					}
-					If($HTML)
-					{
-						#nothing
-					}
-
-					If($MSWord -or $PDF)
-					{
-						$ScriptInformation = New-Object System.Collections.ArrayList
-						$ScriptInformation.Add(@{Data = "Enable host pool in site"; Value = $AVDHostPool.Enabled.ToString(); }) > $Null
-						$ScriptInformation.Add(@{Data = "Name"; Value = $AVDHostPool.Name; }) > $Null
-						$ScriptInformation.Add(@{Data = "Friendly name"; Value = $AVDHostPool.FriendlyName; }) > $Null
-						$ScriptInformation.Add(@{Data = "Description"; Value = $AVDHostPool.Description; }) > $Null
-						$ScriptInformation.Add(@{Data = "Resource group"; Value = $AVDHostPool.ResourceGroup; }) > $Null
-						$ScriptInformation.Add(@{Data = "Location"; Value = $AVDLocation; }) > $Null
-						$ScriptInformation.Add(@{Data = "Provider"; Value = $AVDProviderName; }) > $Null
-						$ScriptInformation.Add(@{Data = "Workspace"; Value = $AVDWorkspace; }) > $Null
-						$ScriptInformation.Add(@{Data = "Application group"; Value = $ApplicationGroup; }) > $Null
-						$Table = AddWordTable -Hashtable $ScriptInformation `
-						-Columns Data,Value `
-						-List `
-						-Format $wdTableGrid `
-						-AutoFit $wdAutoFitFixed;
-
-						SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
-						SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
-						$Table.Columns.Item(1).Width = 200;
-						$Table.Columns.Item(2).Width = 250;
-
-						$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-						FindWordDocumentEnd
-						$Table = $Null
-						WriteWordLine 0 0 ""
-					}
-					If($Text)
-					{
-						Line 5 "Enable host pool in site: " $AVDHostPool.Enabled.ToString()
-						Line 5 "Name`t`t`t: " $AVDHostPool.Name
-						Line 5 "Friendly name`t`t: " $AVDHostPool.FriendlyName
-						Line 5 "Description`t`t: " $AVDHostPool.Description
-						Line 5 "Resource group`t`t: " $AVDHostPool.ResourceGroup
-						Line 5 "Location`t`t: " $AVDLocation
-						Line 5 "Provider`t`t: " $AVDProviderName
-						Line 5 "Workspace`t`t: " $AVDWorkspace
-						Line 5 "Application group`t: " $ApplicationGroup
-						Line 0 ""
-					}
-					If($HTML)
-					{
-						$rowdata = @()
-						$columnHeaders = @("Enable host pool in site",($Script:htmlsb),$AVDHostPool.Enabled.ToString(),$htmlwhite)
-						$rowdata += @(,("Name",($Script:htmlsb),$AVDHostPool.Name,$htmlwhite))
-						$rowdata += @(,("Friendly name",($Script:htmlsb),$AVDHostPool.FriendlyName,$htmlwhite))
-						$rowdata += @(,("Description",($Script:htmlsb),$AVDHostPool.Description,$htmlwhite))
-						$rowdata += @(,("Resource group",($Script:htmlsb),$AVDHostPool.ResourceGroup,$htmlwhite))
-						$rowdata += @(,("Location",($Script:htmlsb),$AVDLocation,$htmlwhite))
-						$rowdata += @(,("Provider",($Script:htmlsb),$AVDProviderName,$htmlwhite))
-						$rowdata += @(,("Workspace",($Script:htmlsb),$AVDWorkspace,$htmlwhite))
-						$rowdata += @(,("Application group",($Script:htmlsb),$ApplicationGroup,$htmlwhite))
-						
-						$msg = "General"
-						$columnWidths = @("200","275")
-						FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-						WriteHTMLLine 0 0 ""
-					}
-					
-					#Hosts
-					If($MSword -or $PDF)
-					{
-						WriteWordLine 5 0 "Hosts"
-					}
-					If($Text)
-					{
-						Line 4 "Hosts"
-					}
-					If($HTML)
-					{
-						#nothing
-					}
-					<#
-					If($MSWord -or $PDF)
-					{
-						$ScriptInformation = New-Object System.Collections.ArrayList
-						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
-						$Table = AddWordTable -Hashtable $ScriptInformation `
-						-Columns Data,Value `
-						-List `
-						-Format $wdTableGrid `
-						-AutoFit $wdAutoFitFixed;
-
-						SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
-						SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
-						$Table.Columns.Item(1).Width = 200;
-						$Table.Columns.Item(2).Width = 250;
-
-						$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-						FindWordDocumentEnd
-						$Table = $Null
-						WriteWordLine 0 0 ""
-					}
-					If($Text)
-					{
-						Line 5 "" ""
-						Line 0 ""
-					}
-					If($HTML)
-					{
-						$rowdata = @()
-						$columnHeaders = @("",($Script:htmlsb),"",$htmlwhite)
-						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
-						
-						$msg = "Hosts"
-						$columnWidths = @("200","275")
-						FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-						WriteHTMLLine 0 0 ""
-					}
-					#>
-					
-					#Configuration
-					If($MSword -or $PDF)
-					{
-						WriteWordLine 5 0 "Configuration"
-					}
-					If($Text)
-					{
-						Line 4 "Configuration"
-					}
-					If($HTML)
-					{
-						#nothing
-					}
-
-					If($MSWord -or $PDF)
-					{
-						$ScriptInformation = New-Object System.Collections.ArrayList
-						$ScriptInformation.Add(@{Data = "Host pool configuration"; Value = ""; }) > $Null
-						$ScriptInformation.Add(@{Data = "     Host pool type"; Value = $AVDHostPool.Configuration.PoolType.ToString(); }) > $Null
-						$ScriptInformation.Add(@{Data = "     Publishing type"; Value = $PublishingType; }) > $Null
-						$ScriptInformation.Add(@{Data = "     Provisioning type"; Value = $AVDHostPool.Configuration.ProvisioningType.ToString(); }) > $Null
-						$ScriptInformation.Add(@{Data = "     Load balancer"; Value = $LoadBalancerType; }) > $Null
-						$ScriptInformation.Add(@{Data = "     Limit number of sessions on host"; Value = $AVDHostPool.Configuration.LimitHosts.ToString(); }) > $Null
-						$ScriptInformation.Add(@{Data = "     Power on host on-demand"; Value = $AVDHostPool.Configuration.PowerOnHost.ToString(); }) > $Null
-						$ScriptInformation.Add(@{Data = "     Default license type"; Value = $DefaultLicenseType; }) > $Null
-						$ScriptInformation.Add(@{Data = "Service updates validation"; Value = ""; }) > $Null
-						$ScriptInformation.Add(@{Data = "     Validation environment"; Value = $ValidationEnvironment; }) > $Null
-
-						$Table = AddWordTable -Hashtable $ScriptInformation `
-						-Columns Data,Value `
-						-List `
-						-Format $wdTableGrid `
-						-AutoFit $wdAutoFitFixed;
-
-						SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
-						SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
-						$Table.Columns.Item(1).Width = 250;
-						$Table.Columns.Item(2).Width = 250;
-
-						$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-						FindWordDocumentEnd
-						$Table = $Null
-						WriteWordLine 0 0 ""
-					}
-					If($Text)
-					{
-						Line 5 "Host pool configuration"
-						Line 6 "Host pool type`t`t`t: " $AVDHostPool.Configuration.PoolType.ToString()
-						Line 6 "Publishing type`t`t`t: " $PublishingType
-						Line 6 "Provisioning type`t`t: " $AVDHostPool.Configuration.ProvisioningType.ToString()
-						Line 6 "Load balancer`t`t`t: " $LoadBalancerType
-						Line 6 "Limit number of sessions on host: " $AVDHostPool.Configuration.LimitHosts.ToString()
-						Line 6 "Power on host on-demand`t`t: " $AVDHostPool.Configuration.PowerOnHost.ToString()
-						Line 6 "Default license type`t`t: " $DefaultLicenseType
-						Line 5 "Service updates validation" 
-						Line 6 "Validation environment`t`t: " $ValidationEnvironment
-						Line 0 ""
-					}
-					If($HTML)
-					{
-						$rowdata = @()
-						$columnHeaders = @("Host pool configuration",($Script:htmlsb),"",$htmlwhite)
-						$rowdata += @(,("     Host pool type",($Script:htmlsb), $AVDHostPool.Configuration.PoolType.ToString(),$htmlwhite))
-						$rowdata += @(,("     Publishing type",($Script:htmlsb), $PublishingType,$htmlwhite))
-						$rowdata += @(,("     Provisioning type",($Script:htmlsb), $AVDHostPool.Configuration.ProvisioningType.ToString(),$htmlwhite))
-						$rowdata += @(,("     Load balancer",($Script:htmlsb), $LoadBalancerType,$htmlwhite))
-						$rowdata += @(,("     Limit number of sessions on host",($Script:htmlsb), $AVDHostPool.Configuration.LimitHosts.ToString(),$htmlwhite))
-						$rowdata += @(,("     Power on host on-demand",($Script:htmlsb), $AVDHostPool.Configuration.PowerOnHost.ToString(),$htmlwhite))
-						$rowdata += @(,("     Default license type",($Script:htmlsb), $DefaultLicenseType,$htmlwhite))
-						$rowdata += @(,("Service updates validation",($Script:htmlsb), "",$htmlwhite))
-						$rowdata += @(,("     Validation environment",($Script:htmlsb), $ValidationEnvironment,$htmlwhite))
-
-						$msg = "Configuration"
-						$columnWidths = @("300","275")
-						FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-						WriteHTMLLine 0 0 ""
-					}
-
-					#Template
-					If($Null -ne $AVDHostPool.TemplateSettings)
-					{
-						If($MSword -or $PDF)
-						{
-							WriteWordLine 5 0 "Template"
-						}
-						If($Text)
-						{
-							Line 4 "Template"
-						}
-						If($HTML)
-						{
-							#nothing
-						}
-
 						$AVDHostPoolTemplate = Get-RASTemplate -Id $AVDHostPool.TemplateSettings.TemplateId -ObjType AVDTemplate -EA 0 4> $Null
 						
 						If($?)
@@ -27520,2931 +27459,3175 @@ Function OutputAVDDetails
 						}
 						Else
 						{
-							$AVDHostPoolTemplateName         = "Unable to retrieve AVD host pool template"
-							$AVDHostPoolTemplateVersionName  = "N/A"
-						}
-						<#
-							PS C:\Users\carl.webster> $AVDHostPool.TemplateSettings | % {$_.psobject.properties | select name, value | sort name}
-
-							Name                   Value
-							----                   -----
-							TemplateId        1107296294
-							TemplateTagId              0
-							TemplateVersionId          2
-
-							PS C:\Users\carl.webster> $AVDHostPoolTemplate = Get-RASTemplate -id 1107296294 -ObjType AVDTemplate
-							PS C:\Users\carl.webster> $AVDHostPoolTemplateVersion  = Get-RASTemplateVersion -id 2 -ObjType AVDTemplateVersion
-
-							cmdlet Get-RASTemplateVersion at command pipeline position 1
-							Supply values for the following parameters:
-							TemplateId: 1107296294
-							PS C:\Users\carl.webster> $AVDHostPoolTemplateVersion |fl
-
-
-							Name         : Updated Agents Dec 2023
-							Id           : 2
-							TemplateId   : 1107296294
-							Description  : Updated Agents Dec 2023
-							AdminCreate  : rasadmin
-							AdminLastMod : rasadmin
-							TimeCreate   : 12/29/2023 7:27:13 PM
-							TimeLastMod  : 12/29/2023 7:27:13 PM
-
-
-
-							PS C:\Users\carl.webster> $AVDHostPoolTemplate |fl
-
-
-							ObjType                            : AVDTemplate
-							Name                               : PM-Win11-T0
-							SiteId                             : 1
-							Description                        : Windows 11 Ent Multi-Session Template
-							ProviderId                         : 1056964609
-							TemplateType                       : MultiSession
-							VMId                               : 79590e09-51fe-44e2-b39d-d9300cacedd3
-							CloneMethod                        :
-							AvailabilitySet                    : False
-							Advanced                           : RASAdminEngine.Core.OutputModels.Template.TemplateAdvanced
-							Preparation                        : RASAdminEngine.Core.OutputModels.Template.TemplatePreparation
-							InheritDefaultOptimizationSettings : False
-							Optimization                       : RASAdminEngine.Core.OutputModels.ImagesOptimization.ImageOptimization
-							LicenseKeys                        :
-							AzureId                            : /subscriptions/b4085957-22f0-440f-ac06-71ef3dcd61cb/resourceGroups/PM_MSI_RG01/pro
-																 viders/Microsoft.Compute/virtualMachines/PM-Win11-T01
-							Distribution                       :
-							AdminCreate                        : devadmin@parallelslabus
-							AdminLastMod                       : rasadmin
-							TimeCreate                         : 10/16/2023 11:27:43 AM
-							TimeLastMod                        : 1/16/2025 5:04:02 PM
-							Id                                 : 1107296294
-						#>
-						
-						If($MSWord -or $PDF)
-						{
-							$ScriptInformation = New-Object System.Collections.ArrayList
-							$ScriptInformation.Add(@{Data = "Host pool provisioning - Template"; Value = ""; }) > $Null
-							$ScriptInformation.Add(@{Data = "     Template"; Value = $AVDHostPoolTemplateName; }) > $Null
-							$ScriptInformation.Add(@{Data = "     Version"; Value = $AVDHostPoolTemplateVersionName; }) > $Null
-							$Table = AddWordTable -Hashtable $ScriptInformation `
-							-Columns Data,Value `
-							-List `
-							-Format $wdTableGrid `
-							-AutoFit $wdAutoFitFixed;
-
-							SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
-							SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
-							$Table.Columns.Item(1).Width = 175;
-							$Table.Columns.Item(2).Width = 250;
-
-							$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-							FindWordDocumentEnd
-							$Table = $Null
-							WriteWordLine 0 0 ""
-						}
-						If($Text)
-						{
-							Line 5 "Host pool provisioning - Template"
-							Line 6 "Template: " $AVDHostPoolTemplateName
-							Line 6 "Version`t: " $AVDHostPoolTemplateVersionName
-							Line 0 ""
-						}
-						If($HTML)
-						{
-							$rowdata = @()
-							$columnHeaders = @("Host pool provisioning - Template",($Script:htmlsb),"",$htmlwhite)
-							$rowdata += @(,("     Template",($Script:htmlsb),$AVDHostPoolTemplateName,$htmlwhite))
-							$rowdata += @(,("     Version",($Script:htmlsb),$AVDHostPoolTemplateVersionName,$htmlwhite))
-							
-							$msg = "Template"
-							$columnWidths = @("200","275")
-							FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-							WriteHTMLLine 0 0 ""
-						}
-					}
-
-					#Provisioning
-					If($Null -ne $AVDHostPool.ProvisioningSettings)
-					{
-						If($MSword -or $PDF)
-						{
-							WriteWordLine 5 0 "Provisioning"
-						}
-						If($Text)
-						{
-							Line 4 "Provisioning"
-						}
-						If($HTML)
-						{
-							#nothing
-						}
-						
-						Switch($AVDHostPool.ProvisioningSettings.DefaultPowerState)
-						{
-							"PoweredOn"		{$PoweredOnState = "Powered On"; Break}
-							"PoweredOff"	{$PoweredOnState = "Powered Off"; Break}
-							"Suspended"		{$PoweredOnState = "Suspended"; Break}
-							Default			{$PoweredOnState = "Unable to determine Powered on state: $($AVDHostPool.ProvisioningSettings.DefaultPowerState)"; Break}
-						}
-
-						Switch($AVDHostPool.ProvisioningSettings.AutoScale.DrainRemainsBelowSec)
-						{
-							1		{$DrainRemainsBelowSec = "Immediate"; Break}
-							900		{$DrainRemainsBelowSec = "15 minutes"; Break}
-							1800	{$DrainRemainsBelowSec = "30 minutes"; Break}
-							2700	{$DrainRemainsBelowSec = "45 minutes"; Break}
-							3600	{$DrainRemainsBelowSec = "1 hour"; Break}
-							54001	{$DrainRemainsBelowSec = "1 hour, 30 minutes"; Break}
-							10800	{$DrainRemainsBelowSec = "3 hours"; Break}
-							21600	{$DrainRemainsBelowSec = "6 hours"; Break}
-							28800	{$DrainRemainsBelowSec = "8 hours"; Break}
-							Default	{$DrainRemainsBelowSec = "Unable to determine Workload remains below this level: $($AVDHostPool.ProvisioningSettings.AutoScale.DrainRemainsBelowSec)"; Break}
-						}
-						
-						If($MSWord -or $PDF)
-						{
-							$ScriptInformation = New-Object System.Collections.ArrayList
-							$ScriptInformation.Add(@{Data = "Host settings"; Value = ""; }) > $Null
-							$ScriptInformation.Add(@{Data = "     Template name"; Value = $AVDTemplateName; }) > $Null
-							$ScriptInformation.Add(@{Data = "     Host name"; Value = $AVDHostPool.ProvisioningSettings.HostName; }) > $Null
-							$ScriptInformation.Add(@{Data = "     Host state after the preparation"; Value = $PoweredOnState; }) > $Null
-							$ScriptInformation.Add(@{Data = "Autoscale settings"; Value = ""; }) > $Null
-							$ScriptInformation.Add(@{Data = "     Enable autoscale"; Value = $AVDHostPool.ProvisioningSettings.AutoScale.AutoScaleEnabled.ToString(); }) > $Null
-							If($AVDHostPool.ProvisioningSettings.AutoScale.AutoScaleEnabled)
-							{
-								$ScriptInformation.Add(@{Data = "     Min number of hosts to be added to the host pool from Template"; Value = $AVDHostPool.ProvisioningSettings.AutoScale.MinServersFromTemplate.ToString(); }) > $Null
-								$ScriptInformation.Add(@{Data = "     Max number of hosts to be added to the host pool from Template"; Value = $AVDHostPool.ProvisioningSettings.AutoScale.MaxServersFromTemplate.ToString(); }) > $Null
-								$ScriptInformation.Add(@{Data = "     Add new or power on existing hosts when workload is above (%)"; Value = $AVDHostPool.ProvisioningSettings.AutoScale.WorkloadThreshold.ToString(); }) > $Null
-								$ScriptInformation.Add(@{Data = "     Number of hosts to be added to the host pool per request"; Value = $AVDHostPool.ProvisioningSettings.AutoScale.ServersToAddPerRequest.ToString(); }) > $Null
-								$ScriptInformation.Add(@{Data = "     Drain and power off hosts from host pool when workload is below (%)"; Value = $AVDHostPool.ProvisioningSettings.AutoScale.WorkLoadDrain.ToString(); }) > $Null
-								$ScriptInformation.Add(@{Data = "          Workload remains below this level"; Value = $DrainRemainsBelowSec; }) > $Null
-								$ScriptInformation.Add(@{Data = "     Remove hosts from host pool after drain and power off"; Value = $AVDHostPool.ProvisioningSettings.AutoScale.RemoveServersAfterDrainAndPowerOff.ToString(); }) > $Null
-							}
-							$ScriptInformation.Add(@{Data = "Specifications"; Value = ""; }) > $Null
-							$ScriptInformation.Add(@{Data = "     Override the size specified"; Value = $AVDHostPool.ProvisioningSettings.OverwriteSize.ToString(); }) > $Null
-							$Table = AddWordTable -Hashtable $ScriptInformation `
-							-Columns Data,Value `
-							-List `
-							-Format $wdTableGrid `
-							-AutoFit $wdAutoFitFixed;
-
-							SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
-							SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
-							$Table.Columns.Item(1).Width = 300;
-							$Table.Columns.Item(2).Width = 200;
-
-							$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-							FindWordDocumentEnd
-							$Table = $Null
-							WriteWordLine 0 0 ""
-						}
-						If($Text)
-						{
-							Line 5 "Host settings"
-							Line 6 "Template name`t`t`t: " $AVDTemplateName
-							Line 6 "Host name`t`t`t: " $AVDHostPool.ProvisioningSettings.HostName
-							Line 6 "Host state after the preparation: " $PoweredOnState
-							Line 5 "Autoscale settings"
-							Line 6 "Enable autoscale: " $AVDHostPool.ProvisioningSettings.AutoScale.AutoScaleEnabled.ToString()
-							If($AVDHostPool.ProvisioningSettings.AutoScale.AutoScaleEnabled)
-							{
-								Line 7 "Min number of hosts to be added to the host pool from Template`t`t: " $AVDHostPool.ProvisioningSettings.AutoScale.MinServersFromTemplate.ToString()
-								Line 7 "Max number of hosts to be added to the host pool from Template`t`t: " $AVDHostPool.ProvisioningSettings.AutoScale.MaxServersFromTemplate.ToString()
-								Line 7 "Add new or power on existing hosts when workload is above (%)`t`t: " $AVDHostPool.ProvisioningSettings.AutoScale.WorkloadThreshold.ToString()
-								Line 7 "Number of hosts to be added to the host pool per request`t`t: " $AVDHostPool.ProvisioningSettings.AutoScale.ServersToAddPerRequest.ToString()
-								Line 7 "Drain and power off hosts from host pool when workload is below (%)`t: " $AVDHostPool.ProvisioningSettings.AutoScale.WorkLoadDrain.ToString()
-								Line 8 "Workload remains below this level`t`t`t`t: " $DrainRemainsBelowSec
-								Line 7 "Remove hosts from host pool after drain and power off`t`t`t: " $AVDHostPool.ProvisioningSettings.AutoScale.RemoveServersAfterDrainAndPowerOff.ToString()
-							}
-							Line 5 "Specifications"
-							Line 6 "Override the size specified: " $AVDHostPool.ProvisioningSettings.OverwriteSize.ToString()
-							Line 0 ""
-						}
-						If($HTML)
-						{
-							$rowdata = @()
-							$columnHeaders = @("Host settings",($Script:htmlsb),"",$htmlwhite)
-							$rowdata += @(,("     Template name",($Script:htmlsb),$AVDTemplateName,$htmlwhite))
-							$rowdata += @(,("     Host name",($Script:htmlsb),$AVDHostPool.ProvisioningSettings.HostName,$htmlwhite))
-							$rowdata += @(,("     Host state after the preparation",($Script:htmlsb),$PoweredOnState,$htmlwhite))
-							$rowdata += @(,("Autoscale settings",($Script:htmlsb),$PoweredOnState,$htmlwhite))
-							$rowdata += @(,("     Enable autoscale",($Script:htmlsb),$AVDHostPool.ProvisioningSettings.AutoScale.AutoScaleEnabled.ToString(),$htmlwhite))
-							If($AVDHostPool.ProvisioningSettings.AutoScale.AutoScaleEnabled)
-							{
-								$rowdata += @(,("     Min number of hosts to be added to the host pool from Template",($Script:htmlsb),$AVDHostPool.ProvisioningSettings.AutoScale.MinServersFromTemplate.ToString(),$htmlwhite))
-								$rowdata += @(,("     Max number of hosts to be added to the host pool from Template",($Script:htmlsb),$AVDHostPool.ProvisioningSettings.AutoScale.MaxServersFromTemplate.ToString(),$htmlwhite))
-								$rowdata += @(,("     Add new or power on existing hosts when workload is above (%)",($Script:htmlsb),$AVDHostPool.ProvisioningSettings.AutoScale.WorkloadThreshold.ToString(),$htmlwhite))
-								$rowdata += @(,("     Number of hosts to be added to the host pool per request",($Script:htmlsb),$AVDHostPool.ProvisioningSettings.AutoScale.ServersToAddPerRequest.ToString(),$htmlwhite))
-								$rowdata += @(,("     Drain and power off hosts from host pool when workload is below (%)",($Script:htmlsb),$AVDHostPool.ProvisioningSettings.AutoScale.WorkLoadDrain.ToString(),$htmlwhite))
-								$rowdata += @(,("          Workload remains below this level",($Script:htmlsb),$DrainRemainsBelowSec,$htmlwhite))
-								$rowdata += @(,("     Remove hosts from host pool after drain and power off",($Script:htmlsb),$AVDHostPool.ProvisioningSettings.AutoScale.RemoveServersAfterDrainAndPowerOff.ToString(),$htmlwhite))
-							}
-							$rowdata += @(,("Specifications",($Script:htmlsb),$PoweredOnState,$htmlwhite))
-							$rowdata += @(,("     Override the size specified",($Script:htmlsb),$AVDHostPool.ProvisioningSettings.OverwriteSize.ToString(),$htmlwhite))
-							
-							$msg = "Provisioning"
-							$columnWidths = @("425","300")
-							FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-							WriteHTMLLine 0 0 ""
-						}
-					}
-
-					#Assignment
-					
-					$AVDHostPoolAssignments = Get-RASAVDHostPoolAssignment -Id $AVDHostPool.Id -EA 0 4> $Null
-					
-					If(!($?))
-					{
-						If($MSWord -or $PDF)
-						{
-							WriteWordLine 0 0 ""
-							WriteWordLine 0 0 "Unable to retrieve AVD Host Pool Assignments"
-							WriteWordLine 0 0 ""
-						}
-						If($Text)
-						{
-							Line 0 ""
-							Line 0 "Unable to retrieve AVD Host Pool Assignments"
-							Line 0 ""
-						}
-						If($HTML)
-						{
-							WriteHTMLLine 0 0 ""
-							WriteHTMLLine 0 0 "Unable to retrieve AVD Host Pool Assignments"
-							WriteHTMLLine 0 0 ""
-						}
-					}
-					ElseIf($? -and $Null -eq $AVDHostPoolAssignments)
-					{
-						If($MSWord -or $PDF)
-						{
-							WriteWordLine 0 0 ""
-							WriteWordLine 0 0 "No AVD Host Pool Assignments retrieved"
-							WriteWordLine 0 0 ""
-						}
-						If($Text)
-						{
-							Line 0 ""
-							Line 0 "No AVD Host Pool Assignments retrieved"
-							Line 0 ""
-						}
-						If($HTML)
-						{
-							WriteHTMLLine 0 0 ""
-							WriteHTMLLine 0 0 "No AVD Host Pool Assignments retrieved"
-							WriteHTMLLine 0 0 ""
+							$AVDHostPoolTemplateName        = "Unable to retrieve AVD host pool template"
+							$AVDHostPoolTemplateVersionName = "N/A"
 						}
 					}
 					Else
 					{
-						If($MSword -or $PDF)
-						{
-							WriteWordLine 5 0 "Assignment"
-						}
-						If($Text)
-						{
-							Line 4 "Assignment"
-						}
-						If($HTML)
-						{
-							#nothing
-						}
-						<#
-							PS C:\Parallels-RAS-V19.x-Doc-Script-4.00> Get-RASAVDHostPoolAssignment -Id 11 | fl
-
-
-							AzureActiveDirectory   : Press
-							AzureActiveDirectoryId : 1aca1a75-38e9-4ff4-a54b-a61693a7e8d6
-							Account                : PARALLELSLABUS\Press
-							Type                   : Group
-							Sid                    : S-1-5-21-2123938450-2330046418-358225524-1623
-
-							AzureActiveDirectory   : pmuser1@parallelslab.com
-							AzureActiveDirectoryId : 73e0791f-07a6-47e1-9c92-b3ea97925abc
-							Account                : PARALLELSLABUS\pmuser1
-							Type                   : User
-							Sid                    : S-1-5-21-2123938450-2330046418-358225524-1651
-
-							AzureActiveDirectory   : Kamal.Srinivasan@parallelslab.com
-							AzureActiveDirectoryId : f7c0fa93-8532-488a-920c-eb0230ccbb14
-							Account                : PARALLELSLABUS\Kamal.Srinivasan
-							Type                   : User
-							Sid                    : S-1-5-21-2123938450-2330046418-358225524-3104
-
-							AzureActiveDirectory   : Freek.Berson4975@ParallelsRAS.onmicrosoft.com
-							AzureActiveDirectoryId : eed4affc-ef9e-439f-a7ef-762dde23cb3e
-							Account                : PARALLELSLABUS\Freek.Berson
-							Type                   : User
-							Sid                    : S-1-5-21-2123938450-2330046418-358225524-3164
-
-							AzureActiveDirectory   : Chris.Marks7992@ParallelsRAS.onmicrosoft.com
-							AzureActiveDirectoryId : ad972899-03bc-4931-9af1-fa4aa287a9c1
-							Account                : PARALLELSLABUS\Chris.Marks
-							Type                   : User
-							Sid                    : S-1-5-21-2123938450-2330046418-358225524-3174
-
-							AzureActiveDirectory   : igel@parallelslab.com
-							AzureActiveDirectoryId : 009bc9d7-1f91-4d5c-93f1-30755d3b7aaa
-							Account                : PARALLELSLABUS\igel
-							Type                   : User
-							Sid                    : S-1-5-21-2123938450-2330046418-358225524-3659
-						#>
-						
-						$AssignmentTable = @()
-						
-						ForEach($AVDHostPoolAssignment in $AVDHostPoolAssignments)
-						{
-							$AssignmentTable += @{
-								ActiveDirectory      = $AVDHostPoolAssignment.Account
-								AzureActiveDirectory = $AVDHostPoolAssignment.AzureActiveDirectory
-								Type                 = $AVDHostPoolAssignment.Type
-							}
-						}
-
-						If($MSWord -or $PDF)
-						{
-							$ScriptInformation = New-Object System.Collections.ArrayList
-
-							If($AssignmentTable.Count -gt 0)
-							{
-								$Table = AddWordTable -Hashtable $AssignmentTable `
-								-Columns ActiveDirectory, AzureActiveDirectory, Type `
-								-Headers "Active Directory", "Azure Active Directory", "Type" `
-								-Format $wdTableGrid `
-								-AutoFit $wdAutoFitFixed;
-
-								SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
-								SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
-								$Table.Columns.Item(1).Width = 225;
-								$Table.Columns.Item(2).Width = 225;
-								$Table.Columns.Item(3).Width = 50;
-								
-								$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-								FindWordDocumentEnd
-								$Table = $Null
-								WriteWordLine 0 0 ""
-							}
-						}
-						If($Text)
-						{
-							Line 5 "Active Directory                 Azure Active Directory                         Type "
-							Line 5 "====================================================================================="
-							#       1234567890123456789012345678901SS123456789012345678901234567890123456789012345SS12345
-							#		PARALLELSLABUS\Kamal.Srinivasan  Freek.Berson4975@ParallelsRAS.onmicrosoft.com  group
-
-							ForEach($Item in $AssignmentTable)
-							{
-								Line 5 ( "{0,-31}  {1,-45}  {2,-5}" -f 
-									$Item.ActiveDirectory, 
-									$Item.AzureActiveDirectory, 
-									$Item.Type
-								)
-							}
-							
-							Line 0 ""
-						}
-						If($HTML)
-						{
-							$rowdata = @()
-
-							ForEach($Item in $AssignmentTable)
-							{
-								$rowdata += @(,(
-									$Item.ActiveDirectory,$htmlwhite,
-									$Item.AzureActiveDirectory,$htmlwhite,
-									$Item.Type,$htmlwhite)
-								)
-							}
-							
-							$columnHeaders = @(
-								"Active Directory",($Script:htmlsb),
-								"Azure Active Directory",($Script:htmlsb),
-								"Type",($Script:htmlsb)
-							)
-
-							$msg = "Assignment"
-							$columnWidths = @("225","225","50")
-							FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-							WriteHTMLLine 0 0 ""
-						}
-					}
-					
-					#User profile
-					If($MSword -or $PDF)
-					{
-						WriteWordLine 5 0 "User profile"
-					}
-					If($Text)
-					{
-						Line 4 "User profile"
-					}
-					If($HTML)
-					{
-						#nothing
+						$AVDHostPoolTemplateName        = ""
+						$AVDHostPoolTemplateVersionName = ""
 					}
 
-					If($AVDHostPool.InheritDefaultUserProfileSettings)
-					{
-						#do we inherit site defaults?
-						#yes we do, get the default settings for the Site
-						#use the Site default settings
-						
-						#AVD host pool settings do not include UPD, only FSLogix
-						$AVDHostPoolDefaults = Get-RASAVDDefaultSettings -DefObjType AVDMultiSessionDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
-						
-						If($? -and $Null -ne $AVDHostPoolDefaults)
-						{
-							Switch ($AVDHostPoolDefaults.UserProfile.Technology)
-							{
-								"DoNotManage"				{$AVDHostPoolTechnology = "Do not manage by RAS"; Break}
-								"FSLogix"					{$AVDHostPoolTechnology = "FSLogix"; Break}
-								"FSLogixProfileContainer"	{$AVDHostPoolTechnology = "FSLogix"; Break}
-								Default						{$AVDHostPoolTechnology = "Unable to determine Technology State: $($AVDHostPoolDefaults.UserProfile.Technology)"; Break}
-							}
-							
-							$FSLogixSettings           = $AVDHostPoolDefaults.UserProfile.FSLogix.ProfileContainer
-							$FSLogixDeploymentSettings = Get-RASFSLogixSettings -EA 0 4>$Null | Where-Object{ $_.SiteId -eq $Site.Id}
-							
-							Switch($FSLogixDeploymentSettings.InstallType)
-							{
-								"Manually"		{$FSLogixDeploymentSettingsDeploymentMethod = "Install manually"; Break}
-								"Online"		{$FSLogixDeploymentSettingsDeploymentMethod = "Install online"; Break}
-								"NetworkDrive"	{$FSLogixDeploymentSettingsDeploymentMethod = "Install from a network share"; Break}
-								"UploadInstall"	{$FSLogixDeploymentSettingsDeploymentMethod = "Push from RAS Publishing Agent"; Break}
-								Default			{$FSLogixDeploymentSettingsDeploymentMethod = "Unable to determine FSLogix Deployment method: $($FSLogixDeploymentSettings.InstallType)"; Break}
-							}
-							
-							$FSLogixDeploymentSettingsInstallOnlineURL  = $FSLogixDeploymentSettings.InstallOnlineURL
-							$FSLogixDeploymentSettingsNetworkDrivePath  = $FSLogixDeploymentSettings.NetworkDrivePath
-							$FSLogixDeploymentSettingsInstallerFileName = $FSLogixDeploymentSettings.InstallerFileName
-
-							Switch ($FSLogixSettings.LocationType)
-							{
-								"SMBLocation"	
-								{
-									$FSLogixLocationType = "SMB Location"
-									$FSLogixLocationOfProfileDisks = $FSLogixSettings.VHDLocations
-									Break
-								}
-								"CloudCache"	
-								{
-									$FSLogixLocationType = "Cloud Cache"
-									$FSLogixLocationOfProfileDisks = $FSLogixSettings.CCDLocations
-									Break
-								}
-								Default 		
-								{
-									$FSLogixLocationType = "Unable to determine FSLogix Location type: $($FSLogixSettings.LocationType)"
-									$FSLogixLocationOfProfileDisks = @()
-									Break
-								}
-							}
-							
-							Switch ($FSLogixSettings.ProfileDiskFormat)
-							{
-								"VHD"	{$FSLogixProfileDiskFormat = "VHD"; Break}
-								"VHDX"	{$FSLogixProfileDiskFormat = "VHDX"; Break}
-								Default	{$FSLogixProfileDiskFormat = "Unable to determine FSLogix Profile disk format: $($FSLogixSettings.ProfileDiskFormat)"; Break}
-							}
-							
-							Switch ($FSLogixSettings.AllocationType)
-							{
-								"Dynamic"	{$FSLogixAllocationType = "Dynamic"; Break}
-								"Full"		{$FSLogixAllocationType = "Full"; Break}
-								Default		{$FSLogixAllocationType = "Unable to determine FSLogix Allocation type: $($FSLogixSettings.AllocationType)"; Break}
-							}
-							
-							$FSLogixDefaultSize = $FSLogixSettings.DefaultSize.ToString()
-								
-							#FSLogix Additional settings
-							#Users and Groups tab
-							If($FSLogixSettings.UserInclusionList.Count -eq 0)
-							{
-								$FSLogixSettingsUserInclusionList = @("Everyone")
-							}
-							Else
-							{
-								$FSLogixSettingsUserInclusionList = $FSLogixSettings.UserInclusionList
-							}
-							$FSLogixSettingsUserExclusionList       = $FSLogixSettings.UserExclusionList
-								
-							#Folders tab
-							$FSLogixSettingsCustomizeProfileFolders = $FSLogixSettings.CustomizeProfileFolders
-							$FSLogixSettingsExcludeCommonFolders    = $FSLogixSettings | Select-Object -ExpandProperty ExcludeCommonFolders
-							$ExcludedCommonFolders                  = @()
-							$FSLogixSettingsFolderInclusionList     = $FSLogixSettings.FolderInclusionList
-							$FSLogixSettingsFolderExclusionList     = $FSLogixSettings.FolderExclusionList
-
-							If($FSLogixSettingsCustomizeProfileFolders)
-							{
-								#####################################################################################
-								#MANY thanks to Guy Leech for helping me figure out how to process and use this Enum#
-								#####################################################################################
-
-								#this is cumulative
-								#Contacts, Desktop, Documents, Links, MusicPodcasts, PicturesVideos, FoldersLowIntegProcesses
-								If($FSLogixSettingsExcludeCommonFolders -band [RASAdminEngine.Core.OutputModels.UserProfile.FSLogix.ExcludeCommonFolders]::Contacts)
-								{
-									$ExcludedCommonFolders += "Contacts"
-								}
-								If($FSLogixSettingsExcludeCommonFolders -band [RASAdminEngine.Core.OutputModels.UserProfile.FSLogix.ExcludeCommonFolders]::Desktop)
-								{
-									$ExcludedCommonFolders += "Desktop"
-								}
-								If($FSLogixSettingsExcludeCommonFolders -band [RASAdminEngine.Core.OutputModels.UserProfile.FSLogix.ExcludeCommonFolders]::Documents)
-								{
-									$ExcludedCommonFolders += "Documents"
-								}
-								If($FSLogixSettingsExcludeCommonFolders -band [RASAdminEngine.Core.OutputModels.UserProfile.FSLogix.ExcludeCommonFolders]::Links)
-								{
-									$ExcludedCommonFolders += "Links"
-								}
-								If($FSLogixSettingsExcludeCommonFolders -band [RASAdminEngine.Core.OutputModels.UserProfile.FSLogix.ExcludeCommonFolders]::MusicPodcasts)
-								{
-									$ExcludedCommonFolders += 'Music & Podcasts'
-								}
-								If($FSLogixSettingsExcludeCommonFolders -band [RASAdminEngine.Core.OutputModels.UserProfile.FSLogix.ExcludeCommonFolders]::PicturesVideos)
-								{
-									$ExcludedCommonFolders += 'Pictures & Videos'
-								}
-								If($FSLogixSettingsExcludeCommonFolders -band [RASAdminEngine.Core.OutputModels.UserProfile.FSLogix.ExcludeCommonFolders]::FoldersLowIntegProcesses)
-								{
-									$ExcludedCommonFolders += "Folders used by Low Integrity processes"
-								}
-							}
-								
-							#Advanced tab
-							$FSLogixAS = $FSLogixSettings.AdvancedSettings
-							
-							Switch($FSLogixAS.AccessNetworkAsComputerObject)
-							{
-								"Enable"	{$FSLogixAS_AccessNetworkAsComputerObject = "Enable"; Break}
-								"Disable"	{$FSLogixAS_AccessNetworkAsComputerObject = "Disable"; Break}
-								Default		{$FSLogixAS_AccessNetworkAsComputerObject = "Unknown: $($FSLogixAS.AccessNetworkAsComputerObject)"; Break}
-							}
-							
-							$FSLogixAS_AttachVHDSDDL = $FSLogixAS.AttachVHDSDDL
-							
-							Switch($FSLogixAS.DeleteLocalProfileWhenVHDShouldApply)
-							{
-								"Enable"	{$FSLogixAS_DeleteLocalProfileWhenVHDShouldApply = "Enable"; Break}
-								"Disable"	{$FSLogixAS_DeleteLocalProfileWhenVHDShouldApply = "Disable"; Break}
-								Default		{$FSLogixAS_DeleteLocalProfileWhenVHDShouldApply = "Unknown: $($FSLogixAS.DeleteLocalProfileWhenVHDShouldApply)"; Break}
-							}
-
-							$FSLogixAS_DiffDiskParentFolderPath = $FSLogixAS.DiffDiskParentFolderPath  
-
-							Switch($FSLogixAS.FlipFlopProfileDirectoryName)
-							{
-								"Enable"	{$FSLogixAS_FlipFlopProfileDirectoryName = "Enable"; Break}
-								"Disable"	{$FSLogixAS_FlipFlopProfileDirectoryName = "Disable"; Break}
-								Default		{$FSLogixAS_FlipFlopProfileDirectoryName = "Unknown: $($FSLogixAS.FlipFlopProfileDirectoryName)"; Break}
-							}
-							
-							Switch($FSLogixAS.KeepLocalDir)
-							{
-								"Enable"	{$FSLogixAS_KeepLocalDir = "Enable"; Break}
-								"Disable"	{$FSLogixAS_KeepLocalDir = "Disable"; Break}
-								Default		{$FSLogixAS_KeepLocalDir = "Unknown: $($FSLogixAS.KeepLocalDir)"; Break}
-							}
-
-							$FSLogixAS_LockedRetryCount    = $FSLogixAS.LockedRetryCount                       
-							$FSLogixAS_LockedRetryInterval = $FSLogixAS.LockedRetryInterval     
-							
-							Switch($FSLogixAS.NoProfileContainingFolder)
-							{
-								"Enable"	{$FSLogixAS_NoProfileContainingFolder = "Enable"; Break}
-								"Disable"	{$FSLogixAS_NoProfileContainingFolder = "Disable"; Break}
-								Default		{$FSLogixAS_NoProfileContainingFolder = "Unknown: $($FSLogixAS.NoProfileContainingFolder)"; Break}
-							}
-
-							Switch($FSLogixAS.OutlookCachedMode)
-							{
-								"Enable"	{$FSLogixAS_OutlookCachedMode = "Enable"; Break}
-								"Disable"	{$FSLogixAS_OutlookCachedMode = "Disable"; Break}
-								Default		{$FSLogixAS_OutlookCachedMode = "Unknown: $($FSLogixAS.OutlookCachedMode)"; Break}
-							}
-
-							Switch($FSLogixAS.PreventLoginWithFailure)
-							{
-								"Enable"	{$FSLogixAS_PreventLoginWithFailure = "Enable"; Break}
-								"Disable"	{$FSLogixAS_PreventLoginWithFailure = "Disable"; Break}
-								Default		{$FSLogixAS_PreventLoginWithFailure = "Unknown: $($FSLogixAS.PreventLoginWithFailure)"; Break}
-							}
-
-							Switch($FSLogixAS.PreventLoginWithTempProfile)
-							{
-								"Enable"	{$FSLogixAS_PreventLoginWithTempProfile = "Enable"; Break}
-								"Disable"	{$FSLogixAS_PreventLoginWithTempProfile = "Disable"; Break}
-								Default		{$FSLogixAS_PreventLoginWithTempProfile = "Unknown: $($FSLogixAS.PreventLoginWithTempProfile)"; Break}
-							}
-
-							$FSLogixAS_ProfileDirSDDL = $FSLogixAS.ProfileDirSDDL
-
-							Switch($FSLogixAS.ProfileType)
-							{
-								"NormalProfile"	{$FSLogixAS_ProfileType = "Normal profile"; Break}
-								"OnlyRWProfile"	{$FSLogixAS_ProfileType = "Only RW profile"; Break}
-								"OnlyROProfile"	{$FSLogixAS_ProfileType = "Only RO profile"; Break}
-								"RWROProfile"	{$FSLogixAS_ProfileType = "RW/RO profile"; Break}
-								Default			{$FSLogixAS_ProfileType = "Unknown: $($FSLogixAS.ProfileType)"; Break}
-							}
-
-							$FSLogixAS_ReAttachIntervalSeconds = $FSLogixAS.ReAttachIntervalSeconds                
-							$FSLogixAS_ReAttachRetryCount      = $FSLogixAS.ReAttachRetryCount                     
-
-							Switch($FSLogixAS.RemoveOrphanedOSTFilesOnLogoff)
-							{
-								"Enable"	{$FSLogixAS_RemoveOrphanedOSTFilesOnLogoff = "Enable"; Break}
-								"Disable"	{$FSLogixAS_RemoveOrphanedOSTFilesOnLogoff = "Disable"; Break}
-								Default		{$FSLogixAS_RemoveOrphanedOSTFilesOnLogoff = "Unknown: $($FSLogixAS.RemoveOrphanedOSTFilesOnLogoff)"; Break}
-							}
-
-							Switch($FSLogixAS.RoamSearch)
-							{
-								"Enable"	{$FSLogixAS_RoamSearch = "Enable"; Break}
-								"Disable"	{$FSLogixAS_RoamSearch = "Disable"; Break}
-								Default		{$FSLogixAS_RoamSearch = "Unknown: $($FSLogixAS.RoamSearch)"; Break}
-							}
-
-							Switch($FSLogixAS.SetTempToLocalPath)
-							{
-								"TakeNoAction"					{$FSLogixAS_SetTempToLocalPath = "Take no action"; Break}
-								"RedirectTempAndTmp"			{$FSLogixAS_SetTempToLocalPath = "Redirect TEMP and TMP"; Break}
-								"RedirectINetCache"				{$FSLogixAS_SetTempToLocalPath = "Redirect INetCache"; Break}
-								"RedirectTempTmpAndINetCache"	{$FSLogixAS_SetTempToLocalPath = "Redirect TEMP, TMP, and INetCache"; Break}
-								Default							{$FSLogixAS_SetTempToLocalPath = "Unknown: $($FSLogixAS.SetTempToLocalPath)"; Break}
-							}
-
-							$FSLogixAS_SIDDirNameMatch   = $FSLogixAS.SIDDirNameMatch                        
-							$FSLogixAS_SIDDirNamePattern = $FSLogixAS.SIDDirNamePattern                      
-							$FSLogixAS_SIDDirSDDL        = $FSLogixAS.SIDDirSDDL
-							$FSLogixAS_VHDNameMatch      = $FSLogixAS.VHDNameMatch                           
-							$FSLogixAS_VHDNamePattern    = $FSLogixAS.VHDNamePattern                         
-
-							Switch($FSLogixAS.VHDXSectorSize)
-							{
-								0		{$FSLogixAS_VHDXSectorSize = "System default"; Break}
-								512		{$FSLogixAS_VHDXSectorSize = "512"; Break}
-								4096	{$FSLogixAS_VHDXSectorSize = "4096"; Break}
-								Default	{$FSLogixAS_VHDXSectorSize = "Unknown: $($FSLogixAS.VHDXSectorSize)"; Break}
-							}
-
-							$FSLogixAS_VolumeWaitTimeMS = $FSLogixAS.VolumeWaitTimeMS                       					
-						}
-						Else
-						{
-							#unable to retrieve default, use built-in default values
-							$AVDHostPoolTechnology                              = "Do not manage by RAS"
-							$FSLogixDeploymentSettingsDeploymentMethod      = "None"
-							$FSLogixDeploymentSettingsInstallOnlineURL      = "None"
-							$FSLogixDeploymentSettingsNetworkDrivePath      = "None"
-							$FSLogixDeploymentSettingsInstallerFileName     = "None"
-							$FSLogixLocationType                            = "None"
-							$FSLogixLocationOfProfileDisks                  = @()
-							$FSLogixProfileDiskFormat                       = "None"
-							$FSLogixAllocationType                          = "None"
-							$FSLogixDefaultSize                             = "0"
-							$FSLogixSettingsUserInclusionList               = @("Everyone")
-							$FSLogixSettingsUserExclusionList               = @()
-							$FSLogixSettingsCustomizeProfileFolders         = $False
-							$FSLogixSettingsExcludeCommonFolders            = "None"
-							$ExcludedCommonFolders                          = @()
-							$FSLogixSettingsFolderInclusionList             = @()
-							$FSLogixSettingsFolderExclusionList             = @()
-							$FSLogixAS_AccessNetworkAsComputerObject        = "Disable"
-							$FSLogixAS_AttachVHDSDDL                        = "None"
-							$FSLogixAS_DeleteLocalProfileWhenVHDShouldApply = "Disable"
-							$FSLogixAS_DiffDiskParentFolderPath             = "%TEMP"
-							$FSLogixAS_FlipFlopProfileDirectoryName         = "Disable"
-							$FSLogixAS_KeepLocalDir                         = "Disable"
-							$FSLogixAS_LockedRetryCount                     = 12
-							$FSLogixAS_LockedRetryInterval                  = 5
-							$FSLogixAS_NoProfileContainingFolder            = "Disable"
-							$FSLogixAS_OutlookCachedMode                    = "Disable"
-							$FSLogixAS_PreventLoginWithFailure              = "Disable"
-							$FSLogixAS_PreventLoginWithTempProfile          = "Disable"
-							$FSLogixAS_ProfileDirSDDL                       = "None"
-							$FSLogixAS_ProfileType                          = "Normal profile"
-							$FSLogixAS_ReAttachIntervalSeconds              = 10
-							$FSLogixAS_ReAttachRetryCount                   = 60
-							$FSLogixAS_RemoveOrphanedOSTFilesOnLogoff       = "Enable"
-							$FSLogixAS_RoamSearch                           = "Disable"
-							$FSLogixAS_SetTempToLocalPath                   = "Redirect TEMP, TMP, and INetCache"
-							$FSLogixAS_SIDDirNameMatch                      = "%sid%_%username%"
-							$FSLogixAS_SIDDirNamePattern                    = "%sid%_%username%"
-							$FSLogixAS_SIDDirSDDL                           = "None"
-							$FSLogixAS_VHDNameMatch                         = "Profile*"
-							$FSLogixAS_VHDNamePattern                       = "Profile_%username%"
-							$FSLogixAS_VHDXSectorSize                       = "System default"
-							$FSLogixAS_VolumeWaitTimeMS                     = 20000
-						}
-					}
-					Else
-					{
-						#we don't inherit
-						#get the settings for the template
-
-						Switch ($AVDHostPool.UserProfile.Technology)
-						{
-							"DoNotManage"				{$AVDHostPoolTechnology = "Do not manage by RAS"; Break}
-							"FSLogix"					{$AVDHostPoolTechnology = "FSLogix"; Break}
-							"FSLogixProfileContainer"	{$AVDHostPoolTechnology = "FSLogix"; Break}
-							Default						{$AVDHostPoolTechnology = "Unable to determine Technology State: $($AVDHostPool.UserProfile.Technology)"; Break}
-						}
-								
-						$FSLogixSettings           = $AVDHostPool.UserProfile.FSLogix.ProfileContainer
-						$FSLogixDeploymentSettings = Get-RASFSLogixSettings -EA 0 4>$Null | Where-Object{ $_.SiteId -eq $Site.Id}
-						
-						Switch($FSLogixDeploymentSettings.InstallType)
-						{
-							"Manually"		{$FSLogixDeploymentSettingsDeploymentMethod = "Install manually"; Break}
-							"Online"		{$FSLogixDeploymentSettingsDeploymentMethod = "Install online"; Break}
-							"NetworkDrive"	{$FSLogixDeploymentSettingsDeploymentMethod = "Install from a network share"; Break}
-							"UploadInstall"	{$FSLogixDeploymentSettingsDeploymentMethod = "Push from RAS Publishing Agent"; Break}
-							Default			{$FSLogixDeploymentSettingsDeploymentMethod = "Unable to determine FSLogix Deployment method: $($FSLogixDeploymentSettings.InstallType)"; Break}
-						}
-						
-						$FSLogixDeploymentSettingsInstallOnlineURL  = $FSLogixDeploymentSettings.InstallOnlineURL
-						$FSLogixDeploymentSettingsNetworkDrivePath  = $FSLogixDeploymentSettings.NetworkDrivePath
-						$FSLogixDeploymentSettingsInstallerFileName = $FSLogixDeploymentSettings.InstallerFileName
-						
-						Switch ($FSLogixSettings.LocationType)
-						{
-							"SMBLocation"	
-							{
-								$FSLogixLocationType = "SMB Location"
-								$FSLogixLocationOfProfileDisks = $FSLogixSettings.VHDLocations
-								Break
-							}
-							"CloudCache"	
-							{
-								$FSLogixLocationType = "Cloud Cache"
-								$FSLogixLocationOfProfileDisks = $FSLogixSettings.CCDLocations
-								Break
-							}
-							Default 		
-							{
-								$FSLogixLocationType = "Unable to determine FSLogix Location type: $($FSLogixSettings.LocationType)"
-								$FSLogixLocationOfProfileDisks = @()
-								Break
-							}
-						}
-						
-						Switch ($FSLogixSettings.ProfileDiskFormat)
-						{
-							"VHD"	{$FSLogixProfileDiskFormat = "VHD"; Break}
-							"VHDX"	{$FSLogixProfileDiskFormat = "VHDX"; Break}
-							Default	{$FSLogixProfileDiskFormat = "Unable to determine FSLogix Profile disk format: $($FSLogixSettings.ProfileDiskFormat)"; Break}
-						}
-						
-						Switch ($FSLogixSettings.AllocationType)
-						{
-							"Dynamic"	{$FSLogixAllocationType = "Dynamic"; Break}
-							"Full"		{$FSLogixAllocationType = "Full"; Break}
-							Default		{$FSLogixAllocationType = "Unable to determine FSLogix Allocation type: $($FSLogixSettings.AllocationType)"; Break}
-						}
-						
-						$FSLogixDefaultSize = $FSLogixSettings.DefaultSize.ToString()
-								
-						#FSLogix Additional settings
-						#Users and Groups tab
-						If($FSLogixSettings.UserInclusionList.Count -eq 0)
-						{
-							$FSLogixSettingsUserInclusionList = @("Everyone")
-						}
-						Else
-						{
-							$FSLogixSettingsUserInclusionList = $FSLogixSettings.UserInclusionList
-						}
-						$FSLogixSettingsUserExclusionList       = $FSLogixSettings.UserExclusionList
-								
-						#Folders tab
-						$FSLogixSettingsCustomizeProfileFolders = $FSLogixSettings.CustomizeProfileFolders
-						$FSLogixSettingsExcludeCommonFolders    = $FSLogixSettings | Select-Object -ExpandProperty ExcludeCommonFolders
-						$ExcludedCommonFolders                  = @()
-						$FSLogixSettingsFolderInclusionList     = $FSLogixSettings.FolderInclusionList
-						$FSLogixSettingsFolderExclusionList     = $FSLogixSettings.FolderExclusionList
-
-						If($FSLogixSettingsCustomizeProfileFolders)
-						{
-							#####################################################################################
-							#MANY thanks to Guy Leech for helping me figure out how to process and use this Enum#
-							#####################################################################################
-
-							#this is cumulative
-							#Contacts, Desktop, Documents, Links, MusicPodcasts, PicturesVideos, FoldersLowIntegProcesses
-							If($FSLogixSettingsExcludeCommonFolders -band [RASAdminEngine.Core.OutputModels.UserProfile.FSLogix.ExcludeCommonFolders]::Contacts)
-							{
-								$ExcludedCommonFolders += "Contacts"
-							}
-							If($FSLogixSettingsExcludeCommonFolders -band [RASAdminEngine.Core.OutputModels.UserProfile.FSLogix.ExcludeCommonFolders]::Desktop)
-							{
-								$ExcludedCommonFolders += "Desktop"
-							}
-							If($FSLogixSettingsExcludeCommonFolders -band [RASAdminEngine.Core.OutputModels.UserProfile.FSLogix.ExcludeCommonFolders]::Documents)
-							{
-								$ExcludedCommonFolders += "Documents"
-							}
-							If($FSLogixSettingsExcludeCommonFolders -band [RASAdminEngine.Core.OutputModels.UserProfile.FSLogix.ExcludeCommonFolders]::Links)
-							{
-								$ExcludedCommonFolders += "Links"
-							}
-							If($FSLogixSettingsExcludeCommonFolders -band [RASAdminEngine.Core.OutputModels.UserProfile.FSLogix.ExcludeCommonFolders]::MusicPodcasts)
-							{
-								$ExcludedCommonFolders += 'Music & Podcasts'
-							}
-							If($FSLogixSettingsExcludeCommonFolders -band [RASAdminEngine.Core.OutputModels.UserProfile.FSLogix.ExcludeCommonFolders]::PicturesVideos)
-							{
-								$ExcludedCommonFolders += 'Pictures & Videos'
-							}
-							If($FSLogixSettingsExcludeCommonFolders -band [RASAdminEngine.Core.OutputModels.UserProfile.FSLogix.ExcludeCommonFolders]::FoldersLowIntegProcesses)
-							{
-								$ExcludedCommonFolders += "Folders used by Low Integrity processes"
-							}
-						}
-						
-						#Advanced tab
-						$FSLogixAS = $FSLogixSettings.AdvancedSettings
-						
-						Switch($FSLogixAS.AccessNetworkAsComputerObject)
-						{
-							"Enable"	{$FSLogixAS_AccessNetworkAsComputerObject = "Enable"; Break}
-							"Disable"	{$FSLogixAS_AccessNetworkAsComputerObject = "Disable"; Break}
-							Default		{$FSLogixAS_AccessNetworkAsComputerObject = "Unknown: $($FSLogixAS.AccessNetworkAsComputerObject)"; Break}
-						}
-						
-						$FSLogixAS_AttachVHDSDDL = $FSLogixAS.AttachVHDSDDL
-						
-						Switch($FSLogixAS.DeleteLocalProfileWhenVHDShouldApply)
-						{
-							"Enable"	{$FSLogixAS_DeleteLocalProfileWhenVHDShouldApply = "Enable"; Break}
-							"Disable"	{$FSLogixAS_DeleteLocalProfileWhenVHDShouldApply = "Disable"; Break}
-							Default		{$FSLogixAS_DeleteLocalProfileWhenVHDShouldApply = "Unknown: $($FSLogixAS.DeleteLocalProfileWhenVHDShouldApply)"; Break}
-						}
-
-						$FSLogixAS_DiffDiskParentFolderPath = $FSLogixAS.DiffDiskParentFolderPath  
-
-						Switch($FSLogixAS.FlipFlopProfileDirectoryName)
-						{
-							"Enable"	{$FSLogixAS_FlipFlopProfileDirectoryName = "Enable"; Break}
-							"Disable"	{$FSLogixAS_FlipFlopProfileDirectoryName = "Disable"; Break}
-							Default		{$FSLogixAS_FlipFlopProfileDirectoryName = "Unknown: $($FSLogixAS.FlipFlopProfileDirectoryName)"; Break}
-						}
-						
-						Switch($FSLogixAS.KeepLocalDir)
-						{
-							"Enable"	{$FSLogixAS_KeepLocalDir = "Enable"; Break}
-							"Disable"	{$FSLogixAS_KeepLocalDir = "Disable"; Break}
-							Default		{$FSLogixAS_KeepLocalDir = "Unknown: $($FSLogixAS.KeepLocalDir)"; Break}
-						}
-
-						$FSLogixAS_LockedRetryCount    = $FSLogixAS.LockedRetryCount                       
-						$FSLogixAS_LockedRetryInterval = $FSLogixAS.LockedRetryInterval     
-						
-						Switch($FSLogixAS.NoProfileContainingFolder)
-						{
-							"Enable"	{$FSLogixAS_NoProfileContainingFolder = "Enable"; Break}
-							"Disable"	{$FSLogixAS_NoProfileContainingFolder = "Disable"; Break}
-							Default		{$FSLogixAS_NoProfileContainingFolder = "Unknown: $($FSLogixAS.NoProfileContainingFolder)"; Break}
-						}
-
-						Switch($FSLogixAS.OutlookCachedMode)
-						{
-							"Enable"	{$FSLogixAS_OutlookCachedMode = "Enable"; Break}
-							"Disable"	{$FSLogixAS_OutlookCachedMode = "Disable"; Break}
-							Default		{$FSLogixAS_OutlookCachedMode = "Unknown: $($FSLogixAS.OutlookCachedMode)"; Break}
-						}
-
-						Switch($FSLogixAS.PreventLoginWithFailure)
-						{
-							"Enable"	{$FSLogixAS_PreventLoginWithFailure = "Enable"; Break}
-							"Disable"	{$FSLogixAS_PreventLoginWithFailure = "Disable"; Break}
-							Default		{$FSLogixAS_PreventLoginWithFailure = "Unknown: $($FSLogixAS.PreventLoginWithFailure)"; Break}
-						}
-
-						Switch($FSLogixAS.PreventLoginWithTempProfile)
-						{
-							"Enable"	{$FSLogixAS_PreventLoginWithTempProfile = "Enable"; Break}
-							"Disable"	{$FSLogixAS_PreventLoginWithTempProfile = "Disable"; Break}
-							Default		{$FSLogixAS_PreventLoginWithTempProfile = "Unknown: $($FSLogixAS.PreventLoginWithTempProfile)"; Break}
-						}
-
-						$FSLogixAS_ProfileDirSDDL = $FSLogixAS.ProfileDirSDDL
-
-						Switch($FSLogixAS.ProfileType)
-						{
-							"NormalProfile"	{$FSLogixAS_ProfileType = "Normal profile"; Break}
-							"OnlyRWProfile"	{$FSLogixAS_ProfileType = "Only RW profile"; Break}
-							"OnlyROProfile"	{$FSLogixAS_ProfileType = "Only RO profile"; Break}
-							"RWROProfile"	{$FSLogixAS_ProfileType = "RW/RO profile"; Break}
-							Default			{$FSLogixAS_ProfileType = "Unknown: $($FSLogixAS.ProfileType)"; Break}
-						}
-
-						$FSLogixAS_ReAttachIntervalSeconds = $FSLogixAS.ReAttachIntervalSeconds                
-						$FSLogixAS_ReAttachRetryCount      = $FSLogixAS.ReAttachRetryCount                     
-
-						Switch($FSLogixAS.RemoveOrphanedOSTFilesOnLogoff)
-						{
-							"Enable"	{$FSLogixAS_RemoveOrphanedOSTFilesOnLogoff = "Enable"; Break}
-							"Disable"	{$FSLogixAS_RemoveOrphanedOSTFilesOnLogoff = "Disable"; Break}
-							Default		{$FSLogixAS_RemoveOrphanedOSTFilesOnLogoff = "Unknown: $($FSLogixAS.RemoveOrphanedOSTFilesOnLogoff)"; Break}
-						}
-
-						Switch($FSLogixAS.RoamSearch)
-						{
-							"Enable"	{$FSLogixAS_RoamSearch = "Enable"; Break}
-							"Disable"	{$FSLogixAS_RoamSearch = "Disable"; Break}
-							Default		{$FSLogixAS_RoamSearch = "Unknown: $($FSLogixAS.RoamSearch)"; Break}
-						}
-
-						Switch($FSLogixAS.SetTempToLocalPath)
-						{
-							"TakeNoAction"					{$FSLogixAS_SetTempToLocalPath = "Take no action"; Break}
-							"RedirectTempAndTmp"			{$FSLogixAS_SetTempToLocalPath = "Redirect TEMP and TMP"; Break}
-							"RedirectINetCache"				{$FSLogixAS_SetTempToLocalPath = "Redirect INetCache"; Break}
-							"RedirectTempTmpAndINetCache"	{$FSLogixAS_SetTempToLocalPath = "Redirect TEMP, TMP, and INetCache"; Break}
-							Default							{$FSLogixAS_SetTempToLocalPath = "Unknown: $($FSLogixAS.SetTempToLocalPath)"; Break}
-						}
-
-						$FSLogixAS_SIDDirNameMatch   = $FSLogixAS.SIDDirNameMatch                        
-						$FSLogixAS_SIDDirNamePattern = $FSLogixAS.SIDDirNamePattern                      
-						$FSLogixAS_SIDDirSDDL        = $FSLogixAS.SIDDirSDDL
-						$FSLogixAS_VHDNameMatch      = $FSLogixAS.VHDNameMatch                           
-						$FSLogixAS_VHDNamePattern    = $FSLogixAS.VHDNamePattern                         
-
-						Switch($FSLogixAS.VHDXSectorSize)
-						{
-							0		{$FSLogixAS_VHDXSectorSize = "System default"; Break}
-							512		{$FSLogixAS_VHDXSectorSize = "512"; Break}
-							4096	{$FSLogixAS_VHDXSectorSize = "4096"; Break}
-							Default	{$FSLogixAS_VHDXSectorSize = "Unknown: $($FSLogixAS.VHDXSectorSize)"; Break}
-						}
-
-						$FSLogixAS_VolumeWaitTimeMS = $FSLogixAS.VolumeWaitTimeMS                       					
-					}
+					$AVDLocation = GetRASLocation $AVDHostPoolHost.Location
 					
 					If($MSWord -or $PDF)
 					{
 						$ScriptInformation = New-Object System.Collections.ArrayList
-						$ScriptInformation.Add(@{Data = "Inherit default settings"; Value = $AVDHostPool.InheritDefaultUserProfileSettings.ToString(); }) > $Null
-						$ScriptInformation.Add(@{Data = "Technology"; Value = $AVDHostPoolTechnology; }) > $Null
+						$ScriptInformation.Add(@{Data = "Host"; Value = $AVDHostPoolHost.Host; }) > $Null
+						$ScriptInformation.Add(@{Data = "Status"; Value = $FullStatus; }) > $Null
+						$ScriptInformation.Add(@{Data = "Description"; Value = ""; }) > $Null
+						$ScriptInformation.Add(@{Data = "Template"; Value = $AVDHostPoolTemplateName; }) > $Null
+						$ScriptInformation.Add(@{Data = "Template version"; Value = $AVDHostPoolTemplateVersionName; }) > $Null
+						$ScriptInformation.Add(@{Data = "Resource group"; Value = $AVDHostPoolHost.ResourceGroup; }) > $Null
+						$ScriptInformation.Add(@{Data = "Location"; Value = $AVDLocation; }) > $Null
+						$ScriptInformation.Add(@{Data = "Virtual network"; Value = ""; }) > $Null
+						$ScriptInformation.Add(@{Data = "Provider"; Value = $AVDProviderName; }) > $Null
+						$Table = AddWordTable -Hashtable $ScriptInformation `
+						-Columns Data,Value `
+						-List `
+						-Format $wdTableGrid `
+						-AutoFit $wdAutoFitFixed;
 
-						If($AVDHostPoolTechnology -eq "Do not manage by RAS")
+						SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+						SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+						$Table.Columns.Item(1).Width = 200;
+						$Table.Columns.Item(2).Width = 250;
+
+						$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+						FindWordDocumentEnd
+						$Table = $Null
+						WriteWordLine 0 0 ""
+					}
+					If($Text)
+					{
+						Line 5 "Host`t`t: " $AVDHostPoolHost.Host
+						Line 5 "Status`t`t: " $FullStatus
+						Line 5 "Description`t: " 
+						Line 5 "Template`t: " $AVDHostPoolTemplateName
+						Line 5 "Template version: " $AVDHostPoolTemplateVersionName
+						Line 5 "Resource group`t: " $AVDHostPoolHost.ResourceGroup
+						Line 5 "Location`t: " $AVDLocation
+						Line 5 "Virtual network`t: " 
+						Line 5 "Provider	t: " $AVDProviderName
+						Line 0 ""
+					}
+					If($HTML)
+					{
+						$rowdata = @()
+						$columnHeaders = @("Host",($Script:htmlsb),$AVDHostPoolHost.Host,$htmlwhite)
+						$rowdata += @(,("Status",($Script:htmlsb),$FullStatus,$htmlwhite))
+						$rowdata += @(,("Description",($Script:htmlsb),"",$htmlwhite))
+						$rowdata += @(,("Template",($Script:htmlsb),$AVDHostPoolTemplateName,$htmlwhite))
+						$rowdata += @(,("Template version",($Script:htmlsb),$AVDHostPoolTemplateVersionName,$htmlwhite))
+						$rowdata += @(,("Resource group",($Script:htmlsb),$AVDHostPoolHost.ResourceGroup,$htmlwhite))
+						$rowdata += @(,("Location",($Script:htmlsb),$AVDLocation,$htmlwhite))
+						$rowdata += @(,("Virtual network",($Script:htmlsb),"",$htmlwhite))
+						$rowdata += @(,("Provider",($Script:htmlsb),$AVDProviderName,$htmlwhite))
+						
+						$msg = "Hosts"
+						$columnWidths = @("200","275")
+						FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+						WriteHTMLLine 0 0 ""
+					}
+				}
+			}
+			
+			#Configuration
+			If($MSword -or $PDF)
+			{
+				WriteWordLine 5 0 "Configuration"
+			}
+			If($Text)
+			{
+				Line 4 "Configuration"
+			}
+			If($HTML)
+			{
+				#nothing
+			}
+
+			If($MSWord -or $PDF)
+			{
+				$ScriptInformation = New-Object System.Collections.ArrayList
+				$ScriptInformation.Add(@{Data = "Host pool configuration"; Value = ""; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Host pool type"; Value = $AVDHostPool.Configuration.PoolType.ToString(); }) > $Null
+				$ScriptInformation.Add(@{Data = "     Publishing type"; Value = $PublishingType; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Provisioning type"; Value = $AVDHostPool.Configuration.ProvisioningType.ToString(); }) > $Null
+				$ScriptInformation.Add(@{Data = "     Load balancer"; Value = $LoadBalancerType; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Limit number of sessions on host"; Value = $AVDHostPool.Configuration.LimitHosts.ToString(); }) > $Null
+				$ScriptInformation.Add(@{Data = "     Power on host on-demand"; Value = $AVDHostPool.Configuration.PowerOnHost.ToString(); }) > $Null
+				$ScriptInformation.Add(@{Data = "     Default license type"; Value = $DefaultLicenseType; }) > $Null
+				$ScriptInformation.Add(@{Data = "Service updates validation"; Value = ""; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Validation environment"; Value = $ValidationEnvironment; }) > $Null
+
+				$Table = AddWordTable -Hashtable $ScriptInformation `
+				-Columns Data,Value `
+				-List `
+				-Format $wdTableGrid `
+				-AutoFit $wdAutoFitFixed;
+
+				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+				$Table.Columns.Item(1).Width = 250;
+				$Table.Columns.Item(2).Width = 250;
+
+				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+				FindWordDocumentEnd
+				$Table = $Null
+				WriteWordLine 0 0 ""
+			}
+			If($Text)
+			{
+				Line 5 "Host pool configuration"
+				Line 6 "Host pool type`t`t`t: " $AVDHostPool.Configuration.PoolType.ToString()
+				Line 6 "Publishing type`t`t`t: " $PublishingType
+				Line 6 "Provisioning type`t`t: " $AVDHostPool.Configuration.ProvisioningType.ToString()
+				Line 6 "Load balancer`t`t`t: " $LoadBalancerType
+				Line 6 "Limit number of sessions on host: " $AVDHostPool.Configuration.LimitHosts.ToString()
+				Line 6 "Power on host on-demand`t`t: " $AVDHostPool.Configuration.PowerOnHost.ToString()
+				Line 6 "Default license type`t`t: " $DefaultLicenseType
+				Line 5 "Service updates validation" 
+				Line 6 "Validation environment`t`t: " $ValidationEnvironment
+				Line 0 ""
+			}
+			If($HTML)
+			{
+				$rowdata = @()
+				$columnHeaders = @("Host pool configuration",($Script:htmlsb),"",$htmlwhite)
+				$rowdata += @(,("     Host pool type",($Script:htmlsb), $AVDHostPool.Configuration.PoolType.ToString(),$htmlwhite))
+				$rowdata += @(,("     Publishing type",($Script:htmlsb), $PublishingType,$htmlwhite))
+				$rowdata += @(,("     Provisioning type",($Script:htmlsb), $AVDHostPool.Configuration.ProvisioningType.ToString(),$htmlwhite))
+				$rowdata += @(,("     Load balancer",($Script:htmlsb), $LoadBalancerType,$htmlwhite))
+				$rowdata += @(,("     Limit number of sessions on host",($Script:htmlsb), $AVDHostPool.Configuration.LimitHosts.ToString(),$htmlwhite))
+				$rowdata += @(,("     Power on host on-demand",($Script:htmlsb), $AVDHostPool.Configuration.PowerOnHost.ToString(),$htmlwhite))
+				$rowdata += @(,("     Default license type",($Script:htmlsb), $DefaultLicenseType,$htmlwhite))
+				$rowdata += @(,("Service updates validation",($Script:htmlsb), "",$htmlwhite))
+				$rowdata += @(,("     Validation environment",($Script:htmlsb), $ValidationEnvironment,$htmlwhite))
+
+				$msg = "Configuration"
+				$columnWidths = @("300","275")
+				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+				WriteHTMLLine 0 0 ""
+			}
+
+			#Template
+			If($Null -ne $AVDHostPool.TemplateSettings)
+			{
+				If($MSword -or $PDF)
+				{
+					WriteWordLine 5 0 "Template"
+				}
+				If($Text)
+				{
+					Line 4 "Template"
+				}
+				If($HTML)
+				{
+					#nothing
+				}
+
+				$AVDHostPoolTemplate = Get-RASTemplate -Id $AVDHostPool.TemplateSettings.TemplateId -ObjType AVDTemplate -EA 0 4> $Null
+				
+				If($?)
+				{
+					$AVDHostPoolTemplateName = $AVDHostPoolTemplate.Name
+					
+					$AVDHostPoolTemplateVersion  = Get-RASTemplateVersion -Id $AVDHostPool.TemplateSettings.TemplateVersionId `
+						-TemplateId $AVDHostPool.TemplateSettings.TemplateId `
+						-ObjType AVDTemplateVersion `
+						-EA 0 4> $Null
+						
+					If($?)
+					{
+						$AVDHostPoolTemplateVersionName = $AVDHostPoolTemplateVersion.Name
+					}
+					Else
+					{
+						$AVDHostPoolTemplateVersionName = "Unable to retrieve AVD host pool template version"
+					}
+				}
+				Else
+				{
+					$AVDHostPoolTemplateName         = "Unable to retrieve AVD host pool template"
+					$AVDHostPoolTemplateVersionName  = "N/A"
+				}
+				<#
+					PS C:\Users\carl.webster> $AVDHostPool.TemplateSettings | % {$_.psobject.properties | select name, value | sort name}
+
+					Name                   Value
+					----                   -----
+					TemplateId        1107296294
+					TemplateTagId              0
+					TemplateVersionId          2
+
+					PS C:\Users\carl.webster> $AVDHostPoolTemplate = Get-RASTemplate -id 1107296294 -ObjType AVDTemplate
+					PS C:\Users\carl.webster> $AVDHostPoolTemplateVersion  = Get-RASTemplateVersion -id 2 -ObjType AVDTemplateVersion
+
+					cmdlet Get-RASTemplateVersion at command pipeline position 1
+					Supply values for the following parameters:
+					TemplateId: 1107296294
+					PS C:\Users\carl.webster> $AVDHostPoolTemplateVersion |fl
+
+
+					Name         : Updated Agents Dec 2023
+					Id           : 2
+					TemplateId   : 1107296294
+					Description  : Updated Agents Dec 2023
+					AdminCreate  : rasadmin
+					AdminLastMod : rasadmin
+					TimeCreate   : 12/29/2023 7:27:13 PM
+					TimeLastMod  : 12/29/2023 7:27:13 PM
+
+
+
+					PS C:\Users\carl.webster> $AVDHostPoolTemplate |fl
+
+
+					ObjType                            : AVDTemplate
+					Name                               : PM-Win11-T0
+					SiteId                             : 1
+					Description                        : Windows 11 Ent Multi-Session Template
+					ProviderId                         : 1056964609
+					TemplateType                       : MultiSession
+					VMId                               : 79590e09-51fe-44e2-b39d-d9300cacedd3
+					CloneMethod                        :
+					AvailabilitySet                    : False
+					Advanced                           : RASAdminEngine.Core.OutputModels.Template.TemplateAdvanced
+					Preparation                        : RASAdminEngine.Core.OutputModels.Template.TemplatePreparation
+					InheritDefaultOptimizationSettings : False
+					Optimization                       : RASAdminEngine.Core.OutputModels.ImagesOptimization.ImageOptimization
+					LicenseKeys                        :
+					AzureId                            : /subscriptions/b4085957-22f0-440f-ac06-71ef3dcd61cb/resourceGroups/PM_MSI_RG01/pro
+														 viders/Microsoft.Compute/virtualMachines/PM-Win11-T01
+					Distribution                       :
+					AdminCreate                        : devadmin@parallelslabus
+					AdminLastMod                       : rasadmin
+					TimeCreate                         : 10/16/2023 11:27:43 AM
+					TimeLastMod                        : 1/16/2025 5:04:02 PM
+					Id                                 : 1107296294
+				#>
+				
+				If($MSWord -or $PDF)
+				{
+					$ScriptInformation = New-Object System.Collections.ArrayList
+					$ScriptInformation.Add(@{Data = "Host pool provisioning - Template"; Value = ""; }) > $Null
+					$ScriptInformation.Add(@{Data = "     Template"; Value = $AVDHostPoolTemplateName; }) > $Null
+					$ScriptInformation.Add(@{Data = "     Version"; Value = $AVDHostPoolTemplateVersionName; }) > $Null
+					$Table = AddWordTable -Hashtable $ScriptInformation `
+					-Columns Data,Value `
+					-List `
+					-Format $wdTableGrid `
+					-AutoFit $wdAutoFitFixed;
+
+					SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+					SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+					$Table.Columns.Item(1).Width = 175;
+					$Table.Columns.Item(2).Width = 250;
+
+					$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+					FindWordDocumentEnd
+					$Table = $Null
+					WriteWordLine 0 0 ""
+				}
+				If($Text)
+				{
+					Line 5 "Host pool provisioning - Template"
+					Line 6 "Template: " $AVDHostPoolTemplateName
+					Line 6 "Version`t: " $AVDHostPoolTemplateVersionName
+					Line 0 ""
+				}
+				If($HTML)
+				{
+					$rowdata = @()
+					$columnHeaders = @("Host pool provisioning - Template",($Script:htmlsb),"",$htmlwhite)
+					$rowdata += @(,("     Template",($Script:htmlsb),$AVDHostPoolTemplateName,$htmlwhite))
+					$rowdata += @(,("     Version",($Script:htmlsb),$AVDHostPoolTemplateVersionName,$htmlwhite))
+					
+					$msg = "Template"
+					$columnWidths = @("200","275")
+					FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+					WriteHTMLLine 0 0 ""
+				}
+			}
+
+			#Provisioning
+			If($Null -ne $AVDHostPool.ProvisioningSettings)
+			{
+				If($MSword -or $PDF)
+				{
+					WriteWordLine 5 0 "Provisioning"
+				}
+				If($Text)
+				{
+					Line 4 "Provisioning"
+				}
+				If($HTML)
+				{
+					#nothing
+				}
+				
+				Switch($AVDHostPool.ProvisioningSettings.DefaultPowerState)
+				{
+					"PoweredOn"		{$PoweredOnState = "Powered On"; Break}
+					"PoweredOff"	{$PoweredOnState = "Powered Off"; Break}
+					"Suspended"		{$PoweredOnState = "Suspended"; Break}
+					Default			{$PoweredOnState = "Unable to determine Powered on state: $($AVDHostPool.ProvisioningSettings.DefaultPowerState)"; Break}
+				}
+
+				Switch($AVDHostPool.ProvisioningSettings.AutoScale.DrainRemainsBelowSec)
+				{
+					1		{$DrainRemainsBelowSec = "Immediate"; Break}
+					900		{$DrainRemainsBelowSec = "15 minutes"; Break}
+					1800	{$DrainRemainsBelowSec = "30 minutes"; Break}
+					2700	{$DrainRemainsBelowSec = "45 minutes"; Break}
+					3600	{$DrainRemainsBelowSec = "1 hour"; Break}
+					54001	{$DrainRemainsBelowSec = "1 hour, 30 minutes"; Break}
+					10800	{$DrainRemainsBelowSec = "3 hours"; Break}
+					21600	{$DrainRemainsBelowSec = "6 hours"; Break}
+					28800	{$DrainRemainsBelowSec = "8 hours"; Break}
+					Default	{$DrainRemainsBelowSec = "Unable to determine Workload remains below this level: $($AVDHostPool.ProvisioningSettings.AutoScale.DrainRemainsBelowSec)"; Break}
+				}
+				
+				If($MSWord -or $PDF)
+				{
+					$ScriptInformation = New-Object System.Collections.ArrayList
+					$ScriptInformation.Add(@{Data = "Host settings"; Value = ""; }) > $Null
+					$ScriptInformation.Add(@{Data = "     Template name"; Value = $AVDTemplateName; }) > $Null
+					$ScriptInformation.Add(@{Data = "     Host name"; Value = $AVDHostPool.ProvisioningSettings.HostName; }) > $Null
+					$ScriptInformation.Add(@{Data = "     Host state after the preparation"; Value = $PoweredOnState; }) > $Null
+					$ScriptInformation.Add(@{Data = "Autoscale settings"; Value = ""; }) > $Null
+					$ScriptInformation.Add(@{Data = "     Enable autoscale"; Value = $AVDHostPool.ProvisioningSettings.AutoScale.AutoScaleEnabled.ToString(); }) > $Null
+					If($AVDHostPool.ProvisioningSettings.AutoScale.AutoScaleEnabled)
+					{
+						$ScriptInformation.Add(@{Data = "     Min number of hosts to be added to the host pool from Template"; Value = $AVDHostPool.ProvisioningSettings.AutoScale.MinServersFromTemplate.ToString(); }) > $Null
+						$ScriptInformation.Add(@{Data = "     Max number of hosts to be added to the host pool from Template"; Value = $AVDHostPool.ProvisioningSettings.AutoScale.MaxServersFromTemplate.ToString(); }) > $Null
+						$ScriptInformation.Add(@{Data = "     Add new or power on existing hosts when workload is above (%)"; Value = $AVDHostPool.ProvisioningSettings.AutoScale.WorkloadThreshold.ToString(); }) > $Null
+						$ScriptInformation.Add(@{Data = "     Number of hosts to be added to the host pool per request"; Value = $AVDHostPool.ProvisioningSettings.AutoScale.ServersToAddPerRequest.ToString(); }) > $Null
+						$ScriptInformation.Add(@{Data = "     Drain and power off hosts from host pool when workload is below (%)"; Value = $AVDHostPool.ProvisioningSettings.AutoScale.WorkLoadDrain.ToString(); }) > $Null
+						$ScriptInformation.Add(@{Data = "          Workload remains below this level"; Value = $DrainRemainsBelowSec; }) > $Null
+						$ScriptInformation.Add(@{Data = "     Remove hosts from host pool after drain and power off"; Value = $AVDHostPool.ProvisioningSettings.AutoScale.RemoveServersAfterDrainAndPowerOff.ToString(); }) > $Null
+					}
+					$ScriptInformation.Add(@{Data = "Specifications"; Value = ""; }) > $Null
+					$ScriptInformation.Add(@{Data = "     Override the size specified"; Value = $AVDHostPool.ProvisioningSettings.OverwriteSize.ToString(); }) > $Null
+					$Table = AddWordTable -Hashtable $ScriptInformation `
+					-Columns Data,Value `
+					-List `
+					-Format $wdTableGrid `
+					-AutoFit $wdAutoFitFixed;
+
+					SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
+					SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+					$Table.Columns.Item(1).Width = 300;
+					$Table.Columns.Item(2).Width = 200;
+
+					$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+					FindWordDocumentEnd
+					$Table = $Null
+					WriteWordLine 0 0 ""
+				}
+				If($Text)
+				{
+					Line 5 "Host settings"
+					Line 6 "Template name`t`t`t: " $AVDTemplateName
+					Line 6 "Host name`t`t`t: " $AVDHostPool.ProvisioningSettings.HostName
+					Line 6 "Host state after the preparation: " $PoweredOnState
+					Line 5 "Autoscale settings"
+					Line 6 "Enable autoscale: " $AVDHostPool.ProvisioningSettings.AutoScale.AutoScaleEnabled.ToString()
+					If($AVDHostPool.ProvisioningSettings.AutoScale.AutoScaleEnabled)
+					{
+						Line 7 "Min number of hosts to be added to the host pool from Template`t`t: " $AVDHostPool.ProvisioningSettings.AutoScale.MinServersFromTemplate.ToString()
+						Line 7 "Max number of hosts to be added to the host pool from Template`t`t: " $AVDHostPool.ProvisioningSettings.AutoScale.MaxServersFromTemplate.ToString()
+						Line 7 "Add new or power on existing hosts when workload is above (%)`t`t: " $AVDHostPool.ProvisioningSettings.AutoScale.WorkloadThreshold.ToString()
+						Line 7 "Number of hosts to be added to the host pool per request`t`t: " $AVDHostPool.ProvisioningSettings.AutoScale.ServersToAddPerRequest.ToString()
+						Line 7 "Drain and power off hosts from host pool when workload is below (%)`t: " $AVDHostPool.ProvisioningSettings.AutoScale.WorkLoadDrain.ToString()
+						Line 8 "Workload remains below this level`t`t`t`t: " $DrainRemainsBelowSec
+						Line 7 "Remove hosts from host pool after drain and power off`t`t`t: " $AVDHostPool.ProvisioningSettings.AutoScale.RemoveServersAfterDrainAndPowerOff.ToString()
+					}
+					Line 5 "Specifications"
+					Line 6 "Override the size specified: " $AVDHostPool.ProvisioningSettings.OverwriteSize.ToString()
+					Line 0 ""
+				}
+				If($HTML)
+				{
+					$rowdata = @()
+					$columnHeaders = @("Host settings",($Script:htmlsb),"",$htmlwhite)
+					$rowdata += @(,("     Template name",($Script:htmlsb),$AVDTemplateName,$htmlwhite))
+					$rowdata += @(,("     Host name",($Script:htmlsb),$AVDHostPool.ProvisioningSettings.HostName,$htmlwhite))
+					$rowdata += @(,("     Host state after the preparation",($Script:htmlsb),$PoweredOnState,$htmlwhite))
+					$rowdata += @(,("Autoscale settings",($Script:htmlsb),$PoweredOnState,$htmlwhite))
+					$rowdata += @(,("     Enable autoscale",($Script:htmlsb),$AVDHostPool.ProvisioningSettings.AutoScale.AutoScaleEnabled.ToString(),$htmlwhite))
+					If($AVDHostPool.ProvisioningSettings.AutoScale.AutoScaleEnabled)
+					{
+						$rowdata += @(,("     Min number of hosts to be added to the host pool from Template",($Script:htmlsb),$AVDHostPool.ProvisioningSettings.AutoScale.MinServersFromTemplate.ToString(),$htmlwhite))
+						$rowdata += @(,("     Max number of hosts to be added to the host pool from Template",($Script:htmlsb),$AVDHostPool.ProvisioningSettings.AutoScale.MaxServersFromTemplate.ToString(),$htmlwhite))
+						$rowdata += @(,("     Add new or power on existing hosts when workload is above (%)",($Script:htmlsb),$AVDHostPool.ProvisioningSettings.AutoScale.WorkloadThreshold.ToString(),$htmlwhite))
+						$rowdata += @(,("     Number of hosts to be added to the host pool per request",($Script:htmlsb),$AVDHostPool.ProvisioningSettings.AutoScale.ServersToAddPerRequest.ToString(),$htmlwhite))
+						$rowdata += @(,("     Drain and power off hosts from host pool when workload is below (%)",($Script:htmlsb),$AVDHostPool.ProvisioningSettings.AutoScale.WorkLoadDrain.ToString(),$htmlwhite))
+						$rowdata += @(,("          Workload remains below this level",($Script:htmlsb),$DrainRemainsBelowSec,$htmlwhite))
+						$rowdata += @(,("     Remove hosts from host pool after drain and power off",($Script:htmlsb),$AVDHostPool.ProvisioningSettings.AutoScale.RemoveServersAfterDrainAndPowerOff.ToString(),$htmlwhite))
+					}
+					$rowdata += @(,("Specifications",($Script:htmlsb),$PoweredOnState,$htmlwhite))
+					$rowdata += @(,("     Override the size specified",($Script:htmlsb),$AVDHostPool.ProvisioningSettings.OverwriteSize.ToString(),$htmlwhite))
+					
+					$msg = "Provisioning"
+					$columnWidths = @("425","300")
+					FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+					WriteHTMLLine 0 0 ""
+				}
+			}
+
+			#Assignment
+			
+			$AVDHostPoolAssignments = Get-RASAVDHostPoolAssignment -Id $AVDHostPool.Id -EA 0 4> $Null
+			
+			If(!($?))
+			{
+				If($MSWord -or $PDF)
+				{
+					WriteWordLine 0 0 ""
+					WriteWordLine 0 0 "Unable to retrieve AVD Host Pool Assignments"
+					WriteWordLine 0 0 ""
+				}
+				If($Text)
+				{
+					Line 0 ""
+					Line 0 "Unable to retrieve AVD Host Pool Assignments"
+					Line 0 ""
+				}
+				If($HTML)
+				{
+					WriteHTMLLine 0 0 ""
+					WriteHTMLLine 0 0 "Unable to retrieve AVD Host Pool Assignments"
+					WriteHTMLLine 0 0 ""
+				}
+			}
+			ElseIf($? -and $Null -eq $AVDHostPoolAssignments)
+			{
+				If($MSWord -or $PDF)
+				{
+					WriteWordLine 0 0 ""
+					WriteWordLine 0 0 "No AVD Host Pool Assignments retrieved"
+					WriteWordLine 0 0 ""
+				}
+				If($Text)
+				{
+					Line 0 ""
+					Line 0 "No AVD Host Pool Assignments retrieved"
+					Line 0 ""
+				}
+				If($HTML)
+				{
+					WriteHTMLLine 0 0 ""
+					WriteHTMLLine 0 0 "No AVD Host Pool Assignments retrieved"
+					WriteHTMLLine 0 0 ""
+				}
+			}
+			Else
+			{
+				If($MSword -or $PDF)
+				{
+					WriteWordLine 5 0 "Assignment"
+				}
+				If($Text)
+				{
+					Line 4 "Assignment"
+				}
+				If($HTML)
+				{
+					#nothing
+				}
+				<#
+					PS C:\Parallels-RAS-V19.x-Doc-Script-4.00> Get-RASAVDHostPoolAssignment -Id 11 | fl
+
+
+					AzureActiveDirectory   : Press
+					AzureActiveDirectoryId : 1aca1a75-38e9-4ff4-a54b-a61693a7e8d6
+					Account                : PARALLELSLABUS\Press
+					Type                   : Group
+					Sid                    : S-1-5-21-2123938450-2330046418-358225524-1623
+
+					AzureActiveDirectory   : pmuser1@parallelslab.com
+					AzureActiveDirectoryId : 73e0791f-07a6-47e1-9c92-b3ea97925abc
+					Account                : PARALLELSLABUS\pmuser1
+					Type                   : User
+					Sid                    : S-1-5-21-2123938450-2330046418-358225524-1651
+
+					AzureActiveDirectory   : Kamal.Srinivasan@parallelslab.com
+					AzureActiveDirectoryId : f7c0fa93-8532-488a-920c-eb0230ccbb14
+					Account                : PARALLELSLABUS\Kamal.Srinivasan
+					Type                   : User
+					Sid                    : S-1-5-21-2123938450-2330046418-358225524-3104
+
+					AzureActiveDirectory   : Freek.Berson4975@ParallelsRAS.onmicrosoft.com
+					AzureActiveDirectoryId : eed4affc-ef9e-439f-a7ef-762dde23cb3e
+					Account                : PARALLELSLABUS\Freek.Berson
+					Type                   : User
+					Sid                    : S-1-5-21-2123938450-2330046418-358225524-3164
+
+					AzureActiveDirectory   : Chris.Marks7992@ParallelsRAS.onmicrosoft.com
+					AzureActiveDirectoryId : ad972899-03bc-4931-9af1-fa4aa287a9c1
+					Account                : PARALLELSLABUS\Chris.Marks
+					Type                   : User
+					Sid                    : S-1-5-21-2123938450-2330046418-358225524-3174
+
+					AzureActiveDirectory   : igel@parallelslab.com
+					AzureActiveDirectoryId : 009bc9d7-1f91-4d5c-93f1-30755d3b7aaa
+					Account                : PARALLELSLABUS\igel
+					Type                   : User
+					Sid                    : S-1-5-21-2123938450-2330046418-358225524-3659
+				#>
+				
+				$AssignmentTable = @()
+				
+				ForEach($AVDHostPoolAssignment in $AVDHostPoolAssignments)
+				{
+					$AssignmentTable += @{
+						ActiveDirectory      = $AVDHostPoolAssignment.Account
+						AzureActiveDirectory = $AVDHostPoolAssignment.AzureActiveDirectory
+						Type                 = $AVDHostPoolAssignment.Type
+					}
+				}
+
+				If($MSWord -or $PDF)
+				{
+					$ScriptInformation = New-Object System.Collections.ArrayList
+
+					If($AssignmentTable.Count -gt 0)
+					{
+						$Table = AddWordTable -Hashtable $AssignmentTable `
+						-Columns ActiveDirectory, AzureActiveDirectory, Type `
+						-Headers "Active Directory", "Azure Active Directory", "Type" `
+						-Format $wdTableGrid `
+						-AutoFit $wdAutoFitFixed;
+
+						SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
+						SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+						$Table.Columns.Item(1).Width = 225;
+						$Table.Columns.Item(2).Width = 225;
+						$Table.Columns.Item(3).Width = 50;
+						
+						$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+						FindWordDocumentEnd
+						$Table = $Null
+						WriteWordLine 0 0 ""
+					}
+				}
+				If($Text)
+				{
+					Line 5 "Active Directory                 Azure Active Directory                         Type "
+					Line 5 "====================================================================================="
+					#       1234567890123456789012345678901SS123456789012345678901234567890123456789012345SS12345
+					#		PARALLELSLABUS\Kamal.Srinivasan  Freek.Berson4975@ParallelsRAS.onmicrosoft.com  group
+
+					ForEach($Item in $AssignmentTable)
+					{
+						Line 5 ( "{0,-31}  {1,-45}  {2,-5}" -f 
+							$Item.ActiveDirectory, 
+							$Item.AzureActiveDirectory, 
+							$Item.Type
+						)
+					}
+					
+					Line 0 ""
+				}
+				If($HTML)
+				{
+					$rowdata = @()
+
+					ForEach($Item in $AssignmentTable)
+					{
+						$rowdata += @(,(
+							$Item.ActiveDirectory,$htmlwhite,
+							$Item.AzureActiveDirectory,$htmlwhite,
+							$Item.Type,$htmlwhite)
+						)
+					}
+					
+					$columnHeaders = @(
+						"Active Directory",($Script:htmlsb),
+						"Azure Active Directory",($Script:htmlsb),
+						"Type",($Script:htmlsb)
+					)
+
+					$msg = "Assignment"
+					$columnWidths = @("225","225","50")
+					FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+					WriteHTMLLine 0 0 ""
+				}
+			}
+			
+			#User profile
+			If($MSword -or $PDF)
+			{
+				WriteWordLine 5 0 "User profile"
+			}
+			If($Text)
+			{
+				Line 4 "User profile"
+			}
+			If($HTML)
+			{
+				#nothing
+			}
+
+			If($AVDHostPool.InheritDefaultUserProfileSettings)
+			{
+				#do we inherit site defaults?
+				#yes we do, get the default settings for the Site
+				#use the Site default settings
+				
+				#AVD host pool settings do not include UPD, only FSLogix
+				$AVDHostPoolDefaults = Get-RASAVDDefaultSettings -DefObjType AVDMultiSessionDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
+				
+				If($? -and $Null -ne $AVDHostPoolDefaults)
+				{
+					Switch ($AVDHostPoolDefaults.UserProfile.Technology)
+					{
+						"DoNotManage"				{$AVDHostPoolTechnology = "Do not manage by RAS"; Break}
+						"FSLogix"					{$AVDHostPoolTechnology = "FSLogix"; Break}
+						"FSLogixProfileContainer"	{$AVDHostPoolTechnology = "FSLogix"; Break}
+						Default						{$AVDHostPoolTechnology = "Unable to determine Technology State: $($AVDHostPoolDefaults.UserProfile.Technology)"; Break}
+					}
+					
+					$FSLogixSettings           = $AVDHostPoolDefaults.UserProfile.FSLogix.ProfileContainer
+					$FSLogixDeploymentSettings = Get-RASFSLogixSettings -EA 0 4>$Null | Where-Object{ $_.SiteId -eq $Site.Id}
+					
+					Switch($FSLogixDeploymentSettings.InstallType)
+					{
+						"Manually"		{$FSLogixDeploymentSettingsDeploymentMethod = "Install manually"; Break}
+						"Online"		{$FSLogixDeploymentSettingsDeploymentMethod = "Install online"; Break}
+						"NetworkDrive"	{$FSLogixDeploymentSettingsDeploymentMethod = "Install from a network share"; Break}
+						"UploadInstall"	{$FSLogixDeploymentSettingsDeploymentMethod = "Push from RAS Publishing Agent"; Break}
+						Default			{$FSLogixDeploymentSettingsDeploymentMethod = "Unable to determine FSLogix Deployment method: $($FSLogixDeploymentSettings.InstallType)"; Break}
+					}
+					
+					$FSLogixDeploymentSettingsInstallOnlineURL  = $FSLogixDeploymentSettings.InstallOnlineURL
+					$FSLogixDeploymentSettingsNetworkDrivePath  = $FSLogixDeploymentSettings.NetworkDrivePath
+					$FSLogixDeploymentSettingsInstallerFileName = $FSLogixDeploymentSettings.InstallerFileName
+
+					Switch ($FSLogixSettings.LocationType)
+					{
+						"SMBLocation"	
 						{
-							#do nothing
+							$FSLogixLocationType = "SMB Location"
+							$FSLogixLocationOfProfileDisks = $FSLogixSettings.VHDLocations
+							Break
 						}
-						ElseIf($AVDHostPoolTechnology -eq "FSLogix")
+						"CloudCache"	
 						{
-							$ScriptInformation.Add(@{Data = "Deployment method"; Value = $FSLogixDeploymentSettingsDeploymentMethod; }) > $Null
-							If($FSLogixDeploymentSettings.InstallType -eq "Online")
-							{
-								$ScriptInformation.Add(@{Data = "URL"; Value = $FSLogixDeploymentSettingsInstallOnlineURL; }) > $Null
-							}
-							ElseIf($FSLogixDeploymentSettings.InstallType -eq "NetworkDrive")
-							{
-								$ScriptInformation.Add(@{Data = ""; Value = $FSLogixDeploymentSettingsNetworkDrivePath; }) > $Null
-							}
-							ElseIf($FSLogixDeploymentSettings.InstallType -eq "UploadInstall")
-							{
-								$ScriptInformation.Add(@{Data = ""; Value = $FSLogixDeploymentSettingsInstallerFileName; }) > $Null
-							}
-							$ScriptInformation.Add(@{Data = "Settings"; Value = ""; }) > $Null
-							$ScriptInformation.Add(@{Data = "     Location type"; Value = $FSLogixLocationType; }) > $Null
+							$FSLogixLocationType = "Cloud Cache"
+							$FSLogixLocationOfProfileDisks = $FSLogixSettings.CCDLocations
+							Break
+						}
+						Default 		
+						{
+							$FSLogixLocationType = "Unable to determine FSLogix Location type: $($FSLogixSettings.LocationType)"
+							$FSLogixLocationOfProfileDisks = @()
+							Break
+						}
+					}
+					
+					Switch ($FSLogixSettings.ProfileDiskFormat)
+					{
+						"VHD"	{$FSLogixProfileDiskFormat = "VHD"; Break}
+						"VHDX"	{$FSLogixProfileDiskFormat = "VHDX"; Break}
+						Default	{$FSLogixProfileDiskFormat = "Unable to determine FSLogix Profile disk format: $($FSLogixSettings.ProfileDiskFormat)"; Break}
+					}
+					
+					Switch ($FSLogixSettings.AllocationType)
+					{
+						"Dynamic"	{$FSLogixAllocationType = "Dynamic"; Break}
+						"Full"		{$FSLogixAllocationType = "Full"; Break}
+						Default		{$FSLogixAllocationType = "Unable to determine FSLogix Allocation type: $($FSLogixSettings.AllocationType)"; Break}
+					}
+					
+					$FSLogixDefaultSize = $FSLogixSettings.DefaultSize.ToString()
+						
+					#FSLogix Additional settings
+					#Users and Groups tab
+					If($FSLogixSettings.UserInclusionList.Count -eq 0)
+					{
+						$FSLogixSettingsUserInclusionList = @("Everyone")
+					}
+					Else
+					{
+						$FSLogixSettingsUserInclusionList = $FSLogixSettings.UserInclusionList
+					}
+					$FSLogixSettingsUserExclusionList       = $FSLogixSettings.UserExclusionList
+						
+					#Folders tab
+					$FSLogixSettingsCustomizeProfileFolders = $FSLogixSettings.CustomizeProfileFolders
+					$FSLogixSettingsExcludeCommonFolders    = $FSLogixSettings | Select-Object -ExpandProperty ExcludeCommonFolders
+					$ExcludedCommonFolders                  = @()
+					$FSLogixSettingsFolderInclusionList     = $FSLogixSettings.FolderInclusionList
+					$FSLogixSettingsFolderExclusionList     = $FSLogixSettings.FolderExclusionList
+
+					If($FSLogixSettingsCustomizeProfileFolders)
+					{
+						#####################################################################################
+						#MANY thanks to Guy Leech for helping me figure out how to process and use this Enum#
+						#####################################################################################
+
+						#this is cumulative
+						#Contacts, Desktop, Documents, Links, MusicPodcasts, PicturesVideos, FoldersLowIntegProcesses
+						If($FSLogixSettingsExcludeCommonFolders -band [RASAdminEngine.Core.OutputModels.UserProfile.FSLogix.ExcludeCommonFolders]::Contacts)
+						{
+							$ExcludedCommonFolders += "Contacts"
+						}
+						If($FSLogixSettingsExcludeCommonFolders -band [RASAdminEngine.Core.OutputModels.UserProfile.FSLogix.ExcludeCommonFolders]::Desktop)
+						{
+							$ExcludedCommonFolders += "Desktop"
+						}
+						If($FSLogixSettingsExcludeCommonFolders -band [RASAdminEngine.Core.OutputModels.UserProfile.FSLogix.ExcludeCommonFolders]::Documents)
+						{
+							$ExcludedCommonFolders += "Documents"
+						}
+						If($FSLogixSettingsExcludeCommonFolders -band [RASAdminEngine.Core.OutputModels.UserProfile.FSLogix.ExcludeCommonFolders]::Links)
+						{
+							$ExcludedCommonFolders += "Links"
+						}
+						If($FSLogixSettingsExcludeCommonFolders -band [RASAdminEngine.Core.OutputModels.UserProfile.FSLogix.ExcludeCommonFolders]::MusicPodcasts)
+						{
+							$ExcludedCommonFolders += 'Music & Podcasts'
+						}
+						If($FSLogixSettingsExcludeCommonFolders -band [RASAdminEngine.Core.OutputModels.UserProfile.FSLogix.ExcludeCommonFolders]::PicturesVideos)
+						{
+							$ExcludedCommonFolders += 'Pictures & Videos'
+						}
+						If($FSLogixSettingsExcludeCommonFolders -band [RASAdminEngine.Core.OutputModels.UserProfile.FSLogix.ExcludeCommonFolders]::FoldersLowIntegProcesses)
+						{
+							$ExcludedCommonFolders += "Folders used by Low Integrity processes"
+						}
+					}
+						
+					#Advanced tab
+					$FSLogixAS = $FSLogixSettings.AdvancedSettings
+					
+					Switch($FSLogixAS.AccessNetworkAsComputerObject)
+					{
+						"Enable"	{$FSLogixAS_AccessNetworkAsComputerObject = "Enable"; Break}
+						"Disable"	{$FSLogixAS_AccessNetworkAsComputerObject = "Disable"; Break}
+						Default		{$FSLogixAS_AccessNetworkAsComputerObject = "Unknown: $($FSLogixAS.AccessNetworkAsComputerObject)"; Break}
+					}
+					
+					$FSLogixAS_AttachVHDSDDL = $FSLogixAS.AttachVHDSDDL
+					
+					Switch($FSLogixAS.DeleteLocalProfileWhenVHDShouldApply)
+					{
+						"Enable"	{$FSLogixAS_DeleteLocalProfileWhenVHDShouldApply = "Enable"; Break}
+						"Disable"	{$FSLogixAS_DeleteLocalProfileWhenVHDShouldApply = "Disable"; Break}
+						Default		{$FSLogixAS_DeleteLocalProfileWhenVHDShouldApply = "Unknown: $($FSLogixAS.DeleteLocalProfileWhenVHDShouldApply)"; Break}
+					}
+
+					$FSLogixAS_DiffDiskParentFolderPath = $FSLogixAS.DiffDiskParentFolderPath  
+
+					Switch($FSLogixAS.FlipFlopProfileDirectoryName)
+					{
+						"Enable"	{$FSLogixAS_FlipFlopProfileDirectoryName = "Enable"; Break}
+						"Disable"	{$FSLogixAS_FlipFlopProfileDirectoryName = "Disable"; Break}
+						Default		{$FSLogixAS_FlipFlopProfileDirectoryName = "Unknown: $($FSLogixAS.FlipFlopProfileDirectoryName)"; Break}
+					}
+					
+					Switch($FSLogixAS.KeepLocalDir)
+					{
+						"Enable"	{$FSLogixAS_KeepLocalDir = "Enable"; Break}
+						"Disable"	{$FSLogixAS_KeepLocalDir = "Disable"; Break}
+						Default		{$FSLogixAS_KeepLocalDir = "Unknown: $($FSLogixAS.KeepLocalDir)"; Break}
+					}
+
+					$FSLogixAS_LockedRetryCount    = $FSLogixAS.LockedRetryCount                       
+					$FSLogixAS_LockedRetryInterval = $FSLogixAS.LockedRetryInterval     
+					
+					Switch($FSLogixAS.NoProfileContainingFolder)
+					{
+						"Enable"	{$FSLogixAS_NoProfileContainingFolder = "Enable"; Break}
+						"Disable"	{$FSLogixAS_NoProfileContainingFolder = "Disable"; Break}
+						Default		{$FSLogixAS_NoProfileContainingFolder = "Unknown: $($FSLogixAS.NoProfileContainingFolder)"; Break}
+					}
+
+					Switch($FSLogixAS.OutlookCachedMode)
+					{
+						"Enable"	{$FSLogixAS_OutlookCachedMode = "Enable"; Break}
+						"Disable"	{$FSLogixAS_OutlookCachedMode = "Disable"; Break}
+						Default		{$FSLogixAS_OutlookCachedMode = "Unknown: $($FSLogixAS.OutlookCachedMode)"; Break}
+					}
+
+					Switch($FSLogixAS.PreventLoginWithFailure)
+					{
+						"Enable"	{$FSLogixAS_PreventLoginWithFailure = "Enable"; Break}
+						"Disable"	{$FSLogixAS_PreventLoginWithFailure = "Disable"; Break}
+						Default		{$FSLogixAS_PreventLoginWithFailure = "Unknown: $($FSLogixAS.PreventLoginWithFailure)"; Break}
+					}
+
+					Switch($FSLogixAS.PreventLoginWithTempProfile)
+					{
+						"Enable"	{$FSLogixAS_PreventLoginWithTempProfile = "Enable"; Break}
+						"Disable"	{$FSLogixAS_PreventLoginWithTempProfile = "Disable"; Break}
+						Default		{$FSLogixAS_PreventLoginWithTempProfile = "Unknown: $($FSLogixAS.PreventLoginWithTempProfile)"; Break}
+					}
+
+					$FSLogixAS_ProfileDirSDDL = $FSLogixAS.ProfileDirSDDL
+
+					Switch($FSLogixAS.ProfileType)
+					{
+						"NormalProfile"	{$FSLogixAS_ProfileType = "Normal profile"; Break}
+						"OnlyRWProfile"	{$FSLogixAS_ProfileType = "Only RW profile"; Break}
+						"OnlyROProfile"	{$FSLogixAS_ProfileType = "Only RO profile"; Break}
+						"RWROProfile"	{$FSLogixAS_ProfileType = "RW/RO profile"; Break}
+						Default			{$FSLogixAS_ProfileType = "Unknown: $($FSLogixAS.ProfileType)"; Break}
+					}
+
+					$FSLogixAS_ReAttachIntervalSeconds = $FSLogixAS.ReAttachIntervalSeconds                
+					$FSLogixAS_ReAttachRetryCount      = $FSLogixAS.ReAttachRetryCount                     
+
+					Switch($FSLogixAS.RemoveOrphanedOSTFilesOnLogoff)
+					{
+						"Enable"	{$FSLogixAS_RemoveOrphanedOSTFilesOnLogoff = "Enable"; Break}
+						"Disable"	{$FSLogixAS_RemoveOrphanedOSTFilesOnLogoff = "Disable"; Break}
+						Default		{$FSLogixAS_RemoveOrphanedOSTFilesOnLogoff = "Unknown: $($FSLogixAS.RemoveOrphanedOSTFilesOnLogoff)"; Break}
+					}
+
+					Switch($FSLogixAS.RoamSearch)
+					{
+						"Enable"	{$FSLogixAS_RoamSearch = "Enable"; Break}
+						"Disable"	{$FSLogixAS_RoamSearch = "Disable"; Break}
+						Default		{$FSLogixAS_RoamSearch = "Unknown: $($FSLogixAS.RoamSearch)"; Break}
+					}
+
+					Switch($FSLogixAS.SetTempToLocalPath)
+					{
+						"TakeNoAction"					{$FSLogixAS_SetTempToLocalPath = "Take no action"; Break}
+						"RedirectTempAndTmp"			{$FSLogixAS_SetTempToLocalPath = "Redirect TEMP and TMP"; Break}
+						"RedirectINetCache"				{$FSLogixAS_SetTempToLocalPath = "Redirect INetCache"; Break}
+						"RedirectTempTmpAndINetCache"	{$FSLogixAS_SetTempToLocalPath = "Redirect TEMP, TMP, and INetCache"; Break}
+						Default							{$FSLogixAS_SetTempToLocalPath = "Unknown: $($FSLogixAS.SetTempToLocalPath)"; Break}
+					}
+
+					$FSLogixAS_SIDDirNameMatch   = $FSLogixAS.SIDDirNameMatch                        
+					$FSLogixAS_SIDDirNamePattern = $FSLogixAS.SIDDirNamePattern                      
+					$FSLogixAS_SIDDirSDDL        = $FSLogixAS.SIDDirSDDL
+					$FSLogixAS_VHDNameMatch      = $FSLogixAS.VHDNameMatch                           
+					$FSLogixAS_VHDNamePattern    = $FSLogixAS.VHDNamePattern                         
+
+					Switch($FSLogixAS.VHDXSectorSize)
+					{
+						0		{$FSLogixAS_VHDXSectorSize = "System default"; Break}
+						512		{$FSLogixAS_VHDXSectorSize = "512"; Break}
+						4096	{$FSLogixAS_VHDXSectorSize = "4096"; Break}
+						Default	{$FSLogixAS_VHDXSectorSize = "Unknown: $($FSLogixAS.VHDXSectorSize)"; Break}
+					}
+
+					$FSLogixAS_VolumeWaitTimeMS = $FSLogixAS.VolumeWaitTimeMS                       					
+				}
+				Else
+				{
+					#unable to retrieve default, use built-in default values
+					$AVDHostPoolTechnology                              = "Do not manage by RAS"
+					$FSLogixDeploymentSettingsDeploymentMethod      = "None"
+					$FSLogixDeploymentSettingsInstallOnlineURL      = "None"
+					$FSLogixDeploymentSettingsNetworkDrivePath      = "None"
+					$FSLogixDeploymentSettingsInstallerFileName     = "None"
+					$FSLogixLocationType                            = "None"
+					$FSLogixLocationOfProfileDisks                  = @()
+					$FSLogixProfileDiskFormat                       = "None"
+					$FSLogixAllocationType                          = "None"
+					$FSLogixDefaultSize                             = "0"
+					$FSLogixSettingsUserInclusionList               = @("Everyone")
+					$FSLogixSettingsUserExclusionList               = @()
+					$FSLogixSettingsCustomizeProfileFolders         = $False
+					$FSLogixSettingsExcludeCommonFolders            = "None"
+					$ExcludedCommonFolders                          = @()
+					$FSLogixSettingsFolderInclusionList             = @()
+					$FSLogixSettingsFolderExclusionList             = @()
+					$FSLogixAS_AccessNetworkAsComputerObject        = "Disable"
+					$FSLogixAS_AttachVHDSDDL                        = "None"
+					$FSLogixAS_DeleteLocalProfileWhenVHDShouldApply = "Disable"
+					$FSLogixAS_DiffDiskParentFolderPath             = "%TEMP"
+					$FSLogixAS_FlipFlopProfileDirectoryName         = "Disable"
+					$FSLogixAS_KeepLocalDir                         = "Disable"
+					$FSLogixAS_LockedRetryCount                     = 12
+					$FSLogixAS_LockedRetryInterval                  = 5
+					$FSLogixAS_NoProfileContainingFolder            = "Disable"
+					$FSLogixAS_OutlookCachedMode                    = "Disable"
+					$FSLogixAS_PreventLoginWithFailure              = "Disable"
+					$FSLogixAS_PreventLoginWithTempProfile          = "Disable"
+					$FSLogixAS_ProfileDirSDDL                       = "None"
+					$FSLogixAS_ProfileType                          = "Normal profile"
+					$FSLogixAS_ReAttachIntervalSeconds              = 10
+					$FSLogixAS_ReAttachRetryCount                   = 60
+					$FSLogixAS_RemoveOrphanedOSTFilesOnLogoff       = "Enable"
+					$FSLogixAS_RoamSearch                           = "Disable"
+					$FSLogixAS_SetTempToLocalPath                   = "Redirect TEMP, TMP, and INetCache"
+					$FSLogixAS_SIDDirNameMatch                      = "%sid%_%username%"
+					$FSLogixAS_SIDDirNamePattern                    = "%sid%_%username%"
+					$FSLogixAS_SIDDirSDDL                           = "None"
+					$FSLogixAS_VHDNameMatch                         = "Profile*"
+					$FSLogixAS_VHDNamePattern                       = "Profile_%username%"
+					$FSLogixAS_VHDXSectorSize                       = "System default"
+					$FSLogixAS_VolumeWaitTimeMS                     = 20000
+				}
+			}
+			Else
+			{
+				#we don't inherit
+				#get the settings for the template
+
+				Switch ($AVDHostPool.UserProfile.Technology)
+				{
+					"DoNotManage"				{$AVDHostPoolTechnology = "Do not manage by RAS"; Break}
+					"FSLogix"					{$AVDHostPoolTechnology = "FSLogix"; Break}
+					"FSLogixProfileContainer"	{$AVDHostPoolTechnology = "FSLogix"; Break}
+					Default						{$AVDHostPoolTechnology = "Unable to determine Technology State: $($AVDHostPool.UserProfile.Technology)"; Break}
+				}
+						
+				$FSLogixSettings           = $AVDHostPool.UserProfile.FSLogix.ProfileContainer
+				$FSLogixDeploymentSettings = Get-RASFSLogixSettings -EA 0 4>$Null | Where-Object{ $_.SiteId -eq $Site.Id}
+				
+				Switch($FSLogixDeploymentSettings.InstallType)
+				{
+					"Manually"		{$FSLogixDeploymentSettingsDeploymentMethod = "Install manually"; Break}
+					"Online"		{$FSLogixDeploymentSettingsDeploymentMethod = "Install online"; Break}
+					"NetworkDrive"	{$FSLogixDeploymentSettingsDeploymentMethod = "Install from a network share"; Break}
+					"UploadInstall"	{$FSLogixDeploymentSettingsDeploymentMethod = "Push from RAS Publishing Agent"; Break}
+					Default			{$FSLogixDeploymentSettingsDeploymentMethod = "Unable to determine FSLogix Deployment method: $($FSLogixDeploymentSettings.InstallType)"; Break}
+				}
+				
+				$FSLogixDeploymentSettingsInstallOnlineURL  = $FSLogixDeploymentSettings.InstallOnlineURL
+				$FSLogixDeploymentSettingsNetworkDrivePath  = $FSLogixDeploymentSettings.NetworkDrivePath
+				$FSLogixDeploymentSettingsInstallerFileName = $FSLogixDeploymentSettings.InstallerFileName
+				
+				Switch ($FSLogixSettings.LocationType)
+				{
+					"SMBLocation"	
+					{
+						$FSLogixLocationType = "SMB Location"
+						$FSLogixLocationOfProfileDisks = $FSLogixSettings.VHDLocations
+						Break
+					}
+					"CloudCache"	
+					{
+						$FSLogixLocationType = "Cloud Cache"
+						$FSLogixLocationOfProfileDisks = $FSLogixSettings.CCDLocations
+						Break
+					}
+					Default 		
+					{
+						$FSLogixLocationType = "Unable to determine FSLogix Location type: $($FSLogixSettings.LocationType)"
+						$FSLogixLocationOfProfileDisks = @()
+						Break
+					}
+				}
+				
+				Switch ($FSLogixSettings.ProfileDiskFormat)
+				{
+					"VHD"	{$FSLogixProfileDiskFormat = "VHD"; Break}
+					"VHDX"	{$FSLogixProfileDiskFormat = "VHDX"; Break}
+					Default	{$FSLogixProfileDiskFormat = "Unable to determine FSLogix Profile disk format: $($FSLogixSettings.ProfileDiskFormat)"; Break}
+				}
+				
+				Switch ($FSLogixSettings.AllocationType)
+				{
+					"Dynamic"	{$FSLogixAllocationType = "Dynamic"; Break}
+					"Full"		{$FSLogixAllocationType = "Full"; Break}
+					Default		{$FSLogixAllocationType = "Unable to determine FSLogix Allocation type: $($FSLogixSettings.AllocationType)"; Break}
+				}
+				
+				$FSLogixDefaultSize = $FSLogixSettings.DefaultSize.ToString()
+						
+				#FSLogix Additional settings
+				#Users and Groups tab
+				If($FSLogixSettings.UserInclusionList.Count -eq 0)
+				{
+					$FSLogixSettingsUserInclusionList = @("Everyone")
+				}
+				Else
+				{
+					$FSLogixSettingsUserInclusionList = $FSLogixSettings.UserInclusionList
+				}
+				$FSLogixSettingsUserExclusionList       = $FSLogixSettings.UserExclusionList
+						
+				#Folders tab
+				$FSLogixSettingsCustomizeProfileFolders = $FSLogixSettings.CustomizeProfileFolders
+				$FSLogixSettingsExcludeCommonFolders    = $FSLogixSettings | Select-Object -ExpandProperty ExcludeCommonFolders
+				$ExcludedCommonFolders                  = @()
+				$FSLogixSettingsFolderInclusionList     = $FSLogixSettings.FolderInclusionList
+				$FSLogixSettingsFolderExclusionList     = $FSLogixSettings.FolderExclusionList
+
+				If($FSLogixSettingsCustomizeProfileFolders)
+				{
+					#####################################################################################
+					#MANY thanks to Guy Leech for helping me figure out how to process and use this Enum#
+					#####################################################################################
+
+					#this is cumulative
+					#Contacts, Desktop, Documents, Links, MusicPodcasts, PicturesVideos, FoldersLowIntegProcesses
+					If($FSLogixSettingsExcludeCommonFolders -band [RASAdminEngine.Core.OutputModels.UserProfile.FSLogix.ExcludeCommonFolders]::Contacts)
+					{
+						$ExcludedCommonFolders += "Contacts"
+					}
+					If($FSLogixSettingsExcludeCommonFolders -band [RASAdminEngine.Core.OutputModels.UserProfile.FSLogix.ExcludeCommonFolders]::Desktop)
+					{
+						$ExcludedCommonFolders += "Desktop"
+					}
+					If($FSLogixSettingsExcludeCommonFolders -band [RASAdminEngine.Core.OutputModels.UserProfile.FSLogix.ExcludeCommonFolders]::Documents)
+					{
+						$ExcludedCommonFolders += "Documents"
+					}
+					If($FSLogixSettingsExcludeCommonFolders -band [RASAdminEngine.Core.OutputModels.UserProfile.FSLogix.ExcludeCommonFolders]::Links)
+					{
+						$ExcludedCommonFolders += "Links"
+					}
+					If($FSLogixSettingsExcludeCommonFolders -band [RASAdminEngine.Core.OutputModels.UserProfile.FSLogix.ExcludeCommonFolders]::MusicPodcasts)
+					{
+						$ExcludedCommonFolders += 'Music & Podcasts'
+					}
+					If($FSLogixSettingsExcludeCommonFolders -band [RASAdminEngine.Core.OutputModels.UserProfile.FSLogix.ExcludeCommonFolders]::PicturesVideos)
+					{
+						$ExcludedCommonFolders += 'Pictures & Videos'
+					}
+					If($FSLogixSettingsExcludeCommonFolders -band [RASAdminEngine.Core.OutputModels.UserProfile.FSLogix.ExcludeCommonFolders]::FoldersLowIntegProcesses)
+					{
+						$ExcludedCommonFolders += "Folders used by Low Integrity processes"
+					}
+				}
+				
+				#Advanced tab
+				$FSLogixAS = $FSLogixSettings.AdvancedSettings
+				
+				Switch($FSLogixAS.AccessNetworkAsComputerObject)
+				{
+					"Enable"	{$FSLogixAS_AccessNetworkAsComputerObject = "Enable"; Break}
+					"Disable"	{$FSLogixAS_AccessNetworkAsComputerObject = "Disable"; Break}
+					Default		{$FSLogixAS_AccessNetworkAsComputerObject = "Unknown: $($FSLogixAS.AccessNetworkAsComputerObject)"; Break}
+				}
+				
+				$FSLogixAS_AttachVHDSDDL = $FSLogixAS.AttachVHDSDDL
+				
+				Switch($FSLogixAS.DeleteLocalProfileWhenVHDShouldApply)
+				{
+					"Enable"	{$FSLogixAS_DeleteLocalProfileWhenVHDShouldApply = "Enable"; Break}
+					"Disable"	{$FSLogixAS_DeleteLocalProfileWhenVHDShouldApply = "Disable"; Break}
+					Default		{$FSLogixAS_DeleteLocalProfileWhenVHDShouldApply = "Unknown: $($FSLogixAS.DeleteLocalProfileWhenVHDShouldApply)"; Break}
+				}
+
+				$FSLogixAS_DiffDiskParentFolderPath = $FSLogixAS.DiffDiskParentFolderPath  
+
+				Switch($FSLogixAS.FlipFlopProfileDirectoryName)
+				{
+					"Enable"	{$FSLogixAS_FlipFlopProfileDirectoryName = "Enable"; Break}
+					"Disable"	{$FSLogixAS_FlipFlopProfileDirectoryName = "Disable"; Break}
+					Default		{$FSLogixAS_FlipFlopProfileDirectoryName = "Unknown: $($FSLogixAS.FlipFlopProfileDirectoryName)"; Break}
+				}
+				
+				Switch($FSLogixAS.KeepLocalDir)
+				{
+					"Enable"	{$FSLogixAS_KeepLocalDir = "Enable"; Break}
+					"Disable"	{$FSLogixAS_KeepLocalDir = "Disable"; Break}
+					Default		{$FSLogixAS_KeepLocalDir = "Unknown: $($FSLogixAS.KeepLocalDir)"; Break}
+				}
+
+				$FSLogixAS_LockedRetryCount    = $FSLogixAS.LockedRetryCount                       
+				$FSLogixAS_LockedRetryInterval = $FSLogixAS.LockedRetryInterval     
+				
+				Switch($FSLogixAS.NoProfileContainingFolder)
+				{
+					"Enable"	{$FSLogixAS_NoProfileContainingFolder = "Enable"; Break}
+					"Disable"	{$FSLogixAS_NoProfileContainingFolder = "Disable"; Break}
+					Default		{$FSLogixAS_NoProfileContainingFolder = "Unknown: $($FSLogixAS.NoProfileContainingFolder)"; Break}
+				}
+
+				Switch($FSLogixAS.OutlookCachedMode)
+				{
+					"Enable"	{$FSLogixAS_OutlookCachedMode = "Enable"; Break}
+					"Disable"	{$FSLogixAS_OutlookCachedMode = "Disable"; Break}
+					Default		{$FSLogixAS_OutlookCachedMode = "Unknown: $($FSLogixAS.OutlookCachedMode)"; Break}
+				}
+
+				Switch($FSLogixAS.PreventLoginWithFailure)
+				{
+					"Enable"	{$FSLogixAS_PreventLoginWithFailure = "Enable"; Break}
+					"Disable"	{$FSLogixAS_PreventLoginWithFailure = "Disable"; Break}
+					Default		{$FSLogixAS_PreventLoginWithFailure = "Unknown: $($FSLogixAS.PreventLoginWithFailure)"; Break}
+				}
+
+				Switch($FSLogixAS.PreventLoginWithTempProfile)
+				{
+					"Enable"	{$FSLogixAS_PreventLoginWithTempProfile = "Enable"; Break}
+					"Disable"	{$FSLogixAS_PreventLoginWithTempProfile = "Disable"; Break}
+					Default		{$FSLogixAS_PreventLoginWithTempProfile = "Unknown: $($FSLogixAS.PreventLoginWithTempProfile)"; Break}
+				}
+
+				$FSLogixAS_ProfileDirSDDL = $FSLogixAS.ProfileDirSDDL
+
+				Switch($FSLogixAS.ProfileType)
+				{
+					"NormalProfile"	{$FSLogixAS_ProfileType = "Normal profile"; Break}
+					"OnlyRWProfile"	{$FSLogixAS_ProfileType = "Only RW profile"; Break}
+					"OnlyROProfile"	{$FSLogixAS_ProfileType = "Only RO profile"; Break}
+					"RWROProfile"	{$FSLogixAS_ProfileType = "RW/RO profile"; Break}
+					Default			{$FSLogixAS_ProfileType = "Unknown: $($FSLogixAS.ProfileType)"; Break}
+				}
+
+				$FSLogixAS_ReAttachIntervalSeconds = $FSLogixAS.ReAttachIntervalSeconds                
+				$FSLogixAS_ReAttachRetryCount      = $FSLogixAS.ReAttachRetryCount                     
+
+				Switch($FSLogixAS.RemoveOrphanedOSTFilesOnLogoff)
+				{
+					"Enable"	{$FSLogixAS_RemoveOrphanedOSTFilesOnLogoff = "Enable"; Break}
+					"Disable"	{$FSLogixAS_RemoveOrphanedOSTFilesOnLogoff = "Disable"; Break}
+					Default		{$FSLogixAS_RemoveOrphanedOSTFilesOnLogoff = "Unknown: $($FSLogixAS.RemoveOrphanedOSTFilesOnLogoff)"; Break}
+				}
+
+				Switch($FSLogixAS.RoamSearch)
+				{
+					"Enable"	{$FSLogixAS_RoamSearch = "Enable"; Break}
+					"Disable"	{$FSLogixAS_RoamSearch = "Disable"; Break}
+					Default		{$FSLogixAS_RoamSearch = "Unknown: $($FSLogixAS.RoamSearch)"; Break}
+				}
+
+				Switch($FSLogixAS.SetTempToLocalPath)
+				{
+					"TakeNoAction"					{$FSLogixAS_SetTempToLocalPath = "Take no action"; Break}
+					"RedirectTempAndTmp"			{$FSLogixAS_SetTempToLocalPath = "Redirect TEMP and TMP"; Break}
+					"RedirectINetCache"				{$FSLogixAS_SetTempToLocalPath = "Redirect INetCache"; Break}
+					"RedirectTempTmpAndINetCache"	{$FSLogixAS_SetTempToLocalPath = "Redirect TEMP, TMP, and INetCache"; Break}
+					Default							{$FSLogixAS_SetTempToLocalPath = "Unknown: $($FSLogixAS.SetTempToLocalPath)"; Break}
+				}
+
+				$FSLogixAS_SIDDirNameMatch   = $FSLogixAS.SIDDirNameMatch                        
+				$FSLogixAS_SIDDirNamePattern = $FSLogixAS.SIDDirNamePattern                      
+				$FSLogixAS_SIDDirSDDL        = $FSLogixAS.SIDDirSDDL
+				$FSLogixAS_VHDNameMatch      = $FSLogixAS.VHDNameMatch                           
+				$FSLogixAS_VHDNamePattern    = $FSLogixAS.VHDNamePattern                         
+
+				Switch($FSLogixAS.VHDXSectorSize)
+				{
+					0		{$FSLogixAS_VHDXSectorSize = "System default"; Break}
+					512		{$FSLogixAS_VHDXSectorSize = "512"; Break}
+					4096	{$FSLogixAS_VHDXSectorSize = "4096"; Break}
+					Default	{$FSLogixAS_VHDXSectorSize = "Unknown: $($FSLogixAS.VHDXSectorSize)"; Break}
+				}
+
+				$FSLogixAS_VolumeWaitTimeMS = $FSLogixAS.VolumeWaitTimeMS                       					
+			}
+			
+			If($MSWord -or $PDF)
+			{
+				$ScriptInformation = New-Object System.Collections.ArrayList
+				$ScriptInformation.Add(@{Data = "Inherit default settings"; Value = $AVDHostPool.InheritDefaultUserProfileSettings.ToString(); }) > $Null
+				$ScriptInformation.Add(@{Data = "Technology"; Value = $AVDHostPoolTechnology; }) > $Null
+
+				If($AVDHostPoolTechnology -eq "Do not manage by RAS")
+				{
+					#do nothing
+				}
+				ElseIf($AVDHostPoolTechnology -eq "FSLogix")
+				{
+					$ScriptInformation.Add(@{Data = "Deployment method"; Value = $FSLogixDeploymentSettingsDeploymentMethod; }) > $Null
+					If($FSLogixDeploymentSettings.InstallType -eq "Online")
+					{
+						$ScriptInformation.Add(@{Data = "URL"; Value = $FSLogixDeploymentSettingsInstallOnlineURL; }) > $Null
+					}
+					ElseIf($FSLogixDeploymentSettings.InstallType -eq "NetworkDrive")
+					{
+						$ScriptInformation.Add(@{Data = ""; Value = $FSLogixDeploymentSettingsNetworkDrivePath; }) > $Null
+					}
+					ElseIf($FSLogixDeploymentSettings.InstallType -eq "UploadInstall")
+					{
+						$ScriptInformation.Add(@{Data = ""; Value = $FSLogixDeploymentSettingsInstallerFileName; }) > $Null
+					}
+					$ScriptInformation.Add(@{Data = "Settings"; Value = ""; }) > $Null
+					$ScriptInformation.Add(@{Data = "     Location type"; Value = $FSLogixLocationType; }) > $Null
+					
+					$cnt = -1
+					ForEach($item in $FSLogixLocationOfProfileDisks)
+					{
+						$cnt++
+						
+						If($cnt -eq 0)
+						{
+							$ScriptInformation.Add(@{Data = "     Location of profile disks"; Value = $item; }) > $Null
+						}
+						Else
+						{
+							$ScriptInformation.Add(@{Data = ""; Value = $item; }) > $Null
+						}
+					}
+					$ScriptInformation.Add(@{Data = "     Profile disk format"; Value = $FSLogixProfileDiskFormat; }) > $Null
+					$ScriptInformation.Add(@{Data = "     Allocation type"; Value = $FSLogixAllocationType; }) > $Null
+					$ScriptInformation.Add(@{Data = "     Default size"; Value = "$FSLogixDefaultSize GB"; }) > $Null
+					$ScriptInformation.Add(@{Data = "Additional settings"; Value = ""; }) > $Null
+					$ScriptInformation.Add(@{Data = "     Users and Groups"; Value = ""; }) > $Null
+					
+					If($FSLogixSettingsUserInclusionList.Count -eq 0)
+					{
+						$ScriptInformation.Add(@{Data = "          User Inclusion List"; Value = "None"; }) > $Null
+					}
+					Else
+					{
+						$cnt = -1
+						ForEach($item in $FSLogixSettingsUserInclusionList)
+						{
+							$cnt++
 							
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "          User Inclusion List"; Value = "User: $($item.Account)"; }) > $Null
+								$ScriptInformation.Add(@{Data = ""; Value = "Type: $($item.Type)"; }) > $Null
+								$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "User: $($item.Account)"; }) > $Null
+								$ScriptInformation.Add(@{Data = ""; Value = "Type: $($item.Type)"; }) > $Null
+								$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+							}
+						}
+					}
+
+					If($FSLogixSettingsUserExclusionList.Count -eq 0)
+					{
+						$ScriptInformation.Add(@{Data = "          User Exclusion List"; Value = ""; }) > $Null
+					}
+					Else
+					{
+						$cnt = -1
+						ForEach($item in $FSLogixSettingsUserExclusionList)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								#$ScriptInformation.Add(@{Data = "          User Exclusion List"; Value = "User: $($item.Account)  Type: $($item.Type)"; }) > $Null
+								$ScriptInformation.Add(@{Data = "          User Exclusion List"; Value = "User: $($item.Account)"; }) > $Null
+								$ScriptInformation.Add(@{Data = ""; Value = "Type: $($item.Type)"; }) > $Null
+								$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "User: $($item.Account)"; }) > $Null
+								$ScriptInformation.Add(@{Data = ""; Value = "Type: $($item.Type)"; }) > $Null
+								$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+							}
+						}
+					}
+					$ScriptInformation.Add(@{Data = "     Folders"; Value = ""; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Customize profile folders"; Value = $FSLogixSettingsCustomizeProfileFolders.ToString(); }) > $Null
+					If($FSLogixSettingsCustomizeProfileFolders)
+					{
+						If($ExcludedCommonFolders.Count -gt 0)
+						{
 							$cnt = -1
-							ForEach($item in $FSLogixLocationOfProfileDisks)
+							ForEach($item in $ExcludedCommonFolders)
 							{
 								$cnt++
 								
 								If($cnt -eq 0)
 								{
-									$ScriptInformation.Add(@{Data = "     Location of profile disks"; Value = $item; }) > $Null
+									$ScriptInformation.Add(@{Data = "               Exclude Common Folders"; Value = $item; }) > $Null
 								}
 								Else
 								{
 									$ScriptInformation.Add(@{Data = ""; Value = $item; }) > $Null
 								}
 							}
-							$ScriptInformation.Add(@{Data = "     Profile disk format"; Value = $FSLogixProfileDiskFormat; }) > $Null
-							$ScriptInformation.Add(@{Data = "     Allocation type"; Value = $FSLogixAllocationType; }) > $Null
-							$ScriptInformation.Add(@{Data = "     Default size"; Value = "$FSLogixDefaultSize GB"; }) > $Null
-							$ScriptInformation.Add(@{Data = "Additional settings"; Value = ""; }) > $Null
-							$ScriptInformation.Add(@{Data = "     Users and Groups"; Value = ""; }) > $Null
-							
-							If($FSLogixSettingsUserInclusionList.Count -eq 0)
-							{
-								$ScriptInformation.Add(@{Data = "          User Inclusion List"; Value = "None"; }) > $Null
-							}
-							Else
-							{
-								$cnt = -1
-								ForEach($item in $FSLogixSettingsUserInclusionList)
-								{
-									$cnt++
-									
-									If($cnt -eq 0)
-									{
-										$ScriptInformation.Add(@{Data = "          User Inclusion List"; Value = "User: $($item.Account)"; }) > $Null
-										$ScriptInformation.Add(@{Data = ""; Value = "Type: $($item.Type)"; }) > $Null
-										$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
-									}
-									Else
-									{
-										$ScriptInformation.Add(@{Data = ""; Value = "User: $($item.Account)"; }) > $Null
-										$ScriptInformation.Add(@{Data = ""; Value = "Type: $($item.Type)"; }) > $Null
-										$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
-									}
-								}
-							}
-
-							If($FSLogixSettingsUserExclusionList.Count -eq 0)
-							{
-								$ScriptInformation.Add(@{Data = "          User Exclusion List"; Value = ""; }) > $Null
-							}
-							Else
-							{
-								$cnt = -1
-								ForEach($item in $FSLogixSettingsUserExclusionList)
-								{
-									$cnt++
-									
-									If($cnt -eq 0)
-									{
-										#$ScriptInformation.Add(@{Data = "          User Exclusion List"; Value = "User: $($item.Account)  Type: $($item.Type)"; }) > $Null
-										$ScriptInformation.Add(@{Data = "          User Exclusion List"; Value = "User: $($item.Account)"; }) > $Null
-										$ScriptInformation.Add(@{Data = ""; Value = "Type: $($item.Type)"; }) > $Null
-										$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
-									}
-									Else
-									{
-										$ScriptInformation.Add(@{Data = ""; Value = "User: $($item.Account)"; }) > $Null
-										$ScriptInformation.Add(@{Data = ""; Value = "Type: $($item.Type)"; }) > $Null
-										$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
-									}
-								}
-							}
-							$ScriptInformation.Add(@{Data = "     Folders"; Value = ""; }) > $Null
-							$ScriptInformation.Add(@{Data = "          Customize profile folders"; Value = $FSLogixSettingsCustomizeProfileFolders.ToString(); }) > $Null
-							If($FSLogixSettingsCustomizeProfileFolders)
-							{
-								If($ExcludedCommonFolders.Count -gt 0)
-								{
-									$cnt = -1
-									ForEach($item in $ExcludedCommonFolders)
-									{
-										$cnt++
-										
-										If($cnt -eq 0)
-										{
-											$ScriptInformation.Add(@{Data = "               Exclude Common Folders"; Value = $item; }) > $Null
-										}
-										Else
-										{
-											$ScriptInformation.Add(@{Data = ""; Value = $item; }) > $Null
-										}
-									}
-								}
-								Else
-								{
-									$ScriptInformation.Add(@{Data = "               Exclude Common Folders"; Value = "None"; }) > $Null
-								}
-							}
-
-							If($FSLogixSettingsFolderInclusionList.Count -eq 0)
-							{
-								$ScriptInformation.Add(@{Data = "          Folder Inclusion List"; Value = "None"; }) > $Null
-							}
-							Else
-							{
-								$ScriptInformation.Add(@{Data = "          Folder Inclusion List"; Value = ""; }) > $Null
-								$cnt = -1
-								ForEach($item in $FSLogixSettingsFolderInclusionList)
-								{
-									$cnt++
-									
-									If($cnt -eq 0)
-									{
-										$ScriptInformation.Add(@{Data = "               Folder"; Value = "$item"; }) > $Null
-									}
-									Else
-									{
-										$ScriptInformation.Add(@{Data = ""; Value = "$item"; }) > $Null
-									}
-								}
-							}
-
-							If($FSLogixSettingsFolderExclusionList.Count -eq 0)
-							{
-								$ScriptInformation.Add(@{Data = "          Folder Exclusion List"; Value = "None"; }) > $Null
-							}
-							Else
-							{
-								$ScriptInformation.Add(@{Data = "          Folder Exclusion List"; Value = ""; }) > $Null
-								$cnt = -1
-								ForEach($item in $FSLogixSettingsFolderExclusionList)
-								{
-									$cnt++
-									
-									Switch($item.ExcludeFolderCopy)
-									{
-										"None"					{$CopyBase = "No "; $CopyBack = "No "; Break}
-										"CopyBack"				{$CopyBase = "No "; $CopyBack = "Yes"; Break}
-										"CopyBase"				{$CopyBase = "Yes"; $CopyBack = "No "; Break}
-										"CopyBase, CopyBack"	{$CopyBase = "Yes"; $CopyBack = "Yes"; Break}
-										Default					{$CopyBase = "Unknown"; $CopyBack = "Unknown"; Break}
-									}
-									
-									If($cnt -eq 0)
-									{
-										$ScriptInformation.Add(@{Data = "               Folder"; Value = "$($item.Folder) Copy base: $CopyBase Copy back: $CopyBack"; }) > $Null
-									}
-									Else
-									{
-										$ScriptInformation.Add(@{Data = ""; Value = "$($item.Folder) Copy base: $CopyBase Copy back: $CopyBack"; }) > $Null
-									}
-								}
-							}
-							
-							$ScriptInformation.Add(@{Data = "     Advanced"; Value = ""; }) > $Null
-							$ScriptInformation.Add(@{Data = "          FSLogix Setting:"; Value = "Value:"; }) > $Null
-							$ScriptInformation.Add(@{Data = "          Access network as computer object"; Value = "$($FSLogixAS_AccessNetworkAsComputerObject)"; }) > $Null
-							$ScriptInformation.Add(@{Data = "          Custom SDDL for profile directory"; Value = "$($FSLogixAS_ProfileDirSDDL)"; }) > $Null
-							$ScriptInformation.Add(@{Data = "          Delay between locked VHD(X) retries"; Value = "$($FSLogixAS_LockedRetryInterval)"; }) > $Null
-							$ScriptInformation.Add(@{Data = "          Delete local profile when loading from VHD"; Value = "$($FSLogixAS_DeleteLocalProfileWhenVHDShouldApply)"; }) > $Null
-							$ScriptInformation.Add(@{Data = "          Diff disk parent folder path"; Value = "$($FSLogixAS_DiffDiskParentFolderPath)"; }) > $Null
-							$ScriptInformation.Add(@{Data = "          Do not create a folder for new profiles"; Value = "$($FSLogixAS_NoProfileContainingFolder)"; }) > $Null
-							$ScriptInformation.Add(@{Data = "          Enable Cached mode for Outlook"; Value = "$($FSLogixAS_OutlookCachedMode)"; }) > $Null
-							$ScriptInformation.Add(@{Data = "          Keep local profiles"; Value = "$($FSLogixAS_KeepLocalDir)"; }) > $Null
-							$ScriptInformation.Add(@{Data = "          Naming pattern for new VHD(X) files"; Value = "$($FSLogixAS_VHDNamePattern)"; }) > $Null
-							$ScriptInformation.Add(@{Data = "          Number of locked VHD(X) retries"; Value = "$($FSLogixAS_LockedRetryCount)"; }) > $Null
-							$ScriptInformation.Add(@{Data = "          Prevent logons with failures"; Value = "$($FSLogixAS_PreventLoginWithFailure)"; }) > $Null
-							$ScriptInformation.Add(@{Data = "          Prevent logons with temp profiles"; Value = "$($FSLogixAS_PreventLoginWithTempProfile)"; }) > $Null
-							$ScriptInformation.Add(@{Data = "          Profile folder naming pattern"; Value = "$($FSLogixAS_SIDDirNameMatch)"; }) > $Null
-							$ScriptInformation.Add(@{Data = "          Profile type"; Value = "$($FSLogixAS_ProfileType)"; }) > $Null
-							$ScriptInformation.Add(@{Data = "          Profile VHD(X) file matching pattern"; Value = "$($FSLogixAS_VHDNameMatch)"; }) > $Null
-							$ScriptInformation.Add(@{Data = "          Re-attach interval"; Value = "$($FSLogixAS_ReAttachIntervalSeconds)"; }) > $Null
-							$ScriptInformation.Add(@{Data = "          Re-attach retry limit"; Value = "$($FSLogixAS_ReAttachRetryCount)"; }) > $Null
-							$ScriptInformation.Add(@{Data = "          Remove duplicate OST files on logoff"; Value = "$($FSLogixAS_RemoveOrphanedOSTFilesOnLogoff)"; }) > $Null
-							$ScriptInformation.Add(@{Data = "          SDDL used when attaching the VHD"; Value = "$($FSLogixAS_AttachVHDSDDL)"; }) > $Null
-							$ScriptInformation.Add(@{Data = "          Search roaming feature mode"; Value = "$($FSLogixAS_RoamSearch)"; }) > $Null
-							$ScriptInformation.Add(@{Data = "          Swap SID and username in profile directory names"; Value = "$($FSLogixAS_FlipFlopProfileDirectoryName)"; }) > $Null
-							$ScriptInformation.Add(@{Data = "          Temporary folders redirection mode"; Value = "$($FSLogixAS_SetTempToLocalPath)"; }) > $Null
-							$ScriptInformation.Add(@{Data = "          Use SDDL on creation of SID containing folder"; Value = "$($FSLogixAS_SIDDirSDDL)"; }) > $Null
-							$ScriptInformation.Add(@{Data = "          User-to-Profile matching pattern"; Value = "$($FSLogixAS_SIDDirNamePattern)"; }) > $Null
-							$ScriptInformation.Add(@{Data = "          VHDX sector size"; Value = "$($FSLogixAS_VHDXSectorSize)"; }) > $Null
-							$ScriptInformation.Add(@{Data = "          Volume wait time"; Value = "$($FSLogixAS_VolumeWaitTimeMS)"; }) > $Null
 						}
-
-						$Table = AddWordTable -Hashtable $ScriptInformation `
-						-Columns Data,Value `
-						-List `
-						-Format $wdTableGrid `
-						-AutoFit $wdAutoFitFixed;
-
-						SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
-						SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
-						$Table.Columns.Item(1).Width = 250;
-						$Table.Columns.Item(2).Width = 250;
-
-						$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-						FindWordDocumentEnd
-						$Table = $Null
-						WriteWordLine 0 0 ""
+						Else
+						{
+							$ScriptInformation.Add(@{Data = "               Exclude Common Folders"; Value = "None"; }) > $Null
+						}
 					}
-					If($Text)
-					{
-						Line 5 "Inherit default settings`t`t`t`t: " $AVDHostPool.InheritDefaultUserProfileSettings.ToString()
-						Line 5 "Technology`t`t`t`t`t`t: " $AVDHostPoolTechnology
 
-						If($AVDHostPoolTechnology -eq "Do not manage by RAS")
+					If($FSLogixSettingsFolderInclusionList.Count -eq 0)
+					{
+						$ScriptInformation.Add(@{Data = "          Folder Inclusion List"; Value = "None"; }) > $Null
+					}
+					Else
+					{
+						$ScriptInformation.Add(@{Data = "          Folder Inclusion List"; Value = ""; }) > $Null
+						$cnt = -1
+						ForEach($item in $FSLogixSettingsFolderInclusionList)
 						{
-							#do nothing
-						}
-						ElseIf($AVDHostPoolTechnology -eq "FSLogix")
-						{
-							Line 5 "Deployment method`t`t`t`t`t: " $FSLogixDeploymentSettingsDeploymentMethod
-							If($FSLogixDeploymentSettings.InstallType -eq "Online")
-							{
-								Line 5 "URL`t`t`t`t`t`t`t: " $FSLogixDeploymentSettingsInstallOnlineURL
-							}
-							ElseIf($FSLogixDeploymentSettings.InstallType -eq "NetworkDrive")
-							{
-								Line 12 ": " $FSLogixDeploymentSettingsNetworkDrivePath
-							}
-							ElseIf($FSLogixDeploymentSettings.InstallType -eq "UploadInstall")
-							{
-								Line 12 ": " $FSLogixDeploymentSettingsInstallerFileName
-							}
-							Line 5 "Settings"
-							Line 6 "Location type`t`t`t`t`t: " $FSLogixLocationType
+							$cnt++
 							
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "               Folder"; Value = "$item"; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "$item"; }) > $Null
+							}
+						}
+					}
+
+					If($FSLogixSettingsFolderExclusionList.Count -eq 0)
+					{
+						$ScriptInformation.Add(@{Data = "          Folder Exclusion List"; Value = "None"; }) > $Null
+					}
+					Else
+					{
+						$ScriptInformation.Add(@{Data = "          Folder Exclusion List"; Value = ""; }) > $Null
+						$cnt = -1
+						ForEach($item in $FSLogixSettingsFolderExclusionList)
+						{
+							$cnt++
+							
+							Switch($item.ExcludeFolderCopy)
+							{
+								"None"					{$CopyBase = "No "; $CopyBack = "No "; Break}
+								"CopyBack"				{$CopyBase = "No "; $CopyBack = "Yes"; Break}
+								"CopyBase"				{$CopyBase = "Yes"; $CopyBack = "No "; Break}
+								"CopyBase, CopyBack"	{$CopyBase = "Yes"; $CopyBack = "Yes"; Break}
+								Default					{$CopyBase = "Unknown"; $CopyBack = "Unknown"; Break}
+							}
+							
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "               Folder"; Value = "$($item.Folder) Copy base: $CopyBase Copy back: $CopyBack"; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "$($item.Folder) Copy base: $CopyBase Copy back: $CopyBack"; }) > $Null
+							}
+						}
+					}
+					
+					$ScriptInformation.Add(@{Data = "     Advanced"; Value = ""; }) > $Null
+					$ScriptInformation.Add(@{Data = "          FSLogix Setting:"; Value = "Value:"; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Access network as computer object"; Value = "$($FSLogixAS_AccessNetworkAsComputerObject)"; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Custom SDDL for profile directory"; Value = "$($FSLogixAS_ProfileDirSDDL)"; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Delay between locked VHD(X) retries"; Value = "$($FSLogixAS_LockedRetryInterval)"; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Delete local profile when loading from VHD"; Value = "$($FSLogixAS_DeleteLocalProfileWhenVHDShouldApply)"; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Diff disk parent folder path"; Value = "$($FSLogixAS_DiffDiskParentFolderPath)"; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Do not create a folder for new profiles"; Value = "$($FSLogixAS_NoProfileContainingFolder)"; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Enable Cached mode for Outlook"; Value = "$($FSLogixAS_OutlookCachedMode)"; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Keep local profiles"; Value = "$($FSLogixAS_KeepLocalDir)"; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Naming pattern for new VHD(X) files"; Value = "$($FSLogixAS_VHDNamePattern)"; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Number of locked VHD(X) retries"; Value = "$($FSLogixAS_LockedRetryCount)"; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Prevent logons with failures"; Value = "$($FSLogixAS_PreventLoginWithFailure)"; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Prevent logons with temp profiles"; Value = "$($FSLogixAS_PreventLoginWithTempProfile)"; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Profile folder naming pattern"; Value = "$($FSLogixAS_SIDDirNameMatch)"; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Profile type"; Value = "$($FSLogixAS_ProfileType)"; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Profile VHD(X) file matching pattern"; Value = "$($FSLogixAS_VHDNameMatch)"; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Re-attach interval"; Value = "$($FSLogixAS_ReAttachIntervalSeconds)"; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Re-attach retry limit"; Value = "$($FSLogixAS_ReAttachRetryCount)"; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Remove duplicate OST files on logoff"; Value = "$($FSLogixAS_RemoveOrphanedOSTFilesOnLogoff)"; }) > $Null
+					$ScriptInformation.Add(@{Data = "          SDDL used when attaching the VHD"; Value = "$($FSLogixAS_AttachVHDSDDL)"; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Search roaming feature mode"; Value = "$($FSLogixAS_RoamSearch)"; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Swap SID and username in profile directory names"; Value = "$($FSLogixAS_FlipFlopProfileDirectoryName)"; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Temporary folders redirection mode"; Value = "$($FSLogixAS_SetTempToLocalPath)"; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Use SDDL on creation of SID containing folder"; Value = "$($FSLogixAS_SIDDirSDDL)"; }) > $Null
+					$ScriptInformation.Add(@{Data = "          User-to-Profile matching pattern"; Value = "$($FSLogixAS_SIDDirNamePattern)"; }) > $Null
+					$ScriptInformation.Add(@{Data = "          VHDX sector size"; Value = "$($FSLogixAS_VHDXSectorSize)"; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Volume wait time"; Value = "$($FSLogixAS_VolumeWaitTimeMS)"; }) > $Null
+				}
+
+				$Table = AddWordTable -Hashtable $ScriptInformation `
+				-Columns Data,Value `
+				-List `
+				-Format $wdTableGrid `
+				-AutoFit $wdAutoFitFixed;
+
+				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+				$Table.Columns.Item(1).Width = 250;
+				$Table.Columns.Item(2).Width = 250;
+
+				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+				FindWordDocumentEnd
+				$Table = $Null
+				WriteWordLine 0 0 ""
+			}
+			If($Text)
+			{
+				Line 5 "Inherit default settings`t`t`t`t: " $AVDHostPool.InheritDefaultUserProfileSettings.ToString()
+				Line 5 "Technology`t`t`t`t`t`t: " $AVDHostPoolTechnology
+
+				If($AVDHostPoolTechnology -eq "Do not manage by RAS")
+				{
+					#do nothing
+				}
+				ElseIf($AVDHostPoolTechnology -eq "FSLogix")
+				{
+					Line 5 "Deployment method`t`t`t`t`t: " $FSLogixDeploymentSettingsDeploymentMethod
+					If($FSLogixDeploymentSettings.InstallType -eq "Online")
+					{
+						Line 5 "URL`t`t`t`t`t`t`t: " $FSLogixDeploymentSettingsInstallOnlineURL
+					}
+					ElseIf($FSLogixDeploymentSettings.InstallType -eq "NetworkDrive")
+					{
+						Line 12 ": " $FSLogixDeploymentSettingsNetworkDrivePath
+					}
+					ElseIf($FSLogixDeploymentSettings.InstallType -eq "UploadInstall")
+					{
+						Line 12 ": " $FSLogixDeploymentSettingsInstallerFileName
+					}
+					Line 5 "Settings"
+					Line 6 "Location type`t`t`t`t`t: " $FSLogixLocationType
+					
+					$cnt = -1
+					ForEach($item in $FSLogixLocationOfProfileDisks)
+					{
+						$cnt++
+						
+						If($cnt -eq 0)
+						{
+							Line 6 "Location of profile disks`t`t`t: " $item
+						}
+						Else
+						{
+							Line 12 "  " $item
+						}
+					}
+					Line 6 "Profile disk format`t`t`t`t: " $FSLogixProfileDiskFormat
+					Line 6 "Allocation type`t`t`t`t`t: " $FSLogixAllocationType
+					Line 6 "Default size`t`t`t`t`t: " "$FSLogixDefaultSize GB"
+					Line 5 "Additional settings"
+					Line 6 "Users and Groups"
+					
+					If($FSLogixSettingsUserInclusionList.Count -eq 0)
+					{
+						Line 7 "User Inclusion List`t`t`t: " "None"
+					}
+					Else
+					{
+						$cnt = -1
+						ForEach($item in $FSLogixSettingsUserInclusionList)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								Line 7 "User Inclusion List`t`t`t: " "User: $($item.Account)  Type: $($item.Type)"
+							}
+							Else
+							{
+								Line 12 "  " "User: $($item.Account)  Type: $($item.Type)"
+							}
+						}
+					}
+
+					If($FSLogixSettingsUserExclusionList.Count -eq 0)
+					{
+						Line 7 "User Exclusion List`t`t`t: " "None"
+					}
+					Else
+					{
+						$cnt = -1
+						ForEach($item in $FSLogixSettingsUserExclusionList)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								Line 7 "User Exclusion List`t`t`t: " "User: $($item.Account)  Type: $($item.Type)"
+							}
+							Else
+							{
+								Line 12 "  " "User: $($item.Account)  Type: $($item.Type)"
+							}
+						}
+					}
+					Line 6 "Folders"
+					Line 7 "Customize profile folders`t`t: " $FSLogixSettingsCustomizeProfileFolders.ToString()
+					If($FSLogixSettingsCustomizeProfileFolders)
+					{
+						If($ExcludedCommonFolders.Count -gt 0)
+						{
 							$cnt = -1
-							ForEach($item in $FSLogixLocationOfProfileDisks)
+							ForEach($item in $ExcludedCommonFolders)
 							{
 								$cnt++
 								
 								If($cnt -eq 0)
 								{
-									Line 6 "Location of profile disks`t`t`t: " $item
+									Line 8 "Exclude Common Folders`t`t: " $item
 								}
 								Else
 								{
 									Line 12 "  " $item
 								}
 							}
-							Line 6 "Profile disk format`t`t`t`t: " $FSLogixProfileDiskFormat
-							Line 6 "Allocation type`t`t`t`t`t: " $FSLogixAllocationType
-							Line 6 "Default size`t`t`t`t`t: " "$FSLogixDefaultSize GB"
-							Line 5 "Additional settings"
-							Line 6 "Users and Groups"
-							
-							If($FSLogixSettingsUserInclusionList.Count -eq 0)
-							{
-								Line 7 "User Inclusion List`t`t`t: " "None"
-							}
-							Else
-							{
-								$cnt = -1
-								ForEach($item in $FSLogixSettingsUserInclusionList)
-								{
-									$cnt++
-									
-									If($cnt -eq 0)
-									{
-										Line 7 "User Inclusion List`t`t`t: " "User: $($item.Account)  Type: $($item.Type)"
-									}
-									Else
-									{
-										Line 12 "  " "User: $($item.Account)  Type: $($item.Type)"
-									}
-								}
-							}
-
-							If($FSLogixSettingsUserExclusionList.Count -eq 0)
-							{
-								Line 7 "User Exclusion List`t`t`t: " "None"
-							}
-							Else
-							{
-								$cnt = -1
-								ForEach($item in $FSLogixSettingsUserExclusionList)
-								{
-									$cnt++
-									
-									If($cnt -eq 0)
-									{
-										Line 7 "User Exclusion List`t`t`t: " "User: $($item.Account)  Type: $($item.Type)"
-									}
-									Else
-									{
-										Line 12 "  " "User: $($item.Account)  Type: $($item.Type)"
-									}
-								}
-							}
-							Line 6 "Folders"
-							Line 7 "Customize profile folders`t`t: " $FSLogixSettingsCustomizeProfileFolders.ToString()
-							If($FSLogixSettingsCustomizeProfileFolders)
-							{
-								If($ExcludedCommonFolders.Count -gt 0)
-								{
-									$cnt = -1
-									ForEach($item in $ExcludedCommonFolders)
-									{
-										$cnt++
-										
-										If($cnt -eq 0)
-										{
-											Line 8 "Exclude Common Folders`t`t: " $item
-										}
-										Else
-										{
-											Line 12 "  " $item
-										}
-									}
-								}
-								Else
-								{
-									Line 8 "Exclude Common Folders`t`t: None"
-								}
-							}
-
-							If($FSLogixSettingsFolderInclusionList.Count -eq 0)
-							{
-								Line 7 "Folder Inclusion List`t`t`t: " "None"
-							}
-							Else
-							{
-								Line 7 "Folder Inclusion List"
-								$cnt = -1
-								ForEach($item in $FSLogixSettingsFolderInclusionList)
-								{
-									$cnt++
-									
-									If($cnt -eq 0)
-									{
-										Line 8 "Folder`t`t`t`t: " $item
-									}
-									Else
-									{
-										Line 12 "  " $item
-									}
-								}
-							}
-
-							If($FSLogixSettingsFolderExclusionList.Count -eq 0)
-							{
-								Line 7 "Folder Exclusion List`t`t`t: " "None"
-							}
-							Else
-							{
-								Line 7 "Folder Exclusion List"
-								$cnt = -1
-								ForEach($item in $FSLogixSettingsFolderExclusionList)
-								{
-									$cnt++
-									
-									Switch($item.ExcludeFolderCopy)
-									{
-										"None"					{$CopyBase = "No "; $CopyBack = "No "; Break}
-										"CopyBack"				{$CopyBase = "No "; $CopyBack = "Yes"; Break}
-										"CopyBase"				{$CopyBase = "Yes"; $CopyBack = "No "; Break}
-										"CopyBase, CopyBack"	{$CopyBase = "Yes"; $CopyBack = "Yes"; Break}
-										Default					{$CopyBase = "Unknown"; $CopyBack = "Unknown"; Break}
-									}
-									
-									If($cnt -eq 0)
-									{
-										Line 8 "Folder`t`t`t`t: " "$($item.Folder) Copy base: $CopyBase Copy back: $CopyBack"
-									}
-									Else
-									{
-										Line 12 "  " "$($item.Folder) Copy base: $CopyBase Copy back: $CopyBack"
-									}
-								}
-							}
-							
-							Line 6 "Advanced"
-							Line 7 "FSLogix Setting                                      Value"
-							Line 7 "======================================================================================"
-							#      "Swap SID and username in profile directory names     Redirect TEMP, TMP, and INetCache"
-							Line 7 "Access network as computer object                    $($FSLogixAS_AccessNetworkAsComputerObject)"
-							Line 7 "Custom SDDL for profile directory                    $($FSLogixAS_ProfileDirSDDL)"
-							Line 7 "Delay between locked VHD(X) retries                  $($FSLogixAS_LockedRetryInterval)"
-							Line 7 "Delete local profile when loading from VHD           $($FSLogixAS_DeleteLocalProfileWhenVHDShouldApply)"
-							Line 7 "Diff disk parent folder path                         $($FSLogixAS_DiffDiskParentFolderPath)"
-							Line 7 "Do not create a folder for new profiles              $($FSLogixAS_NoProfileContainingFolder)"
-							Line 7 "Enable Cached mode for Outlook                       $($FSLogixAS_OutlookCachedMode)"
-							Line 7 "Keep local profiles                                  $($FSLogixAS_KeepLocalDir)"
-							Line 7 "Naming pattern for new VHD(X) files                  $($FSLogixAS_VHDNamePattern)"
-							Line 7 "Number of locked VHD(X) retries                      $($FSLogixAS_LockedRetryCount)"
-							Line 7 "Prevent logons with failures                         $($FSLogixAS_PreventLoginWithFailure)"
-							Line 7 "Prevent logons with temp profiles                    $($FSLogixAS_PreventLoginWithTempProfile)"
-							Line 7 "Profile folder naming pattern                        $($FSLogixAS_SIDDirNameMatch)"
-							Line 7 "Profile type                                         $($FSLogixAS_ProfileType)"
-							Line 7 "Profile VHD(X) file matching pattern                 $($FSLogixAS_VHDNameMatch)"
-							Line 7 "Re-attach interval                                   $($FSLogixAS_ReAttachIntervalSeconds)"
-							Line 7 "Re-attach retry limit                                $($FSLogixAS_ReAttachRetryCount)"
-							Line 7 "Remove duplicate OST files on logoff                 $($FSLogixAS_RemoveOrphanedOSTFilesOnLogoff)"
-							Line 7 "SDDL used when attaching the VHD                     $($FSLogixAS_AttachVHDSDDL)"
-							Line 7 "Search roaming feature mode                          $($FSLogixAS_RoamSearch)"
-							Line 7 "Swap SID and username in profile directory names     $($FSLogixAS_FlipFlopProfileDirectoryName)"
-							Line 7 "Temporary folders redirection mode                   $($FSLogixAS_SetTempToLocalPath)"
-							Line 7 "Use SDDL on creation of SID containing folder        $($FSLogixAS_SIDDirSDDL)"
-							Line 7 "User-to-Profile matching pattern                     $($FSLogixAS_SIDDirNamePattern)"
-							Line 7 "VHDX sector size                                     $($FSLogixAS_VHDXSectorSize)"
-							Line 7 "Volume wait time                                     $($FSLogixAS_VolumeWaitTimeMS)"
 						}
-
-						Line 0 ""
+						Else
+						{
+							Line 8 "Exclude Common Folders`t`t: None"
+						}
 					}
-					If($HTML)
-					{
-						$rowdata = @()
-						$columnHeaders = @("Inherit default settings",($Script:htmlsb),$AVDHostPool.InheritDefaultUserProfileSettings.ToString(),$htmlwhite)
-						$rowdata += @(,("Technology",($Script:htmlsb),$AVDHostPoolTechnology,$htmlwhite))
 
-						If($AVDHostPoolTechnology -eq "Do not manage by RAS")
+					If($FSLogixSettingsFolderInclusionList.Count -eq 0)
+					{
+						Line 7 "Folder Inclusion List`t`t`t: " "None"
+					}
+					Else
+					{
+						Line 7 "Folder Inclusion List"
+						$cnt = -1
+						ForEach($item in $FSLogixSettingsFolderInclusionList)
 						{
-							#do nothing
-						}
-						ElseIf($AVDHostPoolTechnology -eq "FSLogix")
-						{
-							$rowdata += @(,("Deployment method",($Script:htmlsb),$FSLogixDeploymentSettingsDeploymentMethod,$htmlwhite))
-							If($FSLogixDeploymentSettings.InstallType -eq "Online")
-							{
-								$rowdata += @(,("URL",($Script:htmlsb),$FSLogixDeploymentSettingsInstallOnlineURL,$htmlwhite))
-							}
-							ElseIf($FSLogixDeploymentSettings.InstallType -eq "NetworkDrive")
-							{
-								$rowdata += @(,("",($Script:htmlsb),$FSLogixDeploymentSettingsNetworkDrivePath,$htmlwhite))
-							}
-							ElseIf($FSLogixDeploymentSettings.InstallType -eq "UploadInstall")
-							{
-								$rowdata += @(,("",($Script:htmlsb),$FSLogixDeploymentSettingsInstallerFileName,$htmlwhite))
-							}
-							$rowdata += @(,("Settings",($Script:htmlsb),"",$htmlwhite))
-							$rowdata += @(,("     Location type",($Script:htmlsb),$FSLogixLocationType,$htmlwhite))
+							$cnt++
 							
+							If($cnt -eq 0)
+							{
+								Line 8 "Folder`t`t`t`t: " $item
+							}
+							Else
+							{
+								Line 12 "  " $item
+							}
+						}
+					}
+
+					If($FSLogixSettingsFolderExclusionList.Count -eq 0)
+					{
+						Line 7 "Folder Exclusion List`t`t`t: " "None"
+					}
+					Else
+					{
+						Line 7 "Folder Exclusion List"
+						$cnt = -1
+						ForEach($item in $FSLogixSettingsFolderExclusionList)
+						{
+							$cnt++
+							
+							Switch($item.ExcludeFolderCopy)
+							{
+								"None"					{$CopyBase = "No "; $CopyBack = "No "; Break}
+								"CopyBack"				{$CopyBase = "No "; $CopyBack = "Yes"; Break}
+								"CopyBase"				{$CopyBase = "Yes"; $CopyBack = "No "; Break}
+								"CopyBase, CopyBack"	{$CopyBase = "Yes"; $CopyBack = "Yes"; Break}
+								Default					{$CopyBase = "Unknown"; $CopyBack = "Unknown"; Break}
+							}
+							
+							If($cnt -eq 0)
+							{
+								Line 8 "Folder`t`t`t`t: " "$($item.Folder) Copy base: $CopyBase Copy back: $CopyBack"
+							}
+							Else
+							{
+								Line 12 "  " "$($item.Folder) Copy base: $CopyBase Copy back: $CopyBack"
+							}
+						}
+					}
+					
+					Line 6 "Advanced"
+					Line 7 "FSLogix Setting                                      Value"
+					Line 7 "======================================================================================"
+					#      "Swap SID and username in profile directory names     Redirect TEMP, TMP, and INetCache"
+					Line 7 "Access network as computer object                    $($FSLogixAS_AccessNetworkAsComputerObject)"
+					Line 7 "Custom SDDL for profile directory                    $($FSLogixAS_ProfileDirSDDL)"
+					Line 7 "Delay between locked VHD(X) retries                  $($FSLogixAS_LockedRetryInterval)"
+					Line 7 "Delete local profile when loading from VHD           $($FSLogixAS_DeleteLocalProfileWhenVHDShouldApply)"
+					Line 7 "Diff disk parent folder path                         $($FSLogixAS_DiffDiskParentFolderPath)"
+					Line 7 "Do not create a folder for new profiles              $($FSLogixAS_NoProfileContainingFolder)"
+					Line 7 "Enable Cached mode for Outlook                       $($FSLogixAS_OutlookCachedMode)"
+					Line 7 "Keep local profiles                                  $($FSLogixAS_KeepLocalDir)"
+					Line 7 "Naming pattern for new VHD(X) files                  $($FSLogixAS_VHDNamePattern)"
+					Line 7 "Number of locked VHD(X) retries                      $($FSLogixAS_LockedRetryCount)"
+					Line 7 "Prevent logons with failures                         $($FSLogixAS_PreventLoginWithFailure)"
+					Line 7 "Prevent logons with temp profiles                    $($FSLogixAS_PreventLoginWithTempProfile)"
+					Line 7 "Profile folder naming pattern                        $($FSLogixAS_SIDDirNameMatch)"
+					Line 7 "Profile type                                         $($FSLogixAS_ProfileType)"
+					Line 7 "Profile VHD(X) file matching pattern                 $($FSLogixAS_VHDNameMatch)"
+					Line 7 "Re-attach interval                                   $($FSLogixAS_ReAttachIntervalSeconds)"
+					Line 7 "Re-attach retry limit                                $($FSLogixAS_ReAttachRetryCount)"
+					Line 7 "Remove duplicate OST files on logoff                 $($FSLogixAS_RemoveOrphanedOSTFilesOnLogoff)"
+					Line 7 "SDDL used when attaching the VHD                     $($FSLogixAS_AttachVHDSDDL)"
+					Line 7 "Search roaming feature mode                          $($FSLogixAS_RoamSearch)"
+					Line 7 "Swap SID and username in profile directory names     $($FSLogixAS_FlipFlopProfileDirectoryName)"
+					Line 7 "Temporary folders redirection mode                   $($FSLogixAS_SetTempToLocalPath)"
+					Line 7 "Use SDDL on creation of SID containing folder        $($FSLogixAS_SIDDirSDDL)"
+					Line 7 "User-to-Profile matching pattern                     $($FSLogixAS_SIDDirNamePattern)"
+					Line 7 "VHDX sector size                                     $($FSLogixAS_VHDXSectorSize)"
+					Line 7 "Volume wait time                                     $($FSLogixAS_VolumeWaitTimeMS)"
+				}
+
+				Line 0 ""
+			}
+			If($HTML)
+			{
+				$rowdata = @()
+				$columnHeaders = @("Inherit default settings",($Script:htmlsb),$AVDHostPool.InheritDefaultUserProfileSettings.ToString(),$htmlwhite)
+				$rowdata += @(,("Technology",($Script:htmlsb),$AVDHostPoolTechnology,$htmlwhite))
+
+				If($AVDHostPoolTechnology -eq "Do not manage by RAS")
+				{
+					#do nothing
+				}
+				ElseIf($AVDHostPoolTechnology -eq "FSLogix")
+				{
+					$rowdata += @(,("Deployment method",($Script:htmlsb),$FSLogixDeploymentSettingsDeploymentMethod,$htmlwhite))
+					If($FSLogixDeploymentSettings.InstallType -eq "Online")
+					{
+						$rowdata += @(,("URL",($Script:htmlsb),$FSLogixDeploymentSettingsInstallOnlineURL,$htmlwhite))
+					}
+					ElseIf($FSLogixDeploymentSettings.InstallType -eq "NetworkDrive")
+					{
+						$rowdata += @(,("",($Script:htmlsb),$FSLogixDeploymentSettingsNetworkDrivePath,$htmlwhite))
+					}
+					ElseIf($FSLogixDeploymentSettings.InstallType -eq "UploadInstall")
+					{
+						$rowdata += @(,("",($Script:htmlsb),$FSLogixDeploymentSettingsInstallerFileName,$htmlwhite))
+					}
+					$rowdata += @(,("Settings",($Script:htmlsb),"",$htmlwhite))
+					$rowdata += @(,("     Location type",($Script:htmlsb),$FSLogixLocationType,$htmlwhite))
+					
+					$cnt = -1
+					ForEach($item in $FSLogixLocationOfProfileDisks)
+					{
+						$cnt++
+						
+						If($cnt -eq 0)
+						{
+							$rowdata += @(,("     Location of profile disks",($Script:htmlsb),$item,$htmlwhite))
+						}
+						Else
+						{
+							$rowdata += @(,("",($Script:htmlsb),$item,$htmlwhite))
+						}
+					}
+					$rowdata += @(,("     Profile disk format",($Script:htmlsb),$FSLogixProfileDiskFormat,$htmlwhite))
+					$rowdata += @(,("     Allocation type",($Script:htmlsb),$FSLogixAllocationType,$htmlwhite))
+					$rowdata += @(,("     Default size",($Script:htmlsb),"$FSLogixDefaultSize GB",$htmlwhite))
+					$rowdata += @(,("Additional settings",($Script:htmlsb),"",$htmlwhite))
+					$rowdata += @(,("     Users and Groups",($Script:htmlsb),"",$htmlwhite))
+					
+					If($FSLogixSettingsUserInclusionList.Count -eq 0)
+					{
+						$rowdata += @(,("          User Inclusion List",($Script:htmlsb),"None",$htmlwhite))
+					}
+					Else
+					{
+						$cnt = -1
+						ForEach($item in $FSLogixSettingsUserInclusionList)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,("          User Inclusion List",($Script:htmlsb),"User: $($item.Account)",$htmlwhite))
+								$rowdata += @(,("",($Script:htmlsb),"Type: $($item.Type)",$htmlwhite))
+								$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb),"User: $($item.Account)",$htmlwhite))
+								$rowdata += @(,("",($Script:htmlsb),"Type: $($item.Type)",$htmlwhite))
+								$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+							}
+						}
+					}
+
+					If($FSLogixSettingsUserExclusionList.Count -eq 0)
+					{
+						$rowdata += @(,("          User Exclusion List",($Script:htmlsb),"None",$htmlwhite))
+					}
+					Else
+					{
+						$cnt = -1
+						ForEach($item in $FSLogixSettingsUserExclusionList)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,("          User Exclusion List",($Script:htmlsb),"User: $($item.Account)",$htmlwhite))
+								$rowdata += @(,("",($Script:htmlsb),"Type: $($item.Type)",$htmlwhite))
+								$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb),"User: $($item.Account)",$htmlwhite))
+								$rowdata += @(,("",($Script:htmlsb),"Type: $($item.Type)",$htmlwhite))
+								$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+							}
+						}
+					}
+					$rowdata += @(,("     Folders",($Script:htmlsb),"",$htmlwhite))
+					$rowdata += @(,("          Customize profile folders",($Script:htmlsb),$FSLogixSettingsCustomizeProfileFolders.ToString(),$htmlwhite))
+					If($FSLogixSettingsCustomizeProfileFolders)
+					{
+						If($ExcludedCommonFolders.Count -gt 0)
+						{
 							$cnt = -1
-							ForEach($item in $FSLogixLocationOfProfileDisks)
+							ForEach($item in $ExcludedCommonFolders)
 							{
 								$cnt++
 								
 								If($cnt -eq 0)
 								{
-									$rowdata += @(,("     Location of profile disks",($Script:htmlsb),$item,$htmlwhite))
+									$rowdata += @(,("               Exclude Common Folders",($Script:htmlsb),$item,$htmlwhite))
 								}
 								Else
 								{
 									$rowdata += @(,("",($Script:htmlsb),$item,$htmlwhite))
 								}
 							}
-							$rowdata += @(,("     Profile disk format",($Script:htmlsb),$FSLogixProfileDiskFormat,$htmlwhite))
-							$rowdata += @(,("     Allocation type",($Script:htmlsb),$FSLogixAllocationType,$htmlwhite))
-							$rowdata += @(,("     Default size",($Script:htmlsb),"$FSLogixDefaultSize GB",$htmlwhite))
-							$rowdata += @(,("Additional settings",($Script:htmlsb),"",$htmlwhite))
-							$rowdata += @(,("     Users and Groups",($Script:htmlsb),"",$htmlwhite))
-							
-							If($FSLogixSettingsUserInclusionList.Count -eq 0)
-							{
-								$rowdata += @(,("          User Inclusion List",($Script:htmlsb),"None",$htmlwhite))
-							}
-							Else
-							{
-								$cnt = -1
-								ForEach($item in $FSLogixSettingsUserInclusionList)
-								{
-									$cnt++
-									
-									If($cnt -eq 0)
-									{
-										$rowdata += @(,("          User Inclusion List",($Script:htmlsb),"User: $($item.Account)",$htmlwhite))
-										$rowdata += @(,("",($Script:htmlsb),"Type: $($item.Type)",$htmlwhite))
-										$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
-									}
-									Else
-									{
-										$rowdata += @(,("",($Script:htmlsb),"User: $($item.Account)",$htmlwhite))
-										$rowdata += @(,("",($Script:htmlsb),"Type: $($item.Type)",$htmlwhite))
-										$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
-									}
-								}
-							}
-
-							If($FSLogixSettingsUserExclusionList.Count -eq 0)
-							{
-								$rowdata += @(,("          User Exclusion List",($Script:htmlsb),"None",$htmlwhite))
-							}
-							Else
-							{
-								$cnt = -1
-								ForEach($item in $FSLogixSettingsUserExclusionList)
-								{
-									$cnt++
-									
-									If($cnt -eq 0)
-									{
-										$rowdata += @(,("          User Exclusion List",($Script:htmlsb),"User: $($item.Account)",$htmlwhite))
-										$rowdata += @(,("",($Script:htmlsb),"Type: $($item.Type)",$htmlwhite))
-										$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
-									}
-									Else
-									{
-										$rowdata += @(,("",($Script:htmlsb),"User: $($item.Account)",$htmlwhite))
-										$rowdata += @(,("",($Script:htmlsb),"Type: $($item.Type)",$htmlwhite))
-										$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
-									}
-								}
-							}
-							$rowdata += @(,("     Folders",($Script:htmlsb),"",$htmlwhite))
-							$rowdata += @(,("          Customize profile folders",($Script:htmlsb),$FSLogixSettingsCustomizeProfileFolders.ToString(),$htmlwhite))
-							If($FSLogixSettingsCustomizeProfileFolders)
-							{
-								If($ExcludedCommonFolders.Count -gt 0)
-								{
-									$cnt = -1
-									ForEach($item in $ExcludedCommonFolders)
-									{
-										$cnt++
-										
-										If($cnt -eq 0)
-										{
-											$rowdata += @(,("               Exclude Common Folders",($Script:htmlsb),$item,$htmlwhite))
-										}
-										Else
-										{
-											$rowdata += @(,("",($Script:htmlsb),$item,$htmlwhite))
-										}
-									}
-								}
-								Else
-								{
-									$rowdata += @(,("               Exclude Common Folders",($Script:htmlsb),"None",$htmlwhite))
-								}
-							}
-
-							If($FSLogixSettingsFolderInclusionList.Count -eq 0)
-							{
-								$rowdata += @(,("          Folder Inclusion List",($Script:htmlsb),"None",$htmlwhite))
-							}
-							Else
-							{
-								$rowdata += @(,("          Folder Inclusion List",($Script:htmlsb),"",$htmlwhite))
-								$cnt = -1
-								ForEach($item in $FSLogixSettingsFolderInclusionList)
-								{
-									$cnt++
-									
-									If($cnt -eq 0)
-									{
-										$rowdata += @(,("               Folder",($Script:htmlsb),"$item",$htmlwhite))
-									}
-									Else
-									{
-										$rowdata += @(,("",($Script:htmlsb),"$item",$htmlwhite))
-									}
-								}
-							}
-
-							If($FSLogixSettingsFolderExclusionList.Count -eq 0)
-							{
-								$rowdata += @(,("          Folder Exclusion List",($Script:htmlsb),"None",$htmlwhite))
-							}
-							Else
-							{
-								$rowdata += @(,("          Folder Exclusion List",($Script:htmlsb),"",$htmlwhite))
-								$cnt = -1
-								ForEach($item in $FSLogixSettingsFolderExclusionList)
-								{
-									$cnt++
-									
-									Switch($item.ExcludeFolderCopy)
-									{
-										"None"					{$CopyBase = "No "; $CopyBack = "No "; Break}
-										"CopyBack"				{$CopyBase = "No "; $CopyBack = "Yes"; Break}
-										"CopyBase"				{$CopyBase = "Yes"; $CopyBack = "No "; Break}
-										"CopyBase, CopyBack"	{$CopyBase = "Yes"; $CopyBack = "Yes"; Break}
-										Default					{$CopyBase = "Unknown"; $CopyBack = "Unknown"; Break}
-									}
-									
-									If($cnt -eq 0)
-									{
-										$rowdata += @(,("               Folder",($Script:htmlsb),"$($item.Folder) Copy base: $CopyBase Copy back: $CopyBack",$htmlwhite))
-									}
-									Else
-									{
-										$rowdata += @(,("",($Script:htmlsb),"$($item.Folder) Copy base: $CopyBase Copy back: $CopyBack",$htmlwhite))
-									}
-								}
-							}
-
-							$rowdata += @(,("     Advanced",($Script:htmlsb),"",$htmlwhite))
-							$rowdata += @(,("          FSLogix Setting:",($Script:htmlsb),"Value:",$htmlwhite))
-							$rowdata += @(,("          Access network as computer object",($Script:htmlsb),"$($FSLogixAS_AccessNetworkAsComputerObject)",$htmlwhite))
-							$rowdata += @(,("          Custom SDDL for profile directory",($Script:htmlsb),"$($FSLogixAS_ProfileDirSDDL)",$htmlwhite))
-							$rowdata += @(,("          Delay between locked VHD(X) retries",($Script:htmlsb),"$($FSLogixAS_LockedRetryInterval)",$htmlwhite))
-							$rowdata += @(,("          Delete local profile when loading from VHD",($Script:htmlsb),"$($FSLogixAS_DeleteLocalProfileWhenVHDShouldApply)",$htmlwhite))
-							$rowdata += @(,("          Diff disk parent folder path",($Script:htmlsb),"$($FSLogixAS_DiffDiskParentFolderPath)",$htmlwhite))
-							$rowdata += @(,("          Do not create a folder for new profiles",($Script:htmlsb),"$($FSLogixAS_NoProfileContainingFolder)",$htmlwhite))
-							$rowdata += @(,("          Enable Cached mode for Outlook",($Script:htmlsb),"$($FSLogixAS_OutlookCachedMode)",$htmlwhite))
-							$rowdata += @(,("          Keep local profiles",($Script:htmlsb),"$($FSLogixAS_KeepLocalDir)",$htmlwhite))
-							$rowdata += @(,("          Naming pattern for new VHD(X) files",($Script:htmlsb),"$($FSLogixAS_VHDNamePattern)",$htmlwhite))
-							$rowdata += @(,("          Number of locked VHD(X) retries",($Script:htmlsb),"$($FSLogixAS_LockedRetryCount)",$htmlwhite))
-							$rowdata += @(,("          Prevent logons with failures",($Script:htmlsb),"$($FSLogixAS_PreventLoginWithFailure)",$htmlwhite))
-							$rowdata += @(,("          Prevent logons with temp profiles",($Script:htmlsb),"$($FSLogixAS_PreventLoginWithTempProfile)",$htmlwhite))
-							$rowdata += @(,("          Profile folder naming pattern",($Script:htmlsb),"$($FSLogixAS_SIDDirNameMatch)",$htmlwhite))
-							$rowdata += @(,("          Profile type",($Script:htmlsb),"$($FSLogixAS_ProfileType)",$htmlwhite))
-							$rowdata += @(,("          Profile VHD(X) file matching pattern",($Script:htmlsb),"$($FSLogixAS_VHDNameMatch)",$htmlwhite))
-							$rowdata += @(,("          Re-attach interval",($Script:htmlsb),"$($FSLogixAS_ReAttachIntervalSeconds)",$htmlwhite))
-							$rowdata += @(,("          Re-attach retry limit",($Script:htmlsb),"$($FSLogixAS_ReAttachRetryCount)",$htmlwhite))
-							$rowdata += @(,("          Remove duplicate OST files on logoff",($Script:htmlsb),"$($FSLogixAS_RemoveOrphanedOSTFilesOnLogoff)",$htmlwhite))
-							$rowdata += @(,("          SDDL used when attaching the VHD",($Script:htmlsb),"$($FSLogixAS_AttachVHDSDDL)",$htmlwhite))
-							$rowdata += @(,("          Search roaming feature mode",($Script:htmlsb),"$($FSLogixAS_RoamSearch)",$htmlwhite))
-							$rowdata += @(,("          Swap SID and username in profile directory names",($Script:htmlsb),"$($FSLogixAS_FlipFlopProfileDirectoryName)",$htmlwhite))
-							$rowdata += @(,("          Temporary folders redirection mode",($Script:htmlsb),"$($FSLogixAS_SetTempToLocalPath)",$htmlwhite))
-							$rowdata += @(,("          Use SDDL on creation of SID containing folder",($Script:htmlsb),"$($FSLogixAS_SIDDirSDDL)",$htmlwhite))
-							$rowdata += @(,("          User-to-Profile matching pattern",($Script:htmlsb),"$($FSLogixAS_SIDDirNamePattern)",$htmlwhite))
-							$rowdata += @(,("          VHDX sector size",($Script:htmlsb),"$($FSLogixAS_VHDXSectorSize)",$htmlwhite))
-							$rowdata += @(,("          Volume wait time",($Script:htmlsb),"$($FSLogixAS_VolumeWaitTimeMS)",$htmlwhite))
 						}
-
-						$msg = "User profile"
-						$columnWidths = @("350","325")
-						FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-						WriteHTMLLine 0 0 ""
-					}
-
-					#Application Packages
-					If($MSword -or $PDF)
-					{
-						WriteWordLine 5 0 "Application Packages"
-					}
-					If($Text)
-					{
-						Line 4 "Application Packages"
-					}
-					If($HTML)
-					{
-						#nothing
-					}
-
-					If($AVDHostPool.InheritDefaultAppPackageSettings)
-					{
-						#do we inherit site defaults?
-						#yes we do, get the default settings for the Site
-						#use the Site default settings
-						$AVDHostPoolDefaults = Get-RASAVDDefaultSettings -DefObjType AVDMultiSessionDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
-						
-						If($? -and $Null -ne $AVDHostPoolDefaults)
+						Else
 						{
-							$AppPackagesAssigned = $AVDHostPoolDefaults.AppPackagesAssigned
+							$rowdata += @(,("               Exclude Common Folders",($Script:htmlsb),"None",$htmlwhite))
 						}
+					}
+
+					If($FSLogixSettingsFolderInclusionList.Count -eq 0)
+					{
+						$rowdata += @(,("          Folder Inclusion List",($Script:htmlsb),"None",$htmlwhite))
 					}
 					Else
 					{
-						#we don't inherit
-						#get the settings for the vdi host
-						$AppPackagesAssigned = $AVDHostPool.AppPackagesAssigned
-					}
-
-					If($MSWord -or $PDF)
-					{
-						$ScriptInformation = New-Object System.Collections.ArrayList
-						$ScriptInformation.Add(@{Data = "Inherit default settings"; Value = $AVDHostPool.InheritDefaultAppPackageSettings.ToString(); }) > $Null
-						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
-
-						If(validObject $AppPackagesAssigned ApplicationPackagesAssigned)
+						$rowdata += @(,("          Folder Inclusion List",($Script:htmlsb),"",$htmlwhite))
+						$cnt = -1
+						ForEach($item in $FSLogixSettingsFolderInclusionList)
 						{
-							ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
-							{
-								$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4>$Null
-								
-								If($? -and $Null -ne $Result)
-								{
-									$ScriptInformation.Add(@{Data = "Name"; Value = $Result.PackageName; }) > $Null
-									$ScriptInformation.Add(@{Data = "Status"; Value = ""; }) > $Null
-									$ScriptInformation.Add(@{Data = "Version"; Value = $Result.Version; }) > $Null
-									$ScriptInformation.Add(@{Data = "Display name"; Value = $Result.DisplayName; }) > $Null
-									$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
-								}
-								Else
-								{
-									$ScriptInformation.Add(@{Data = "Unable to retrieve data for"; Value = $Result.PackageName; }) > $Null
-								}
-							}
-						}
-
-						$Table = AddWordTable -Hashtable $ScriptInformation `
-						-Columns Data,Value `
-						-List `
-						-Format $wdTableGrid `
-						-AutoFit $wdAutoFitFixed
-
-						SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
-						$Table.Columns.Item(1).Width = 200;
-						$Table.Columns.Item(2).Width = 250;
-
-						$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-						FindWordDocumentEnd
-						$Table = $Null
-						WriteWordLine 0 0 ""
-					}
-					If($Text)
-					{
-						Line 5 "Inherit default settings: " $AVDHostPool.InheritDefaultAppPackageSettings.ToString()
-						Line 5 ""
-
-						If(validObject $AppPackagesAssigned ApplicationPackagesAssigned)
-						{
-							ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
-							{
-								$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4>$Null
-								
-								If($? -and $Null -ne $Result)
-								{
-									Line 6 "Name`t`t: " $Result.PackageName
-									Line 6 "Status`t`t: "
-									Line 6 "Version`t`t: " $Result.Version
-									Line 6 "Display name`t: " $Result.DisplayName
-									Line 6 ""
-								}
-								Else
-								{
-									Line 6 "Unable to retrieve data for: " $Result.PackageName
-								}
-							}
-						}
-					}
-					If($HTML)
-					{
-						$rowdata = @()
-						$columnHeaders = @("Inherit default settings",($Script:htmlsb),$AVDHostPool.InheritDefaultAppPackageSettings.ToString(),$htmlwhite)
-						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
-
-						If(validObject $AppPackagesAssigned ApplicationPackagesAssigned)
-						{
-							ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
-							{
-								$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4>$Null
-								
-								If($? -and $Null -ne $Result)
-								{
-									$rowdata += @(,("Name",($Script:htmlsb),$Result.PackageName,$htmlwhite))
-									$rowdata += @(,("Status",($Script:htmlsb),"",$htmlwhite))
-									$rowdata += @(,("Version",($Script:htmlsb),$Result.Version,$htmlwhite))
-									$rowdata += @(,("Display name",($Script:htmlsb),$Result.DisplayName,$htmlwhite))
-									$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
-								}
-								Else
-								{
-									$rowdata += @(,("Unable to retrieve data for",($Script:htmlsb),$Result.PackageName,$htmlwhite))
-								}
-							}
-						}
-
-						$msg = "Application Packages"
-						$columnWidths = @("200","275")
-						FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-						WriteHTMLLine 0 0 ""
-					}
-
-					#Settings
-					If($MSword -or $PDF)
-					{
-						WriteWordLine 5 0 "Settings"
-					}
-					If($Text)
-					{
-						Line 4 "Settings"
-					}
-					If($HTML)
-					{
-						#nothing
-					}
-					
-					If($AVDHostPool.InheritDefaultAgentSettings)
-					{
-						#do we inherit site defaults?
-						#yes we do, get the default settings for the Site
-						#use the Site default settings
-						<#
-							PS C:\Users\carl.webster> $x = Get-RASAVDDefaultSettings -DefObjType AVDMultiSessionDefaultSettings
-							PS C:\Users\carl.webster> $x | % {$_.psobject.properties | select name, value | sort name}
-
-							Name                Value
-							----                -----
-							Action
-							Agent               RASAdminEngine.Core.OutputModels.HostPool.HostPoolAgentSettings
-							AppPackagesAssigned RASAdminEngine.Core.OutputModels.AppPackagesAssigned
-							AutoUpgrade         RASAdminEngine.Core.OutputModels.HostPool.AutoUpgradeSettings
-							DefObjType          AVDMultiSessionDefaultSettings
-							Optimization        RASAdminEngine.Core.OutputModels.ImagesOptimization.ImageOptimization
-							RDPPrinter          RASAdminEngine.Core.OutputModels.HostPool.RDPPrinterSettings
-							SiteId              1
-							UserProfile         RASAdminEngine.Core.OutputModels.UserProfile.UserProfileSettings
-
-
-							PS C:\Users\carl.webster> $x.agent | % {$_.psobject.properties | select name, value | sort name}
-
-							Name                                    Value
-							----                                    -----
-							AllowRemoteExec                          True
-							AllowURLAndMailRedirection            Enabled
-							AppMonitor                               True
-							DisconnectActiveSessionAfter               25
-							DragAndDropMode                 Bidirectional
-							EnableDriveRedirectionCache              True
-							EnableZOrder                            False
-							FileTransferLocation
-							FileTransferLockLocation                False
-							FileTransferMode                Bidirectional
-							LogoffDisconnectedSessionAfter              1
-							ManageRDPShortpath                      False
-							ManageRDPTransportProtocol           Disabled
-							MaxRDPShortpathPort                     39299
-							MinRDPShortpathPort                     38300
-							SessionReadinessTimeout                   300
-							SupportShellURLNamespaceObjects          True
-							UseRDPShortpath                         False
-							UseSmallerPortRange                     False
-						#>
-						$AVDHostPoolDefaults = Get-RASAVDDefaultSettings -DefObjType AVDMultiSessionDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
-						
-						If($? -and $Null -ne $AVDHostPoolDefaults)
-						{
-							#application session lingering
-							Switch ($AVDHostPoolDefaults.Agent.DisconnectActiveSessionAfter)
-							{
-								0		{$AVDHostPoolDisconnectActiveSessionAfter = "Never"; Break}
-								1		{$AVDHostPoolDisconnectActiveSessionAfter = "1 minute"; Break}
-								5		{$AVDHostPoolDisconnectActiveSessionAfter = "5 minutes"; Break}
-								25		{$AVDHostPoolDisconnectActiveSessionAfter = "25 seconds"; Break}
-								60		{$AVDHostPoolDisconnectActiveSessionAfter = "1 minute"; Break}
-								300		{$AVDHostPoolDisconnectActiveSessionAfter = "5 minutes"; Break}
-								3600	{$AVDHostPoolDisconnectActiveSessionAfter = "1 hour"; Break}
-								Default	{$AVDHostPoolDisconnectActiveSessionAfter = "Unable to determine Application session lingering Disconnect active session timeout: $($AVDHostPoolDefaults.Agent.DisconnectActiveSessionAfter)"; Break}
-							}
+							$cnt++
 							
-							Switch ($AVDHostPoolDefaults.Agent.LogoffDisconnectedSessionAfter)
+							If($cnt -eq 0)
 							{
-								0		{$AVDHostPoolLogoffDisconnectedSessionAfter = "Never"; Break}
-								1		{$AVDHostPoolLogoffDisconnectedSessionAfter = "Immediate"; Break}
-								25		{$AVDHostPoolLogoffDisconnectedSessionAfter = "25 seconds"; Break}
-								60		{$AVDHostPoolLogoffDisconnectedSessionAfter = "1 minute"; Break}
-								300		{$AVDHostPoolLogoffDisconnectedSessionAfter = "5 minutes"; Break}
-								3600	{$AVDHostPoolLogoffDisconnectedSessionAfter = "1 hour"; Break}
-								Default	{$AVDHostPoolLogoffDisconnectedSessionAfter = "Unable to determine Application session lingering logoff disconnection session timeout: $($AVDHostPoolDefaults.Agent.LogoffDisconnectedSessionAfter)"; Break}
-							}
-							
-							#Other settings
-							Switch ($AVDHostPoolDefaults.Agent.SessionReadinessTimeout)
-							{
-								25		{$AVDHostPoolSessionReadinessTimeout = "25 seconds"; Break}
-								60		{$AVDHostPoolSessionReadinessTimeout = "1 minute"; Break}
-								300		{$AVDHostPoolSessionReadinessTimeout = "5 minutes"; Break}
-								3600	{$AVDHostPoolSessionReadinessTimeout = "1 hour"; Break}
-								Default	{$AVDHostPoolSessionReadinessTimeout = "Unable to determine session readiness timeout: $($AVDHostPoolDefaults.Agent.SessionReadinessTimeout)"; Break}
-							}
-							
-							Switch($AVDHostPoolDefaults.Agent.AllowURLAndMailRedirection)
-							{
-								"Disabled"						{$AVDHostPoolAllowClientURLMailRedirection = "Disabled"; 
-																 $AVDHostPoolReplaceRegisteredApplication = "False";
-																 $AVDHostPoolSupportShellURLNamespaceObjects = $AVDHostPoolDefaults.Agent.SupportShellURLNamespaceObjects.ToString();
-																 Break}
-								"Enabled"						{$AVDHostPoolAllowClientURLMailRedirection = "Enabled"; 
-																 $AVDHostPoolReplaceRegisteredApplication = "False";
-																 $AVDHostPoolSupportShellURLNamespaceObjects = $AVDHostPoolDefaults.Agent.SupportShellURLNamespaceObjects.ToString();
-																 Break}
-								"EnabledWithAppRegistration"	{$AVDHostPoolAllowClientURLMailRedirection = "Enabled";
-																 $AVDHostPoolReplaceRegisteredApplication = "True";
-																 $AVDHostPoolSupportShellURLNamespaceObjects = "N/A";
-																 Break}
-								Default 						{$AVDHostPoolAllowClientURLMailRedirection = "Unable to determine Allow client URL/Mail redirection: $($AVDHostPoolDefaults.Agent.AllowURLAndMailRedirection)"; 
-																 $AVDHostPoolReplaceRegisteredApplication = "False";
-																 $AVDHostPoolSupportShellURLNamespaceObjects = "False";
-																 Break}
-							}
-							
-							Switch ($AVDHostPoolDefaults.Agent.DragAndDropMode)
-							{
-								"Bidirectional"		{$AVDHostPoolDragAndDrop = "Bidirectional"; 
-													$AVDHostPoolAllowDragAndDrop = "True";
-													Break}
-								"ClientToServer"	{$AVDHostPoolDragAndDrop = "Client to server only"; 
-													$AVDHostPoolAllowDragAndDrop = "True";
-													Break}
-								"Disabled"			{$AVDHostPoolDragAndDrop = "Disabled"; 
-													$AVDHostPoolAllowDragAndDrop = "False";
-													Break}
-								"ServerToClient"	{$AVDHostPoolDragAndDrop = "Server to client only"; 
-													$AVDHostPoolAllowDragAndDrop = "True";
-													Break}
-								Default				{$AVDHostPoolDragAndDrop = "Unable to determine Drag and drop: $($AVDHostPoolDefaults.Agent.DragAndDropMode)"; 
-													$AVDHostPoolAllowDragAndDrop = "False";
-								Break}
-							}
-							
-							If($AVDHostPoolDefaults.Agent.AllowRemoteExec)
-							{
-								$AVDHostPoolAllowRemoteExec = "True"
+								$rowdata += @(,("               Folder",($Script:htmlsb),"$item",$htmlwhite))
 							}
 							Else
 							{
-								$AVDHostPoolAllowRemoteExec = "False"
+								$rowdata += @(,("",($Script:htmlsb),"$item",$htmlwhite))
 							}
-							
-							$AVDHostPoolManageRDPShortpath  = $AVDHostPoolDefaults.Agent.ManageRDPShortpath.ToString()
-							$AVDHostPoolUseRDPShortpath     = $AVDHostPoolDefaults.Agent.UseRDPShortpath.ToString()
-							$AVDHostPoolUseSmallerPortRange = $AVDHostPoolDefaults.Agent.UseSmallerPortRange.ToString()
-							$AVDHostPoolMinRDPShortpathPort = $AVDHostPoolDefaults.Agent.MinRDPShortpathPort.ToString()
-							$AVDHostPoolMaxRDPShortpathPort = $AVDHostPoolDefaults.Agent.MaxRDPShortpathPort.ToString()
-
-							Switch ($AVDHostPoolDefaults.Agent.FileTransferMode)
-							{
-								"Bidirectional"		{$AVDHostPoolFileTransferMode = "Bidirectional"; Break}
-								"ClientToServer"	{$AVDHostPoolFileTransferMode = "Client to server only"; Break}
-								"Disabled"			{$AVDHostPoolFileTransferMode = "Disabled"; Break}
-								"ServerToClient"	{$AVDHostPoolFileTransferMode = "Server to client only"; Break}
-								Default				{$AVDHostPoolFileTransferMode = "Unable to determine File Transfer mode: $($AVDHostPoolDefaults.Agent.FileTransferMode)"; Break}
-							}
-
-							If($AVDHostPoolDefaults.Agent.FileTransferLocation -eq "")
-							{
-								$AVDHostPoolFileTransferLocation = "Default download location"
-							}
-							Else
-							{
-								$AVDHostPoolFileTransferLocation = $AVDHostPoolDefaults.FileTransferLocation
-							}
-							
-							$AVDHostPoolFileTransferChangeLocation  = $AVDHostPoolDefaults.Agent.FileTransferLockLocation.ToString()
-							$AVDHostPoolEnableDriveRedirectionCache = $AVDHostPoolDefaults.Agent.EnableDriveRedirectionCache.ToString()
-							$AVDHostPoolEnableZOrder                = $AVDHostPoolDefaults.Agent.EnableZOrder.ToString()
-							
 						}
-						Else
-						{
-							#unable to retrieve default, use built-in default values
-							$AVDHostPoolDisconnectActiveSessionAfter    = "25 seconds"
-							$AVDHostPoolLogoffDisconnectedSessionAfter  = "Immediate"
-							$AVDHostPoolSessionReadinessTimeout         = "25 seconds"
-							$AVDHostPoolAllowClientURLMailRedirection   = "Enabled"
-							$AVDHostPoolReplaceRegisteredApplication    = "False"
-							$AVDHostPoolSupportShellURLNamespaceObjects = "False"
-							$AVDHostPoolDragAndDrop                     = "Bidirectional"
-							$AVDHostPoolAllowDragAndDrop                = "True"
-							$AVDHostPoolAllowRemoteExec                 = "False"
-							$AVDHostPoolManageRDPShortpath              = "False"
-							$AVDHostPoolUseRDPShortpath                 = "False"
-							$AVDHostPoolUseSmallerPortRange             = "False"
-							$AVDHostPoolMinRDPShortpathPort             = "38300"
-							$AVDHostPoolMaxRDPShortpathPort             = "39299"
-							$AVDHostPoolFileTransferMode                = "Bidirectional"
-							$AVDHostPoolFileTransferLocation            = "Default download location"
-							$AVDHostPoolFileTransferChangeLocation      = "False"
-							$AVDHostPoolEnableDriveRedirectionCache     = "False"
-							$AVDHostPoolEnableZOrder                    = "False"
-						}
+					}
+
+					If($FSLogixSettingsFolderExclusionList.Count -eq 0)
+					{
+						$rowdata += @(,("          Folder Exclusion List",($Script:htmlsb),"None",$htmlwhite))
 					}
 					Else
 					{
-						#we don't inherit settings
-						#get the settings configured for this VDI Pool
-
-						#application session lingering
-						Switch ($AVDHostPool.Agent.DisconnectActiveSessionAfter)
+						$rowdata += @(,("          Folder Exclusion List",($Script:htmlsb),"",$htmlwhite))
+						$cnt = -1
+						ForEach($item in $FSLogixSettingsFolderExclusionList)
 						{
-							0		{$AVDHostPoolDisconnectActiveSessionAfter = "Never"; Break}
-							1		{$AVDHostPoolDisconnectActiveSessionAfter = "1 minute"; Break}
-							5		{$AVDHostPoolDisconnectActiveSessionAfter = "5 minutes"; Break}
-							25		{$AVDHostPoolDisconnectActiveSessionAfter = "25 seconds"; Break}
-							60		{$AVDHostPoolDisconnectActiveSessionAfter = "1 minute"; Break}
-							300		{$AVDHostPoolDisconnectActiveSessionAfter = "5 minutes"; Break}
-							3600	{$AVDHostPoolDisconnectActiveSessionAfter = "1 hour"; Break}
-							Default	{$AVDHostPoolDisconnectActiveSessionAfter = "Unable to determine Application session lingering Disconnect active session timeout: $($AVDHostPool.Agent.DisconnectActiveSessionAfter)"; Break}
-						}
-						
-						Switch ($AVDHostPool.Agent.LogoffDisconnectedSessionAfter)
-						{
-							0		{$AVDHostPoolLogoffDisconnectedSessionAfter = "Never"; Break}
-							1		{$AVDHostPoolLogoffDisconnectedSessionAfter = "Immediate"; Break}
-							25		{$AVDHostPoolLogoffDisconnectedSessionAfter = "25 seconds"; Break}
-							60		{$AVDHostPoolLogoffDisconnectedSessionAfter = "1 minute"; Break}
-							300		{$AVDHostPoolLogoffDisconnectedSessionAfter = "5 minutes"; Break}
-							3600	{$AVDHostPoolLogoffDisconnectedSessionAfter = "1 hour"; Break}
-							Default	{$AVDHostPoolLogoffDisconnectedSessionAfter = "Unable to determine Application session lingering logoff disconnection session timeout: $($AVDHostPool.Agent.LogoffDisconnectedSessionAfter)"; Break}
-						}
-						
-						#Other settings
-						Switch ($AVDHostPool.Agent.SessionReadinessTimeout)
-						{
-							25		{$AVDHostPoolSessionReadinessTimeout = "25 seconds"; Break}
-							60		{$AVDHostPoolSessionReadinessTimeout = "1 minute"; Break}
-							300		{$AVDHostPoolSessionReadinessTimeout = "5 minutes"; Break}
-							3600	{$AVDHostPoolSessionReadinessTimeout = "1 hour"; Break}
-							Default	{$AVDHostPoolSessionReadinessTimeout = "Unable to determine session readiness timeout: $($AVDHostPool.Agent.SessionReadinessTimeout)"; Break}
-						}
-						
-						Switch($AVDHostPool.Agent.AllowURLAndMailRedirection)
-						{
-							"Disabled"						{$AVDHostPoolAllowClientURLMailRedirection = "Disabled"; 
-															 $AVDHostPoolReplaceRegisteredApplication = "False";
-															 $AVDHostPoolSupportShellURLNamespaceObjects = $AVDHostPool.Agent.SupportShellURLNamespaceObjects.ToString();
-															 Break}
-							"Enabled"						{$AVDHostPoolAllowClientURLMailRedirection = "Enabled"; 
-															 $AVDHostPoolReplaceRegisteredApplication = "False";
-															 $AVDHostPoolSupportShellURLNamespaceObjects = $AVDHostPool.Agent.SupportShellURLNamespaceObjects.ToString();
-															 Break}
-							"EnabledWithAppRegistration"	{$AVDHostPoolAllowClientURLMailRedirection = "Enabled";
-															 $AVDHostPoolReplaceRegisteredApplication = "True";
-															 $AVDHostPoolSupportShellURLNamespaceObjects = "N/A";
-															 Break}
-							Default 						{$AVDHostPoolAllowClientURLMailRedirection = "Unable to determine Allow client URL/Mail redirection: $($AVDHostPool.Agent.AllowURLAndMailRedirection)"; 
-															 $AVDHostPoolReplaceRegisteredApplication = "False";
-															 $AVDHostPoolSupportShellURLNamespaceObjects = "False";
-															 Break}
-						}
-						
-						Switch ($AVDHostPool.Agent.DragAndDropMode)
-						{
-							"Bidirectional"		{$AVDHostPoolDragAndDrop = "Bidirectional"; 
-												$AVDHostPoolAllowDragAndDrop = "True";
-												Break}
-							"ClientToServer"	{$AVDHostPoolDragAndDrop = "Client to server only"; 
-												$AVDHostPoolAllowDragAndDrop = "True";
-												Break}
-							"Disabled"			{$AVDHostPoolDragAndDrop = "Disabled"; 
-												$AVDHostPoolAllowDragAndDrop = "False";
-												Break}
-							"ServerToClient"	{$AVDHostPoolDragAndDrop = "Server to client only"; 
-												$AVDHostPoolAllowDragAndDrop = "True";
-												Break}
-							Default				{$AVDHostPoolDragAndDrop = "Unable to determine Drag and drop: $($AVDHostPool.Agent.DragAndDropMode)"; 
-												$AVDHostPoolAllowDragAndDrop = "False";
-												Break}
-						}
-						
-						If($AVDHostPool.Agent.AllowRemoteExec)
-						{
-							$AVDHostPoolAllowRemoteExec = "True"
-						}
-						Else
-						{
-							$AVDHostPoolAllowRemoteExec = "False"
-						}
-						
-						$AVDHostPoolManageRDPShortpath  = $AVDHostPool.Agent.ManageRDPShortpath.ToString()
-						$AVDHostPoolUseRDPShortpath     = $AVDHostPool.Agent.UseRDPShortpath.ToString()
-						$AVDHostPoolUseSmallerPortRange = $AVDHostPool.Agent.UseSmallerPortRange.ToString()
-						$AVDHostPoolMinRDPShortpathPort = $AVDHostPool.Agent.MinRDPShortpathPort.ToString()
-						$AVDHostPoolMaxRDPShortpathPort = $AVDHostPool.Agent.MaxRDPShortpathPort.ToString()
-
-						Switch ($AVDHostPool.Agent.FileTransferMode)
-						{
-							"Bidirectional"		{$AVDHostPoolFileTransferMode = "Bidirectional"; Break}
-							"ClientToServer"	{$AVDHostPoolFileTransferMode = "Client to server only"; Break}
-							"Disabled"			{$AVDHostPoolFileTransferMode = "Disabled"; Break}
-							"ServerToClient"	{$AVDHostPoolFileTransferMode = "Server to client only"; Break}
-							Default				{$AVDHostPoolFileTransferMode = "Unable to determine File Transfer mode: $($AVDHostPool.Agent.FileTransferMode)"; Break}
-						}
-
-						If($AVDHostPool.Agent.FileTransferLocation -eq "")
-						{
-							$AVDHostPoolFileTransferLocation = "Default download location"
-						}
-						Else
-						{
-							$AVDHostPoolFileTransferLocation = $AVDHostPool.Agent.FileTransferLocation
-						}
-						
-						$AVDHostPoolFileTransferChangeLocation  = $AVDHostPool.Agent.FileTransferLockLocation.ToString()
-						$AVDHostPoolEnableDriveRedirectionCache = $AVDHostPool.Agent.EnableDriveRedirectionCache.ToString()
-						$AVDHostPoolEnableZOrder                = $AVDHostPool.Agent.EnableZOrder.ToString()
-					}
-					
-					If($MSWord -or $PDF)
-					{
-						$ScriptInformation = New-Object System.Collections.ArrayList
-						$ScriptInformation.Add(@{Data = "Inherit default settings"; Value = $AVDHostPool.InheritDefaultAgentSettings.ToString(); }) > $Null
-						$ScriptInformation.Add(@{Data = "Application session lingering"; Value = ""; }) > $Null
-						$ScriptInformation.Add(@{Data = "     Disconnect active session after"; Value = $AVDHostPoolDisconnectActiveSessionAfter; }) > $Null
-						$ScriptInformation.Add(@{Data = "     Logoff disconnected session after"; Value = $AVDHostPoolLogoffDisconnectedSessionAfter; }) > $Null
-						$ScriptInformation.Add(@{Data = "Other settings"; Value = ""; }) > $Null
-						$ScriptInformation.Add(@{Data = "     Session readiness timeout"; Value = $AVDHostPoolSessionReadinessTimeout; }) > $Null
-						$ScriptInformation.Add(@{Data = "     Allow client URL/Mail redirection"; Value = $AVDHostPoolAllowClientURLMailRedirection; }) > $Null
-						$ScriptInformation.Add(@{Data = "          Replace registered application"; Value = $AVDHostPoolReplaceRegisteredApplication; }) > $Null
-						$ScriptInformation.Add(@{Data = "          Support Windows Shell URL namespace objects"; Value = $AVDHostPoolSupportShellURLNamespaceObjects; }) > $Null
-						$ScriptInformation.Add(@{Data = "     Enable Drag and drop"; Value = $AVDHostPoolAllowDragandDrop; }) > $Null
-						$ScriptInformation.Add(@{Data = "          Direction"; Value = $AVDHostPoolDragAndDrop; }) > $Null
-						$ScriptInformation.Add(@{Data = "     Allow 2xRemoteExec to send command to the client"; Value = $AVDHostPoolAllowRemoteExec; }) > $Null
-						$ScriptInformation.Add(@{Data = "     Manage RDP Shortpath"; Value = $AVDHostPoolManageRDPShortpath; }) > $Null
-						If($AVDHostPoolManageRDPShortpath -eq "True")
-						{
-							$ScriptInformation.Add(@{Data = "          Use RDP Shortpath"; Value = $AVDHostPoolUseRDPShortpath; }) > $Null
-							If($AVDHostPoolUseRDPShortpath -eq "True")
+							$cnt++
+							
+							Switch($item.ExcludeFolderCopy)
 							{
-								$ScriptInformation.Add(@{Data = "          Use a smaller default range of ports"; Value = $AVDHostPoolUseSmallerPortRange; }) > $Null
-								If($AVDHostPoolUseSmallerPortRange -eq "True")
-								{
-									$ScriptInformation.Add(@{Data = ""; Value = "$($AVDHostPoolMinRDPShortpathPort) - $($AVDHostPoolMaxRDPShortpathPort)"; }) > $Null
-								}
-							}
-						}
-						$ScriptInformation.Add(@{Data = "     Allow file transfer command (Web and ChromeOS clients)"; Value = $AVDHostPoolFileTransferMode; }) > $Null
-						$ScriptInformation.Add(@{Data = "          Location"; Value = $AVDHostPoolFileTransferLocation; }) > $Null
-						$ScriptInformation.Add(@{Data = "          Do not allow to change location"; Value = $AVDHostPoolFileTransferChangeLocation; }) > $Null
-						$ScriptInformation.Add(@{Data = "     Enable drive redirection cache"; Value = $AVDHostPoolEnableDriveRedirectionCache; }) > $Null
-						$ScriptInformation.Add(@{Data = "     Enable Z-Order (Experimental)"; Value = $AVDHostPoolEnableZOrder; }) > $Null
-
-						$Table = AddWordTable -Hashtable $ScriptInformation `
-						-Columns Data,Value `
-						-List `
-						-Format $wdTableGrid `
-						-AutoFit $wdAutoFitFixed;
-
-						SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
-						SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
-						$Table.Columns.Item(1).Width = 325;
-						$Table.Columns.Item(2).Width = 175;
-
-						$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-						FindWordDocumentEnd
-						$Table = $Null
-						WriteWordLine 0 0 ""
-					}
-					If($Text)
-					{
-						Line 5 "Inherit default settings`t`t`t`t`t: " $AVDHostPool.InheritDefaultAgentSettings.ToString()
-						Line 5 "Application session lingering: " ""
-						Line 6 "Disconnect active session after`t`t`t`t: " $AVDHostPoolDisconnectActiveSessionAfter
-						Line 6 "Logoff disconnected session after`t`t`t: " $AVDHostPoolLogoffDisconnectedSessionAfter
-						Line 5 "Other settings: " ""
-						Line 6 "Session readiness timeout`t`t`t`t: " $AVDHostPoolSessionReadinessTimeout
-						Line 6 "Allow client URL/Mail redirection`t`t`t: " $AVDHostPoolAllowClientURLMailRedirection
-						Line 7 "Replace registered application`t`t`t: " $AVDHostPoolReplaceRegisteredApplication
-						Line 7 "Support Windows Shell URL namespace objects`t: " $AVDHostPoolSupportShellURLNamespaceObjects
-						Line 6 "Enable Drag and drop`t`t`t`t`t: " $AVDHostPoolAllowDragandDrop
-						Line 7 "Direction`t`t`t`t`t: " $AVDHostPoolDragAndDrop
-						Line 6 "Allow 2xRemoteExec to send command to the client`t: " $AVDHostPoolAllowRemoteExec
-						Line 6 "Manage RDP Shortpath`t`t`t`t`t: " $AVDHostPoolManageRDPShortpath
-						If($AVDHostPoolManageRDPShortpath -eq "True")
-						{
-							Line 7 "Use RDP Shortpath`t`t`t`t: " $AVDHostPoolUseRDPShortpath
-							If($AVDHostPoolUseRDPShortpath -eq "True")
-							{
-								Line 7 "Use a smaller default range of ports`t`t: " $AVDHostPoolUseSmallerPortRange
-								If($AVDHostPoolUseSmallerPortRange -eq "True")
-								{
-									Line 12 "  $($AVDHostPoolMinRDPShortpathPort) - $($AVDHostPoolMaxRDPShortpathPort)"
-								}
-							}
-						}
-						Line 6 "Allow file transfer command (Web and ChromeOS clients)`t: " $AVDHostPoolFileTransferMode
-						Line 7 "Location`t`t`t`t`t: "  $AVDHostPoolFileTransferLocation
-						Line 7 "Do not allow to change location`t`t`t: " $AVDHostPoolFileTransferChangeLocation
-						Line 6 "Enable drive redirection cache`t`t`t`t: " $AVDHostPoolEnableDriveRedirectionCache
-						Line 6 "Enable Z-Order (Experimental)`t`t`t`t: " $AVDHostPoolEnableZOrder
-						Line 0 ""
-					}
-					If($HTML)
-					{
-						$rowdata = @()
-						$columnHeaders = @("Inherit default settings",($Script:htmlsb),$AVDHostPool.InheritDefaultAgentSettings.ToString(),$htmlwhite)
-						$rowdata += @(,("Application session lingering",($Script:htmlsb),"",$htmlwhite))
-						$rowdata += @(,("     Disconnect active session after",($Script:htmlsb),$AVDHostPoolDisconnectActiveSessionAfter,$htmlwhite))
-						$rowdata += @(,("     Logoff disconnected session after",($Script:htmlsb),$AVDHostPoolLogoffDisconnectedSessionAfter,$htmlwhite))
-						$rowdata += @(,("Other settings",($Script:htmlsb),"",$htmlwhite))
-						$rowdata += @(,("     Session readiness timeout",($Script:htmlsb),$AVDHostPoolSessionReadinessTimeout,$htmlwhite))
-						$rowdata += @(,("     Allow client URL/Mail redirection",($Script:htmlsb),$AVDHostPoolAllowClientURLMailRedirection,$htmlwhite))
-						$rowdata += @(,("          Replace registered application",($Script:htmlsb),$AVDHostPoolReplaceRegisteredApplication,$htmlwhite))
-						$rowdata += @(,("          Support Windows Shell URL namespace objects",($Script:htmlsb),$AVDHostPoolSupportShellURLNamespaceObjects,$htmlwhite))
-						$rowdata += @(,("     Enable Drag and drop",($Script:htmlsb),$AVDHostPoolAllowDragandDrop,$htmlwhite))
-						$rowdata += @(,("          Direction",($Script:htmlsb),$AVDHostPoolDragAndDrop,$htmlwhite))
-						$rowdata += @(,("     Allow 2xRemoteExec to send command to the client",($Script:htmlsb),$AVDHostPoolAllowRemoteExec,$htmlwhite))
-						$rowdata += @(,("     Manage RDP Shortpath",($Script:htmlsb),$AVDHostPoolManageRDPShortpath,$htmlwhite))
-						If($AVDHostPoolManageRDPShortpath -eq "True")
-						{
-							$rowdata += @(,("          Use RDP Shortpath",($Script:htmlsb),$AVDHostPoolUseRDPShortpath,$htmlwhite))
-							If($AVDHostPoolUseRDPShortpath -eq "True")
-							{
-								$rowdata += @(,("          Use a smaller default range of ports",($Script:htmlsb),$AVDHostPoolUseSmallerPortRange,$htmlwhite))
-								If($AVDHostPoolUseSmallerPortRange -eq "True")
-								{
-									$rowdata += @(,("",($Script:htmlsb),"$($AVDHostPoolMinRDPShortpathPort) - $($AVDHostPoolMaxRDPShortpathPort)",$htmlwhite))
-								}
-							}
-						}
-						$rowdata += @(,("     Allow file transfer command (Web and ChromeOS clients)",($Script:htmlsb),$AVDHostPoolFileTransferMode,$htmlwhite))
-						$rowdata += @(,("          Location",($Script:htmlsb),$AVDHostPoolFileTransferLocation,$htmlwhite))
-						$rowdata += @(,("          Do not allow to change location",($Script:htmlsb),$AVDHostPoolFileTransferChangeLocation,$htmlwhite))
-						$rowdata += @(,("     Enable drive redirection cache",($Script:htmlsb),$AVDHostPoolEnableDriveRedirectionCache,$htmlwhite))
-						$rowdata += @(,("     Enable Z-Order (Experimental)",($Script:htmlsb),$AVDHostPoolEnableZOrder,$htmlwhite))
-
-						$msg = "Settings"
-						$columnWidths = @("400","200")
-						FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-						WriteHTMLLine 0 0 ""
-					}
-
-					#RDP printer
-					If($MSword -or $PDF)
-					{
-						WriteWordLine 5 0 "RDP printer"
-					}
-					If($Text)
-					{
-						Line 4 "RDP printer"
-					}
-					If($HTML)
-					{
-						#nothing
-					}
-					
-					If($AVDHostPool.InheritDefaultRDPPrinterSettings)
-					{
-						#do we inherit group or site defaults?
-						#yes we do, get the default settings for the Site
-						#use the Site default settings
-						$AVDHostPoolDefaults = Get-RASAVDDefaultSettings -DefObjType AVDMultiSessionDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
-						
-						If($? -and $Null -ne $AVDHostPoolDefaults)
-						{
-							Switch ($AVDHostPoolDefaults.RDPPrinter.PrinterNameFormat)
-							{
-								"PrnFormat_PRN_CMP_SES"	{$AVDHostPoolPrinterNameFormat = "Printername (from Computername) in Session no."; Break}
-								"PrnFormat_SES_CMP_PRN"	{$AVDHostPoolPrinterNameFormat = "Session no. (Computername from) Printername"; Break}
-								"PrnFormat_PRN_REDSES"	{$AVDHostPoolPrinterNameFormat = "Printername (redirected Session no.)"; Break}
-								Default					{$AVDHostPoolPrinterNameFormat = "Unable to determine RDP Printer Name Format: $($AVDHostPoolDefaults.RDPPrinter.PrinterNameFormat)"; Break}
+								"None"					{$CopyBase = "No "; $CopyBack = "No "; Break}
+								"CopyBack"				{$CopyBase = "No "; $CopyBack = "Yes"; Break}
+								"CopyBase"				{$CopyBase = "Yes"; $CopyBack = "No "; Break}
+								"CopyBase, CopyBack"	{$CopyBase = "Yes"; $CopyBack = "Yes"; Break}
+								Default					{$CopyBase = "Unknown"; $CopyBack = "Unknown"; Break}
 							}
 							
-							$AVDHostPoolRemoveSessionNumberFromPrinterName = $AVDHostPoolDefaults.RDPPrinter.RemoveSessionNumberFromPrinterName.ToString()
-							$AVDHostPoolRemoveClientNameFromPrinterName    = $AVDHostPoolDefaults.RDPPrinter.RemoveClientNameFromPrinterName.ToString()
-						}
-						Else
-						{
-							#unable to retrieve default, use built-in default values
-							$AVDHostPoolPrinterNameFormat                  = "Printername (from Computername) in Session no."
-							$AVDHostPoolRemoveSessionNumberFromPrinterName = "False"
-							$AVDHostPoolRemoveClientNameFromPrinterName    = "False"
-						}
-					}
-					Else
-					{
-						#we don't inherit
-						#get the settings for the group
-						$AVDHostPoolDefaults = $AVDHostPool.RDPPrinter
-						Switch ($AVDHostPoolDefaults.PrinterNameFormat)
-						{
-							"PrnFormat_PRN_CMP_SES"	{$AVDHostPoolPrinterNameFormat = "Printername (from Computername) in Session no."; Break}
-							"PrnFormat_SES_CMP_PRN"	{$AVDHostPoolPrinterNameFormat = "Session no. (Computername from) Printername"; Break}
-							"PrnFormat_PRN_REDSES"	{$AVDHostPoolPrinterNameFormat = "Printername (redirected Session no.)"; Break}
-							Default					{$AVDHostPoolPrinterNameFormat = "Unable to determine RDP Printer Name Format: $($AVDHostPoolDefaults.PrinterNameFormat)"; Break}
-						}
-						
-						$AVDHostPoolRemoveSessionNumberFromPrinterName = $AVDHostPoolDefaults.RemoveSessionNumberFromPrinterName.ToString()
-						$AVDHostPoolRemoveClientNameFromPrinterName    = $AVDHostPoolDefaults.RemoveClientNameFromPrinterName.ToString()
-					}
-
-					If($MSWord -or $PDF)
-					{
-						$ScriptInformation = New-Object System.Collections.ArrayList
-						$ScriptInformation.Add(@{Data = "Inherit default settings"; Value = $AVDHostPool.InheritDefaultRDPPrinterSettings.ToString(); }) > $Null
-						$ScriptInformation.Add(@{Data = "RDP Printer Name Format"; Value = $AVDHostPoolPrinterNameFormat; }) > $Null
-						$ScriptInformation.Add(@{Data = "Remove session number from printer name"; Value = $AVDHostPoolRemoveSessionNumberFromPrinterName; }) > $Null
-						$ScriptInformation.Add(@{Data = "Remove client name from printer name"; Value = $AVDHostPoolRemoveClientNameFromPrinterName; }) > $Null
-
-						$Table = AddWordTable -Hashtable $ScriptInformation `
-						-Columns Data,Value `
-						-List `
-						-Format $wdTableGrid `
-						-AutoFit $wdAutoFitFixed;
-
-						SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
-						SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
-						$Table.Columns.Item(1).Width = 250;
-						$Table.Columns.Item(2).Width = 250;
-
-						$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-						FindWordDocumentEnd
-						$Table = $Null
-						WriteWordLine 0 0 ""
-					}
-					If($Text)
-					{
-						Line 5 "Inherit default settings`t`t`t`t: " $AVDHostPool.InheritDefaultRDPPrinterSettings.ToString()
-						Line 5 "RDP Printer Name Format`t`t`t`t`t: " $AVDHostPoolPrinterNameFormat
-						Line 5 "Remove session number from printer name`t`t`t: " $AVDHostPoolRemoveSessionNumberFromPrinterName
-						Line 5 "Remove client name from printer name`t`t`t: " $AVDHostPoolRemoveClientNameFromPrinterName
-						Line 0 ""
-					}
-					If($HTML)
-					{
-						$rowdata = @()
-						$columnHeaders = @("Inherit default settings",($Script:htmlsb),$AVDHostPool.InheritDefaultRDPPrinterSettings.ToString(),$htmlwhite)
-						$rowdata += @(,("RDP Printer Name Format",($Script:htmlsb),$AVDHostPoolPrinterNameFormat,$htmlwhite))
-						$rowdata += @(,("Remove session number from printer name",($Script:htmlsb),$AVDHostPoolRemoveSessionNumberFromPrinterName,$htmlwhite))
-						$rowdata += @(,("Remove client name from printer name",($Script:htmlsb),$AVDHostPoolRemoveClientNameFromPrinterName,$htmlwhite))
-
-						$msg = "RDP printer"
-						$columnWidths = @("300","275")
-						FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-						WriteHTMLLine 0 0 ""
-					}
-
-					#Auto-upgrade
-					If($MSword -or $PDF)
-					{
-						WriteWordLine 5 0 "Auto-upgrade"
-					}
-					If($Text)
-					{
-						Line 4 "Auto-upgrade"
-					}
-					If($HTML)
-					{
-						#nothing
-					}
-
-					If($AVDHostPool.InheritDefaultAutoUpgradeSettings)
-					{
-						#do we inherit site defaults?
-						#yes we do, get the default settings for the Site
-						#use the Site default settings
-
-						<#
-							PS C:\Parallels-RAS-V19.x-Doc-Script-4.00> $AVDHostPoolDefaults.AutoUpgrade | % {$_.psobject.properties | select name, value | sort name}
-
-							Name                                   Value
-							----                                   -----
-							DrainModeDurationInSecs                  900
-							Enabled                                 True
-							ForceLogoffSessions                     True
-							Messages                                 {1}
-							Repeat                             EveryWeek
-							SpecificDays                           Never
-							StartDateTime           12/2/2025 7:24:26 PM
-
-
-							PS C:\Parallels-RAS-V19.x-Doc-Script-4.00>
-
-							PS C:\Parallels-RAS-V19.x-Doc-Script-4.00> $AVDHostPoolDefaults.AutoUpgrade.Messages | % {$_.psobject.properties | select name, value | sort name}
-
-							Name                                          Value
-							----                                          -----
-							Enabled                                        True
-							Id                                                1
-							Message      hey you! Get off the figgin' server!!!
-							MessageTitle         Message from RAS administrator
-							SendMsgSecs                                     900
-							SendMsgWhen                                  Before
-						#>
-
-						$AVDHostPoolDefaults = Get-RASAVDDefaultSettings -DefObjType AVDMultiSessionDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
-						
-						If($? -and $Null -ne $AVDHostPoolDefaults)
-						{
-							$AutoUpgradeEnabled = $AVDHostPoolDefaults.AutoUpgrade.Enabled.ToString()
-							
-							If($AVDHostPoolDefaults.AutoUpgrade.Enabled)
+							If($cnt -eq 0)
 							{
-								$AutoUpgradeDate    = $AVDHostPoolDefaults.AutoUpgrade.StartDateTime.ToShortDateString()
-								$AutoUpgradeStart   = $AVDHostPoolDefaults.AutoUpgrade.StartDateTime.ToLongTimeString()
-								Switch ($AVDHostPoolDefaults.AutoUpgrade.DrainModeDurationInSecs)
-								{
-									900		{$AutoUpgradeDrainModeDuration = "15 minutes"; Break}
-									1800	{$AutoUpgradeDrainModeDuration = "30 minutes"; Break}
-									2700	{$AutoUpgradeDrainModeDuration = "45 minutes"; Break}
-									3600	{$AutoUpgradeDrainModeDuration = "1 hour"; Break}
-									7200	{$AutoUpgradeDrainModeDuration = "2 hours"; Break}
-									10800	{$AutoUpgradeDrainModeDuration = "3 hours"; Break}
-									21600	{$AutoUpgradeDrainModeDuration = "6 hours"; Break}
-									43200	{$AutoUpgradeDrainModeDuration = "12 hours"; Break}
-									86400	{$AutoUpgradeDrainModeDuration = "1 day"; Break}
-									Default	{$AutoUpgradeDrainModeDuration = "Unable to determine Drain mode duration: $($AVDHostPoolDefaults.AutoUpgrade.DrainModeDurationInSecs)"; Break}
-								}
-								$AutoUpgradeForceLogoff = $AVDHostPoolDefaults.AutoUpgrade.ForceLogoffSessions.ToString()
-								Switch ($AVDHostPoolDefaults.AutoUpgrade.Repeat)
-								{
-									Never			{$AutoUpgradeRecur = "Never "; Break}
-									EveryDay		{$AutoUpgradeRecur = "Every day"; Break}
-									EveryWeek		{$AutoUpgradeRecur = "Every week"; Break}
-									Every2Weeks		{$AutoUpgradeRecur = "Every 2 weeks"; Break}
-									EveryMonth		{$AutoUpgradeRecur = "Every month"; Break}
-									EveryYear		{$AutoUpgradeRecur = "Every year"; Break}
-									SpecificDays	{$AutoUpgradeRecur = "Every $($AVDHostPoolDefaults.AutoUpgrade.SpecificDays)"; Break}
-									Default			{$AutoUpgradeRecur = "Unable to determine the Recur: $($AVDHostPoolDefaults.AutoUpgrade.Repeat)"; Break}
-								}
-								$AutoUpgradeMessages = $AVDHostPoolDefaults.AutoUpgrade.Messages
+								$rowdata += @(,("               Folder",($Script:htmlsb),"$($item.Folder) Copy base: $CopyBase Copy back: $CopyBack",$htmlwhite))
 							}
 							Else
 							{
-								$AutoUpgradeEnabled           = "False"
-								$AutoUpgradeDate              = ""
-								$AutoUpgradeStart             = ""
-								$AutoUpgradeDrainModeDuration = ""
-								$AutoUpgradeForceLogoff       = ""
-								$AutoUpgradeRecur             = ""
-								$AutoUpgradeMessages          = @()
+								$rowdata += @(,("",($Script:htmlsb),"$($item.Folder) Copy base: $CopyBase Copy back: $CopyBack",$htmlwhite))
 							}
 						}
-						Else
-						{
-							#unable to retrieve default, use built-in default values
-							$AutoUpgradeEnabled           = "False"
-							$AutoUpgradeDate              = ""
-							$AutoUpgradeStart             = ""
-							$AutoUpgradeDrainModeDuration = ""
-							$AutoUpgradeForceLogoff       = ""
-							$AutoUpgradeRecur             = ""
-							$AutoUpgradeMessages          = @()
-						}
 					}
-					Else
+
+					$rowdata += @(,("     Advanced",($Script:htmlsb),"",$htmlwhite))
+					$rowdata += @(,("          FSLogix Setting:",($Script:htmlsb),"Value:",$htmlwhite))
+					$rowdata += @(,("          Access network as computer object",($Script:htmlsb),"$($FSLogixAS_AccessNetworkAsComputerObject)",$htmlwhite))
+					$rowdata += @(,("          Custom SDDL for profile directory",($Script:htmlsb),"$($FSLogixAS_ProfileDirSDDL)",$htmlwhite))
+					$rowdata += @(,("          Delay between locked VHD(X) retries",($Script:htmlsb),"$($FSLogixAS_LockedRetryInterval)",$htmlwhite))
+					$rowdata += @(,("          Delete local profile when loading from VHD",($Script:htmlsb),"$($FSLogixAS_DeleteLocalProfileWhenVHDShouldApply)",$htmlwhite))
+					$rowdata += @(,("          Diff disk parent folder path",($Script:htmlsb),"$($FSLogixAS_DiffDiskParentFolderPath)",$htmlwhite))
+					$rowdata += @(,("          Do not create a folder for new profiles",($Script:htmlsb),"$($FSLogixAS_NoProfileContainingFolder)",$htmlwhite))
+					$rowdata += @(,("          Enable Cached mode for Outlook",($Script:htmlsb),"$($FSLogixAS_OutlookCachedMode)",$htmlwhite))
+					$rowdata += @(,("          Keep local profiles",($Script:htmlsb),"$($FSLogixAS_KeepLocalDir)",$htmlwhite))
+					$rowdata += @(,("          Naming pattern for new VHD(X) files",($Script:htmlsb),"$($FSLogixAS_VHDNamePattern)",$htmlwhite))
+					$rowdata += @(,("          Number of locked VHD(X) retries",($Script:htmlsb),"$($FSLogixAS_LockedRetryCount)",$htmlwhite))
+					$rowdata += @(,("          Prevent logons with failures",($Script:htmlsb),"$($FSLogixAS_PreventLoginWithFailure)",$htmlwhite))
+					$rowdata += @(,("          Prevent logons with temp profiles",($Script:htmlsb),"$($FSLogixAS_PreventLoginWithTempProfile)",$htmlwhite))
+					$rowdata += @(,("          Profile folder naming pattern",($Script:htmlsb),"$($FSLogixAS_SIDDirNameMatch)",$htmlwhite))
+					$rowdata += @(,("          Profile type",($Script:htmlsb),"$($FSLogixAS_ProfileType)",$htmlwhite))
+					$rowdata += @(,("          Profile VHD(X) file matching pattern",($Script:htmlsb),"$($FSLogixAS_VHDNameMatch)",$htmlwhite))
+					$rowdata += @(,("          Re-attach interval",($Script:htmlsb),"$($FSLogixAS_ReAttachIntervalSeconds)",$htmlwhite))
+					$rowdata += @(,("          Re-attach retry limit",($Script:htmlsb),"$($FSLogixAS_ReAttachRetryCount)",$htmlwhite))
+					$rowdata += @(,("          Remove duplicate OST files on logoff",($Script:htmlsb),"$($FSLogixAS_RemoveOrphanedOSTFilesOnLogoff)",$htmlwhite))
+					$rowdata += @(,("          SDDL used when attaching the VHD",($Script:htmlsb),"$($FSLogixAS_AttachVHDSDDL)",$htmlwhite))
+					$rowdata += @(,("          Search roaming feature mode",($Script:htmlsb),"$($FSLogixAS_RoamSearch)",$htmlwhite))
+					$rowdata += @(,("          Swap SID and username in profile directory names",($Script:htmlsb),"$($FSLogixAS_FlipFlopProfileDirectoryName)",$htmlwhite))
+					$rowdata += @(,("          Temporary folders redirection mode",($Script:htmlsb),"$($FSLogixAS_SetTempToLocalPath)",$htmlwhite))
+					$rowdata += @(,("          Use SDDL on creation of SID containing folder",($Script:htmlsb),"$($FSLogixAS_SIDDirSDDL)",$htmlwhite))
+					$rowdata += @(,("          User-to-Profile matching pattern",($Script:htmlsb),"$($FSLogixAS_SIDDirNamePattern)",$htmlwhite))
+					$rowdata += @(,("          VHDX sector size",($Script:htmlsb),"$($FSLogixAS_VHDXSectorSize)",$htmlwhite))
+					$rowdata += @(,("          Volume wait time",($Script:htmlsb),"$($FSLogixAS_VolumeWaitTimeMS)",$htmlwhite))
+				}
+
+				$msg = "User profile"
+				$columnWidths = @("350","325")
+				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+				WriteHTMLLine 0 0 ""
+			}
+
+			#Application Packages
+			If($MSword -or $PDF)
+			{
+				WriteWordLine 5 0 "Application Packages"
+			}
+			If($Text)
+			{
+				Line 4 "Application Packages"
+			}
+			If($HTML)
+			{
+				#nothing
+			}
+
+			If($AVDHostPool.InheritDefaultAppPackageSettings)
+			{
+				#do we inherit site defaults?
+				#yes we do, get the default settings for the Site
+				#use the Site default settings
+				$AVDHostPoolDefaults = Get-RASAVDDefaultSettings -DefObjType AVDMultiSessionDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
+				
+				If($? -and $Null -ne $AVDHostPoolDefaults)
+				{
+					$AppPackagesAssigned = $AVDHostPoolDefaults.AppPackagesAssigned
+				}
+			}
+			Else
+			{
+				#we don't inherit
+				#get the settings for the vdi host
+				$AppPackagesAssigned = $AVDHostPool.AppPackagesAssigned
+			}
+
+			If($MSWord -or $PDF)
+			{
+				$ScriptInformation = New-Object System.Collections.ArrayList
+				$ScriptInformation.Add(@{Data = "Inherit default settings"; Value = $AVDHostPool.InheritDefaultAppPackageSettings.ToString(); }) > $Null
+				$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+
+				If(validObject $AppPackagesAssigned ApplicationPackagesAssigned)
+				{
+					ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
 					{
-						#we don't inherit
-						#get the settings for the host pool
-						$Results = Get-RASAutoUpgrade -Name $AVDHostPool.Name -SiteId $Site.Id -ObjType "AVDHostPool" -EA 0 4>$Null
+						$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4>$Null
 						
-						If(!($?) -or $Null -eq $Results)
+						If($? -and $Null -ne $Result)
 						{
-							$AutoUpgradeEnabled           = "False"
-							$AutoUpgradeDate              = ""
-							$AutoUpgradeStart             = ""
-							$AutoUpgradeDrainModeDuration = ""
-							$AutoUpgradeForceLogoff       = ""
-							$AutoUpgradeRecur             = ""
-							$AutoUpgradeMessages          = @()
+							$ScriptInformation.Add(@{Data = "Name"; Value = $Result.PackageName; }) > $Null
+							$ScriptInformation.Add(@{Data = "Status"; Value = ""; }) > $Null
+							$ScriptInformation.Add(@{Data = "Version"; Value = $Result.Version; }) > $Null
+							$ScriptInformation.Add(@{Data = "Display name"; Value = $Result.DisplayName; }) > $Null
+							$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
 						}
 						Else
 						{
-							$AutoUpgradeEnabled = $Results.Enabled.ToString()
-							
-							If($Results.Enabled)
-							{
-								$AutoUpgradeDate    = $Results.StartDateTime.ToShortDateString()
-								$AutoUpgradeStart   = $Results.StartDateTime.ToLongTimeString()
-								Switch ($Results.DrainModeDurationInSecs)
-								{
-									900		{$AutoUpgradeDrainModeDuration = "15 minutes"; Break}
-									1800	{$AutoUpgradeDrainModeDuration = "30 minutes"; Break}
-									2700	{$AutoUpgradeDrainModeDuration = "45 minutes"; Break}
-									3600	{$AutoUpgradeDrainModeDuration = "1 hour"; Break}
-									7200	{$AutoUpgradeDrainModeDuration = "2 hours"; Break}
-									10800	{$AutoUpgradeDrainModeDuration = "3 hours"; Break}
-									21600	{$AutoUpgradeDrainModeDuration = "6 hours"; Break}
-									43200	{$AutoUpgradeDrainModeDuration = "12 hours"; Break}
-									86400	{$AutoUpgradeDrainModeDuration = "1 day"; Break}
-									Default	{$AutoUpgradeDrainModeDuration = "Unable to determine Drain mode duration: $($Results.DrainModeDurationInSecs)"; Break}
-								}
-								$AutoUpgradeForceLogoff = $Results.ForceLogoffSessions.ToString()
-								Switch ($Results.Repeat)
-								{
-									Never			{$AutoUpgradeRecur = "Never "; Break}
-									EveryDay		{$AutoUpgradeRecur = "Every day"; Break}
-									EveryWeek		{$AutoUpgradeRecur = "Every week"; Break}
-									Every2Weeks		{$AutoUpgradeRecur = "Every 2 weeks"; Break}
-									EveryMonth		{$AutoUpgradeRecur = "Every month"; Break}
-									EveryYear		{$AutoUpgradeRecur = "Every year"; Break}
-									SpecificDays	{$AutoUpgradeRecur = "Every $($Results.SpecificDays)"; Break}
-									Default			{$AutoUpgradeRecur = "Unable to determine the Recur: $($Results.Repeat)"; Break}
-								}
-								$AutoUpgradeMessages = $Results.Messages
-							}
-							Else
-							{
-								$AutoUpgradeEnabled           = "False"
-								$AutoUpgradeDate              = ""
-								$AutoUpgradeStart             = ""
-								$AutoUpgradeDrainModeDuration = ""
-								$AutoUpgradeForceLogoff       = ""
-								$AutoUpgradeRecur             = ""
-								$AutoUpgradeMessages          = @()
-							}
+							$ScriptInformation.Add(@{Data = "Unable to retrieve data for"; Value = $Result.PackageName; }) > $Null
 						}
 					}
-					
-					If($MSWord -or $PDF)
+				}
+
+				$Table = AddWordTable -Hashtable $ScriptInformation `
+				-Columns Data,Value `
+				-List `
+				-Format $wdTableGrid `
+				-AutoFit $wdAutoFitFixed
+
+				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+				$Table.Columns.Item(1).Width = 200;
+				$Table.Columns.Item(2).Width = 250;
+
+				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+				FindWordDocumentEnd
+				$Table = $Null
+				WriteWordLine 0 0 ""
+			}
+			If($Text)
+			{
+				Line 5 "Inherit default settings: " $AVDHostPool.InheritDefaultAppPackageSettings.ToString()
+				Line 5 ""
+
+				If(validObject $AppPackagesAssigned ApplicationPackagesAssigned)
+				{
+					ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
 					{
-						$ScriptInformation = New-Object System.Collections.ArrayList
-						$ScriptInformation.Add(@{Data = "Inherit default settings"; Value = $AVDHostPool.InheritDefaultAutoUpgradeSettings.ToString(); }) > $Null
-						$ScriptInformation.Add(@{Data = "Enable auto-upgrade maintenance window"; Value = $AutoUpgradeEnabled; }) > $Null
-						If($AutoUpgradeEnabled -eq "True")
-						{
-							$ScriptInformation.Add(@{Data = "Date"; Value = $AutoUpgradeDate; }) > $Null
-							$ScriptInformation.Add(@{Data = "Start"; Value = $AutoUpgradeStart; }) > $Null
-							$ScriptInformation.Add(@{Data = "Drain mode duration"; Value = $AutoUpgradeDrainModeDuration; }) > $Null
-							$ScriptInformation.Add(@{Data = "Force logoff session at the end of the drain mode period"; Value = $AutoUpgradeForceLogoff; }) > $Null
-							$ScriptInformation.Add(@{Data = "Recur"; Value = $AutoUpgradeRecur; }) > $Null
-							$ScriptInformation.Add(@{Data = "Send message before maintenance window is triggered"; Value = ""; }) > $Null
-						}
-
-						If($AutoUpgradeMessages.Count -gt 0)
-						{
-							ForEach($Item in $AutoUpgradeMessages)
-							{
-								Switch ($Item.SendMsgSecs)
-								{
-									900		{$MsgTime = "15 minutes $($Item.SendMsgWhen)"; Break}
-									1800	{$MsgTime = "30 minutes $($Item.SendMsgWhen)"; Break}
-									2700	{$MsgTime = "45 minutes $($Item.SendMsgWhen)"; Break}
-									3600	{$MsgTime = "1 hour $($Item.SendMsgWhen)"; Break}
-									7200	{$MsgTime = "2 hours $($Item.SendMsgWhen)"; Break}
-									10800	{$MsgTime = "3 hours $($Item.SendMsgWhen)"; Break}
-									Default	{$MsgTime = "Unable to determine scheduled message Time: $($Item.SendMsgSecs)"; Break}
-								}
-								
-								$ScriptInformation.Add(@{Data = "     Enabled"; Value = $Item.Enabled.ToString(); }) > $Null
-								$ScriptInformation.Add(@{Data = "     Body"; Value = $Item.Message; }) > $Null
-								$ScriptInformation.Add(@{Data = "     Title"; Value = $Item.MessageTitle; }) > $Null
-								$ScriptInformation.Add(@{Data = "     Time"; Value = $MsgTime; }) > $Null
-								$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
-							}
-						}
-
-						$Table = AddWordTable -Hashtable $ScriptInformation `
-						-Columns Data,Value `
-						-List `
-						-Format $wdTableGrid `
-						-AutoFit $wdAutoFitFixed;
-
-						SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
-						SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
-						$Table.Columns.Item(1).Width = 250;
-						$Table.Columns.Item(2).Width = 250;
-
-						$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-						FindWordDocumentEnd
-						$Table = $Null
-						WriteWordLine 0 0 ""
-					}
-					If($Text)
-					{
-						Line 5 "Inherit default settings`t`t`t`t: " $AVDHostPool.InheritDefaultAutoUpgradeSettings.ToString()
-						Line 5 "Enable auto-upgrade maintenance window`t`t`t: " $AutoUpgradeEnabled
-						If($AutoUpgradeEnabled -eq "True")
-						{
-							Line 5 "Date`t`t`t`t`t`t`t: " $AutoUpgradeDate
-							Line 5 "Start`t`t`t`t`t`t`t: " $AutoUpgradeStart
-							Line 5 "Drain mode duration`t`t`t`t`t: " $AutoUpgradeDrainModeDuration
-							Line 5 "Force logoff session at the end of the drain mode period: " $AutoUpgradeForceLogoff
-							Line 5 "Recur`t`t`t`t`t`t`t: " $AutoUpgradeRecur
-							Line 5 "Send message before maintenance window is triggered"
-						}
+						$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4>$Null
 						
-						If($AutoUpgradeMessages.Count -gt 0)
+						If($? -and $Null -ne $Result)
 						{
-							ForEach($Item in $AutoUpgradeMessages)
-							{
-								Switch ($Item.SendMsgSecs)
-								{
-									900		{$MsgTime = "15 minutes $($Item.SendMsgWhen)"; Break}
-									1800	{$MsgTime = "30 minutes $($Item.SendMsgWhen)"; Break}
-									2700	{$MsgTime = "45 minutes $($Item.SendMsgWhen)"; Break}
-									3600	{$MsgTime = "1 hour $($Item.SendMsgWhen)"; Break}
-									7200	{$MsgTime = "2 hours $($Item.SendMsgWhen)"; Break}
-									10800	{$MsgTime = "3 hours $($Item.SendMsgWhen)"; Break}
-									Default	{$MsgTime = "Unable to determine scheduled message Time: $($Item.SendMsgSecs)"; Break}
-								}
-								
-								Line 6 "Enabled`t: " $Item.Enabled.ToString()
-								Line 6 "Body`t: " $Item.Message
-								Line 6 "Title`t: " $Item.MessageTitle
-								Line 6 "Time`t: " $MsgTime
-								Line 6 ""
-							}
-						}
-
-						Line 0 ""
-					}
-					If($HTML)
-					{
-						$rowdata = @()
-						$columnHeaders = @("Inherit default settings",($Script:htmlsb),$AVDHostPool.InheritDefaultAutoUpgradeSettings.ToString(),$htmlwhite)
-						$rowdata += @(,("Enable auto-upgrade maintenance window",($Script:htmlsb),$AutoUpgradeEnabled,$htmlwhite))
-						If($AutoUpgradeEnabled -eq "True")
-						{
-							$rowdata += @(,("Date",($Script:htmlsb),$AutoUpgradeDate,$htmlwhite))
-							$rowdata += @(,("Start",($Script:htmlsb),$AutoUpgradeStart,$htmlwhite))
-							$rowdata += @(,("Drain mode duration",($Script:htmlsb),$AutoUpgradeDrainModeDuration,$htmlwhite))
-							$rowdata += @(,("Force logoff session at the end of the drain mode period",($Script:htmlsb),$AutoUpgradeForceLogoff,$htmlwhite))
-							$rowdata += @(,("Recur",($Script:htmlsb),$AutoUpgradeRecur,$htmlwhite))
-							$rowdata += @(,("Send message before maintenance window is triggered",($Script:htmlsb),"",$htmlwhite))
-						}
-						
-						If($AutoUpgradeMessages.Count -gt 0)
-						{
-							ForEach($Item in $AutoUpgradeMessages)
-							{
-								Switch ($Item.SendMsgSecs)
-								{
-									900		{$MsgTime = "15 minutes $($Item.SendMsgWhen)"; Break}
-									1800	{$MsgTime = "30 minutes $($Item.SendMsgWhen)"; Break}
-									2700	{$MsgTime = "45 minutes $($Item.SendMsgWhen)"; Break}
-									3600	{$MsgTime = "1 hour $($Item.SendMsgWhen)"; Break}
-									7200	{$MsgTime = "2 hours $($Item.SendMsgWhen)"; Break}
-									10800	{$MsgTime = "3 hours $($Item.SendMsgWhen)"; Break}
-									Default	{$MsgTime = "Unable to determine scheduled message Time: $($Item.SendMsgSecs)"; Break}
-								}
-								
-								$rowdata += @(,("     Enabled",($Script:htmlsb),$Item.Enabled.ToString(),$htmlwhite))
-								$rowdata += @(,("     Body",($Script:htmlsb),$Item.Message,$htmlwhite))
-								$rowdata += @(,("     Title",($Script:htmlsb),$Item.MessageTitle,$htmlwhite))
-								$rowdata += @(,("     Time",($Script:htmlsb),$MsgTime,$htmlwhite))
-								$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
-							}
-						}
-
-						$msg = "Auto-upgrade"
-						$columnWidths = @("350","275")
-						FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-						WriteHTMLLine 0 0 ""
-					}
-
-					#AVD Agent
-					If($MSword -or $PDF)
-					{
-						WriteWordLine 5 0 "AVD Agent"
-					}
-					If($Text)
-					{
-						Line 4 "AVD Agent"
-					}
-					If($HTML)
-					{
-						#nothing
-					}
-					<#
-						PS C:\Parallels-RAS-V19.x-Doc-Script-4.00> $AVDHostPool1.AVDAgent | fl
-
-
-						ScheduleAgentUpdates : False
-						LocalSessionTimeZone : True
-						TimeZone             :
-						ScheduleDay1         : Friday
-						ScheduleTime1        : h00
-						EnableSchedule2      : False
-						ScheduleDay2         : Monday
-						ScheduleTime2        : h00
-
-						ScheduleAgentUpdates : True
-						LocalSessionTimeZone : False
-						TimeZone             : (UTC-06:00) Central Time (US & Canada)
-						ScheduleDay1         : Monday
-						ScheduleTime1        : h01
-						EnableSchedule2      : True
-						ScheduleDay2         : Sunday
-						ScheduleTime2        : h02
-					#>
-					If($MSWord -or $PDF)
-					{
-						$ScriptInformation = New-Object System.Collections.ArrayList
-						If(!($AVDHostPool.AVDAgent.ScheduleAgentUpdates))
-						{
-							$ScriptInformation.Add(@{Data = "Scheduled Microsoft AVD agent updates"; Value = $AVDHostPool.AVDAgent.ScheduleAgentUpdates.ToString(); }) > $Null
+							Line 6 "Name`t`t: " $Result.PackageName
+							Line 6 "Status`t`t: "
+							Line 6 "Version`t`t: " $Result.Version
+							Line 6 "Display name`t: " $Result.DisplayName
+							Line 6 ""
 						}
 						Else
 						{
-							$ScriptInformation.Add(@{Data = "Scheduled Microsoft AVD agent updates"; Value = $AVDHostPool.AVDAgent.ScheduleAgentUpdates.ToString(); }) > $Null
-							Switch ($AVDHostPool.AVDAgent.ScheduleTime1)
-							{
-								"h00"	{$ScheduleTime1 = "12:00:00 AM"; Break}
-								"h01"	{$ScheduleTime1 = "01:00:00 AM"; Break}
-								"h02"	{$ScheduleTime1 = "02:00:00 AM"; Break}
-								"h03"	{$ScheduleTime1 = "03:00:00 AM"; Break}
-								"h04"	{$ScheduleTime1 = "04:00:00 AM"; Break}
-								"h05"	{$ScheduleTime1 = "05:00:00 AM"; Break}
-								"h06"	{$ScheduleTime1 = "06:00:00 AM"; Break}
-								"h07"	{$ScheduleTime1 = "07:00:00 AM"; Break}
-								"h08"	{$ScheduleTime1 = "08:00:00 AM"; Break}
-								"h09"	{$ScheduleTime1 = "09:00:00 AM"; Break}
-								"h10"	{$ScheduleTime1 = "10:00:00 AM"; Break}
-								"h11"	{$ScheduleTime1 = "11:00:00 AM"; Break}
-								"h12"	{$ScheduleTime1 = "12:00:00 PM"; Break}
-								"h13"	{$ScheduleTime1 = "01:00:00 PM"; Break}
-								"h14"	{$ScheduleTime1 = "02:00:00 PM"; Break}
-								"h15"	{$ScheduleTime1 = "03:00:00 PM"; Break}
-								"h16"	{$ScheduleTime1 = "04:00:00 PM"; Break}
-								"h17"	{$ScheduleTime1 = "05:00:00 PM"; Break}
-								"h18"	{$ScheduleTime1 = "06:00:00 PM"; Break}
-								"h19"	{$ScheduleTime1 = "07:00:00 PM"; Break}
-								"h20"	{$ScheduleTime1 = "08:00:00 PM"; Break}
-								"h21"	{$ScheduleTime1 = "09:00:00 PM"; Break}
-								"h21"	{$ScheduleTime1 = "10:00:00 PM"; Break}
-								"h23"	{$ScheduleTime1 = "11:00:00 PM"; Break}
-								Default {$ScheduleTime1 = "Unable to determine Schedule Time1: $($AVDHostPool.AVDAgent.ScheduleTime1)"; Break}
-							}
-							$ScriptInformation.Add(@{Data = "Use local session host time zone"; Value = $AVDHostPool.AVDAgent.LocalSessionTimeZone.ToString(); }) > $Null
-							If(!($AVDHostPool.AVDAgent.LocalSessionTimeZone))
-							{
-								$ScriptInformation.Add(@{Data = "Time zone"; Value = $AVDHostPool.AVDAgent.TimeZone; }) > $Null
-							}
-							$ScriptInformation.Add(@{Data = "Maintenance Window 1"; Value = ""; }) > $Null
-							$ScriptInformation.Add(@{Data = "     Day"; Value = $AVDHostPool.AVDAgent.ScheduleDay1.ToString(); }) > $Null
-							$ScriptInformation.Add(@{Data = "     Time"; Value = $ScheduleTime1; }) > $Null
-							$ScriptInformation.Add(@{Data = "Add an additional window"; Value = $AVDHostPool.AVDAgent.EnableSchedule2.ToString(); }) > $Null
-							If($AVDHostPool.AVDAgent.EnableSchedule2)
-							{
-								Switch ($AVDHostPool.AVDAgent.ScheduleTime2)
-								{
-									"h00"	{$ScheduleTime2 = "12:00:00 AM"; Break}
-									"h01"	{$ScheduleTime2 = "01:00:00 AM"; Break}
-									"h02"	{$ScheduleTime2 = "02:00:00 AM"; Break}
-									"h03"	{$ScheduleTime2 = "03:00:00 AM"; Break}
-									"h04"	{$ScheduleTime2 = "04:00:00 AM"; Break}
-									"h05"	{$ScheduleTime2 = "05:00:00 AM"; Break}
-									"h06"	{$ScheduleTime2 = "06:00:00 AM"; Break}
-									"h07"	{$ScheduleTime2 = "07:00:00 AM"; Break}
-									"h08"	{$ScheduleTime2 = "08:00:00 AM"; Break}
-									"h09"	{$ScheduleTime2 = "09:00:00 AM"; Break}
-									"h10"	{$ScheduleTime2 = "10:00:00 AM"; Break}
-									"h11"	{$ScheduleTime2 = "11:00:00 AM"; Break}
-									"h12"	{$ScheduleTime2 = "12:00:00 PM"; Break}
-									"h13"	{$ScheduleTime2 = "01:00:00 PM"; Break}
-									"h14"	{$ScheduleTime2 = "02:00:00 PM"; Break}
-									"h15"	{$ScheduleTime2 = "03:00:00 PM"; Break}
-									"h16"	{$ScheduleTime2 = "04:00:00 PM"; Break}
-									"h17"	{$ScheduleTime2 = "05:00:00 PM"; Break}
-									"h18"	{$ScheduleTime2 = "06:00:00 PM"; Break}
-									"h19"	{$ScheduleTime2 = "07:00:00 PM"; Break}
-									"h20"	{$ScheduleTime2 = "08:00:00 PM"; Break}
-									"h21"	{$ScheduleTime2 = "09:00:00 PM"; Break}
-									"h21"	{$ScheduleTime2 = "10:00:00 PM"; Break}
-									"h23"	{$ScheduleTime2 = "11:00:00 PM"; Break}
-									Default {$ScheduleTime2 = "Unable to determine Schedule Time2: $($AVDHostPool.AVDAgent.ScheduleTime2)"; Break}
-								}
-								$ScriptInformation.Add(@{Data = "     Day"; Value = $AVDHostPool.AVDAgent.ScheduleDay2.ToString(); }) > $Null
-								$ScriptInformation.Add(@{Data = "     Time"; Value = $ScheduleTime2; }) > $Null
-							}
+							Line 6 "Unable to retrieve data for: " $Result.PackageName
 						}
-
-						$Table = AddWordTable -Hashtable $ScriptInformation `
-						-Columns Data,Value `
-						-List `
-						-Format $wdTableGrid `
-						-AutoFit $wdAutoFitFixed;
-
-						SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
-						SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
-						$Table.Columns.Item(1).Width = 200;
-						$Table.Columns.Item(2).Width = 250;
-
-						$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-						FindWordDocumentEnd
-						$Table = $Null
-						WriteWordLine 0 0 ""
-					}
-					If($Text)
-					{
-						If(!($AVDHostPool.AVDAgent.ScheduleAgentUpdates))
-						{
-							Line 5 "Scheduled Microsoft AVD agent updates`t: " $AVDHostPool.AVDAgent.ScheduleAgentUpdates.ToString()
-						}
-						Else
-						{
-							Line 5 "Scheduled Microsoft AVD agent updates`t: " $AVDHostPool.AVDAgent.ScheduleAgentUpdates.ToString()
-							Switch ($AVDHostPool.AVDAgent.ScheduleTime1)
-							{
-								"h00"	{$ScheduleTime1 = "12:00:00 AM"; Break}
-								"h01"	{$ScheduleTime1 = "01:00:00 AM"; Break}
-								"h02"	{$ScheduleTime1 = "02:00:00 AM"; Break}
-								"h03"	{$ScheduleTime1 = "03:00:00 AM"; Break}
-								"h04"	{$ScheduleTime1 = "04:00:00 AM"; Break}
-								"h05"	{$ScheduleTime1 = "05:00:00 AM"; Break}
-								"h06"	{$ScheduleTime1 = "06:00:00 AM"; Break}
-								"h07"	{$ScheduleTime1 = "07:00:00 AM"; Break}
-								"h08"	{$ScheduleTime1 = "08:00:00 AM"; Break}
-								"h09"	{$ScheduleTime1 = "09:00:00 AM"; Break}
-								"h10"	{$ScheduleTime1 = "10:00:00 AM"; Break}
-								"h11"	{$ScheduleTime1 = "11:00:00 AM"; Break}
-								"h12"	{$ScheduleTime1 = "12:00:00 PM"; Break}
-								"h13"	{$ScheduleTime1 = "01:00:00 PM"; Break}
-								"h14"	{$ScheduleTime1 = "02:00:00 PM"; Break}
-								"h15"	{$ScheduleTime1 = "03:00:00 PM"; Break}
-								"h16"	{$ScheduleTime1 = "04:00:00 PM"; Break}
-								"h17"	{$ScheduleTime1 = "05:00:00 PM"; Break}
-								"h18"	{$ScheduleTime1 = "06:00:00 PM"; Break}
-								"h19"	{$ScheduleTime1 = "07:00:00 PM"; Break}
-								"h20"	{$ScheduleTime1 = "08:00:00 PM"; Break}
-								"h21"	{$ScheduleTime1 = "09:00:00 PM"; Break}
-								"h21"	{$ScheduleTime1 = "10:00:00 PM"; Break}
-								"h23"	{$ScheduleTime1 = "11:00:00 PM"; Break}
-								Default {$ScheduleTime1 = "Unable to determine Schedule Time1: $($AVDHostPool.AVDAgent.ScheduleTime1)"; Break}
-							}
-							Line 5 "Use local session host time zone`t: " $AVDHostPool.AVDAgent.LocalSessionTimeZone.ToString()
-							If(!($AVDHostPool.AVDAgent.LocalSessionTimeZone))
-							{
-								Line 5 "Time zone`t`t`t`t: " $AVDHostPool.AVDAgent.TimeZone
-							}
-							Line 5 "Maintenance Window 1"
-							Line 6 "Day`t: " $AVDHostPool.AVDAgent.ScheduleDay1.ToString()
-							Line 6 "Time`t: " $ScheduleTime1
-							Line 5 "Add an additional window: " $AVDHostPool.AVDAgent.EnableSchedule2.ToString()
-							If($AVDHostPool.AVDAgent.EnableSchedule2)
-							{
-								Switch ($AVDHostPool.AVDAgent.ScheduleTime2)
-								{
-									"h00"	{$ScheduleTime2 = "12:00:00 AM"; Break}
-									"h01"	{$ScheduleTime2 = "01:00:00 AM"; Break}
-									"h02"	{$ScheduleTime2 = "02:00:00 AM"; Break}
-									"h03"	{$ScheduleTime2 = "03:00:00 AM"; Break}
-									"h04"	{$ScheduleTime2 = "04:00:00 AM"; Break}
-									"h05"	{$ScheduleTime2 = "05:00:00 AM"; Break}
-									"h06"	{$ScheduleTime2 = "06:00:00 AM"; Break}
-									"h07"	{$ScheduleTime2 = "07:00:00 AM"; Break}
-									"h08"	{$ScheduleTime2 = "08:00:00 AM"; Break}
-									"h09"	{$ScheduleTime2 = "09:00:00 AM"; Break}
-									"h10"	{$ScheduleTime2 = "10:00:00 AM"; Break}
-									"h11"	{$ScheduleTime2 = "11:00:00 AM"; Break}
-									"h12"	{$ScheduleTime2 = "12:00:00 PM"; Break}
-									"h13"	{$ScheduleTime2 = "01:00:00 PM"; Break}
-									"h14"	{$ScheduleTime2 = "02:00:00 PM"; Break}
-									"h15"	{$ScheduleTime2 = "03:00:00 PM"; Break}
-									"h16"	{$ScheduleTime2 = "04:00:00 PM"; Break}
-									"h17"	{$ScheduleTime2 = "05:00:00 PM"; Break}
-									"h18"	{$ScheduleTime2 = "06:00:00 PM"; Break}
-									"h19"	{$ScheduleTime2 = "07:00:00 PM"; Break}
-									"h20"	{$ScheduleTime2 = "08:00:00 PM"; Break}
-									"h21"	{$ScheduleTime2 = "09:00:00 PM"; Break}
-									"h21"	{$ScheduleTime2 = "10:00:00 PM"; Break}
-									"h23"	{$ScheduleTime2 = "11:00:00 PM"; Break}
-									Default {$ScheduleTime2 = "Unable to determine Schedule Time2: $($AVDHostPool.AVDAgent.ScheduleTime2)"; Break}
-								}
-								Line 6 "Day`t: " $AVDHostPool.AVDAgent.ScheduleDay2.ToString()
-								Line 6 "Time`t: " $ScheduleTime2
-							}
-						}
-						Line 0 ""
-					}
-					If($HTML)
-					{
-						$rowdata = @()
-						If(!($AVDHostPool.AVDAgent.ScheduleAgentUpdates))
-						{
-							$columnHeaders = @("Scheduled Microsoft AVD agent updates",($Script:htmlsb),$AVDHostPool.AVDAgent.ScheduleAgentUpdates.ToString(),$htmlwhite)
-						}
-						Else
-						{
-							$columnHeaders = @("Scheduled Microsoft AVD agent updates",($Script:htmlsb),$AVDHostPool.AVDAgent.ScheduleAgentUpdates.ToString(),$htmlwhite)
-							Switch ($AVDHostPool.AVDAgent.ScheduleTime1)
-							{
-								"h00"	{$ScheduleTime1 = "12:00:00 AM"; Break}
-								"h01"	{$ScheduleTime1 = "01:00:00 AM"; Break}
-								"h02"	{$ScheduleTime1 = "02:00:00 AM"; Break}
-								"h03"	{$ScheduleTime1 = "03:00:00 AM"; Break}
-								"h04"	{$ScheduleTime1 = "04:00:00 AM"; Break}
-								"h05"	{$ScheduleTime1 = "05:00:00 AM"; Break}
-								"h06"	{$ScheduleTime1 = "06:00:00 AM"; Break}
-								"h07"	{$ScheduleTime1 = "07:00:00 AM"; Break}
-								"h08"	{$ScheduleTime1 = "08:00:00 AM"; Break}
-								"h09"	{$ScheduleTime1 = "09:00:00 AM"; Break}
-								"h10"	{$ScheduleTime1 = "10:00:00 AM"; Break}
-								"h11"	{$ScheduleTime1 = "11:00:00 AM"; Break}
-								"h12"	{$ScheduleTime1 = "12:00:00 PM"; Break}
-								"h13"	{$ScheduleTime1 = "01:00:00 PM"; Break}
-								"h14"	{$ScheduleTime1 = "02:00:00 PM"; Break}
-								"h15"	{$ScheduleTime1 = "03:00:00 PM"; Break}
-								"h16"	{$ScheduleTime1 = "04:00:00 PM"; Break}
-								"h17"	{$ScheduleTime1 = "05:00:00 PM"; Break}
-								"h18"	{$ScheduleTime1 = "06:00:00 PM"; Break}
-								"h19"	{$ScheduleTime1 = "07:00:00 PM"; Break}
-								"h20"	{$ScheduleTime1 = "08:00:00 PM"; Break}
-								"h21"	{$ScheduleTime1 = "09:00:00 PM"; Break}
-								"h21"	{$ScheduleTime1 = "10:00:00 PM"; Break}
-								"h23"	{$ScheduleTime1 = "11:00:00 PM"; Break}
-								Default {$ScheduleTime1 = "Unable to determine Schedule Time1: $($AVDHostPool.AVDAgent.ScheduleTime1)"; Break}
-							}
-							$rowdata += @(,( "Use local session host time zone",($Script:htmlsb), $AVDHostPool.AVDAgent.LocalSessionTimeZone.ToString(),$htmlwhite))
-							If(!($AVDHostPool.AVDAgent.LocalSessionTimeZone))
-							{
-								$rowdata += @(,( "Time zone",($Script:htmlsb), $AVDHostPool.AVDAgent.TimeZone,$htmlwhite))
-							}
-							$rowdata += @(,( "Maintenance Window 1",($Script:htmlsb), "",$htmlwhite))
-							$rowdata += @(,( "     Day",($Script:htmlsb), $AVDHostPool.AVDAgent.ScheduleDay1.ToString(),$htmlwhite))
-							$rowdata += @(,( "     Time",($Script:htmlsb), $ScheduleTime1,$htmlwhite))
-							$rowdata += @(,( "Add an additional window",($Script:htmlsb), $AVDHostPool.AVDAgent.EnableSchedule2.ToString(),$htmlwhite))
-							If($AVDHostPool.AVDAgent.EnableSchedule2)
-							{
-								Switch ($AVDHostPool.AVDAgent.ScheduleTime2)
-								{
-									"h00"	{$ScheduleTime2 = "12:00:00 AM"; Break}
-									"h01"	{$ScheduleTime2 = "01:00:00 AM"; Break}
-									"h02"	{$ScheduleTime2 = "02:00:00 AM"; Break}
-									"h03"	{$ScheduleTime2 = "03:00:00 AM"; Break}
-									"h04"	{$ScheduleTime2 = "04:00:00 AM"; Break}
-									"h05"	{$ScheduleTime2 = "05:00:00 AM"; Break}
-									"h06"	{$ScheduleTime2 = "06:00:00 AM"; Break}
-									"h07"	{$ScheduleTime2 = "07:00:00 AM"; Break}
-									"h08"	{$ScheduleTime2 = "08:00:00 AM"; Break}
-									"h09"	{$ScheduleTime2 = "09:00:00 AM"; Break}
-									"h10"	{$ScheduleTime2 = "10:00:00 AM"; Break}
-									"h11"	{$ScheduleTime2 = "11:00:00 AM"; Break}
-									"h12"	{$ScheduleTime2 = "12:00:00 PM"; Break}
-									"h13"	{$ScheduleTime2 = "01:00:00 PM"; Break}
-									"h14"	{$ScheduleTime2 = "02:00:00 PM"; Break}
-									"h15"	{$ScheduleTime2 = "03:00:00 PM"; Break}
-									"h16"	{$ScheduleTime2 = "04:00:00 PM"; Break}
-									"h17"	{$ScheduleTime2 = "05:00:00 PM"; Break}
-									"h18"	{$ScheduleTime2 = "06:00:00 PM"; Break}
-									"h19"	{$ScheduleTime2 = "07:00:00 PM"; Break}
-									"h20"	{$ScheduleTime2 = "08:00:00 PM"; Break}
-									"h21"	{$ScheduleTime2 = "09:00:00 PM"; Break}
-									"h21"	{$ScheduleTime2 = "10:00:00 PM"; Break}
-									"h23"	{$ScheduleTime2 = "11:00:00 PM"; Break}
-									Default {$ScheduleTime2 = "Unable to determine Schedule Time2: $($AVDHostPool.AVDAgent.ScheduleTime2)"; Break}
-								}
-								$rowdata += @(,( "     Day",($Script:htmlsb), $AVDHostPool.AVDAgent.ScheduleDay2.ToString(),$htmlwhite))
-								$rowdata += @(,( "     Time",($Script:htmlsb), $ScheduleTime2,$htmlwhite))
-							}
-						}
-						
-						$msg = "AVD Agent"
-						$columnWidths = @("250","275")
-						FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-						WriteHTMLLine 0 0 ""
 					}
 				}
 			}
+			If($HTML)
+			{
+				$rowdata = @()
+				$columnHeaders = @("Inherit default settings",($Script:htmlsb),$AVDHostPool.InheritDefaultAppPackageSettings.ToString(),$htmlwhite)
+				$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+
+				If(validObject $AppPackagesAssigned ApplicationPackagesAssigned)
+				{
+					ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
+					{
+						$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4>$Null
+						
+						If($? -and $Null -ne $Result)
+						{
+							$rowdata += @(,("Name",($Script:htmlsb),$Result.PackageName,$htmlwhite))
+							$rowdata += @(,("Status",($Script:htmlsb),"",$htmlwhite))
+							$rowdata += @(,("Version",($Script:htmlsb),$Result.Version,$htmlwhite))
+							$rowdata += @(,("Display name",($Script:htmlsb),$Result.DisplayName,$htmlwhite))
+							$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+						}
+						Else
+						{
+							$rowdata += @(,("Unable to retrieve data for",($Script:htmlsb),$Result.PackageName,$htmlwhite))
+						}
+					}
+				}
+
+				$msg = "Application Packages"
+				$columnWidths = @("200","275")
+				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+				WriteHTMLLine 0 0 ""
+			}
+
+			#Settings
+			If($MSword -or $PDF)
+			{
+				WriteWordLine 5 0 "Settings"
+			}
+			If($Text)
+			{
+				Line 4 "Settings"
+			}
+			If($HTML)
+			{
+				#nothing
+			}
+			
+			If($AVDHostPool.InheritDefaultAgentSettings)
+			{
+				#do we inherit site defaults?
+				#yes we do, get the default settings for the Site
+				#use the Site default settings
+				<#
+					PS C:\Users\carl.webster> $x = Get-RASAVDDefaultSettings -DefObjType AVDMultiSessionDefaultSettings
+					PS C:\Users\carl.webster> $x | % {$_.psobject.properties | select name, value | sort name}
+
+					Name                Value
+					----                -----
+					Action
+					Agent               RASAdminEngine.Core.OutputModels.HostPool.HostPoolAgentSettings
+					AppPackagesAssigned RASAdminEngine.Core.OutputModels.AppPackagesAssigned
+					AutoUpgrade         RASAdminEngine.Core.OutputModels.HostPool.AutoUpgradeSettings
+					DefObjType          AVDMultiSessionDefaultSettings
+					Optimization        RASAdminEngine.Core.OutputModels.ImagesOptimization.ImageOptimization
+					RDPPrinter          RASAdminEngine.Core.OutputModels.HostPool.RDPPrinterSettings
+					SiteId              1
+					UserProfile         RASAdminEngine.Core.OutputModels.UserProfile.UserProfileSettings
+
+
+					PS C:\Users\carl.webster> $x.agent | % {$_.psobject.properties | select name, value | sort name}
+
+					Name                                    Value
+					----                                    -----
+					AllowRemoteExec                          True
+					AllowURLAndMailRedirection            Enabled
+					AppMonitor                               True
+					DisconnectActiveSessionAfter               25
+					DragAndDropMode                 Bidirectional
+					EnableDriveRedirectionCache              True
+					EnableZOrder                            False
+					FileTransferLocation
+					FileTransferLockLocation                False
+					FileTransferMode                Bidirectional
+					LogoffDisconnectedSessionAfter              1
+					ManageRDPShortpath                      False
+					ManageRDPTransportProtocol           Disabled
+					MaxRDPShortpathPort                     39299
+					MinRDPShortpathPort                     38300
+					SessionReadinessTimeout                   300
+					SupportShellURLNamespaceObjects          True
+					UseRDPShortpath                         False
+					UseSmallerPortRange                     False
+				#>
+				$AVDHostPoolDefaults = Get-RASAVDDefaultSettings -DefObjType AVDMultiSessionDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
+				
+				If($? -and $Null -ne $AVDHostPoolDefaults)
+				{
+					#application session lingering
+					Switch ($AVDHostPoolDefaults.Agent.DisconnectActiveSessionAfter)
+					{
+						0		{$AVDHostPoolDisconnectActiveSessionAfter = "Never"; Break}
+						1		{$AVDHostPoolDisconnectActiveSessionAfter = "1 minute"; Break}
+						5		{$AVDHostPoolDisconnectActiveSessionAfter = "5 minutes"; Break}
+						25		{$AVDHostPoolDisconnectActiveSessionAfter = "25 seconds"; Break}
+						60		{$AVDHostPoolDisconnectActiveSessionAfter = "1 minute"; Break}
+						300		{$AVDHostPoolDisconnectActiveSessionAfter = "5 minutes"; Break}
+						3600	{$AVDHostPoolDisconnectActiveSessionAfter = "1 hour"; Break}
+						Default	{$AVDHostPoolDisconnectActiveSessionAfter = "Unable to determine Application session lingering Disconnect active session timeout: $($AVDHostPoolDefaults.Agent.DisconnectActiveSessionAfter)"; Break}
+					}
+					
+					Switch ($AVDHostPoolDefaults.Agent.LogoffDisconnectedSessionAfter)
+					{
+						0		{$AVDHostPoolLogoffDisconnectedSessionAfter = "Never"; Break}
+						1		{$AVDHostPoolLogoffDisconnectedSessionAfter = "Immediate"; Break}
+						25		{$AVDHostPoolLogoffDisconnectedSessionAfter = "25 seconds"; Break}
+						60		{$AVDHostPoolLogoffDisconnectedSessionAfter = "1 minute"; Break}
+						300		{$AVDHostPoolLogoffDisconnectedSessionAfter = "5 minutes"; Break}
+						3600	{$AVDHostPoolLogoffDisconnectedSessionAfter = "1 hour"; Break}
+						Default	{$AVDHostPoolLogoffDisconnectedSessionAfter = "Unable to determine Application session lingering logoff disconnection session timeout: $($AVDHostPoolDefaults.Agent.LogoffDisconnectedSessionAfter)"; Break}
+					}
+					
+					#Other settings
+					Switch ($AVDHostPoolDefaults.Agent.SessionReadinessTimeout)
+					{
+						25		{$AVDHostPoolSessionReadinessTimeout = "25 seconds"; Break}
+						60		{$AVDHostPoolSessionReadinessTimeout = "1 minute"; Break}
+						300		{$AVDHostPoolSessionReadinessTimeout = "5 minutes"; Break}
+						3600	{$AVDHostPoolSessionReadinessTimeout = "1 hour"; Break}
+						Default	{$AVDHostPoolSessionReadinessTimeout = "Unable to determine session readiness timeout: $($AVDHostPoolDefaults.Agent.SessionReadinessTimeout)"; Break}
+					}
+					
+					Switch($AVDHostPoolDefaults.Agent.AllowURLAndMailRedirection)
+					{
+						"Disabled"						{$AVDHostPoolAllowClientURLMailRedirection = "Disabled"; 
+														 $AVDHostPoolReplaceRegisteredApplication = "False";
+														 $AVDHostPoolSupportShellURLNamespaceObjects = $AVDHostPoolDefaults.Agent.SupportShellURLNamespaceObjects.ToString();
+														 Break}
+						"Enabled"						{$AVDHostPoolAllowClientURLMailRedirection = "Enabled"; 
+														 $AVDHostPoolReplaceRegisteredApplication = "False";
+														 $AVDHostPoolSupportShellURLNamespaceObjects = $AVDHostPoolDefaults.Agent.SupportShellURLNamespaceObjects.ToString();
+														 Break}
+						"EnabledWithAppRegistration"	{$AVDHostPoolAllowClientURLMailRedirection = "Enabled";
+														 $AVDHostPoolReplaceRegisteredApplication = "True";
+														 $AVDHostPoolSupportShellURLNamespaceObjects = "N/A";
+														 Break}
+						Default 						{$AVDHostPoolAllowClientURLMailRedirection = "Unable to determine Allow client URL/Mail redirection: $($AVDHostPoolDefaults.Agent.AllowURLAndMailRedirection)"; 
+														 $AVDHostPoolReplaceRegisteredApplication = "False";
+														 $AVDHostPoolSupportShellURLNamespaceObjects = "False";
+														 Break}
+					}
+					
+					Switch ($AVDHostPoolDefaults.Agent.DragAndDropMode)
+					{
+						"Bidirectional"		{$AVDHostPoolDragAndDrop = "Bidirectional"; 
+											$AVDHostPoolAllowDragAndDrop = "True";
+											Break}
+						"ClientToServer"	{$AVDHostPoolDragAndDrop = "Client to server only"; 
+											$AVDHostPoolAllowDragAndDrop = "True";
+											Break}
+						"Disabled"			{$AVDHostPoolDragAndDrop = "Disabled"; 
+											$AVDHostPoolAllowDragAndDrop = "False";
+											Break}
+						"ServerToClient"	{$AVDHostPoolDragAndDrop = "Server to client only"; 
+											$AVDHostPoolAllowDragAndDrop = "True";
+											Break}
+						Default				{$AVDHostPoolDragAndDrop = "Unable to determine Drag and drop: $($AVDHostPoolDefaults.Agent.DragAndDropMode)"; 
+											$AVDHostPoolAllowDragAndDrop = "False";
+						Break}
+					}
+					
+					If($AVDHostPoolDefaults.Agent.AllowRemoteExec)
+					{
+						$AVDHostPoolAllowRemoteExec = "True"
+					}
+					Else
+					{
+						$AVDHostPoolAllowRemoteExec = "False"
+					}
+					
+					$AVDHostPoolManageRDPShortpath  = $AVDHostPoolDefaults.Agent.ManageRDPShortpath.ToString()
+					$AVDHostPoolUseRDPShortpath     = $AVDHostPoolDefaults.Agent.UseRDPShortpath.ToString()
+					$AVDHostPoolUseSmallerPortRange = $AVDHostPoolDefaults.Agent.UseSmallerPortRange.ToString()
+					$AVDHostPoolMinRDPShortpathPort = $AVDHostPoolDefaults.Agent.MinRDPShortpathPort.ToString()
+					$AVDHostPoolMaxRDPShortpathPort = $AVDHostPoolDefaults.Agent.MaxRDPShortpathPort.ToString()
+
+					Switch ($AVDHostPoolDefaults.Agent.FileTransferMode)
+					{
+						"Bidirectional"		{$AVDHostPoolFileTransferMode = "Bidirectional"; Break}
+						"ClientToServer"	{$AVDHostPoolFileTransferMode = "Client to server only"; Break}
+						"Disabled"			{$AVDHostPoolFileTransferMode = "Disabled"; Break}
+						"ServerToClient"	{$AVDHostPoolFileTransferMode = "Server to client only"; Break}
+						Default				{$AVDHostPoolFileTransferMode = "Unable to determine File Transfer mode: $($AVDHostPoolDefaults.Agent.FileTransferMode)"; Break}
+					}
+
+					If($AVDHostPoolDefaults.Agent.FileTransferLocation -eq "")
+					{
+						$AVDHostPoolFileTransferLocation = "Default download location"
+					}
+					Else
+					{
+						$AVDHostPoolFileTransferLocation = $AVDHostPoolDefaults.FileTransferLocation
+					}
+					
+					$AVDHostPoolFileTransferChangeLocation  = $AVDHostPoolDefaults.Agent.FileTransferLockLocation.ToString()
+					$AVDHostPoolEnableDriveRedirectionCache = $AVDHostPoolDefaults.Agent.EnableDriveRedirectionCache.ToString()
+					$AVDHostPoolEnableZOrder                = $AVDHostPoolDefaults.Agent.EnableZOrder.ToString()
+					
+				}
+				Else
+				{
+					#unable to retrieve default, use built-in default values
+					$AVDHostPoolDisconnectActiveSessionAfter    = "25 seconds"
+					$AVDHostPoolLogoffDisconnectedSessionAfter  = "Immediate"
+					$AVDHostPoolSessionReadinessTimeout         = "25 seconds"
+					$AVDHostPoolAllowClientURLMailRedirection   = "Enabled"
+					$AVDHostPoolReplaceRegisteredApplication    = "False"
+					$AVDHostPoolSupportShellURLNamespaceObjects = "False"
+					$AVDHostPoolDragAndDrop                     = "Bidirectional"
+					$AVDHostPoolAllowDragAndDrop                = "True"
+					$AVDHostPoolAllowRemoteExec                 = "False"
+					$AVDHostPoolManageRDPShortpath              = "False"
+					$AVDHostPoolUseRDPShortpath                 = "False"
+					$AVDHostPoolUseSmallerPortRange             = "False"
+					$AVDHostPoolMinRDPShortpathPort             = "38300"
+					$AVDHostPoolMaxRDPShortpathPort             = "39299"
+					$AVDHostPoolFileTransferMode                = "Bidirectional"
+					$AVDHostPoolFileTransferLocation            = "Default download location"
+					$AVDHostPoolFileTransferChangeLocation      = "False"
+					$AVDHostPoolEnableDriveRedirectionCache     = "False"
+					$AVDHostPoolEnableZOrder                    = "False"
+				}
+			}
+			Else
+			{
+				#we don't inherit settings
+				#get the settings configured for this VDI Pool
+
+				#application session lingering
+				Switch ($AVDHostPool.Agent.DisconnectActiveSessionAfter)
+				{
+					0		{$AVDHostPoolDisconnectActiveSessionAfter = "Never"; Break}
+					1		{$AVDHostPoolDisconnectActiveSessionAfter = "1 minute"; Break}
+					5		{$AVDHostPoolDisconnectActiveSessionAfter = "5 minutes"; Break}
+					25		{$AVDHostPoolDisconnectActiveSessionAfter = "25 seconds"; Break}
+					60		{$AVDHostPoolDisconnectActiveSessionAfter = "1 minute"; Break}
+					300		{$AVDHostPoolDisconnectActiveSessionAfter = "5 minutes"; Break}
+					3600	{$AVDHostPoolDisconnectActiveSessionAfter = "1 hour"; Break}
+					Default	{$AVDHostPoolDisconnectActiveSessionAfter = "Unable to determine Application session lingering Disconnect active session timeout: $($AVDHostPool.Agent.DisconnectActiveSessionAfter)"; Break}
+				}
+				
+				Switch ($AVDHostPool.Agent.LogoffDisconnectedSessionAfter)
+				{
+					0		{$AVDHostPoolLogoffDisconnectedSessionAfter = "Never"; Break}
+					1		{$AVDHostPoolLogoffDisconnectedSessionAfter = "Immediate"; Break}
+					25		{$AVDHostPoolLogoffDisconnectedSessionAfter = "25 seconds"; Break}
+					60		{$AVDHostPoolLogoffDisconnectedSessionAfter = "1 minute"; Break}
+					300		{$AVDHostPoolLogoffDisconnectedSessionAfter = "5 minutes"; Break}
+					3600	{$AVDHostPoolLogoffDisconnectedSessionAfter = "1 hour"; Break}
+					Default	{$AVDHostPoolLogoffDisconnectedSessionAfter = "Unable to determine Application session lingering logoff disconnection session timeout: $($AVDHostPool.Agent.LogoffDisconnectedSessionAfter)"; Break}
+				}
+				
+				#Other settings
+				Switch ($AVDHostPool.Agent.SessionReadinessTimeout)
+				{
+					25		{$AVDHostPoolSessionReadinessTimeout = "25 seconds"; Break}
+					60		{$AVDHostPoolSessionReadinessTimeout = "1 minute"; Break}
+					300		{$AVDHostPoolSessionReadinessTimeout = "5 minutes"; Break}
+					3600	{$AVDHostPoolSessionReadinessTimeout = "1 hour"; Break}
+					Default	{$AVDHostPoolSessionReadinessTimeout = "Unable to determine session readiness timeout: $($AVDHostPool.Agent.SessionReadinessTimeout)"; Break}
+				}
+				
+				Switch($AVDHostPool.Agent.AllowURLAndMailRedirection)
+				{
+					"Disabled"						{$AVDHostPoolAllowClientURLMailRedirection = "Disabled"; 
+													 $AVDHostPoolReplaceRegisteredApplication = "False";
+													 $AVDHostPoolSupportShellURLNamespaceObjects = $AVDHostPool.Agent.SupportShellURLNamespaceObjects.ToString();
+													 Break}
+					"Enabled"						{$AVDHostPoolAllowClientURLMailRedirection = "Enabled"; 
+													 $AVDHostPoolReplaceRegisteredApplication = "False";
+													 $AVDHostPoolSupportShellURLNamespaceObjects = $AVDHostPool.Agent.SupportShellURLNamespaceObjects.ToString();
+													 Break}
+					"EnabledWithAppRegistration"	{$AVDHostPoolAllowClientURLMailRedirection = "Enabled";
+													 $AVDHostPoolReplaceRegisteredApplication = "True";
+													 $AVDHostPoolSupportShellURLNamespaceObjects = "N/A";
+													 Break}
+					Default 						{$AVDHostPoolAllowClientURLMailRedirection = "Unable to determine Allow client URL/Mail redirection: $($AVDHostPool.Agent.AllowURLAndMailRedirection)"; 
+													 $AVDHostPoolReplaceRegisteredApplication = "False";
+													 $AVDHostPoolSupportShellURLNamespaceObjects = "False";
+													 Break}
+				}
+				
+				Switch ($AVDHostPool.Agent.DragAndDropMode)
+				{
+					"Bidirectional"		{$AVDHostPoolDragAndDrop = "Bidirectional"; 
+										$AVDHostPoolAllowDragAndDrop = "True";
+										Break}
+					"ClientToServer"	{$AVDHostPoolDragAndDrop = "Client to server only"; 
+										$AVDHostPoolAllowDragAndDrop = "True";
+										Break}
+					"Disabled"			{$AVDHostPoolDragAndDrop = "Disabled"; 
+										$AVDHostPoolAllowDragAndDrop = "False";
+										Break}
+					"ServerToClient"	{$AVDHostPoolDragAndDrop = "Server to client only"; 
+										$AVDHostPoolAllowDragAndDrop = "True";
+										Break}
+					Default				{$AVDHostPoolDragAndDrop = "Unable to determine Drag and drop: $($AVDHostPool.Agent.DragAndDropMode)"; 
+										$AVDHostPoolAllowDragAndDrop = "False";
+										Break}
+				}
+				
+				If($AVDHostPool.Agent.AllowRemoteExec)
+				{
+					$AVDHostPoolAllowRemoteExec = "True"
+				}
+				Else
+				{
+					$AVDHostPoolAllowRemoteExec = "False"
+				}
+				
+				$AVDHostPoolManageRDPShortpath  = $AVDHostPool.Agent.ManageRDPShortpath.ToString()
+				$AVDHostPoolUseRDPShortpath     = $AVDHostPool.Agent.UseRDPShortpath.ToString()
+				$AVDHostPoolUseSmallerPortRange = $AVDHostPool.Agent.UseSmallerPortRange.ToString()
+				$AVDHostPoolMinRDPShortpathPort = $AVDHostPool.Agent.MinRDPShortpathPort.ToString()
+				$AVDHostPoolMaxRDPShortpathPort = $AVDHostPool.Agent.MaxRDPShortpathPort.ToString()
+
+				Switch ($AVDHostPool.Agent.FileTransferMode)
+				{
+					"Bidirectional"		{$AVDHostPoolFileTransferMode = "Bidirectional"; Break}
+					"ClientToServer"	{$AVDHostPoolFileTransferMode = "Client to server only"; Break}
+					"Disabled"			{$AVDHostPoolFileTransferMode = "Disabled"; Break}
+					"ServerToClient"	{$AVDHostPoolFileTransferMode = "Server to client only"; Break}
+					Default				{$AVDHostPoolFileTransferMode = "Unable to determine File Transfer mode: $($AVDHostPool.Agent.FileTransferMode)"; Break}
+				}
+
+				If($AVDHostPool.Agent.FileTransferLocation -eq "")
+				{
+					$AVDHostPoolFileTransferLocation = "Default download location"
+				}
+				Else
+				{
+					$AVDHostPoolFileTransferLocation = $AVDHostPool.Agent.FileTransferLocation
+				}
+				
+				$AVDHostPoolFileTransferChangeLocation  = $AVDHostPool.Agent.FileTransferLockLocation.ToString()
+				$AVDHostPoolEnableDriveRedirectionCache = $AVDHostPool.Agent.EnableDriveRedirectionCache.ToString()
+				$AVDHostPoolEnableZOrder                = $AVDHostPool.Agent.EnableZOrder.ToString()
+			}
+			
+			If($MSWord -or $PDF)
+			{
+				$ScriptInformation = New-Object System.Collections.ArrayList
+				$ScriptInformation.Add(@{Data = "Inherit default settings"; Value = $AVDHostPool.InheritDefaultAgentSettings.ToString(); }) > $Null
+				$ScriptInformation.Add(@{Data = "Application session lingering"; Value = ""; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Disconnect active session after"; Value = $AVDHostPoolDisconnectActiveSessionAfter; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Logoff disconnected session after"; Value = $AVDHostPoolLogoffDisconnectedSessionAfter; }) > $Null
+				$ScriptInformation.Add(@{Data = "Other settings"; Value = ""; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Session readiness timeout"; Value = $AVDHostPoolSessionReadinessTimeout; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Allow client URL/Mail redirection"; Value = $AVDHostPoolAllowClientURLMailRedirection; }) > $Null
+				$ScriptInformation.Add(@{Data = "          Replace registered application"; Value = $AVDHostPoolReplaceRegisteredApplication; }) > $Null
+				$ScriptInformation.Add(@{Data = "          Support Windows Shell URL namespace objects"; Value = $AVDHostPoolSupportShellURLNamespaceObjects; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Enable Drag and drop"; Value = $AVDHostPoolAllowDragandDrop; }) > $Null
+				$ScriptInformation.Add(@{Data = "          Direction"; Value = $AVDHostPoolDragAndDrop; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Allow 2xRemoteExec to send command to the client"; Value = $AVDHostPoolAllowRemoteExec; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Manage RDP Shortpath"; Value = $AVDHostPoolManageRDPShortpath; }) > $Null
+				If($AVDHostPoolManageRDPShortpath -eq "True")
+				{
+					$ScriptInformation.Add(@{Data = "          Use RDP Shortpath"; Value = $AVDHostPoolUseRDPShortpath; }) > $Null
+					If($AVDHostPoolUseRDPShortpath -eq "True")
+					{
+						$ScriptInformation.Add(@{Data = "          Use a smaller default range of ports"; Value = $AVDHostPoolUseSmallerPortRange; }) > $Null
+						If($AVDHostPoolUseSmallerPortRange -eq "True")
+						{
+							$ScriptInformation.Add(@{Data = ""; Value = "$($AVDHostPoolMinRDPShortpathPort) - $($AVDHostPoolMaxRDPShortpathPort)"; }) > $Null
+						}
+					}
+				}
+				$ScriptInformation.Add(@{Data = "     Allow file transfer command (Web and ChromeOS clients)"; Value = $AVDHostPoolFileTransferMode; }) > $Null
+				$ScriptInformation.Add(@{Data = "          Location"; Value = $AVDHostPoolFileTransferLocation; }) > $Null
+				$ScriptInformation.Add(@{Data = "          Do not allow to change location"; Value = $AVDHostPoolFileTransferChangeLocation; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Enable drive redirection cache"; Value = $AVDHostPoolEnableDriveRedirectionCache; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Enable Z-Order (Experimental)"; Value = $AVDHostPoolEnableZOrder; }) > $Null
+
+				$Table = AddWordTable -Hashtable $ScriptInformation `
+				-Columns Data,Value `
+				-List `
+				-Format $wdTableGrid `
+				-AutoFit $wdAutoFitFixed;
+
+				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+				$Table.Columns.Item(1).Width = 325;
+				$Table.Columns.Item(2).Width = 175;
+
+				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+				FindWordDocumentEnd
+				$Table = $Null
+				WriteWordLine 0 0 ""
+			}
+			If($Text)
+			{
+				Line 5 "Inherit default settings`t`t`t`t`t: " $AVDHostPool.InheritDefaultAgentSettings.ToString()
+				Line 5 "Application session lingering: " ""
+				Line 6 "Disconnect active session after`t`t`t`t: " $AVDHostPoolDisconnectActiveSessionAfter
+				Line 6 "Logoff disconnected session after`t`t`t: " $AVDHostPoolLogoffDisconnectedSessionAfter
+				Line 5 "Other settings: " ""
+				Line 6 "Session readiness timeout`t`t`t`t: " $AVDHostPoolSessionReadinessTimeout
+				Line 6 "Allow client URL/Mail redirection`t`t`t: " $AVDHostPoolAllowClientURLMailRedirection
+				Line 7 "Replace registered application`t`t`t: " $AVDHostPoolReplaceRegisteredApplication
+				Line 7 "Support Windows Shell URL namespace objects`t: " $AVDHostPoolSupportShellURLNamespaceObjects
+				Line 6 "Enable Drag and drop`t`t`t`t`t: " $AVDHostPoolAllowDragandDrop
+				Line 7 "Direction`t`t`t`t`t: " $AVDHostPoolDragAndDrop
+				Line 6 "Allow 2xRemoteExec to send command to the client`t: " $AVDHostPoolAllowRemoteExec
+				Line 6 "Manage RDP Shortpath`t`t`t`t`t: " $AVDHostPoolManageRDPShortpath
+				If($AVDHostPoolManageRDPShortpath -eq "True")
+				{
+					Line 7 "Use RDP Shortpath`t`t`t`t: " $AVDHostPoolUseRDPShortpath
+					If($AVDHostPoolUseRDPShortpath -eq "True")
+					{
+						Line 7 "Use a smaller default range of ports`t`t: " $AVDHostPoolUseSmallerPortRange
+						If($AVDHostPoolUseSmallerPortRange -eq "True")
+						{
+							Line 12 "  $($AVDHostPoolMinRDPShortpathPort) - $($AVDHostPoolMaxRDPShortpathPort)"
+						}
+					}
+				}
+				Line 6 "Allow file transfer command (Web and ChromeOS clients)`t: " $AVDHostPoolFileTransferMode
+				Line 7 "Location`t`t`t`t`t: "  $AVDHostPoolFileTransferLocation
+				Line 7 "Do not allow to change location`t`t`t: " $AVDHostPoolFileTransferChangeLocation
+				Line 6 "Enable drive redirection cache`t`t`t`t: " $AVDHostPoolEnableDriveRedirectionCache
+				Line 6 "Enable Z-Order (Experimental)`t`t`t`t: " $AVDHostPoolEnableZOrder
+				Line 0 ""
+			}
+			If($HTML)
+			{
+				$rowdata = @()
+				$columnHeaders = @("Inherit default settings",($Script:htmlsb),$AVDHostPool.InheritDefaultAgentSettings.ToString(),$htmlwhite)
+				$rowdata += @(,("Application session lingering",($Script:htmlsb),"",$htmlwhite))
+				$rowdata += @(,("     Disconnect active session after",($Script:htmlsb),$AVDHostPoolDisconnectActiveSessionAfter,$htmlwhite))
+				$rowdata += @(,("     Logoff disconnected session after",($Script:htmlsb),$AVDHostPoolLogoffDisconnectedSessionAfter,$htmlwhite))
+				$rowdata += @(,("Other settings",($Script:htmlsb),"",$htmlwhite))
+				$rowdata += @(,("     Session readiness timeout",($Script:htmlsb),$AVDHostPoolSessionReadinessTimeout,$htmlwhite))
+				$rowdata += @(,("     Allow client URL/Mail redirection",($Script:htmlsb),$AVDHostPoolAllowClientURLMailRedirection,$htmlwhite))
+				$rowdata += @(,("          Replace registered application",($Script:htmlsb),$AVDHostPoolReplaceRegisteredApplication,$htmlwhite))
+				$rowdata += @(,("          Support Windows Shell URL namespace objects",($Script:htmlsb),$AVDHostPoolSupportShellURLNamespaceObjects,$htmlwhite))
+				$rowdata += @(,("     Enable Drag and drop",($Script:htmlsb),$AVDHostPoolAllowDragandDrop,$htmlwhite))
+				$rowdata += @(,("          Direction",($Script:htmlsb),$AVDHostPoolDragAndDrop,$htmlwhite))
+				$rowdata += @(,("     Allow 2xRemoteExec to send command to the client",($Script:htmlsb),$AVDHostPoolAllowRemoteExec,$htmlwhite))
+				$rowdata += @(,("     Manage RDP Shortpath",($Script:htmlsb),$AVDHostPoolManageRDPShortpath,$htmlwhite))
+				If($AVDHostPoolManageRDPShortpath -eq "True")
+				{
+					$rowdata += @(,("          Use RDP Shortpath",($Script:htmlsb),$AVDHostPoolUseRDPShortpath,$htmlwhite))
+					If($AVDHostPoolUseRDPShortpath -eq "True")
+					{
+						$rowdata += @(,("          Use a smaller default range of ports",($Script:htmlsb),$AVDHostPoolUseSmallerPortRange,$htmlwhite))
+						If($AVDHostPoolUseSmallerPortRange -eq "True")
+						{
+							$rowdata += @(,("",($Script:htmlsb),"$($AVDHostPoolMinRDPShortpathPort) - $($AVDHostPoolMaxRDPShortpathPort)",$htmlwhite))
+						}
+					}
+				}
+				$rowdata += @(,("     Allow file transfer command (Web and ChromeOS clients)",($Script:htmlsb),$AVDHostPoolFileTransferMode,$htmlwhite))
+				$rowdata += @(,("          Location",($Script:htmlsb),$AVDHostPoolFileTransferLocation,$htmlwhite))
+				$rowdata += @(,("          Do not allow to change location",($Script:htmlsb),$AVDHostPoolFileTransferChangeLocation,$htmlwhite))
+				$rowdata += @(,("     Enable drive redirection cache",($Script:htmlsb),$AVDHostPoolEnableDriveRedirectionCache,$htmlwhite))
+				$rowdata += @(,("     Enable Z-Order (Experimental)",($Script:htmlsb),$AVDHostPoolEnableZOrder,$htmlwhite))
+
+				$msg = "Settings"
+				$columnWidths = @("400","200")
+				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+				WriteHTMLLine 0 0 ""
+			}
+
+			#RDP printer
+			If($MSword -or $PDF)
+			{
+				WriteWordLine 5 0 "RDP printer"
+			}
+			If($Text)
+			{
+				Line 4 "RDP printer"
+			}
+			If($HTML)
+			{
+				#nothing
+			}
+			
+			If($AVDHostPool.InheritDefaultRDPPrinterSettings)
+			{
+				#do we inherit group or site defaults?
+				#yes we do, get the default settings for the Site
+				#use the Site default settings
+				$AVDHostPoolDefaults = Get-RASAVDDefaultSettings -DefObjType AVDMultiSessionDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
+				
+				If($? -and $Null -ne $AVDHostPoolDefaults)
+				{
+					Switch ($AVDHostPoolDefaults.RDPPrinter.PrinterNameFormat)
+					{
+						"PrnFormat_PRN_CMP_SES"	{$AVDHostPoolPrinterNameFormat = "Printername (from Computername) in Session no."; Break}
+						"PrnFormat_SES_CMP_PRN"	{$AVDHostPoolPrinterNameFormat = "Session no. (Computername from) Printername"; Break}
+						"PrnFormat_PRN_REDSES"	{$AVDHostPoolPrinterNameFormat = "Printername (redirected Session no.)"; Break}
+						Default					{$AVDHostPoolPrinterNameFormat = "Unable to determine RDP Printer Name Format: $($AVDHostPoolDefaults.RDPPrinter.PrinterNameFormat)"; Break}
+					}
+					
+					$AVDHostPoolRemoveSessionNumberFromPrinterName = $AVDHostPoolDefaults.RDPPrinter.RemoveSessionNumberFromPrinterName.ToString()
+					$AVDHostPoolRemoveClientNameFromPrinterName    = $AVDHostPoolDefaults.RDPPrinter.RemoveClientNameFromPrinterName.ToString()
+				}
+				Else
+				{
+					#unable to retrieve default, use built-in default values
+					$AVDHostPoolPrinterNameFormat                  = "Printername (from Computername) in Session no."
+					$AVDHostPoolRemoveSessionNumberFromPrinterName = "False"
+					$AVDHostPoolRemoveClientNameFromPrinterName    = "False"
+				}
+			}
+			Else
+			{
+				#we don't inherit
+				#get the settings for the group
+				$AVDHostPoolDefaults = $AVDHostPool.RDPPrinter
+				Switch ($AVDHostPoolDefaults.PrinterNameFormat)
+				{
+					"PrnFormat_PRN_CMP_SES"	{$AVDHostPoolPrinterNameFormat = "Printername (from Computername) in Session no."; Break}
+					"PrnFormat_SES_CMP_PRN"	{$AVDHostPoolPrinterNameFormat = "Session no. (Computername from) Printername"; Break}
+					"PrnFormat_PRN_REDSES"	{$AVDHostPoolPrinterNameFormat = "Printername (redirected Session no.)"; Break}
+					Default					{$AVDHostPoolPrinterNameFormat = "Unable to determine RDP Printer Name Format: $($AVDHostPoolDefaults.PrinterNameFormat)"; Break}
+				}
+				
+				$AVDHostPoolRemoveSessionNumberFromPrinterName = $AVDHostPoolDefaults.RemoveSessionNumberFromPrinterName.ToString()
+				$AVDHostPoolRemoveClientNameFromPrinterName    = $AVDHostPoolDefaults.RemoveClientNameFromPrinterName.ToString()
+			}
+
+			If($MSWord -or $PDF)
+			{
+				$ScriptInformation = New-Object System.Collections.ArrayList
+				$ScriptInformation.Add(@{Data = "Inherit default settings"; Value = $AVDHostPool.InheritDefaultRDPPrinterSettings.ToString(); }) > $Null
+				$ScriptInformation.Add(@{Data = "RDP Printer Name Format"; Value = $AVDHostPoolPrinterNameFormat; }) > $Null
+				$ScriptInformation.Add(@{Data = "Remove session number from printer name"; Value = $AVDHostPoolRemoveSessionNumberFromPrinterName; }) > $Null
+				$ScriptInformation.Add(@{Data = "Remove client name from printer name"; Value = $AVDHostPoolRemoveClientNameFromPrinterName; }) > $Null
+
+				$Table = AddWordTable -Hashtable $ScriptInformation `
+				-Columns Data,Value `
+				-List `
+				-Format $wdTableGrid `
+				-AutoFit $wdAutoFitFixed;
+
+				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+				$Table.Columns.Item(1).Width = 250;
+				$Table.Columns.Item(2).Width = 250;
+
+				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+				FindWordDocumentEnd
+				$Table = $Null
+				WriteWordLine 0 0 ""
+			}
+			If($Text)
+			{
+				Line 5 "Inherit default settings`t`t`t`t: " $AVDHostPool.InheritDefaultRDPPrinterSettings.ToString()
+				Line 5 "RDP Printer Name Format`t`t`t`t`t: " $AVDHostPoolPrinterNameFormat
+				Line 5 "Remove session number from printer name`t`t`t: " $AVDHostPoolRemoveSessionNumberFromPrinterName
+				Line 5 "Remove client name from printer name`t`t`t: " $AVDHostPoolRemoveClientNameFromPrinterName
+				Line 0 ""
+			}
+			If($HTML)
+			{
+				$rowdata = @()
+				$columnHeaders = @("Inherit default settings",($Script:htmlsb),$AVDHostPool.InheritDefaultRDPPrinterSettings.ToString(),$htmlwhite)
+				$rowdata += @(,("RDP Printer Name Format",($Script:htmlsb),$AVDHostPoolPrinterNameFormat,$htmlwhite))
+				$rowdata += @(,("Remove session number from printer name",($Script:htmlsb),$AVDHostPoolRemoveSessionNumberFromPrinterName,$htmlwhite))
+				$rowdata += @(,("Remove client name from printer name",($Script:htmlsb),$AVDHostPoolRemoveClientNameFromPrinterName,$htmlwhite))
+
+				$msg = "RDP printer"
+				$columnWidths = @("300","275")
+				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+				WriteHTMLLine 0 0 ""
+			}
+
+			#Auto-upgrade
+			If($MSword -or $PDF)
+			{
+				WriteWordLine 5 0 "Auto-upgrade"
+			}
+			If($Text)
+			{
+				Line 4 "Auto-upgrade"
+			}
+			If($HTML)
+			{
+				#nothing
+			}
+
+			If($AVDHostPool.InheritDefaultAutoUpgradeSettings)
+			{
+				#do we inherit site defaults?
+				#yes we do, get the default settings for the Site
+				#use the Site default settings
+
+				<#
+					PS C:\Parallels-RAS-V19.x-Doc-Script-4.00> $AVDHostPoolDefaults.AutoUpgrade | % {$_.psobject.properties | select name, value | sort name}
+
+					Name                                   Value
+					----                                   -----
+					DrainModeDurationInSecs                  900
+					Enabled                                 True
+					ForceLogoffSessions                     True
+					Messages                                 {1}
+					Repeat                             EveryWeek
+					SpecificDays                           Never
+					StartDateTime           12/2/2025 7:24:26 PM
+
+
+					PS C:\Parallels-RAS-V19.x-Doc-Script-4.00>
+
+					PS C:\Parallels-RAS-V19.x-Doc-Script-4.00> $AVDHostPoolDefaults.AutoUpgrade.Messages | % {$_.psobject.properties | select name, value | sort name}
+
+					Name                                          Value
+					----                                          -----
+					Enabled                                        True
+					Id                                                1
+					Message      hey you! Get off the figgin' server!!!
+					MessageTitle         Message from RAS administrator
+					SendMsgSecs                                     900
+					SendMsgWhen                                  Before
+				#>
+
+				$AVDHostPoolDefaults = Get-RASAVDDefaultSettings -DefObjType AVDMultiSessionDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
+				
+				If($? -and $Null -ne $AVDHostPoolDefaults)
+				{
+					$AutoUpgradeEnabled = $AVDHostPoolDefaults.AutoUpgrade.Enabled.ToString()
+					
+					If($AVDHostPoolDefaults.AutoUpgrade.Enabled)
+					{
+						$AutoUpgradeDate    = $AVDHostPoolDefaults.AutoUpgrade.StartDateTime.ToShortDateString()
+						$AutoUpgradeStart   = $AVDHostPoolDefaults.AutoUpgrade.StartDateTime.ToLongTimeString()
+						Switch ($AVDHostPoolDefaults.AutoUpgrade.DrainModeDurationInSecs)
+						{
+							900		{$AutoUpgradeDrainModeDuration = "15 minutes"; Break}
+							1800	{$AutoUpgradeDrainModeDuration = "30 minutes"; Break}
+							2700	{$AutoUpgradeDrainModeDuration = "45 minutes"; Break}
+							3600	{$AutoUpgradeDrainModeDuration = "1 hour"; Break}
+							7200	{$AutoUpgradeDrainModeDuration = "2 hours"; Break}
+							10800	{$AutoUpgradeDrainModeDuration = "3 hours"; Break}
+							21600	{$AutoUpgradeDrainModeDuration = "6 hours"; Break}
+							43200	{$AutoUpgradeDrainModeDuration = "12 hours"; Break}
+							86400	{$AutoUpgradeDrainModeDuration = "1 day"; Break}
+							Default	{$AutoUpgradeDrainModeDuration = "Unable to determine Drain mode duration: $($AVDHostPoolDefaults.AutoUpgrade.DrainModeDurationInSecs)"; Break}
+						}
+						$AutoUpgradeForceLogoff = $AVDHostPoolDefaults.AutoUpgrade.ForceLogoffSessions.ToString()
+						Switch ($AVDHostPoolDefaults.AutoUpgrade.Repeat)
+						{
+							Never			{$AutoUpgradeRecur = "Never "; Break}
+							EveryDay		{$AutoUpgradeRecur = "Every day"; Break}
+							EveryWeek		{$AutoUpgradeRecur = "Every week"; Break}
+							Every2Weeks		{$AutoUpgradeRecur = "Every 2 weeks"; Break}
+							EveryMonth		{$AutoUpgradeRecur = "Every month"; Break}
+							EveryYear		{$AutoUpgradeRecur = "Every year"; Break}
+							SpecificDays	{$AutoUpgradeRecur = "Every $($AVDHostPoolDefaults.AutoUpgrade.SpecificDays)"; Break}
+							Default			{$AutoUpgradeRecur = "Unable to determine the Recur: $($AVDHostPoolDefaults.AutoUpgrade.Repeat)"; Break}
+						}
+						$AutoUpgradeMessages = $AVDHostPoolDefaults.AutoUpgrade.Messages
+					}
+					Else
+					{
+						$AutoUpgradeEnabled           = "False"
+						$AutoUpgradeDate              = ""
+						$AutoUpgradeStart             = ""
+						$AutoUpgradeDrainModeDuration = ""
+						$AutoUpgradeForceLogoff       = ""
+						$AutoUpgradeRecur             = ""
+						$AutoUpgradeMessages          = @()
+					}
+				}
+				Else
+				{
+					#unable to retrieve default, use built-in default values
+					$AutoUpgradeEnabled           = "False"
+					$AutoUpgradeDate              = ""
+					$AutoUpgradeStart             = ""
+					$AutoUpgradeDrainModeDuration = ""
+					$AutoUpgradeForceLogoff       = ""
+					$AutoUpgradeRecur             = ""
+					$AutoUpgradeMessages          = @()
+				}
+			}
+			Else
+			{
+				#we don't inherit
+				#get the settings for the host pool
+				$Results = Get-RASAutoUpgrade -Name $AVDHostPool.Name -SiteId $Site.Id -ObjType "AVDHostPool" -EA 0 4>$Null
+				
+				If(!($?) -or $Null -eq $Results)
+				{
+					$AutoUpgradeEnabled           = "False"
+					$AutoUpgradeDate              = ""
+					$AutoUpgradeStart             = ""
+					$AutoUpgradeDrainModeDuration = ""
+					$AutoUpgradeForceLogoff       = ""
+					$AutoUpgradeRecur             = ""
+					$AutoUpgradeMessages          = @()
+				}
+				Else
+				{
+					$AutoUpgradeEnabled = $Results.Enabled.ToString()
+					
+					If($Results.Enabled)
+					{
+						$AutoUpgradeDate    = $Results.StartDateTime.ToShortDateString()
+						$AutoUpgradeStart   = $Results.StartDateTime.ToLongTimeString()
+						Switch ($Results.DrainModeDurationInSecs)
+						{
+							900		{$AutoUpgradeDrainModeDuration = "15 minutes"; Break}
+							1800	{$AutoUpgradeDrainModeDuration = "30 minutes"; Break}
+							2700	{$AutoUpgradeDrainModeDuration = "45 minutes"; Break}
+							3600	{$AutoUpgradeDrainModeDuration = "1 hour"; Break}
+							7200	{$AutoUpgradeDrainModeDuration = "2 hours"; Break}
+							10800	{$AutoUpgradeDrainModeDuration = "3 hours"; Break}
+							21600	{$AutoUpgradeDrainModeDuration = "6 hours"; Break}
+							43200	{$AutoUpgradeDrainModeDuration = "12 hours"; Break}
+							86400	{$AutoUpgradeDrainModeDuration = "1 day"; Break}
+							Default	{$AutoUpgradeDrainModeDuration = "Unable to determine Drain mode duration: $($Results.DrainModeDurationInSecs)"; Break}
+						}
+						$AutoUpgradeForceLogoff = $Results.ForceLogoffSessions.ToString()
+						Switch ($Results.Repeat)
+						{
+							Never			{$AutoUpgradeRecur = "Never "; Break}
+							EveryDay		{$AutoUpgradeRecur = "Every day"; Break}
+							EveryWeek		{$AutoUpgradeRecur = "Every week"; Break}
+							Every2Weeks		{$AutoUpgradeRecur = "Every 2 weeks"; Break}
+							EveryMonth		{$AutoUpgradeRecur = "Every month"; Break}
+							EveryYear		{$AutoUpgradeRecur = "Every year"; Break}
+							SpecificDays	{$AutoUpgradeRecur = "Every $($Results.SpecificDays)"; Break}
+							Default			{$AutoUpgradeRecur = "Unable to determine the Recur: $($Results.Repeat)"; Break}
+						}
+						$AutoUpgradeMessages = $Results.Messages
+					}
+					Else
+					{
+						$AutoUpgradeEnabled           = "False"
+						$AutoUpgradeDate              = ""
+						$AutoUpgradeStart             = ""
+						$AutoUpgradeDrainModeDuration = ""
+						$AutoUpgradeForceLogoff       = ""
+						$AutoUpgradeRecur             = ""
+						$AutoUpgradeMessages          = @()
+					}
+				}
+			}
+			
+			If($MSWord -or $PDF)
+			{
+				$ScriptInformation = New-Object System.Collections.ArrayList
+				$ScriptInformation.Add(@{Data = "Inherit default settings"; Value = $AVDHostPool.InheritDefaultAutoUpgradeSettings.ToString(); }) > $Null
+				$ScriptInformation.Add(@{Data = "Enable auto-upgrade maintenance window"; Value = $AutoUpgradeEnabled; }) > $Null
+				If($AutoUpgradeEnabled -eq "True")
+				{
+					$ScriptInformation.Add(@{Data = "Date"; Value = $AutoUpgradeDate; }) > $Null
+					$ScriptInformation.Add(@{Data = "Start"; Value = $AutoUpgradeStart; }) > $Null
+					$ScriptInformation.Add(@{Data = "Drain mode duration"; Value = $AutoUpgradeDrainModeDuration; }) > $Null
+					$ScriptInformation.Add(@{Data = "Force logoff session at the end of the drain mode period"; Value = $AutoUpgradeForceLogoff; }) > $Null
+					$ScriptInformation.Add(@{Data = "Recur"; Value = $AutoUpgradeRecur; }) > $Null
+					$ScriptInformation.Add(@{Data = "Send message before maintenance window is triggered"; Value = ""; }) > $Null
+				}
+
+				If($AutoUpgradeMessages.Count -gt 0)
+				{
+					ForEach($Item in $AutoUpgradeMessages)
+					{
+						Switch ($Item.SendMsgSecs)
+						{
+							900		{$MsgTime = "15 minutes $($Item.SendMsgWhen)"; Break}
+							1800	{$MsgTime = "30 minutes $($Item.SendMsgWhen)"; Break}
+							2700	{$MsgTime = "45 minutes $($Item.SendMsgWhen)"; Break}
+							3600	{$MsgTime = "1 hour $($Item.SendMsgWhen)"; Break}
+							7200	{$MsgTime = "2 hours $($Item.SendMsgWhen)"; Break}
+							10800	{$MsgTime = "3 hours $($Item.SendMsgWhen)"; Break}
+							Default	{$MsgTime = "Unable to determine scheduled message Time: $($Item.SendMsgSecs)"; Break}
+						}
+						
+						$ScriptInformation.Add(@{Data = "     Enabled"; Value = $Item.Enabled.ToString(); }) > $Null
+						$ScriptInformation.Add(@{Data = "     Body"; Value = $Item.Message; }) > $Null
+						$ScriptInformation.Add(@{Data = "     Title"; Value = $Item.MessageTitle; }) > $Null
+						$ScriptInformation.Add(@{Data = "     Time"; Value = $MsgTime; }) > $Null
+						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+					}
+				}
+
+				$Table = AddWordTable -Hashtable $ScriptInformation `
+				-Columns Data,Value `
+				-List `
+				-Format $wdTableGrid `
+				-AutoFit $wdAutoFitFixed;
+
+				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
+				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+				$Table.Columns.Item(1).Width = 250;
+				$Table.Columns.Item(2).Width = 250;
+
+				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+				FindWordDocumentEnd
+				$Table = $Null
+				WriteWordLine 0 0 ""
+			}
+			If($Text)
+			{
+				Line 5 "Inherit default settings`t`t`t`t: " $AVDHostPool.InheritDefaultAutoUpgradeSettings.ToString()
+				Line 5 "Enable auto-upgrade maintenance window`t`t`t: " $AutoUpgradeEnabled
+				If($AutoUpgradeEnabled -eq "True")
+				{
+					Line 5 "Date`t`t`t`t`t`t`t: " $AutoUpgradeDate
+					Line 5 "Start`t`t`t`t`t`t`t: " $AutoUpgradeStart
+					Line 5 "Drain mode duration`t`t`t`t`t: " $AutoUpgradeDrainModeDuration
+					Line 5 "Force logoff session at the end of the drain mode period: " $AutoUpgradeForceLogoff
+					Line 5 "Recur`t`t`t`t`t`t`t: " $AutoUpgradeRecur
+					Line 5 "Send message before maintenance window is triggered"
+				}
+				
+				If($AutoUpgradeMessages.Count -gt 0)
+				{
+					ForEach($Item in $AutoUpgradeMessages)
+					{
+						Switch ($Item.SendMsgSecs)
+						{
+							900		{$MsgTime = "15 minutes $($Item.SendMsgWhen)"; Break}
+							1800	{$MsgTime = "30 minutes $($Item.SendMsgWhen)"; Break}
+							2700	{$MsgTime = "45 minutes $($Item.SendMsgWhen)"; Break}
+							3600	{$MsgTime = "1 hour $($Item.SendMsgWhen)"; Break}
+							7200	{$MsgTime = "2 hours $($Item.SendMsgWhen)"; Break}
+							10800	{$MsgTime = "3 hours $($Item.SendMsgWhen)"; Break}
+							Default	{$MsgTime = "Unable to determine scheduled message Time: $($Item.SendMsgSecs)"; Break}
+						}
+						
+						Line 6 "Enabled`t: " $Item.Enabled.ToString()
+						Line 6 "Body`t: " $Item.Message
+						Line 6 "Title`t: " $Item.MessageTitle
+						Line 6 "Time`t: " $MsgTime
+						Line 6 ""
+					}
+				}
+
+				Line 0 ""
+			}
+			If($HTML)
+			{
+				$rowdata = @()
+				$columnHeaders = @("Inherit default settings",($Script:htmlsb),$AVDHostPool.InheritDefaultAutoUpgradeSettings.ToString(),$htmlwhite)
+				$rowdata += @(,("Enable auto-upgrade maintenance window",($Script:htmlsb),$AutoUpgradeEnabled,$htmlwhite))
+				If($AutoUpgradeEnabled -eq "True")
+				{
+					$rowdata += @(,("Date",($Script:htmlsb),$AutoUpgradeDate,$htmlwhite))
+					$rowdata += @(,("Start",($Script:htmlsb),$AutoUpgradeStart,$htmlwhite))
+					$rowdata += @(,("Drain mode duration",($Script:htmlsb),$AutoUpgradeDrainModeDuration,$htmlwhite))
+					$rowdata += @(,("Force logoff session at the end of the drain mode period",($Script:htmlsb),$AutoUpgradeForceLogoff,$htmlwhite))
+					$rowdata += @(,("Recur",($Script:htmlsb),$AutoUpgradeRecur,$htmlwhite))
+					$rowdata += @(,("Send message before maintenance window is triggered",($Script:htmlsb),"",$htmlwhite))
+				}
+				
+				If($AutoUpgradeMessages.Count -gt 0)
+				{
+					ForEach($Item in $AutoUpgradeMessages)
+					{
+						Switch ($Item.SendMsgSecs)
+						{
+							900		{$MsgTime = "15 minutes $($Item.SendMsgWhen)"; Break}
+							1800	{$MsgTime = "30 minutes $($Item.SendMsgWhen)"; Break}
+							2700	{$MsgTime = "45 minutes $($Item.SendMsgWhen)"; Break}
+							3600	{$MsgTime = "1 hour $($Item.SendMsgWhen)"; Break}
+							7200	{$MsgTime = "2 hours $($Item.SendMsgWhen)"; Break}
+							10800	{$MsgTime = "3 hours $($Item.SendMsgWhen)"; Break}
+							Default	{$MsgTime = "Unable to determine scheduled message Time: $($Item.SendMsgSecs)"; Break}
+						}
+						
+						$rowdata += @(,("     Enabled",($Script:htmlsb),$Item.Enabled.ToString(),$htmlwhite))
+						$rowdata += @(,("     Body",($Script:htmlsb),$Item.Message,$htmlwhite))
+						$rowdata += @(,("     Title",($Script:htmlsb),$Item.MessageTitle,$htmlwhite))
+						$rowdata += @(,("     Time",($Script:htmlsb),$MsgTime,$htmlwhite))
+						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+					}
+				}
+
+				$msg = "Auto-upgrade"
+				$columnWidths = @("350","275")
+				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+				WriteHTMLLine 0 0 ""
+			}
+
+			#AVD Agent
+			If($MSword -or $PDF)
+			{
+				WriteWordLine 5 0 "AVD Agent"
+			}
+			If($Text)
+			{
+				Line 4 "AVD Agent"
+			}
+			If($HTML)
+			{
+				#nothing
+			}
+			<#
+				PS C:\Parallels-RAS-V19.x-Doc-Script-4.00> $AVDHostPool1.AVDAgent | fl
+
+
+				ScheduleAgentUpdates : False
+				LocalSessionTimeZone : True
+				TimeZone             :
+				ScheduleDay1         : Friday
+				ScheduleTime1        : h00
+				EnableSchedule2      : False
+				ScheduleDay2         : Monday
+				ScheduleTime2        : h00
+
+				ScheduleAgentUpdates : True
+				LocalSessionTimeZone : False
+				TimeZone             : (UTC-06:00) Central Time (US & Canada)
+				ScheduleDay1         : Monday
+				ScheduleTime1        : h01
+				EnableSchedule2      : True
+				ScheduleDay2         : Sunday
+				ScheduleTime2        : h02
+			#>
+			If($MSWord -or $PDF)
+			{
+				$ScriptInformation = New-Object System.Collections.ArrayList
+				If(!($AVDHostPool.AVDAgent.ScheduleAgentUpdates))
+				{
+					$ScriptInformation.Add(@{Data = "Scheduled Microsoft AVD agent updates"; Value = $AVDHostPool.AVDAgent.ScheduleAgentUpdates.ToString(); }) > $Null
+				}
+				Else
+				{
+					$ScriptInformation.Add(@{Data = "Scheduled Microsoft AVD agent updates"; Value = $AVDHostPool.AVDAgent.ScheduleAgentUpdates.ToString(); }) > $Null
+					Switch ($AVDHostPool.AVDAgent.ScheduleTime1)
+					{
+						"h00"	{$ScheduleTime1 = "12:00:00 AM"; Break}
+						"h01"	{$ScheduleTime1 = "01:00:00 AM"; Break}
+						"h02"	{$ScheduleTime1 = "02:00:00 AM"; Break}
+						"h03"	{$ScheduleTime1 = "03:00:00 AM"; Break}
+						"h04"	{$ScheduleTime1 = "04:00:00 AM"; Break}
+						"h05"	{$ScheduleTime1 = "05:00:00 AM"; Break}
+						"h06"	{$ScheduleTime1 = "06:00:00 AM"; Break}
+						"h07"	{$ScheduleTime1 = "07:00:00 AM"; Break}
+						"h08"	{$ScheduleTime1 = "08:00:00 AM"; Break}
+						"h09"	{$ScheduleTime1 = "09:00:00 AM"; Break}
+						"h10"	{$ScheduleTime1 = "10:00:00 AM"; Break}
+						"h11"	{$ScheduleTime1 = "11:00:00 AM"; Break}
+						"h12"	{$ScheduleTime1 = "12:00:00 PM"; Break}
+						"h13"	{$ScheduleTime1 = "01:00:00 PM"; Break}
+						"h14"	{$ScheduleTime1 = "02:00:00 PM"; Break}
+						"h15"	{$ScheduleTime1 = "03:00:00 PM"; Break}
+						"h16"	{$ScheduleTime1 = "04:00:00 PM"; Break}
+						"h17"	{$ScheduleTime1 = "05:00:00 PM"; Break}
+						"h18"	{$ScheduleTime1 = "06:00:00 PM"; Break}
+						"h19"	{$ScheduleTime1 = "07:00:00 PM"; Break}
+						"h20"	{$ScheduleTime1 = "08:00:00 PM"; Break}
+						"h21"	{$ScheduleTime1 = "09:00:00 PM"; Break}
+						"h21"	{$ScheduleTime1 = "10:00:00 PM"; Break}
+						"h23"	{$ScheduleTime1 = "11:00:00 PM"; Break}
+						Default {$ScheduleTime1 = "Unable to determine Schedule Time1: $($AVDHostPool.AVDAgent.ScheduleTime1)"; Break}
+					}
+					$ScriptInformation.Add(@{Data = "Use local session host time zone"; Value = $AVDHostPool.AVDAgent.LocalSessionTimeZone.ToString(); }) > $Null
+					If(!($AVDHostPool.AVDAgent.LocalSessionTimeZone))
+					{
+						$ScriptInformation.Add(@{Data = "Time zone"; Value = $AVDHostPool.AVDAgent.TimeZone; }) > $Null
+					}
+					$ScriptInformation.Add(@{Data = "Maintenance Window 1"; Value = ""; }) > $Null
+					$ScriptInformation.Add(@{Data = "     Day"; Value = $AVDHostPool.AVDAgent.ScheduleDay1.ToString(); }) > $Null
+					$ScriptInformation.Add(@{Data = "     Time"; Value = $ScheduleTime1; }) > $Null
+					$ScriptInformation.Add(@{Data = "Add an additional window"; Value = $AVDHostPool.AVDAgent.EnableSchedule2.ToString(); }) > $Null
+					If($AVDHostPool.AVDAgent.EnableSchedule2)
+					{
+						Switch ($AVDHostPool.AVDAgent.ScheduleTime2)
+						{
+							"h00"	{$ScheduleTime2 = "12:00:00 AM"; Break}
+							"h01"	{$ScheduleTime2 = "01:00:00 AM"; Break}
+							"h02"	{$ScheduleTime2 = "02:00:00 AM"; Break}
+							"h03"	{$ScheduleTime2 = "03:00:00 AM"; Break}
+							"h04"	{$ScheduleTime2 = "04:00:00 AM"; Break}
+							"h05"	{$ScheduleTime2 = "05:00:00 AM"; Break}
+							"h06"	{$ScheduleTime2 = "06:00:00 AM"; Break}
+							"h07"	{$ScheduleTime2 = "07:00:00 AM"; Break}
+							"h08"	{$ScheduleTime2 = "08:00:00 AM"; Break}
+							"h09"	{$ScheduleTime2 = "09:00:00 AM"; Break}
+							"h10"	{$ScheduleTime2 = "10:00:00 AM"; Break}
+							"h11"	{$ScheduleTime2 = "11:00:00 AM"; Break}
+							"h12"	{$ScheduleTime2 = "12:00:00 PM"; Break}
+							"h13"	{$ScheduleTime2 = "01:00:00 PM"; Break}
+							"h14"	{$ScheduleTime2 = "02:00:00 PM"; Break}
+							"h15"	{$ScheduleTime2 = "03:00:00 PM"; Break}
+							"h16"	{$ScheduleTime2 = "04:00:00 PM"; Break}
+							"h17"	{$ScheduleTime2 = "05:00:00 PM"; Break}
+							"h18"	{$ScheduleTime2 = "06:00:00 PM"; Break}
+							"h19"	{$ScheduleTime2 = "07:00:00 PM"; Break}
+							"h20"	{$ScheduleTime2 = "08:00:00 PM"; Break}
+							"h21"	{$ScheduleTime2 = "09:00:00 PM"; Break}
+							"h21"	{$ScheduleTime2 = "10:00:00 PM"; Break}
+							"h23"	{$ScheduleTime2 = "11:00:00 PM"; Break}
+							Default {$ScheduleTime2 = "Unable to determine Schedule Time2: $($AVDHostPool.AVDAgent.ScheduleTime2)"; Break}
+						}
+						$ScriptInformation.Add(@{Data = "     Day"; Value = $AVDHostPool.AVDAgent.ScheduleDay2.ToString(); }) > $Null
+						$ScriptInformation.Add(@{Data = "     Time"; Value = $ScheduleTime2; }) > $Null
+					}
+				}
+
+				$Table = AddWordTable -Hashtable $ScriptInformation `
+				-Columns Data,Value `
+				-List `
+				-Format $wdTableGrid `
+				-AutoFit $wdAutoFitFixed;
+
+				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+				$Table.Columns.Item(1).Width = 200;
+				$Table.Columns.Item(2).Width = 250;
+
+				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+				FindWordDocumentEnd
+				$Table = $Null
+				WriteWordLine 0 0 ""
+			}
+			If($Text)
+			{
+				If(!($AVDHostPool.AVDAgent.ScheduleAgentUpdates))
+				{
+					Line 5 "Scheduled Microsoft AVD agent updates`t: " $AVDHostPool.AVDAgent.ScheduleAgentUpdates.ToString()
+				}
+				Else
+				{
+					Line 5 "Scheduled Microsoft AVD agent updates`t: " $AVDHostPool.AVDAgent.ScheduleAgentUpdates.ToString()
+					Switch ($AVDHostPool.AVDAgent.ScheduleTime1)
+					{
+						"h00"	{$ScheduleTime1 = "12:00:00 AM"; Break}
+						"h01"	{$ScheduleTime1 = "01:00:00 AM"; Break}
+						"h02"	{$ScheduleTime1 = "02:00:00 AM"; Break}
+						"h03"	{$ScheduleTime1 = "03:00:00 AM"; Break}
+						"h04"	{$ScheduleTime1 = "04:00:00 AM"; Break}
+						"h05"	{$ScheduleTime1 = "05:00:00 AM"; Break}
+						"h06"	{$ScheduleTime1 = "06:00:00 AM"; Break}
+						"h07"	{$ScheduleTime1 = "07:00:00 AM"; Break}
+						"h08"	{$ScheduleTime1 = "08:00:00 AM"; Break}
+						"h09"	{$ScheduleTime1 = "09:00:00 AM"; Break}
+						"h10"	{$ScheduleTime1 = "10:00:00 AM"; Break}
+						"h11"	{$ScheduleTime1 = "11:00:00 AM"; Break}
+						"h12"	{$ScheduleTime1 = "12:00:00 PM"; Break}
+						"h13"	{$ScheduleTime1 = "01:00:00 PM"; Break}
+						"h14"	{$ScheduleTime1 = "02:00:00 PM"; Break}
+						"h15"	{$ScheduleTime1 = "03:00:00 PM"; Break}
+						"h16"	{$ScheduleTime1 = "04:00:00 PM"; Break}
+						"h17"	{$ScheduleTime1 = "05:00:00 PM"; Break}
+						"h18"	{$ScheduleTime1 = "06:00:00 PM"; Break}
+						"h19"	{$ScheduleTime1 = "07:00:00 PM"; Break}
+						"h20"	{$ScheduleTime1 = "08:00:00 PM"; Break}
+						"h21"	{$ScheduleTime1 = "09:00:00 PM"; Break}
+						"h21"	{$ScheduleTime1 = "10:00:00 PM"; Break}
+						"h23"	{$ScheduleTime1 = "11:00:00 PM"; Break}
+						Default {$ScheduleTime1 = "Unable to determine Schedule Time1: $($AVDHostPool.AVDAgent.ScheduleTime1)"; Break}
+					}
+					Line 5 "Use local session host time zone`t: " $AVDHostPool.AVDAgent.LocalSessionTimeZone.ToString()
+					If(!($AVDHostPool.AVDAgent.LocalSessionTimeZone))
+					{
+						Line 5 "Time zone`t`t`t`t: " $AVDHostPool.AVDAgent.TimeZone
+					}
+					Line 5 "Maintenance Window 1"
+					Line 6 "Day`t: " $AVDHostPool.AVDAgent.ScheduleDay1.ToString()
+					Line 6 "Time`t: " $ScheduleTime1
+					Line 5 "Add an additional window: " $AVDHostPool.AVDAgent.EnableSchedule2.ToString()
+					If($AVDHostPool.AVDAgent.EnableSchedule2)
+					{
+						Switch ($AVDHostPool.AVDAgent.ScheduleTime2)
+						{
+							"h00"	{$ScheduleTime2 = "12:00:00 AM"; Break}
+							"h01"	{$ScheduleTime2 = "01:00:00 AM"; Break}
+							"h02"	{$ScheduleTime2 = "02:00:00 AM"; Break}
+							"h03"	{$ScheduleTime2 = "03:00:00 AM"; Break}
+							"h04"	{$ScheduleTime2 = "04:00:00 AM"; Break}
+							"h05"	{$ScheduleTime2 = "05:00:00 AM"; Break}
+							"h06"	{$ScheduleTime2 = "06:00:00 AM"; Break}
+							"h07"	{$ScheduleTime2 = "07:00:00 AM"; Break}
+							"h08"	{$ScheduleTime2 = "08:00:00 AM"; Break}
+							"h09"	{$ScheduleTime2 = "09:00:00 AM"; Break}
+							"h10"	{$ScheduleTime2 = "10:00:00 AM"; Break}
+							"h11"	{$ScheduleTime2 = "11:00:00 AM"; Break}
+							"h12"	{$ScheduleTime2 = "12:00:00 PM"; Break}
+							"h13"	{$ScheduleTime2 = "01:00:00 PM"; Break}
+							"h14"	{$ScheduleTime2 = "02:00:00 PM"; Break}
+							"h15"	{$ScheduleTime2 = "03:00:00 PM"; Break}
+							"h16"	{$ScheduleTime2 = "04:00:00 PM"; Break}
+							"h17"	{$ScheduleTime2 = "05:00:00 PM"; Break}
+							"h18"	{$ScheduleTime2 = "06:00:00 PM"; Break}
+							"h19"	{$ScheduleTime2 = "07:00:00 PM"; Break}
+							"h20"	{$ScheduleTime2 = "08:00:00 PM"; Break}
+							"h21"	{$ScheduleTime2 = "09:00:00 PM"; Break}
+							"h21"	{$ScheduleTime2 = "10:00:00 PM"; Break}
+							"h23"	{$ScheduleTime2 = "11:00:00 PM"; Break}
+							Default {$ScheduleTime2 = "Unable to determine Schedule Time2: $($AVDHostPool.AVDAgent.ScheduleTime2)"; Break}
+						}
+						Line 6 "Day`t: " $AVDHostPool.AVDAgent.ScheduleDay2.ToString()
+						Line 6 "Time`t: " $ScheduleTime2
+					}
+				}
+				Line 0 ""
+			}
+			If($HTML)
+			{
+				$rowdata = @()
+				If(!($AVDHostPool.AVDAgent.ScheduleAgentUpdates))
+				{
+					$columnHeaders = @("Scheduled Microsoft AVD agent updates",($Script:htmlsb),$AVDHostPool.AVDAgent.ScheduleAgentUpdates.ToString(),$htmlwhite)
+				}
+				Else
+				{
+					$columnHeaders = @("Scheduled Microsoft AVD agent updates",($Script:htmlsb),$AVDHostPool.AVDAgent.ScheduleAgentUpdates.ToString(),$htmlwhite)
+					Switch ($AVDHostPool.AVDAgent.ScheduleTime1)
+					{
+						"h00"	{$ScheduleTime1 = "12:00:00 AM"; Break}
+						"h01"	{$ScheduleTime1 = "01:00:00 AM"; Break}
+						"h02"	{$ScheduleTime1 = "02:00:00 AM"; Break}
+						"h03"	{$ScheduleTime1 = "03:00:00 AM"; Break}
+						"h04"	{$ScheduleTime1 = "04:00:00 AM"; Break}
+						"h05"	{$ScheduleTime1 = "05:00:00 AM"; Break}
+						"h06"	{$ScheduleTime1 = "06:00:00 AM"; Break}
+						"h07"	{$ScheduleTime1 = "07:00:00 AM"; Break}
+						"h08"	{$ScheduleTime1 = "08:00:00 AM"; Break}
+						"h09"	{$ScheduleTime1 = "09:00:00 AM"; Break}
+						"h10"	{$ScheduleTime1 = "10:00:00 AM"; Break}
+						"h11"	{$ScheduleTime1 = "11:00:00 AM"; Break}
+						"h12"	{$ScheduleTime1 = "12:00:00 PM"; Break}
+						"h13"	{$ScheduleTime1 = "01:00:00 PM"; Break}
+						"h14"	{$ScheduleTime1 = "02:00:00 PM"; Break}
+						"h15"	{$ScheduleTime1 = "03:00:00 PM"; Break}
+						"h16"	{$ScheduleTime1 = "04:00:00 PM"; Break}
+						"h17"	{$ScheduleTime1 = "05:00:00 PM"; Break}
+						"h18"	{$ScheduleTime1 = "06:00:00 PM"; Break}
+						"h19"	{$ScheduleTime1 = "07:00:00 PM"; Break}
+						"h20"	{$ScheduleTime1 = "08:00:00 PM"; Break}
+						"h21"	{$ScheduleTime1 = "09:00:00 PM"; Break}
+						"h21"	{$ScheduleTime1 = "10:00:00 PM"; Break}
+						"h23"	{$ScheduleTime1 = "11:00:00 PM"; Break}
+						Default {$ScheduleTime1 = "Unable to determine Schedule Time1: $($AVDHostPool.AVDAgent.ScheduleTime1)"; Break}
+					}
+					$rowdata += @(,( "Use local session host time zone",($Script:htmlsb), $AVDHostPool.AVDAgent.LocalSessionTimeZone.ToString(),$htmlwhite))
+					If(!($AVDHostPool.AVDAgent.LocalSessionTimeZone))
+					{
+						$rowdata += @(,( "Time zone",($Script:htmlsb), $AVDHostPool.AVDAgent.TimeZone,$htmlwhite))
+					}
+					$rowdata += @(,( "Maintenance Window 1",($Script:htmlsb), "",$htmlwhite))
+					$rowdata += @(,( "     Day",($Script:htmlsb), $AVDHostPool.AVDAgent.ScheduleDay1.ToString(),$htmlwhite))
+					$rowdata += @(,( "     Time",($Script:htmlsb), $ScheduleTime1,$htmlwhite))
+					$rowdata += @(,( "Add an additional window",($Script:htmlsb), $AVDHostPool.AVDAgent.EnableSchedule2.ToString(),$htmlwhite))
+					If($AVDHostPool.AVDAgent.EnableSchedule2)
+					{
+						Switch ($AVDHostPool.AVDAgent.ScheduleTime2)
+						{
+							"h00"	{$ScheduleTime2 = "12:00:00 AM"; Break}
+							"h01"	{$ScheduleTime2 = "01:00:00 AM"; Break}
+							"h02"	{$ScheduleTime2 = "02:00:00 AM"; Break}
+							"h03"	{$ScheduleTime2 = "03:00:00 AM"; Break}
+							"h04"	{$ScheduleTime2 = "04:00:00 AM"; Break}
+							"h05"	{$ScheduleTime2 = "05:00:00 AM"; Break}
+							"h06"	{$ScheduleTime2 = "06:00:00 AM"; Break}
+							"h07"	{$ScheduleTime2 = "07:00:00 AM"; Break}
+							"h08"	{$ScheduleTime2 = "08:00:00 AM"; Break}
+							"h09"	{$ScheduleTime2 = "09:00:00 AM"; Break}
+							"h10"	{$ScheduleTime2 = "10:00:00 AM"; Break}
+							"h11"	{$ScheduleTime2 = "11:00:00 AM"; Break}
+							"h12"	{$ScheduleTime2 = "12:00:00 PM"; Break}
+							"h13"	{$ScheduleTime2 = "01:00:00 PM"; Break}
+							"h14"	{$ScheduleTime2 = "02:00:00 PM"; Break}
+							"h15"	{$ScheduleTime2 = "03:00:00 PM"; Break}
+							"h16"	{$ScheduleTime2 = "04:00:00 PM"; Break}
+							"h17"	{$ScheduleTime2 = "05:00:00 PM"; Break}
+							"h18"	{$ScheduleTime2 = "06:00:00 PM"; Break}
+							"h19"	{$ScheduleTime2 = "07:00:00 PM"; Break}
+							"h20"	{$ScheduleTime2 = "08:00:00 PM"; Break}
+							"h21"	{$ScheduleTime2 = "09:00:00 PM"; Break}
+							"h21"	{$ScheduleTime2 = "10:00:00 PM"; Break}
+							"h23"	{$ScheduleTime2 = "11:00:00 PM"; Break}
+							Default {$ScheduleTime2 = "Unable to determine Schedule Time2: $($AVDHostPool.AVDAgent.ScheduleTime2)"; Break}
+						}
+						$rowdata += @(,( "     Day",($Script:htmlsb), $AVDHostPool.AVDAgent.ScheduleDay2.ToString(),$htmlwhite))
+						$rowdata += @(,( "     Time",($Script:htmlsb), $ScheduleTime2,$htmlwhite))
+					}
+				}
+				
+				$msg = "AVD Agent"
+				$columnWidths = @("250","275")
+				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+				WriteHTMLLine 0 0 ""
+			}
 		}
 	}
+
+	#Templates
+	Write-Verbose "$(Get-Date -Format G): `tOutput Azure Virtual Desktop Templates"
+
+	If($MSWord -or $PDF)
+	{
+		WriteWordLine 3 0 "Templates"
+	}
+	If($Text)
+	{
+		Line 2 "Templates"
+	}
+	If($HTML)
+	{
+		WriteHTMLLine 3 0 "Templates"
+	}
+
+
+
+	#Hosts
+	Write-Verbose "$(Get-Date -Format G): `tOutput Azure Virtual Desktop Hosts"
+
+	If($MSWord -or $PDF)
+	{
+		WriteWordLine 3 0 "Hosts"
+	}
+	If($Text)
+	{
+		Line 2 "Hosts"
+	}
+	If($HTML)
+	{
+		WriteHTMLLine 3 0 "Hosts"
+	}
+
+
+	#Scheduler
+	Write-Verbose "$(Get-Date -Format G): `tOutput Azure Virtual Desktop Scheduler"
+
+	If($MSWord -or $PDF)
+	{
+		WriteWordLine 3 0 "Scheduler"
+	}
+	If($Text)
+	{
+		Line 2 "Scheduler"
+	}
+	If($HTML)
+	{
+		WriteHTMLLine 3 0 "Scheduler"
+	}
+
 }
 
 Function OutputRemotePCDetails
@@ -66064,8 +66247,8 @@ ProcessScriptEnd
 # SIG # Begin signature block
 # MIIthQYJKoZIhvcNAQcCoIItdjCCLXICAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUum/1/T7QEAsN1wWDzER0s5It
-# gCqggibfMIIFjTCCBHWgAwIBAgIQDpsYjvnQLefv21DiCEAYWjANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUAtiodnqSEzWrUM2wq3uRJmNx
+# 8rKggibfMIIFjTCCBHWgAwIBAgIQDpsYjvnQLefv21DiCEAYWjANBgkqhkiG9w0B
 # AQwFADBlMQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYD
 # VQQLExB3d3cuZGlnaWNlcnQuY29tMSQwIgYDVQQDExtEaWdpQ2VydCBBc3N1cmVk
 # IElEIFJvb3QgQ0EwHhcNMjIwODAxMDAwMDAwWhcNMzExMTA5MjM1OTU5WjBiMQsw
@@ -66276,33 +66459,33 @@ ProcessScriptEnd
 # UzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/BgNVBAMTOERpZ2lDZXJ0IFRy
 # dXN0ZWQgRzQgQ29kZSBTaWduaW5nIFJTQTQwOTYgU0hBMzg0IDIwMjEgQ0ExAhAL
 # bN+2Z4EOKufLWhG6HUlwMAkGBSsOAwIaBQCgQDAZBgkqhkiG9w0BCQMxDAYKKwYB
-# BAGCNwIBBDAjBgkqhkiG9w0BCQQxFgQUrdcifZQQD+HbYRnUQ5IM56VhpQswDQYJ
-# KoZIhvcNAQEBBQAEggIAYSi9VpI0qhQ5Ptbl7xWME3Fli/X+q+8htaulSXvxLpFG
-# 6nabcdc6vwnq+h2/Rl/sLszhgZ1ZGdTN1TpL9H4RjI3jBZ2ANvHcijgHK8LcXNsp
-# h4bZXsgdsmEDKzPFdQSkZlzO/xwpV5ZsJmzkR2SA1wQ+thyaalTnASSQI8w2LexW
-# 3EdHiZyUuC3p8IRLCrsv3+opjfucs8wfzmyGgOyRysXSSuDjfqDt9SAfNYkB23ud
-# nfvA8CuDZApiPvI/og8WnfbWVQt03hVk+MmoVN9EqI1TvmVhN+7csTCgC7Q3AI/M
-# RrV7dbbvBLY4Nmb4Q4OvIjmONUEDv0bUZhzffh6vV5ZJwh3PIMCfqUtBIQiMrhv6
-# LPr0o7fOTbtIVmu98/oZoXxTA2HN9ha/kbATXMyEv+YGKf7yqJPm7N+45CAWlS5z
-# jeAUKt8kHebbuy5bLbMlgFID3glWPUG0dcOTlSVNbtJKj7r0A+ybAexMBhwXGFo8
-# o6HvP6B2a6me6kMAjFjkvRcsXNIDov0TUaYmOIzs8pPLF5TLZKqmjO3v35BJ1Igl
-# hhNZpxnmUxScttlHFIdPZYKYUVGZ8K10iQK44TxWwlrBnj/YrWCTrvkMOEhwdSgR
-# /b9wv1DcIzar6xRyUXON02UbFqCp29k59z70gArQDY+bGdNfsRTH08qJoqaJPnuh
+# BAGCNwIBBDAjBgkqhkiG9w0BCQQxFgQUccgSxN3lgpmsFowFZ9ka4L4FdtUwDQYJ
+# KoZIhvcNAQEBBQAEggIAieUwmJMRJBJUdlBLDoQ2OPZ2A9Bd8Y2Tj+fcThs+atT+
+# Buh1l60QpcbdaTdzczC/sNSobIbsuGnc2Yrdxwp/eZTny16I2nlYNwohcT6vg8av
+# kaThN4RN1S3SZwtYg6hDA0lLnvYlyTCATTl6HDjkFD3mV2vdO7SKE/mBb43oPg4V
+# jRfI15BTQSVPq31a3BHyXZc6YeQT24B3IUOg1Ku9z13eA2BwffsgTDhtkbmonifX
+# yO7hUXwTITog/GpQA7xgQUh8Mvejuup5kBHdL/jzdGjFEgr8Fzf7L5l8Ar6uw01e
+# Lr0qrywLDwhV8/zALDzPinMskjGTD4oLPmdvMe5/1dg587tTN5aHG9L56zWWVhMn
+# TxiokrUpwM5oT1gXYt4bS1IxVoJsWCqBj0K5ltFoAPPsqAFusyu7iwJsLIppInun
+# NYpsj+SVGBcIftzLYlNfdwsseAbLtBGVdbjhCk9mcOaictWrTDTeG4OuGELjbW/1
+# 2LkCuG+P2DsIG0SKsya+4C7BGBgKkKNo0/HDzvoWn0cpI4lgQaH5rlunZwh5OqM4
+# nP2s2PeIWdtek+84QMmXjevcG92eimIlBAGxxEeGDvNC7vo/hh8KZ/aSrT2h/nzm
+# i7kPgkYjXyxdwDBhXO6xkn8Z7MbxVBPHy7K7Xwn+BISomgHo8TS5n4olfCVW8ySh
 # ggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8CAQEwfTBpMQswCQYDVQQGEwJVUzEX
 # MBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/BgNVBAMTOERpZ2lDZXJ0IFRydXN0
 # ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYgU0hBMjU2IDIwMjUgQ0ExAhAKgO8Y
 # S43xBYLRxHanlXRoMA0GCWCGSAFlAwQCAQUAoGkwGAYJKoZIhvcNAQkDMQsGCSqG
-# SIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjUxMjEyMTM0MTEzWjAvBgkqhkiG9w0B
-# CQQxIgQgiYzg9A2y58vf5jvDStg8bp4YrU/9uWnZ2y7RCVaKR9AwDQYJKoZIhvcN
-# AQEBBQAEggIAInvZh64qPGT0UPuUfXR7KYWAaxSQtzUZn+QXOf09FxbmTxP7B2zV
-# GGkgt5guaGnmiOhywKp6oXf18ttgHFkNHSXPEoARlR7ddOFMmrMWC27dDwGiRnjw
-# tC1A+hP/0rGEgzq+Dt2rad82FdozqvlIwjEYib8SiiIdBCxlqi6XahxtZqFP3w46
-# 65Hlw//HKVUQ1XucsB7PSbxo3yzv8LnhliCP9C2zD45jTU1nKXtPdo5Tnfk/8UMp
-# gU5rJiL30ivAQWF8f3w4Fh9ZtMVwHAT/UBqW3NWxtCUmkpUrOAzruIssL5WpgvM0
-# 2ujq2/0qIuhdVIjX3CHJHiNJebe943HflWxXvWRzuYcbubAZkPIRN5AVv+kmW9Lp
-# s84GH9Z2tvk8O8W4aNtPZBHsLhbx1EE+FafImWhbylo2e56DpfmKIW8G0inaL2hz
-# bliBcgha7ArQwhBMm78oNfODEVxq2lxww+P6VFdAt1BW6Hc8g0+XwMMK/KPxi6Gz
-# LUbb4WC7ynu0tCLwgtarWJykw4hzO9hsu7lTx/VbUMoD8sfV0TFPPhLMQ68BC6ZL
-# PG52Q8AeWg1D8p95KT3nI5aSdEztgV2kSyjG6+71Pf2YmRkTaZC21NvawlmivhSW
-# CSm/ZWOxq051thOWf8TPnlG5LbThzJprKdmpUqo2P56q7Yn+bG5U+us=
+# SIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjUxMjE1MTQ1NjIzWjAvBgkqhkiG9w0B
+# CQQxIgQgyBNwMNXC1SXmOU3Xy1gMl5RFRbYbKlxNKyhdTjKN4qkwDQYJKoZIhvcN
+# AQEBBQAEggIAmG7YZi8PekUEIclwED/iwLpc88CWiCs8SfKNcX9VDLxD1aQN3kXh
+# gz2VcMz5LZqGu6/QQjTTQcHAm2hkKyGknk6oKGKZdfknhXartZTngVjpzka2hlvP
+# M7v7c3vhFLUeOy43NfdK1ESBzKSEtryeyjoG56X5bIyQ8at63GfXv85hEcOCOP6+
+# fiTdNcoMn3SW4EadPSayYHTZOCbBRQxUCwhZhKuLfjrJ7rT4L/buJG2zNHyFD+T8
+# HvWe6dUsXVgFZBxGjpOxOauYeHWOQUFS7KjKULE5xWFJr3rnQlfdNlFl2tNXxD0+
+# Zb8d95W+NDTJkVIHav/O1HoHsntroKJPH8tPyWQyhP3BZYL8ewCIv2n0Uy3o4/5e
+# QLqzFxYZnpO2oBZtWtlWCsGqhMwBJi3lc6TiU7+H6G3Ff7pLe5ZOknHNSJRii5kk
+# n97T/7W/tKJ4ujRvzJ2qjsPeXkV7q+lOxDAZE8DHVfXgrPpO72HFiZBc5PkqWoxO
+# aw5etueTzpue/L1jrefwZkZ7V+uF8BCVShBJPAHOJ9Z9aTlw7w+pCpAoxMD4sCDy
+# 0Hje+ohCeflVMsPKU7ISrn7bwUCBfqn3ZMuEqtvXoCfMATTEkoxKDmf2fEzzHvg1
+# LyLWHfpLf6L7qD7SJP5n/DVFo0Zfc5JtzJ9KVPvN6Zpe9iDGT3NyN+E=
 # SIG # End signature block

@@ -53,6 +53,7 @@
 #			General
 #		Host pools
 #			General
+#			Hosts
 #			Configuration
 #			Template
 #			Provisioning
@@ -63,6 +64,9 @@
 #			RDP printer
 #			Auto-upgrade
 #			AVD Agent
+#		Templates (placeholder for now)
+#		Hosts (placeholder for now)
+#		Scheduler (placeholder for now)
 #
 #	In Function OutputLogonHours
 #		Add General data
