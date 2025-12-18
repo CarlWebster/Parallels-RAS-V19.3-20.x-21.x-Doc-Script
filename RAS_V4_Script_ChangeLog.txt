@@ -69,8 +69,8 @@
 #			Hosts
 #			Preparation
 #			Optimization
-#		Hosts (placeholder for now)
-#		Scheduler (placeholder for now)
+#		Hosts
+#		Scheduler
 #
 #	In Function OutputLogonHours
 #		Add General data
@@ -177,6 +177,7 @@
 #		Add Auto-upgrade
 #		Changed Get-RASVDIHostStatus -Name $VDIPool.Name to Get-RASVDIHostPoolStatus -Name $VDIPool.Name -SiteId $Site.Id
 #		Fixed bug in processing the variable $AppPackagesAssigned.ApplicationPackagesAssigned with the help of Guy Leech
+#		For the Scheduler section, fixed many missing items and numerous other bugs
 #		For RDS Hosts details, rename "Agent settings" to "Settings, and move to after Desktop access
 #		In Optimization, for Windows Services, 
 #			Add a call to Get-Service to get the Display Name
