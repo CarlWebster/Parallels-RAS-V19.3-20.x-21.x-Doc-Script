@@ -24,7 +24,7 @@
 #			OutputThemesDetails
 #			OutputCertificatesDetails
 #			OutputApplicationPackagesDetails
-#			OutputSettingsDetails
+#			OutputSiteSettingsDetails
 #		OutputLogonHours
 #
 #	Clean up some console output
@@ -146,7 +146,12 @@
 #			Permissions
 #			Receive system notifications
 #
-#	In Function OutputRASFeatures
+#	In Function OutputRASClientSettings
+#		Add Enum for Published application icons
+#		Add Force session reset on logon from Parallels Client
+#
+#	In Function OutputRASAdminFeatures
+#		Rename function from Function OutputRASFeatures to OutputRASAdminFeatures to separate it from the Site Features
 #		Rename variable $RASFeatures to $RASHelpdesk
 #		Add variable $RASSupport
 #		Change function to use two parameters: $RASHelpdesk and $RASSupport
@@ -158,6 +163,9 @@
 #
 #	In Function OutputRASMailboxSettings, 
 #		Add the "Use TLS 1.3 if available" option
+#
+#	In Function OutputRASNotificationHandlers
+#		Add additional notification handlers for the Enum
 #
 #	In Function OutputRASReportingSettings, add:
 #		Session Counters
@@ -185,6 +193,15 @@
 #				That means a Server OS will not find a service named "Fax"
 #			Make the code consistent with all three output formats
 #		Only output optimization data if optimization is enabled
+#		For Hosts:
+#			Rename Server to Host
+#			Rearrange columns to match the layout in the consosle
+#			Add Templae and aplaceholder in the code for Template version
+#			Rename UPD to User profile
+#			For Desktop access, change "Prohibit" to "Deny"
+#			For Settings:
+#				Add Manage RDP transport protocol
+#				Add Enable Z-Order (Experimental)
 #		For Host pools:
 #			Add "Enabled"
 #			For HTML output, rename "Server" to "Name"
@@ -194,7 +211,18 @@
 #
 #	In Function OutputSAMLSetting, handle multiple SAML items
 #
-#	In Function OutputSettingsDetails, add Azure Virtual Desktop to the Features section
+#	In Function OutputSiteSettingsDetails
+#		Add Azure Virtual Desktop to the Features section
+#		Add Template Versions section
+#		Add Application Packages section
+#		Create separate functions for:
+#			OutputRASURLRedirection
+#			OutputRASNotificationHandlers
+#			OutputRASNotificationScripts
+#			OutputRASClientSettings
+#			OutputRASTemplateVersionSettings
+#			OutputRASSiteFeatures
+#			OutputRASAppPackageSettings
 #
 #	In Function OutputSiteDetails, when processing Themes, Properties, Access:
 #		If the Theme's MFA ID is not 0 and is found, use the MFA name
@@ -203,6 +231,7 @@
 #
 #	In Function OutputSiteSummary:
 #		Changed "VDI Host" to "Provider"
+#		For Providers, remove the CPU, RAM, DIsk read time, and Disk write time metrics, as they are no longer shown in the console.
 #
 #	In Function OutputThemesDetails
 #		Change HTML5 URL to User Portal URL
@@ -232,13 +261,15 @@
 #		Rename variable $RASFeatures to $RASHelpdesk
 #		Add variable $RASSupport
 #		Add retrieving Get-RASOverwriteSupportActions
-#		Change call to OutputRASFeatures to use two parameters: $RASHelpdesk and $RASSupport
+#		Change call to OutputRASAdminFeatures to use two parameters: $RASHelpdesk and $RASSupport
 #
 #	In Function ProcessConnection, add call to new LogonHours function
 #
 #	In Function ProcessScriptSetup, change how the RAS version is retrieved and put into variables
 #
 #	Merged functions OutputRASProxySettings and OutputRASMiscSettings into OutputRASSettings
+#
+#	Rename Function OutputRASNotifications to OutputRASNotificationHandlers
 #
 #	Updated for the PowerShell module changes in RAS 19.3 and later, 20 and later, and 21 and later
 #

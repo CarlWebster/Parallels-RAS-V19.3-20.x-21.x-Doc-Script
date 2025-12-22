@@ -450,9 +450,9 @@
 	text document.
 .NOTES
 	NAME: RAS_Inventory_V4_0.ps1
-	VERSION: 4.00 Beta 37
+	VERSION: 4.00 Beta 38
 	AUTHOR: Carl Webster
-	LASTEDIT: December 18, 2025
+	LASTEDIT: December 22, 2025
 #>
 
 
@@ -586,7 +586,7 @@ Param(
 #			OutputThemesDetails
 #			OutputCertificatesDetails
 #			OutputApplicationPackagesDetails
-#			OutputSettingsDetails
+#			OutputSiteSettingsDetails
 #		OutputLogonHours
 #
 #	Clean up some console output
@@ -708,7 +708,12 @@ Param(
 #			Permissions
 #			Receive system notifications
 #
-#	In Function OutputRASFeatures
+#	In Function OutputRASClientSettings
+#		Add Enum for Published application icons
+#		Add Force session reset on logon from Parallels Client
+#
+#	In Function OutputRASAdminFeatures
+#		Rename function from Function OutputRASFeatures to OutputRASAdminFeatures to separate it from the Site Features
 #		Rename variable $RASFeatures to $RASHelpdesk
 #		Add variable $RASSupport
 #		Change function to use two parameters: $RASHelpdesk and $RASSupport
@@ -720,6 +725,9 @@ Param(
 #
 #	In Function OutputRASMailboxSettings, 
 #		Add the "Use TLS 1.3 if available" option
+#
+#	In Function OutputRASNotificationHandlers
+#		Add additional notification handlers for the Enum
 #
 #	In Function OutputRASReportingSettings, add:
 #		Session Counters
@@ -747,6 +755,15 @@ Param(
 #				That means a Server OS will not find a service named "Fax"
 #			Make the code consistent with all three output formats
 #		Only output optimization data if optimization is enabled
+#		For Hosts:
+#			Rename Server to Host
+#			Rearrange columns to match the layout in the consosle
+#			Add Templae and aplaceholder in the code for Template version
+#			Rename UPD to User profile
+#			For Desktop access, change "Prohibit" to "Deny"
+#			For Settings:
+#				Add Manage RDP transport protocol
+#				Add Enable Z-Order (Experimental)
 #		For Host pools:
 #			Add "Enabled"
 #			For HTML output, rename "Server" to "Name"
@@ -756,7 +773,18 @@ Param(
 #
 #	In Function OutputSAMLSetting, handle multiple SAML items
 #
-#	In Function OutputSettingsDetails, add Azure Virtual Desktop to the Features section
+#	In Function OutputSiteSettingsDetails
+#		Add Azure Virtual Desktop to the Features section
+#		Add Template Versions section
+#		Add Application Packages section
+#		Create separate functions for:
+#			OutputRASURLRedirection
+#			OutputRASNotificationHandlers
+#			OutputRASNotificationScripts
+#			OutputRASClientSettings
+#			OutputRASTemplateVersionSettings
+#			OutputRASSiteFeatures
+#			OutputRASAppPackageSettings
 #
 #	In Function OutputSiteDetails, when processing Themes, Properties, Access:
 #		If the Theme's MFA ID is not 0 and is found, use the MFA name
@@ -765,6 +793,7 @@ Param(
 #
 #	In Function OutputSiteSummary:
 #		Changed "VDI Host" to "Provider"
+#		For Providers, remove the CPU, RAM, DIsk read time, and Disk write time metrics, as they are no longer shown in the console.
 #
 #	In Function OutputThemesDetails
 #		Change HTML5 URL to User Portal URL
@@ -794,13 +823,15 @@ Param(
 #		Rename variable $RASFeatures to $RASHelpdesk
 #		Add variable $RASSupport
 #		Add retrieving Get-RASOverwriteSupportActions
-#		Change call to OutputRASFeatures to use two parameters: $RASHelpdesk and $RASSupport
+#		Change call to OutputRASAdminFeatures to use two parameters: $RASHelpdesk and $RASSupport
 #
 #	In Function ProcessConnection, add call to new LogonHours function
 #
 #	In Function ProcessScriptSetup, change how the RAS version is retrieved and put into variables
 #
 #	Merged functions OutputRASProxySettings and OutputRASMiscSettings into OutputRASSettings
+#
+#	Rename Function OutputRASNotifications to OutputRASNotificationHandlers
 #
 #	Updated for the PowerShell module changes in RAS 19.3 and later, 20 and later, and 21 and later
 #
@@ -882,9 +913,9 @@ $ErrorActionPreference    = 'SilentlyContinue'
 $Error.Clear()
 
 $Script:emailCredentials  = $Null
-$script:MyVersion         = '4.00 Beta 37'
+$script:MyVersion         = '4.00 Beta 38'
 $Script:ScriptName        = "RAS_Inventory_V4_0.ps1"
-$tmpdate                  = [datetime] "12/18/2025"
+$tmpdate                  = [datetime] "12/22/2025"
 $Script:ReleaseDate       = $tmpdate.ToUniversalTime().ToShortDateString()
 
 If($MSWord -eq $False -and $PDF -eq $False -and $Text -eq $False -and $HTML -eq $False)
@@ -5291,7 +5322,7 @@ Function OutputSiteSummary
 					SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 					SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-					$Table.Columns.Item(1).Width = 200;
+					$Table.Columns.Item(1).Width = 150;
 					$Table.Columns.Item(2).Width = 300;
 
 					$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
@@ -5482,10 +5513,10 @@ Function OutputSiteSummary
 						$ScriptInformation = New-Object System.Collections.ArrayList
 						$ScriptInformation.Add(@{Data = "Name"; Value = $Provider.Name; }) > $Null
 						$ScriptInformation.Add(@{Data = "Status"; Value = $FullProviderStatus; }) > $Null
-						$ScriptInformation.Add(@{Data = "CPU"; Value = "$($Providerstatus.CPULoad)%"; }) > $Null
-						$ScriptInformation.Add(@{Data = "RAM"; Value = "$($Providerstatus.MemLoad)%"; }) > $Null
-						$ScriptInformation.Add(@{Data = "Disk read time"; Value = "$($Providerstatus.DiskRead)%"; }) > $Null
-						$ScriptInformation.Add(@{Data = "Disk write time"; Value = "$($Providerstatus.DiskWrite)%"; }) > $Null
+						#$ScriptInformation.Add(@{Data = "CPU"; Value = "$($Providerstatus.CPULoad)%"; }) > $Null
+						#$ScriptInformation.Add(@{Data = "RAM"; Value = "$($Providerstatus.MemLoad)%"; }) > $Null
+						#$ScriptInformation.Add(@{Data = "Disk read time"; Value = "$($Providerstatus.DiskRead)%"; }) > $Null
+						#$ScriptInformation.Add(@{Data = "Disk write time"; Value = "$($Providerstatus.DiskWrite)%"; }) > $Null
 						$ScriptInformation.Add(@{Data = "Preferred Connection Broker"; Value = $Providerstatus.PreferredBroker; }) > $Null
 						$ScriptInformation.Add(@{Data = "Operating system"; Value = $ProviderOS; }) > $Null
 						$ScriptInformation.Add(@{Data = "Agent version"; Value = $Providerstatus.AgentVer; }) > $Null
@@ -5500,7 +5531,7 @@ Function OutputSiteSummary
 						SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 						SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-						$Table.Columns.Item(1).Width = 200;
+						$Table.Columns.Item(1).Width = 150;
 						$Table.Columns.Item(2).Width = 300;
 
 						$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
@@ -5513,10 +5544,10 @@ Function OutputSiteSummary
 					{
 						Line 2 "Name`t`t`t`t: " $Provider.Name
 						Line 2 "Status`t`t`t`t: " $FullProviderStatus
-						Line 2 "CPU`t`t`t`t: " "$($Providerstatus.CPULoad)%"
-						Line 2 "RAM`t`t`t`t: " "$($Providerstatus.MemLoad)%"
-						Line 2 "Disk read time`t`t`t: " "$($Providerstatus.DiskRead)%"
-						Line 2 "Disk write time`t`t`t: " "$($Providerstatus.DiskWrite)%"
+						#Line 2 "CPU`t`t`t`t: " "$($Providerstatus.CPULoad)%"
+						#Line 2 "RAM`t`t`t`t: " "$($Providerstatus.MemLoad)%"
+						#Line 2 "Disk read time`t`t`t: " "$($Providerstatus.DiskRead)%"
+						#Line 2 "Disk write time`t`t`t: " "$($Providerstatus.DiskWrite)%"
 						Line 2 "Preferred Connection Broker`t: " $Providerstatus.PreferredBroker
 						Line 2 "Operating system`t`t: " $ProviderOS
 						Line 2 "Agent version`t`t`t: " $Providerstatus.AgentVer
@@ -5528,10 +5559,10 @@ Function OutputSiteSummary
 						$rowdata = @()
 						$columnHeaders = @("Name",($Script:htmlsb),$Provider.Name,$htmlwhite)
 						$rowdata += @(,("Status",($Script:htmlsb),$FullProviderStatus,$htmlwhite))
-						$rowdata += @(,("CPU",($Script:htmlsb),"$($Providerstatus.CPULoad)%",$htmlwhite))
-						$rowdata += @(,("RAM",($Script:htmlsb),"$($Providerstatus.MemLoad)%",$htmlwhite))
-						$rowdata += @(,("Disk read time",($Script:htmlsb),"$($Providerstatus.DiskRead)%",$htmlwhite))
-						$rowdata += @(,("Disk write time",($Script:htmlsb),"$($Providerstatus.DiskWrite)%",$htmlwhite))
+						#$rowdata += @(,("CPU",($Script:htmlsb),"$($Providerstatus.CPULoad)%",$htmlwhite))
+						#$rowdata += @(,("RAM",($Script:htmlsb),"$($Providerstatus.MemLoad)%",$htmlwhite))
+						#$rowdata += @(,("Disk read time",($Script:htmlsb),"$($Providerstatus.DiskRead)%",$htmlwhite))
+						#$rowdata += @(,("Disk write time",($Script:htmlsb),"$($Providerstatus.DiskWrite)%",$htmlwhite))
 						$rowdata += @(,("Preferred Connection Broker",($Script:htmlsb),$Providerstatus.PreferredBroker,$htmlwhite))
 						$rowdata += @(,("Operating system",($Script:htmlsb),$ProviderOS,$htmlwhite))
 						$rowdata += @(,("Agent version",($Script:htmlsb),$Providerstatus.AgentVer,$htmlwhite))
@@ -5708,7 +5739,7 @@ Function OutputSiteSummary
 					SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 					SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-					$Table.Columns.Item(1).Width = 200;
+					$Table.Columns.Item(1).Width = 150;
 					$Table.Columns.Item(2).Width = 300;
 
 					$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
@@ -5924,7 +5955,7 @@ Function OutputSiteSummary
 					SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 					SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-					$Table.Columns.Item(1).Width = 200;
+					$Table.Columns.Item(1).Width = 150;
 					$Table.Columns.Item(2).Width = 300;
 
 					$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
@@ -5962,7 +5993,7 @@ Function OutputSiteSummary
 					$rowdata += @(,("Hypervisor",($Script:htmlsb),$CBHypervisor,$htmlwhite))
 
 					$msg = ""
-					$columnWidths = @("200","350")
+					$columnWidths = @("150","350")
 					FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 					WriteHTMLLine 0 0 ""
 				}
@@ -6131,7 +6162,7 @@ Function OutputSiteSummary
 				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 200;
+				$Table.Columns.Item(1).Width = 150;
 				$Table.Columns.Item(2).Width = 300;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
@@ -6167,7 +6198,7 @@ Function OutputSiteSummary
 				$rowdata += @(,("Hypervisor",($Script:htmlsb),$ESHypervisor,$htmlwhite))
 
 				$msg = ""
-				$columnWidths = @("200","400")
+				$columnWidths = @("150","400")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 			}
@@ -6190,7 +6221,7 @@ Function OutputSiteDetails
 	OutputThemesDetails
 	OutputCertificatesDetails
 	OutputApplicationPackagesDetails
-	OutputSettingsDetails
+	OutputSiteSettingsDetails
 }
 
 Function OutputRDSessionHostsDetails
@@ -6388,23 +6419,57 @@ Function OutputRDSessionHostsDetails
 					$RDSGroup += "N/A"
 				}
 				
+				If($RDSHost.RASTemplateId -gt 0)
+				{
+					$RDSTemplate = Get-RASTemplate -Id $RDSHost.RASTemplateId -ObjType "RDSTemplate" -EA 0 4> $Null
+					
+					If($? -and $Null -ne $RDSTemplate)
+					{
+						$RDSTemplateName = $RDSTemplate.Name
+						
+						#$RDSTemplateVersion = Get-RASTemplateVersion -Id $RDSHostPool.TemplateSettings.TemplateVersionId -TemplateId $RDSHostPool.TemplateSettings.TemplateId -ObjType "RDSTemplate" -EA 0 4> $Null
+
+						#If($? -and $Null -ne $RDSTemplateVersion)
+						#{
+						#	$RDSTemplateVersionName = $RDSTemplateVersion.Name
+						#}
+						#Else
+						#{
+						#	$RDSTemplateVersionName = "Unable to retrieve template version name"
+						#}
+					}
+					Else
+					{
+						$RDSTemplateName        = "Unable to retrieve template data"
+						#$RDSTemplateVersionName = "Unable to retrieve template data"
+					}
+				}
+				Else
+				{
+					$RDSTemplateName        = ""
+					#$RDSTemplateVersionName = ""
+				}
+
 				If($MSWord -or $PDF)
 				{
 					$ScriptInformation = New-Object System.Collections.ArrayList
-					$ScriptInformation.Add(@{Data = "Server"; Value = $RDSHost.Server; }) > $Null
+					$ScriptInformation.Add(@{Data = "Host"; Value = $RDSHost.Server; }) > $Null
+					$ScriptInformation.Add(@{Data = "Enabled"; Value = $RDSHost.Enabled.ToString(); }) > $Null
+					$ScriptInformation.Add(@{Data = "ID"; Value = $RDSHost.Id.ToString(); }) > $Null
 					$ScriptInformation.Add(@{Data = "Status"; Value = $FullAgentStatus; }) > $Null
 					$ScriptInformation.Add(@{Data = "Logon status"; Value = $LogonStatus; }) > $Null
-					$ScriptInformation.Add(@{Data = "Group"; Value = $RDSGroup[0]; }) > $Null
+					$ScriptInformation.Add(@{Data = "Host pool"; Value = $RDSGroup[0]; }) > $Null
+					$ScriptInformation.Add(@{Data = "Template"; Value = $RDSTemplateName; }) > $Null
+					#$ScriptInformation.Add(@{Data = "Template version"; Value = $RDSTemplateVersionName; }) > $Null
 					$ScriptInformation.Add(@{Data = "Direct address"; Value = $RDSHost.DirectAddress; }) > $Null
 					$ScriptInformation.Add(@{Data = "Description"; Value = $RDSHost.Description; }) > $Null
-					$ScriptInformation.Add(@{Data = "UPD"; Value = $UPDStatus; }) > $Null
+					$ScriptInformation.Add(@{Data = "User profile"; Value = $UPDStatus; }) > $Null
 					$ScriptInformation.Add(@{Data = "Log level"; Value = $RDSStatus.LogLevel; }) > $Null
 					$ScriptInformation.Add(@{Data = "Agent version"; Value = $RDSStatus.AgentVer; }) > $Null
 					$ScriptInformation.Add(@{Data = "Last modification by"; Value = $RDSHost.AdminLastMod; }) > $Null
 					$ScriptInformation.Add(@{Data = "Modified on"; Value = (Get-Date -UFormat "%c" $RDSHost.TimeLastMod); }) > $Null
 					$ScriptInformation.Add(@{Data = "Created by"; Value = $RDSHost.AdminCreate; }) > $Null
 					$ScriptInformation.Add(@{Data = "Created on"; Value = (Get-Date -UFormat "%c" $RDSHost.TimeCreate); }) > $Null
-					$ScriptInformation.Add(@{Data = "ID"; Value = $RDSHost.Id.ToString(); }) > $Null
 
 					$Table = AddWordTable -Hashtable $ScriptInformation `
 					-Columns Data,Value `
@@ -6426,42 +6491,48 @@ Function OutputRDSessionHostsDetails
 				}
 				If($Text)
 				{
-					Line 3 "Server`t`t`t: " $RDSHost.Server
+					Line 3 "Host`t`t`t: " $RDSHost.Server
+					Line 3 "Enabled`t`t`t: " $RDSHost.Enabled.ToString()
+					Line 3 "ID`t`t`t: " $RDSHost.Id.ToString()
 					Line 3 "Status`t`t`t: " $FullAgentStatus
 					Line 3 "Logon status`t`t: " $LogonStatus
-					Line 3 "Group`t`t`t: " $RDSGroup[0]
+					Line 3 "Host pool`t`t: " $RDSGroup[0]
+					Line 3 "Template`t`t: " $RDSTemplateName
+					#Line 3 "Template version`t: " $RDSTemplateVersionName
 					Line 3 "Direct address`t`t: " $RDSHost.DirectAddress
 					Line 3 "Description`t`t: " $RDSHost.Description
-					Line 3 "UPD`t`t`t: " $UPDStatus
+					Line 3 "User profile`t`t: " $UPDStatus
 					Line 3 "Log level`t`t: " $RDSStatus.LogLevel
 					Line 3 "Agent version`t`t: " $RDSStatus.AgentVer
 					Line 3 "Last modification by`t: " $RDSHost.AdminLastMod
 					Line 3 "Modified on`t`t: " (Get-Date -UFormat "%c" $RDSHost.TimeLastMod)
 					Line 3 "Created by`t`t: " $RDSHost.AdminCreate
 					Line 3 "Created on`t`t: " (Get-Date -UFormat "%c" $RDSHost.TimeCreate)
-					Line 3 "ID`t`t`t: " $RDSHost.Id.ToString()
 					Line 0 ""
 				}
 				If($HTML)
 				{
 					$rowdata = @()
-					$columnHeaders = @("Server",($Script:htmlsb),$RDSHost.Server,$htmlwhite)
+					$columnHeaders = @("Host",($Script:htmlsb),$RDSHost.Server,$htmlwhite)
+					$rowdata += @(,("Enabled",($Script:htmlsb),$RDSHost.Enabled.ToString(),$htmlwhite))
+					$rowdata += @(,("ID",($Script:htmlsb),$RDSHost.Id.ToString(),$htmlwhite))
 					$rowdata += @(,("Status",($Script:htmlsb),$FullAgentStatus,$htmlwhite))
 					$rowdata += @(,("Logon status",($Script:htmlsb),$LogonStatus,$htmlwhite))
-					$rowdata += @(,("Group",($Script:htmlsb),$RDSGroup[0],$htmlwhite))
+					$rowdata += @(,("Host pool",($Script:htmlsb),$RDSGroup[0],$htmlwhite))
+					$rowdata += @(,("Template",($Script:htmlsb),$RDSTemplateName,$htmlwhite))
+					#$rowdata += @(,("Template version",($Script:htmlsb),$RDSTemplateVersionName,$htmlwhite))
 					$rowdata += @(,("Direct address",($Script:htmlsb),$RDSHost.DirectAddress,$htmlwhite))
 					$rowdata += @(,("Description",($Script:htmlsb),$RDSHost.Description,$htmlwhite))
-					$rowdata += @(,("UPD",($Script:htmlsb),$UPDStatus,$htmlwhite))
+					$rowdata += @(,("User profile",($Script:htmlsb),$UPDStatus,$htmlwhite))
 					$rowdata += @(,("Log level",($Script:htmlsb),$RDSStatus.LogLevel,$htmlwhite))
 					$rowdata += @(,("Agent version",($Script:htmlsb),$RDSStatus.AgentVer,$htmlwhite))
 					$rowdata += @(,("Last modification by",($Script:htmlsb), $RDSHost.AdminLastMod,$htmlwhite))
 					$rowdata += @(,("Modified on",($Script:htmlsb), (Get-Date -UFormat "%c" $RDSHost.TimeLastMod),$htmlwhite))
 					$rowdata += @(,("Created by",($Script:htmlsb), $RDSHost.AdminCreate,$htmlwhite))
 					$rowdata += @(,("Created on",($Script:htmlsb), (Get-Date -UFormat "%c" $RDSHost.TimeCreate),$htmlwhite))
-					$rowdata += @(,("ID",($Script:htmlsb),$RDSHost.Id.ToString(),$htmlwhite))
 
 					$msg = ""
-					$columnWidths = @("300","275")
+					$columnWidths = @("150","275")
 					FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 					WriteHTMLLine 0 0 ""
 				}
@@ -6537,7 +6608,7 @@ Function OutputRDSessionHostsDetails
 				$rowdata += @(,("Direct Address",($Script:htmlsb),$RDSHost.DirectAddress,$htmlwhite))
 
 				$msg = "General"
-				$columnWidths = @("300","275")
+				$columnWidths = @("150","275")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 			}
@@ -8699,7 +8770,7 @@ Function OutputRDSessionHostsDetails
 				}
 
 				$msg = "Application Packages"
-				$columnWidths = @("200","275")
+				$columnWidths = @("150","275")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 			}
@@ -10942,7 +11013,7 @@ Function OutputRDSessionHostsDetails
 			{
 				$ScriptInformation = New-Object System.Collections.ArrayList
 				$ScriptInformation.Add(@{Data = "Inherit default settings"; Value = $RDSHost.InheritDefaultDesktopAccessSettings.ToString(); }) > $Null
-				$ScriptInformation.Add(@{Data = "Restrict direct desktop access to the following users"; Value = $RDSRestrictDesktopAccess; }) > $Null
+				$ScriptInformation.Add(@{Data = "Deny direct desktop access to the following users"; Value = $RDSRestrictDesktopAccess; }) > $Null
 				
 				$cnt = -1
 				ForEach($Item in $RDSRestrictedUsers)
@@ -10979,7 +11050,7 @@ Function OutputRDSessionHostsDetails
 			If($Text)
 			{
 				Line 4 "Inherit default settings`t`t`t`t: " $RDSHost.InheritDefaultDesktopAccessSettings.ToString()
-				Line 4 "Restrict direct desktop access to the following users`t: " $RDSRestrictDesktopAccess
+				Line 4 "Deny direct desktop access to the following users`t: " $RDSRestrictDesktopAccess
 				$cnt = -1
 				ForEach($Item in $RDSRestrictedUsers)
 				{
@@ -10999,7 +11070,7 @@ Function OutputRDSessionHostsDetails
 			{
 				$rowdata = @()
 				$columnHeaders = @("Inherit default settings",($Script:htmlsb),$RDSHost.InheritDefaultDesktopAccessSettings.ToString(),$htmlwhite)
-				$rowdata += @(,("Restrict direct desktop access to the following users",($Script:htmlsb),$RDSRestrictDesktopAccess,$htmlwhite))
+				$rowdata += @(,("Deny direct desktop access to the following users",($Script:htmlsb),$RDSRestrictDesktopAccess,$htmlwhite))
 				
 				$cnt = -1
 				ForEach($Item in $RDSRestrictedUsers)
@@ -11021,7 +11092,7 @@ Function OutputRDSessionHostsDetails
 				WriteHTMLLine 0 0 ""
 			}
 
-			#Agent Settings
+			#Settings
 			
 			If($MSWord -or $PDF)
 			{
@@ -11058,25 +11129,25 @@ Function OutputRDSessionHostsDetails
 							
 							Switch ($GroupDefaults.DisconnectActiveSessionAfter)
 							{
-								0		{$RDSPublishingSessionDisconnectTimeout = "Never"; Break}
-								1		{$RDSPublishingSessionDisconnectTimeout = "1 minute"; Break}
-								5		{$RDSPublishingSessionDisconnectTimeout = "5 minutes"; Break}
-								25		{$RDSPublishingSessionDisconnectTimeout = "25 seconds"; Break}
-								60		{$RDSPublishingSessionDisconnectTimeout = "1 minute"; Break}
-								300		{$RDSPublishingSessionDisconnectTimeout = "5 minutes"; Break}
-								3600	{$RDSPublishingSessionDisconnectTimeout = "1 hour"; Break}
-								Default	{$RDSPublishingSessionDisconnectTimeout = "Unable to determine Publishing Session Disconnect Timeout: $($GroupDefaults.DisconnectActiveSessionAfter)"; Break}
+								0		{$RDSSessionDisconnectTimeout = "Never"; Break}
+								1		{$RDSSessionDisconnectTimeout = "1 minute"; Break}
+								5		{$RDSSessionDisconnectTimeout = "5 minutes"; Break}
+								25		{$RDSSessionDisconnectTimeout = "25 seconds"; Break}
+								60		{$RDSSessionDisconnectTimeout = "1 minute"; Break}
+								300		{$RDSSessionDisconnectTimeout = "5 minutes"; Break}
+								3600	{$RDSSessionDisconnectTimeout = "1 hour"; Break}
+								Default	{$RDSSessionDisconnectTimeout = "Unable to determine Publishing Session Disconnect Timeout: $($GroupDefaults.DisconnectActiveSessionAfter)"; Break}
 							}
 							
 							Switch ($GroupDefaults.LogoffDisconnectedSessionAfter)
 							{
-								0		{$RDSPublishingSessionResetTime = "Never"; Break}
-								1		{$RDSPublishingSessionResetTime = "Immediate"; Break}
-								25		{$RDSPublishingSessionResetTime = "25 seconds"; Break}
-								60		{$RDSPublishingSessionResetTime = "1 minute"; Break}
-								300		{$RDSPublishingSessionResetTime = "5 minutes"; Break}
-								3600	{$RDSPublishingSessionResetTime = "1 hour"; Break}
-								Default	{$RDSPublishingSessionResetTime = "Unable to determine Publishing Session Reset Timeout: $($GroupDefaults.LogoffDisconnectedSessionAfter)"; Break}
+								0		{$RDSSessionResetTime = "Never"; Break}
+								1		{$RDSSessionResetTime = "Immediate"; Break}
+								25		{$RDSSessionResetTime = "25 seconds"; Break}
+								60		{$RDSSessionResetTime = "1 minute"; Break}
+								300		{$RDSSessionResetTime = "5 minutes"; Break}
+								3600	{$RDSSessionResetTime = "1 hour"; Break}
+								Default	{$RDSSessionResetTime = "Unable to determine Publishing Session Reset Timeout: $($GroupDefaults.LogoffDisconnectedSessionAfter)"; Break}
 							}
 							
 							Switch($GroupDefaults.AllowURLAndMailRedirection)
@@ -11143,6 +11214,15 @@ Function OutputRDSessionHostsDetails
 							}
 							$RDSFileTransferChangeLocation = $GroupDefaults.FileTransferLockLocation.ToString()
 
+							Switch ($GroupDefaults.ManageRDPTransportProtocol)
+							{
+								"BothUDPTCP"		{$RDSManageRDPTransportProtocol = "Use both UDP and TCP"; Break}
+								"Disabled"			{$RDSManageRDPTransportProtocol = "Disabled"; Break}
+								"EitherUDPTCP"		{$RDSManageRDPTransportProtocol = "Use either UDP or TCP"; Break}
+								"OnlyTCP"			{$RDSManageRDPTransportProtocol = "Use only TCP"; Break}
+								Default				{$RDSManageRDPTransportProtocol = "Unable to determine Manage RDP Transport Protocol mode: $($GroupDefaults.ManageRDPTransportProtocol)"; Break}
+							}
+
 							If(ValidObject $GroupDefaults SessionReadinessTimeout)
 							{
 								Switch ($GroupDefaults.SessionReadinessTimeout)
@@ -11165,6 +11245,7 @@ Function OutputRDSessionHostsDetails
 							$RDSEnableAppMonitoring         = $GroupDefaults.EnableAppMonitoring.ToString()
 							$RDSAllowFileTransfer           = $GroupDefaults.AllowFileTransfer.ToString()
 							$RDSEnableDriveRedirectionCache = $GroupDefaults.EnableDriveRedirectionCache.ToString()
+							$RDSEnableZOrder                = $GroupDefaults.EnableZOrder.ToString()
 						}
 						Else
 						{
@@ -11180,25 +11261,25 @@ Function OutputRDSessionHostsDetails
 								
 								Switch ($RDSDefaults.DisconnectActiveSessionAfter)
 								{
-									0		{$RDSPublishingSessionDisconnectTimeout = "Never"; Break}
-									1		{$RDSPublishingSessionDisconnectTimeout = "1 minute"; Break}
-									5		{$RDSPublishingSessionDisconnectTimeout = "5 minutes"; Break}
-									25		{$RDSPublishingSessionDisconnectTimeout = "25 seconds"; Break}
-									60		{$RDSPublishingSessionDisconnectTimeout = "1 minute"; Break}
-									300		{$RDSPublishingSessionDisconnectTimeout = "5 minutes"; Break}
-									3600	{$RDSPublishingSessionDisconnectTimeout = "1 hour"; Break}
-									Default	{$RDSPublishingSessionDisconnectTimeout = "Unable to determine Publishing Session Disconnect Timeout: $($RDSDefaults.DisconnectActiveSessionAfter)"; Break}
+									0		{$RDSSessionDisconnectTimeout = "Never"; Break}
+									1		{$RDSSessionDisconnectTimeout = "1 minute"; Break}
+									5		{$RDSSessionDisconnectTimeout = "5 minutes"; Break}
+									25		{$RDSSessionDisconnectTimeout = "25 seconds"; Break}
+									60		{$RDSSessionDisconnectTimeout = "1 minute"; Break}
+									300		{$RDSSessionDisconnectTimeout = "5 minutes"; Break}
+									3600	{$RDSSessionDisconnectTimeout = "1 hour"; Break}
+									Default	{$RDSSessionDisconnectTimeout = "Unable to determine Publishing Session Disconnect Timeout: $($RDSDefaults.DisconnectActiveSessionAfter)"; Break}
 								}
 								
 								Switch ($RDSDefaults.LogoffDisconnectedSessionAfter)
 								{
-									0		{$RDSPublishingSessionResetTime = "Never"; Break}
-									1		{$RDSPublishingSessionResetTime = "Immediate"; Break}
-									25		{$RDSPublishingSessionResetTime = "25 seconds"; Break}
-									60		{$RDSPublishingSessionResetTime = "1 minute"; Break}
-									300		{$RDSPublishingSessionResetTime = "5 minutes"; Break}
-									3600	{$RDSPublishingSessionResetTime = "1 hour"; Break}
-									Default	{$RDSPublishingSessionResetTime = "Unable to determine Publishing Session Reset Timeout: $($RDSDefaults.LogoffDisconnectedSessionAfter)"; Break}
+									0		{$RDSSessionResetTime = "Never"; Break}
+									1		{$RDSSessionResetTime = "Immediate"; Break}
+									25		{$RDSSessionResetTime = "25 seconds"; Break}
+									60		{$RDSSessionResetTime = "1 minute"; Break}
+									300		{$RDSSessionResetTime = "5 minutes"; Break}
+									3600	{$RDSSessionResetTime = "1 hour"; Break}
+									Default	{$RDSSessionResetTime = "Unable to determine Publishing Session Reset Timeout: $($RDSDefaults.LogoffDisconnectedSessionAfter)"; Break}
 								}
 								
 								Switch($RDSDefaults.AllowURLAndMailRedirection)
@@ -11256,6 +11337,15 @@ Function OutputRDSessionHostsDetails
 								}
 								$RDSFileTransferChangeLocation = $RDSDefaults.FileTransferLockLocation.ToString()
 
+								Switch ($RDSDefaults.ManageRDPTransportProtocol)
+								{
+									"BothUDPTCP"		{$RDSManageRDPTransportProtocol = "Use both UDP and TCP"; Break}
+									"Disabled"			{$RDSManageRDPTransportProtocol = "Disabled"; Break}
+									"EitherUDPTCP"		{$RDSManageRDPTransportProtocol = "Use either UDP or TCP"; Break}
+									"OnlyTCP"			{$RDSManageRDPTransportProtocol = "Use only TCP"; Break}
+									Default				{$RDSManageRDPTransportProtocol = "Unable to determine Manage RDP Transport Protocol mode: $($RDSDefaults.ManageRDPTransportProtocol)"; Break}
+								}
+
 								If($RDSDefaults.PreferredBrokerId -eq 0)
 								{
 									$RDSPreferredPublishingAgent = "Automatically"
@@ -11286,14 +11376,15 @@ Function OutputRDSessionHostsDetails
 								$RDSEnableAppMonitoring         = $RDSDefaults.EnableAppMonitoring.ToString()
 								$RDSAllowFileTransfer           = $RDSDefaults.AllowFileTransfer.ToString()
 								$RDSEnableDriveRedirectionCache = $RDSDefaults.EnableDriveRedirectionCache.ToString()
+								$RDSEnableZOrder                = $RDSDefaults.EnableZOrder.ToString()
 							}
 							Else
 							{
 								#unable to retrieve default, use built-in default values
 								$RDSPort                               = "3389"
 								$RDSMaxSessions                        = "250"
-								$RDSPublishingSessionDisconnectTimeout = "25 seconds"
-								$RDSPublishingSessionResetTime         = "Immediate"
+								$RDSSessionDisconnectTimeout           = "25 seconds"
+								$RDSSessionResetTime                   = "Immediate"
 								$RDSAllowClientURLMailRedirection      = "Enabled"
 								$ReplaceRegisteredApplication          = "False"
 								$RDSSupportShellURLNamespaceObject     = "True"
@@ -11305,10 +11396,12 @@ Function OutputRDSessionHostsDetails
 								$RDSPreferredPublishingAgent           = "Automatically"
 								$RDSAllowRemoteExec                    = "True"
 								$RDSUseRemoteApps                      = "False"
+								$RDSManageRDPTransportProtocol         = "Use both UDP and TCP"
 								$RDSEnableAppMonitoring                = "True"
 								$RDSAllowFileTransfer                  = "True"
 								$RDSEnableDriveRedirectionCache        = "True"
 								$RDSSessionReadinessTimeout            = "25 seconds"
+								$RDSEnableZOrder                       = "False"
 							}
 						}
 					}
@@ -11322,25 +11415,25 @@ Function OutputRDSessionHostsDetails
 					
 					Switch ($RDSHost.DisconnectActiveSessionAfter)
 					{
-						0		{$RDSPublishingSessionDisconnectTimeout = "Never"; Break}
-						1		{$RDSPublishingSessionDisconnectTimeout = "1 minute"; Break}
-						5		{$RDSPublishingSessionDisconnectTimeout = "5 minutes"; Break}
-						25		{$RDSPublishingSessionDisconnectTimeout = "25 seconds"; Break}
-						60		{$RDSPublishingSessionDisconnectTimeout = "1 minute"; Break}
-						300		{$RDSPublishingSessionDisconnectTimeout = "5 minutes"; Break}
-						3600	{$RDSPublishingSessionDisconnectTimeout = "1 hour"; Break}
-						Default	{$RDSPublishingSessionDisconnectTimeout = "Unable to determine Publishing Session Disconnect Timeout: $($RDSHost.DisconnectActiveSessionAfter)"; Break}
+						0		{$RDSSessionDisconnectTimeout = "Never"; Break}
+						1		{$RDSSessionDisconnectTimeout = "1 minute"; Break}
+						5		{$RDSSessionDisconnectTimeout = "5 minutes"; Break}
+						25		{$RDSSessionDisconnectTimeout = "25 seconds"; Break}
+						60		{$RDSSessionDisconnectTimeout = "1 minute"; Break}
+						300		{$RDSSessionDisconnectTimeout = "5 minutes"; Break}
+						3600	{$RDSSessionDisconnectTimeout = "1 hour"; Break}
+						Default	{$RDSSessionDisconnectTimeout = "Unable to determine Publishing Session Disconnect Timeout: $($RDSHost.DisconnectActiveSessionAfter)"; Break}
 					}
 					
 					Switch ($RDSHost.LogoffDisconnectedSessionAfter)
 					{
-						0		{$RDSPublishingSessionResetTime = "Never"; Break}
-						1		{$RDSPublishingSessionResetTime = "Immediate"; Break}
-						25		{$RDSPublishingSessionResetTime = "25 seconds"; Break}
-						60		{$RDSPublishingSessionResetTime = "1 minute"; Break}
-						300		{$RDSPublishingSessionResetTime = "5 minutes"; Break}
-						3600	{$RDSPublishingSessionResetTime = "1 hour"; Break}
-						Default	{$RDSPublishingSessionResetTime = "Unable to determine Publishing Session Reset Timeout: $($RDSHost.LogoffDisconnectedSessionAfter)"; Break}
+						0		{$RDSSessionResetTime = "Never"; Break}
+						1		{$RDSSessionResetTime = "Immediate"; Break}
+						25		{$RDSSessionResetTime = "25 seconds"; Break}
+						60		{$RDSSessionResetTime = "1 minute"; Break}
+						300		{$RDSSessionResetTime = "5 minutes"; Break}
+						3600	{$RDSSessionResetTime = "1 hour"; Break}
+						Default	{$RDSSessionResetTime = "Unable to determine Publishing Session Reset Timeout: $($RDSHost.LogoffDisconnectedSessionAfter)"; Break}
 					}
 					
 					Switch($RDSHost.AllowURLAndMailRedirection)
@@ -11398,6 +11491,15 @@ Function OutputRDSessionHostsDetails
 					}
 					$RDSFileTransferChangeLocation = $RDSHost.FileTransferLockLocation.ToString()
 
+					Switch ($RDSHost.ManageRDPTransportProtocol)
+					{
+						"BothUDPTCP"		{$RDSManageRDPTransportProtocol = "Use both UDP and TCP"; Break}
+						"Disabled"			{$RDSManageRDPTransportProtocol = "Disabled"; Break}
+						"EitherUDPTCP"		{$RDSManageRDPTransportProtocol = "Use either UDP or TCP"; Break}
+						"OnlyTCP"			{$RDSManageRDPTransportProtocol = "Use only TCP"; Break}
+						Default				{$RDSManageRDPTransportProtocol = "Unable to determine Manage RDP Transport Protocol mode: $($RDSHost.ManageRDPTransportProtocol)"; Break}
+					}
+
 					If($RDSHost.PreferredBrokerId -eq 0)
 					{
 						$RDSPreferredPublishingAgent = "Automatically"
@@ -11428,6 +11530,7 @@ Function OutputRDSessionHostsDetails
 					$RDSEnableAppMonitoring         = $RDSHost.EnableAppMonitoring.ToString()
 					$RDSAllowFileTransfer           = $RDSHost.AllowFileTransfer.ToString()
 					$RDSEnableDriveRedirectionCache = $RDSHost.EnableDriveRedirectionCache.ToString()
+					$RDSEnableZOrder                = $RDSHost.EnableZOrder.ToString()
 				}
 			}
 			Else
@@ -11439,25 +11542,25 @@ Function OutputRDSessionHostsDetails
 				
 				Switch ($RDSHost.DisconnectActiveSessionAfter)
 				{
-					0		{$RDSPublishingSessionDisconnectTimeout = "Never"; Break}
-					1		{$RDSPublishingSessionDisconnectTimeout = "1 minute"; Break}
-					5		{$RDSPublishingSessionDisconnectTimeout = "5 minutes"; Break}
-					25		{$RDSPublishingSessionDisconnectTimeout = "25 seconds"; Break}
-					60		{$RDSPublishingSessionDisconnectTimeout = "1 minute"; Break}
-					300		{$RDSPublishingSessionDisconnectTimeout = "5 minutes"; Break}
-					3600	{$RDSPublishingSessionDisconnectTimeout = "1 hour"; Break}
-					Default	{$RDSPublishingSessionDisconnectTimeout = "Unable to determine Publishing Session Disconnect Timeout: $($RDSHost.DisconnectActiveSessionAfter)"; Break}
+					0		{$RDSSessionDisconnectTimeout = "Never"; Break}
+					1		{$RDSSessionDisconnectTimeout = "1 minute"; Break}
+					5		{$RDSSessionDisconnectTimeout = "5 minutes"; Break}
+					25		{$RDSSessionDisconnectTimeout = "25 seconds"; Break}
+					60		{$RDSSessionDisconnectTimeout = "1 minute"; Break}
+					300		{$RDSSessionDisconnectTimeout = "5 minutes"; Break}
+					3600	{$RDSSessionDisconnectTimeout = "1 hour"; Break}
+					Default	{$RDSSessionDisconnectTimeout = "Unable to determine Publishing Session Disconnect Timeout: $($RDSHost.DisconnectActiveSessionAfter)"; Break}
 				}
 				
 				Switch ($RDSHost.LogoffDisconnectedSessionAfter)
 				{
-					0		{$RDSPublishingSessionResetTime = "Never"; Break}
-					1		{$RDSPublishingSessionResetTime = "Immediate"; Break}
-					25		{$RDSPublishingSessionResetTime = "25 seconds"; Break}
-					60		{$RDSPublishingSessionResetTime = "1 minute"; Break}
-					300		{$RDSPublishingSessionResetTime = "5 minutes"; Break}
-					3600	{$RDSPublishingSessionResetTime = "1 hour"; Break}
-					Default	{$RDSPublishingSessionResetTime = "Unable to determine Publishing Session Reset Timeout: $($RDSHost.LogoffDisconnectedSessionAfter)"; Break}
+					0		{$RDSSessionResetTime = "Never"; Break}
+					1		{$RDSSessionResetTime = "Immediate"; Break}
+					25		{$RDSSessionResetTime = "25 seconds"; Break}
+					60		{$RDSSessionResetTime = "1 minute"; Break}
+					300		{$RDSSessionResetTime = "5 minutes"; Break}
+					3600	{$RDSSessionResetTime = "1 hour"; Break}
+					Default	{$RDSSessionResetTime = "Unable to determine Publishing Session Reset Timeout: $($RDSHost.LogoffDisconnectedSessionAfter)"; Break}
 				}
 				
 				Switch($RDSHost.AllowURLAndMailRedirection)
@@ -11515,6 +11618,15 @@ Function OutputRDSessionHostsDetails
 				}
 				$RDSFileTransferChangeLocation = $RDSHost.FileTransferLockLocation.ToString()
 
+				Switch ($RDSHost.ManageRDPTransportProtocol)
+				{
+					"BothUDPTCP"		{$RDSManageRDPTransportProtocol = "Use both UDP and TCP"; Break}
+					"Disabled"			{$RDSManageRDPTransportProtocol = "Disabled"; Break}
+					"EitherUDPTCP"		{$RDSManageRDPTransportProtocol = "Use either UDP or TCP"; Break}
+					"OnlyTCP"			{$RDSManageRDPTransportProtocol = "Use only TCP"; Break}
+					Default				{$RDSManageRDPTransportProtocol = "Unable to determine Manage RDP Transport Protocol mode: $($RDSHost.ManageRDPTransportProtocol)"; Break}
+				}
+
 				If($RDSHost.PreferredBrokerId -eq 0)
 				{
 					$RDSPreferredPublishingAgent = "Automatically"
@@ -11545,6 +11657,7 @@ Function OutputRDSessionHostsDetails
 				$RDSEnableAppMonitoring         = $RDSHost.EnableAppMonitoring.ToString()
 				$RDSAllowFileTransfer           = $RDSHost.AllowFileTransfer.ToString()
 				$RDSEnableDriveRedirectionCache = $RDSHost.EnableDriveRedirectionCache.ToString()
+				$RDSEnableZOrder                = $RDSHost.EnableZOrder.ToString()
 			}
 			
 			If($MSWord -or $PDF)
@@ -11552,27 +11665,29 @@ Function OutputRDSessionHostsDetails
 				$ScriptInformation = New-Object System.Collections.ArrayList
 				$ScriptInformation.Add(@{Data = "Inherit default settings"; Value = $RDSHost.InheritDefaultAgentSettings.ToString(); }) > $Null
 				$ScriptInformation.Add(@{Data = "Application session lingering"; Value = ""; }) > $Null
-				$ScriptInformation.Add(@{Data = "     Disconnect active session after"; Value = $RDSPublishingSessionDisconnectTimeout; }) > $Null
-				$ScriptInformation.Add(@{Data = "     Logoff disconnected session after"; Value = $RDSPublishingSessionResetTime; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Disconnect active session after"; Value = $RDSSessionDisconnectTimeout; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Logoff disconnected session after"; Value = $RDSSessionResetTime; }) > $Null
 				$ScriptInformation.Add(@{Data = "Other settings"; Value = ""; }) > $Null
 				$ScriptInformation.Add(@{Data = "     Session readiness timeout"; Value = $RDSSessionReadinessTimeout; }) > $Null
 				$ScriptInformation.Add(@{Data = "     Port"; Value = $RDSPort; }) > $Null
 				$ScriptInformation.Add(@{Data = "     Max Sessions"; Value = $RDSMaxSessions; }) > $Null
 				$ScriptInformation.Add(@{Data = "     Preferred Connection Broker"; Value = $RDSPreferredPublishingAgent; }) > $Null
-				$ScriptInformation.Add(@{Data = "Allow Client URL/Mail Redirection"; Value = $RDSAllowClientURLMailRedirection; }) > $Null
-				$ScriptInformation.Add(@{Data = "     Replace registered application"; Value = $ReplaceRegisteredApplication; }) > $Null
-				$ScriptInformation.Add(@{Data = "     Support Windows Shell URL namespace objects"; Value = $RDSSupportShellURLNamespaceObject; }) > $Null
-				$ScriptInformation.Add(@{Data = "Enable Drag and drop"; Value = $RDSAllowDragandDrop; }) > $Null
-				$ScriptInformation.Add(@{Data = "     Direction"; Value = $RDSDragAndDrop; }) > $Null
-				$ScriptInformation.Add(@{Data = "Allow 2xRemoteExec to send command to the client"; Value = $RDSAllowRemoteExec; }) > $Null
-				$ScriptInformation.Add(@{Data = "Use RemoteApp if available"; Value = $RDSUseRemoteApps; }) > $Null
-				$ScriptInformation.Add(@{Data = "Enable applications monitoring"; Value = $RDSEnableAppMonitoring; }) > $Null
-				$ScriptInformation.Add(@{Data = "Allow file transfer command (Web (HTML5) and Chrome clients)"; Value = $RDSAllowFileTransfer; }) > $Null
-				$ScriptInformation.Add(@{Data = "     Configure File Transfer"; Value = ""; }) > $Null
-				$ScriptInformation.Add(@{Data = "          Direction"; Value = $RDSFileTransferMode; }) > $Null
-				$ScriptInformation.Add(@{Data = "          Location"; Value = $RDSFileTransferLocation; }) > $Null
-				$ScriptInformation.Add(@{Data = "          Do not allow to change location"; Value = $RDSFileTransferChangeLocation; }) > $Null
-				$ScriptInformation.Add(@{Data = "Enable drive redirection cache"; Value = $RDSEnableDriveRedirectionCache; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Allow Client URL/Mail Redirection"; Value = $RDSAllowClientURLMailRedirection; }) > $Null
+				$ScriptInformation.Add(@{Data = "          Replace registered application"; Value = $ReplaceRegisteredApplication; }) > $Null
+				$ScriptInformation.Add(@{Data = "          Support Windows Shell URL namespace objects"; Value = $RDSSupportShellURLNamespaceObject; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Enable Drag and drop"; Value = $RDSAllowDragandDrop; }) > $Null
+				$ScriptInformation.Add(@{Data = "          Direction"; Value = $RDSDragAndDrop; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Allow 2xRemoteExec to send command to the client"; Value = $RDSAllowRemoteExec; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Use RemoteApp if available"; Value = $RDSUseRemoteApps; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Manage RDP transport protocol"; Value = $RDSManageRDPTransportProtocol; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Enable applications monitoring"; Value = $RDSEnableAppMonitoring; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Allow file transfer command (Web (HTML5) and Chrome clients)"; Value = $RDSAllowFileTransfer; }) > $Null
+				$ScriptInformation.Add(@{Data = "          Configure File Transfer"; Value = ""; }) > $Null
+				$ScriptInformation.Add(@{Data = "               Direction"; Value = $RDSFileTransferMode; }) > $Null
+				$ScriptInformation.Add(@{Data = "               Location"; Value = $RDSFileTransferLocation; }) > $Null
+				$ScriptInformation.Add(@{Data = "               Do not allow to change location"; Value = $RDSFileTransferChangeLocation; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Enable drive redirection cache"; Value = $RDSEnableDriveRedirectionCache; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Enable Z-Order (Experimental)"; Value = $RDSEnableZOrder; }) > $Null
 
 				$Table = AddWordTable -Hashtable $ScriptInformation `
 				-Columns Data,Value `
@@ -11596,27 +11711,29 @@ Function OutputRDSessionHostsDetails
 			{
 				Line 4 "Inherit default settings`t`t`t`t`t: " $RDSHost.InheritDefaultAgentSettings.ToString()
 				Line 4 "Application session lingering"
-				Line 5 "Disconnect active session after`t`t`t`t: " $RDSPublishingSessionDisconnectTimeout
-				Line 5 "Logoff disconnected session after`t`t`t: " $RDSPublishingSessionResetTime
+				Line 5 "Disconnect active session after`t`t`t`t: " $RDSSessionDisconnectTimeout
+				Line 5 "Logoff disconnected session after`t`t`t: " $RDSSessionResetTime
 				Line 4 "Other settings"
-				Line 5 "Session readiness timeout: " $RDSSessionReadinessTimeout
-				Line 5 "Port`t`t`t`t`t`t`t: " $RDSPort
-				Line 5 "Max Sessions`t`t`t`t`t`t: " $RDSMaxSessions
-				Line 5 "Preferred Connection Broker`t`t`t`t: " $RDSPreferredPublishingAgent
-				Line 4 "Allow Client URL/Mail Redirection`t`t`t`t: " $RDSAllowClientURLMailRedirection
-				Line 5 "Replace registered application`t`t`t`t: " $ReplaceRegisteredApplication
-				Line 5 "Support Windows Shell URL namespace objects`t`t: " $RDSSupportShellURLNamespaceObject
-				Line 4 "Enable Drag and drop`t`t`t`t`t`t: " $RDSAllowDragandDrop
-				Line 5 "Direction`t`t`t`t`t`t: " $RDSDragAndDrop
-				Line 4 "Allow 2xRemoteExec to send command to the client`t`t: " $RDSAllowRemoteExec
-				Line 4 "Use RemoteApp if available`t`t`t`t`t: " $RDSUseRemoteApps
-				Line 4 "Enable applications monitoring`t`t`t`t`t: " $RDSEnableAppMonitoring
-				Line 4 "Allow file transfer command (Web (HTML5) and Chrome clients)`t: " $RDSAllowFileTransfer
-				Line 5 "Configure File Transfer"
-				Line 6 "Direction`t`t`t: " $RDSFileTransferMode
-				Line 6 "Location`t`t`t: " $RDSFileTransferLocation
-				Line 6 "Do not allow to change location : " $RDSFileTransferChangeLocation
-				Line 4 "Enable drive redirection cache`t`t`t`t`t: " $RDSEnableDriveRedirectionCache
+				Line 5 "Session readiness timeout`t`t`t`t`t: " $RDSSessionReadinessTimeout
+				Line 5 "Port`t`t`t`t`t`t`t`t: " $RDSPort
+				Line 5 "Max Sessions`t`t`t`t`t`t`t: " $RDSMaxSessions
+				Line 5 "Preferred Connection Broker`t`t`t`t`t: " $RDSPreferredPublishingAgent
+				Line 5 "Allow Client URL/Mail Redirection`t`t`t`t: " $RDSAllowClientURLMailRedirection
+				Line 6 "Replace registered application`t`t`t`t: " $ReplaceRegisteredApplication
+				Line 6 "Support Windows Shell URL namespace objects`t`t: " $RDSSupportShellURLNamespaceObject
+				Line 5 "Enable Drag and drop`t`t`t`t`t`t: " $RDSAllowDragandDrop
+				Line 6 "Direction`t`t`t`t`t`t: " $RDSDragAndDrop
+				Line 5 "Allow 2xRemoteExec to send command to the client`t`t: " $RDSAllowRemoteExec
+				Line 5 "Use RemoteApp if available`t`t`t`t`t: " $RDSUseRemoteApps
+				Line 5 "Manage RDP transport protocol`t`t`t`t`t: " $RDSManageRDPTransportProtocol
+				Line 5 "Enable applications monitoring`t`t`t`t`t: " $RDSEnableAppMonitoring
+				Line 5 "Allow file transfer command (Web (HTML5) and Chrome clients)`t: " $RDSAllowFileTransfer
+				Line 6 "Configure File Transfer"
+				Line 7 "Direction`t`t`t: " $RDSFileTransferMode
+				Line 7 "Location`t`t`t: " $RDSFileTransferLocation
+				Line 7 "Do not allow to change location : " $RDSFileTransferChangeLocation
+				Line 5 "Enable drive redirection cache`t`t`t`t`t: " $RDSEnableDriveRedirectionCache
+				Line 5 "Enable Z-Order (Experimental)`t`t`t`t`t: " $RDSEnableZOrder
 				Line 0 ""
 			}
 			If($HTML)
@@ -11624,27 +11741,29 @@ Function OutputRDSessionHostsDetails
 				$rowdata = @()
 				$columnHeaders = @("Inherit default settings",($Script:htmlsb),$RDSHost.InheritDefaultAgentSettings.ToString(),$htmlwhite)
 				$rowdata += @(,("Application session lingering",($Script:htmlsb),"",$htmlwhite))
-				$rowdata += @(,("     Disconnect active session after",($Script:htmlsb),$RDSPublishingSessionDisconnectTimeout,$htmlwhite))
-				$rowdata += @(,("     Logoff disconnected session after",($Script:htmlsb),$RDSPublishingSessionResetTime,$htmlwhite))
+				$rowdata += @(,("     Disconnect active session after",($Script:htmlsb),$RDSSessionDisconnectTimeout,$htmlwhite))
+				$rowdata += @(,("     Logoff disconnected session after",($Script:htmlsb),$RDSSessionResetTime,$htmlwhite))
 				$rowdata += @(,("Other settings",($Script:htmlsb),$RDSPort,$htmlwhite))
 				$rowdata += @(,("     Session readiness timeout: ",($Script:htmlsb),$RDSSessionReadinessTimeout,$htmlwhite))
 				$rowdata += @(,("     Port",($Script:htmlsb),$RDSPort,$htmlwhite))
 				$rowdata += @(,("     Max Sessions",($Script:htmlsb),$RDSMaxSessions,$htmlwhite))
 				$rowdata += @(,("     Preferred Connection Broker",($Script:htmlsb),$RDSPreferredPublishingAgent,$htmlwhite))
-				$rowdata += @(,("Allow Client URL/Mail Redirection",($Script:htmlsb),$RDSAllowClientURLMailRedirection,$htmlwhite))
-				$rowdata += @(,("     Replace registered application",($Script:htmlsb),$ReplaceRegisteredApplication,$htmlwhite))
-				$rowdata += @(,("     Support Windows Shell URL namespace objects",($Script:htmlsb),$RDSSupportShellURLNamespaceObject,$htmlwhite))
-				$rowdata += @(,("Enable Drag and drop",($Script:htmlsb),$RDSAllowDragandDrop,$htmlwhite))
-				$rowdata += @(,("     Direction",($Script:htmlsb),$RDSDragAndDrop,$htmlwhite))
-				$rowdata += @(,("Allow 2xRemoteExec to send command to the client",($Script:htmlsb),$RDSAllowRemoteExec,$htmlwhite))
-				$rowdata += @(,("Use RemoteApp if available",($Script:htmlsb),$RDSUseRemoteApps,$htmlwhite))
-				$rowdata += @(,("Enable applications monitoring",($Script:htmlsb),$RDSEnableAppMonitoring,$htmlwhite))
-				$rowdata += @(,("Allow file transfer command (Web (HTML5) and Chrome clients)",($Script:htmlsb),$RDSAllowFileTransfer,$htmlwhite))
-				$rowdata += @(,("     Configure File Transfer",($Script:htmlsb),"",$htmlwhite))
-				$rowdata += @(,("          Direction",($Script:htmlsb),$RDSFileTransferMode,$htmlwhite))
-				$rowdata += @(,("          Location",($Script:htmlsb),$RDSFileTransferLocation,$htmlwhite))
-				$rowdata += @(,("          Do not allow to change location",($Script:htmlsb),$RDSFileTransferChangeLocation,$htmlwhite))
-				$rowdata += @(,("Enable drive redirection cache",($Script:htmlsb),$RDSEnableDriveRedirectionCache,$htmlwhite))
+				$rowdata += @(,("     Allow Client URL/Mail Redirection",($Script:htmlsb),$RDSAllowClientURLMailRedirection,$htmlwhite))
+				$rowdata += @(,("          Replace registered application",($Script:htmlsb),$ReplaceRegisteredApplication,$htmlwhite))
+				$rowdata += @(,("          Support Windows Shell URL namespace objects",($Script:htmlsb),$RDSSupportShellURLNamespaceObject,$htmlwhite))
+				$rowdata += @(,("     Enable Drag and drop",($Script:htmlsb),$RDSAllowDragandDrop,$htmlwhite))
+				$rowdata += @(,("          Direction",($Script:htmlsb),$RDSDragAndDrop,$htmlwhite))
+				$rowdata += @(,("     Allow 2xRemoteExec to send command to the client",($Script:htmlsb),$RDSAllowRemoteExec,$htmlwhite))
+				$rowdata += @(,("     Use RemoteApp if available",($Script:htmlsb),$RDSUseRemoteApps,$htmlwhite))
+				$rowdata += @(,("     Manage RDP transport protocol",($Script:htmlsb),$RDSManageRDPTransportProtocol,$htmlwhite))
+				$rowdata += @(,("     Enable applications monitoring",($Script:htmlsb),$RDSEnableAppMonitoring,$htmlwhite))
+				$rowdata += @(,("     Allow file transfer command (Web (HTML5) and Chrome clients)",($Script:htmlsb),$RDSAllowFileTransfer,$htmlwhite))
+				$rowdata += @(,("          Configure File Transfer",($Script:htmlsb),"",$htmlwhite))
+				$rowdata += @(,("               Direction",($Script:htmlsb),$RDSFileTransferMode,$htmlwhite))
+				$rowdata += @(,("               Location",($Script:htmlsb),$RDSFileTransferLocation,$htmlwhite))
+				$rowdata += @(,("               Do not allow to change location",($Script:htmlsb),$RDSFileTransferChangeLocation,$htmlwhite))
+				$rowdata += @(,("     Enable drive redirection cache",($Script:htmlsb),$RDSEnableDriveRedirectionCache,$htmlwhite))
+				$rowdata += @(,("     Enable Z-Order (Experimental)",($Script:htmlsb),$RDSEnableZOrder,$htmlwhite))
 
 				$msg = "Settings"
 				$columnWidths = @("400","200")
@@ -11798,7 +11917,7 @@ Function OutputRDSessionHostsDetails
 				$rowdata += @(,("Remove client name from printer name",($Script:htmlsb),$RDSRemoveClientNameFromPrinter,$htmlwhite))
 
 				$msg = "RDP printer"
-				$columnWidths = @("300","275")
+				$columnWidths = @("275","275")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 			}
@@ -11960,7 +12079,7 @@ Function OutputRDSessionHostsDetails
 				$rowdata += @(,("ID",($Script:htmlsb),$RDSGroup.Id.ToString(),$htmlwhite))
 
 				$msg = ""
-				$columnWidths = @("300","275")
+				$columnWidths = @("150","350")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 			}
@@ -12023,7 +12142,7 @@ Function OutputRDSessionHostsDetails
 				$rowdata += @(,("Description",($Script:htmlsb),$RDSGroup.Description,$htmlwhite))
 
 				$msg = "General"
-				$columnWidths = @("300","275")
+				$columnWidths = @("150","350")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 			}
@@ -12201,12 +12320,12 @@ Function OutputRDSessionHostsDetails
 				}
 
 				$msg = "Hosts"
-				$columnWidths = @("300","275")
+				$columnWidths = @("150","350")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 			}
 
-			#User Profile Disks
+			#User Profile
 			
 			If($MSWord -or $PDF)
 			{
@@ -13773,7 +13892,7 @@ Function OutputRDSessionHostsDetails
 				}
 
 				$msg = "Application Packages"
-				$columnWidths = @("200","275")
+				$columnWidths = @("150","275")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 			}
@@ -13952,25 +14071,25 @@ Function OutputRDSessionHostsDetails
 					
 					Switch ($RDSDefaults.DisconnectActiveSessionAfter)
 					{
-						0		{$RDSPublishingSessionDisconnectTimeout = "Never"; Break}
-						1		{$RDSPublishingSessionDisconnectTimeout = "1 minute"; Break}
-						5		{$RDSPublishingSessionDisconnectTimeout = "5 minutes"; Break}
-						25		{$RDSPublishingSessionDisconnectTimeout = "25 seconds"; Break}
-						60		{$RDSPublishingSessionDisconnectTimeout = "1 minute"; Break}
-						300		{$RDSPublishingSessionDisconnectTimeout = "5 minutes"; Break}
-						3600	{$RDSPublishingSessionDisconnectTimeout = "1 hour"; Break}
-						Default	{$RDSPublishingSessionDisconnectTimeout = "Unable to determine Publishing Session Disconnect Timeout: $($RDSDefaults.DisconnectActiveSessionAfter)"; Break}
+						0		{$RDSSessionDisconnectTimeout = "Never"; Break}
+						1		{$RDSSessionDisconnectTimeout = "1 minute"; Break}
+						5		{$RDSSessionDisconnectTimeout = "5 minutes"; Break}
+						25		{$RDSSessionDisconnectTimeout = "25 seconds"; Break}
+						60		{$RDSSessionDisconnectTimeout = "1 minute"; Break}
+						300		{$RDSSessionDisconnectTimeout = "5 minutes"; Break}
+						3600	{$RDSSessionDisconnectTimeout = "1 hour"; Break}
+						Default	{$RDSSessionDisconnectTimeout = "Unable to determine Publishing Session Disconnect Timeout: $($RDSDefaults.DisconnectActiveSessionAfter)"; Break}
 					}
 					
 					Switch ($RDSDefaults.LogoffDisconnectedSessionAfter)
 					{
-						0		{$RDSPublishingSessionResetTime = "Never"; Break}
-						1		{$RDSPublishingSessionResetTime = "Immediate"; Break}
-						25		{$RDSPublishingSessionResetTime = "25 seconds"; Break}
-						60		{$RDSPublishingSessionResetTime = "1 minute"; Break}
-						300		{$RDSPublishingSessionResetTime = "5 minutes"; Break}
-						3600	{$RDSPublishingSessionResetTime = "1 hour"; Break}
-						Default	{$RDSPublishingSessionResetTime = "Unable to determine Publishing Session Reset Timeout: $($RDSDefaults.LogoffDisconnectedSessionAfter)"; Break}
+						0		{$RDSSessionResetTime = "Never"; Break}
+						1		{$RDSSessionResetTime = "Immediate"; Break}
+						25		{$RDSSessionResetTime = "25 seconds"; Break}
+						60		{$RDSSessionResetTime = "1 minute"; Break}
+						300		{$RDSSessionResetTime = "5 minutes"; Break}
+						3600	{$RDSSessionResetTime = "1 hour"; Break}
+						Default	{$RDSSessionResetTime = "Unable to determine Publishing Session Reset Timeout: $($RDSDefaults.LogoffDisconnectedSessionAfter)"; Break}
 					}
 					
 					Switch($RDSDefaults.AllowURLAndMailRedirection)
@@ -14062,8 +14181,8 @@ Function OutputRDSessionHostsDetails
 					#unable to retrieve default, use built-in default values
 					$RDSPort                               = "3389"
 					$RDSMaxSessions                        = "250"
-					$RDSPublishingSessionDisconnectTimeout = "25 seconds"
-					$RDSPublishingSessionResetTime         = "Immediate"
+					$RDSSessionDisconnectTimeout = "25 seconds"
+					$RDSSessionResetTime         = "Immediate"
 					$RDSAllowClientURLMailRedirection      = "Enabled"
 					$ReplaceRegisteredApplication          = "False"
 					$RDSSupportShellURLNamespaceObject     = "True"
@@ -14090,25 +14209,25 @@ Function OutputRDSessionHostsDetails
 				
 				Switch ($RDSGroupDefaults.DisconnectActiveSessionAfter)
 				{
-					0		{$RDSPublishingSessionDisconnectTimeout = "Never"; Break}
-					1		{$RDSPublishingSessionDisconnectTimeout = "1 minute"; Break}
-					5		{$RDSPublishingSessionDisconnectTimeout = "5 minutes"; Break}
-					25		{$RDSPublishingSessionDisconnectTimeout = "25 seconds"; Break}
-					60		{$RDSPublishingSessionDisconnectTimeout = "1 minute"; Break}
-					300		{$RDSPublishingSessionDisconnectTimeout = "5 minutes"; Break}
-					3600	{$RDSPublishingSessionDisconnectTimeout = "1 hour"; Break}
-					Default	{$RDSPublishingSessionDisconnectTimeout = "Unable to determine Publishing Session Disconnect Timeout: $($RDSGroupDefaults.DisconnectActiveSessionAfter)"; Break}
+					0		{$RDSSessionDisconnectTimeout = "Never"; Break}
+					1		{$RDSSessionDisconnectTimeout = "1 minute"; Break}
+					5		{$RDSSessionDisconnectTimeout = "5 minutes"; Break}
+					25		{$RDSSessionDisconnectTimeout = "25 seconds"; Break}
+					60		{$RDSSessionDisconnectTimeout = "1 minute"; Break}
+					300		{$RDSSessionDisconnectTimeout = "5 minutes"; Break}
+					3600	{$RDSSessionDisconnectTimeout = "1 hour"; Break}
+					Default	{$RDSSessionDisconnectTimeout = "Unable to determine Publishing Session Disconnect Timeout: $($RDSGroupDefaults.DisconnectActiveSessionAfter)"; Break}
 				}
 				
 				Switch ($RDSGroupDefaults.LogoffDisconnectedSessionAfter)
 				{
-					0		{$RDSPublishingSessionResetTime = "Never"; Break}
-					1		{$RDSPublishingSessionResetTime = "Immediate"; Break}
-					25		{$RDSPublishingSessionResetTime = "25 seconds"; Break}
-					60		{$RDSPublishingSessionResetTime = "1 minute"; Break}
-					300		{$RDSPublishingSessionResetTime = "5 minutes"; Break}
-					3600	{$RDSPublishingSessionResetTime = "1 hour"; Break}
-					Default	{$RDSPublishingSessionResetTime = "Unable to determine Publishing Session Reset Timeout: $($RDSGroup.LogoffDisconnectedSessionAfter)"; Break}
+					0		{$RDSSessionResetTime = "Never"; Break}
+					1		{$RDSSessionResetTime = "Immediate"; Break}
+					25		{$RDSSessionResetTime = "25 seconds"; Break}
+					60		{$RDSSessionResetTime = "1 minute"; Break}
+					300		{$RDSSessionResetTime = "5 minutes"; Break}
+					3600	{$RDSSessionResetTime = "1 hour"; Break}
+					Default	{$RDSSessionResetTime = "Unable to determine Publishing Session Reset Timeout: $($RDSGroup.LogoffDisconnectedSessionAfter)"; Break}
 				}
 				
 				Switch($RDSGroupDefaults.AllowURLAndMailRedirection)
@@ -14183,8 +14302,8 @@ Function OutputRDSessionHostsDetails
 				$ScriptInformation = New-Object System.Collections.ArrayList
 				$ScriptInformation.Add(@{Data = "Inherit default settings"; Value = $RDSGroup.InheritDefaultAgentSettings.ToString(); }) > $Null
 				$ScriptInformation.Add(@{Data = "Application session lingering"; Value = ""; }) > $Null
-				$ScriptInformation.Add(@{Data = "     Disconnect active session after"; Value = $RDSPublishingSessionDisconnectTimeout; }) > $Null
-				$ScriptInformation.Add(@{Data = "     Logoff disconnected session after"; Value = $RDSPublishingSessionResetTime; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Disconnect active session after"; Value = $RDSSessionDisconnectTimeout; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Logoff disconnected session after"; Value = $RDSSessionResetTime; }) > $Null
 				$ScriptInformation.Add(@{Data = "Other settings"; Value = ""; }) > $Null
 				$ScriptInformation.Add(@{Data = "     Session readiness timeout"; Value = $RDSSessionReadinessTimeout; }) > $Null
 				$ScriptInformation.Add(@{Data = "     Port"; Value = $RDSPort; }) > $Null
@@ -14227,8 +14346,8 @@ Function OutputRDSessionHostsDetails
 			{
 				Line 5 "Inherit default settings`t`t`t`t`t: " $RDSGroup.InheritDefaultAgentSettings.ToString()
 				Line 5 "Application session lingering"
-				Line 6 "Disconnect active session after`t`t`t`t: " $RDSPublishingSessionDisconnectTimeout
-				Line 6 "Logoff disconnected session after`t`t`t: " $RDSPublishingSessionResetTime
+				Line 6 "Disconnect active session after`t`t`t`t: " $RDSSessionDisconnectTimeout
+				Line 6 "Logoff disconnected session after`t`t`t: " $RDSSessionResetTime
 				Line 5 "Other settings"
 				Line 6 "Session readiness timeout: " $RDSSessionReadinessTimeout
 				Line 6 "Port`t`t`t`t`t`t`t: " $RDSPort
@@ -14255,8 +14374,8 @@ Function OutputRDSessionHostsDetails
 				$rowdata = @()
 				$columnHeaders = @("Inherit default settings",($Script:htmlsb),$RDSGroup.InheritDefaultAgentSettings.ToString(),$htmlwhite)
 				$rowdata += @(,("Application session lingering",($Script:htmlsb),"",$htmlwhite))
-				$rowdata += @(,("     Disconnect active session after",($Script:htmlsb),$RDSPublishingSessionDisconnectTimeout,$htmlwhite))
-				$rowdata += @(,("     Logoff disconnected session after",($Script:htmlsb),$RDSPublishingSessionResetTime,$htmlwhite))
+				$rowdata += @(,("     Disconnect active session after",($Script:htmlsb),$RDSSessionDisconnectTimeout,$htmlwhite))
+				$rowdata += @(,("     Logoff disconnected session after",($Script:htmlsb),$RDSSessionResetTime,$htmlwhite))
 				$rowdata += @(,("Other settings",($Script:htmlsb),$RDSPort,$htmlwhite))
 				$rowdata += @(,("     Session readiness timeout: ",($Script:htmlsb),$RDSSessionReadinessTimeout,$htmlwhite))
 				$rowdata += @(,("     Port",($Script:htmlsb),$RDSPort,$htmlwhite))
@@ -15157,7 +15276,7 @@ Function OutputRDSessionHostsDetails
 			If($MSWord -or $PDF)
 			{
 				$ScriptInformation = New-Object System.Collections.ArrayList
-				$ScriptInformation.Add(@{Data = "Inherit default settings"; Value = $RDSTemplate.InheritDefaultUserProfileSettings.ToString(); }) > $Null
+				$ScriptInformation.Add(@{Data = "Inherit default settings"; Value = $RDSTemplate.InheritDefaultOptimizationSettings.ToString(); }) > $Null
 				$ScriptInformation.Add(@{Data = "Enable optimization"; Value = $OPTEnableOptimization; }) > $Null
 				$ScriptInformation.Add(@{Data = "Optimization type"; Value = $OPTOptimizationType; }) > $Null
 
@@ -16271,12 +16390,12 @@ Function OutputRDSessionHostsDetails
 					{
 						If($item.RegType.ToString() -eq "REG_SZ" -or $item.RegType.ToString() -eq "REG_EXPAND_SZ")
 						{
-							Line 8 ( "{0,-40}  {1,-6}  {2,-20}  {3,-13}  {4,-20}  {5,-60}" -f `
+							Line 7 ( "{0,-40}  {1,-6}  {2,-20}  {3,-13}  {4,-20}  {5,-60}" -f `
 							$item.DisplayName, $item.Action, $item.RegistryName, $item.RegType.ToString(), $item.StringValue, "$($item.HiveType)\$($item.Path)")
 						}
 						ElseIf($item.RegType.ToString() -eq "REG_DWORD" -or $item.RegType.ToString() -eq "REG_QWORD")
 						{
-							Line 8 ( "{0,-40}  {1,-6}  {2,-20}  {3,-13}  {4,-20}  {5,-60}" -f `
+							Line 7 ( "{0,-40}  {1,-6}  {2,-20}  {3,-13}  {4,-20}  {5,-60}" -f `
 							$item.DisplayName, $item.Action, $item.RegistryName, $item.RegType.ToString(), $item.DWORDValue, "$($item.HiveType)\$($item.Path)")
 						}
 						ElseIf($item.RegType.ToString() -eq "REG_MULTI_SZ")
@@ -16289,7 +16408,7 @@ Function OutputRDSessionHostsDetails
 								
 								If($cnt -eq 0)
 								{
-									Line 8 ( "{0,-40}  {1,-6}  {2,-20}  {3,-13}  {4,-20}  {5,-60}" -f `
+									Line 7 ( "{0,-40}  {1,-6}  {2,-20}  {3,-13}  {4,-20}  {5,-60}" -f `
 									$item.DisplayName, $item.Action, $item.RegistryName, $item.RegType.ToString(), $SubItem, "$($item.HiveType)\$($item.Path)")
 								}
 								Else
@@ -17031,7 +17150,7 @@ Function OutputRDSessionHostsDetails
 				{
 					$ScriptInformation.Add(@{Data = "License key management type"; Value = "Multple Activation Key (MAK)"; }) > $Null
 					
-					$LicenseKeys = Get-RASVDITemplateLicenseKey -Id $RDSTemplate.Id -EA 0 4>$Null
+					$LicenseKeys = Get-RASTemplateLicenseKey -Id $RDSTemplate.Id -ObjType RDSTemplate -EA 0 4>$Null
 					
 					ForEach($Item in $LicenseKeys)
 					{
@@ -17068,7 +17187,7 @@ Function OutputRDSessionHostsDetails
 				{
 					Line 4 "License key management type: " "Multple Activation Key (MAK)"
 					
-					$LicenseKeys = Get-RASVDITemplateLicenseKey -Id $RDSTemplate.Id -EA 0 4>$Null
+					$LicenseKeys = Get-RASTemplateLicenseKey -Id $RDSTemplate.Id -ObjType RDSTemplate -EA 0 4>$Null
 
 					ForEach($Item in $LicenseKeys)
 					{
@@ -17089,7 +17208,7 @@ Function OutputRDSessionHostsDetails
 				{
 					$columnHeaders = @("License key management type",($Script:htmlsb),"Multple Activation Key (MAK)",$htmlwhite)
 					
-					$LicenseKeys = Get-RASVDITemplateLicenseKey -Id $RDSTemplate.Id -EA 0 4>$Null
+					$LicenseKeys = Get-RASTemplateLicenseKey -Id $RDSTemplate.Id -ObjType RDSTemplate -EA 0 4>$Null
 
 					$cnt = -1
 					ForEach($Item in $LicenseKeys)
@@ -17248,7 +17367,16 @@ Function OutputRDSessionHostsDetails
 			{
 				ForEach($Item in $RDSSchedule.TargetIds)
 				{
-					$Target += $Item.GuestName
+					$Result = Get-RASRDSHost -Id $Item -EA 0 4>$Null
+					
+					If($? -and $Null -ne $Result)
+					{
+						$Target += $Result.Server
+					}
+					Else
+					{
+						$Target += "Unable to find RDS Server for ID $($Item)"
+					}
 				}
 				$TargetType = "Host"
 			}
@@ -17256,7 +17384,16 @@ Function OutputRDSessionHostsDetails
 			{
 				ForEach($Item in $RDSSchedule.TargetIds)
 				{
-					$Target += $Item.GuestName
+					$Result = Get-RASRDSHost -Id $Item -EA 0 4>$Null
+					
+					If($? -and $Null -ne $Result)
+					{
+						$Target += $Result.Server
+					}
+					Else
+					{
+						$Target += "Unable to find RDS Server Group for ID $($Item)"
+					}
 				}
 				$TargetType = "Host Pool"
 			}
@@ -17744,19 +17881,19 @@ Function OutputRDSessionHostsDetails
 
 						If($null -ne $RDSSchedule.Options.EnableDrainMode)
 						{
-							Line 4 "Enable Drain Mode`t`t: " $RDSSchedule.Options.EnableDrainMode.ToString()
+							Line 4 "Enable Drain Mode`t`t`t`t: " $RDSSchedule.Options.EnableDrainMode.ToString()
 						}
 						If($Action -like "Reboot*")
 						{
-							Line 4 "Force host reboot after`t: " $ForceRebootTime
+							Line 4 "Force host reboot after`t`t`t`t: " $ForceRebootTime
 						}
 						If($Action -like "Shutdown*")
 						{
-							Line 4 "Force host shutdown after`t: " $ForceRebootTime
+							Line 4 "Force host shutdown after`t`t`t: " $ForceRebootTime
 						}
 						If($Null -ne $RDSSchedule.Options.OnDisable)
 						{
-							Line 4 "On disable`t`t`t: " $RDSSchedule.Options.OnDisable.ToString()
+							Line 4 "On disable`t`t`t`t`t: " $RDSSchedule.Options.OnDisable.ToString()
 						}
 						If($Null -ne $RDSSchedule.Options.EnforceScheduleInactiveHost)
 						{
@@ -26373,7 +26510,7 @@ Function OutputVDIDetails
 					{
 						$ScriptInformation.Add(@{Data = "License key management type"; Value = "Multple Activation Key (MAK)"; }) > $Null
 						
-						$LicenseKeys = Get-RASVDITemplateLicenseKey -Id $VDITemplate.Id -EA 0 4>$Null
+						$LicenseKeys = Get-RASTemplateLicenseKey -Id $RDSTemplate.Id -ObjType VDITemplate -EA 0 4>$Null
 						
 						ForEach($Item in $LicenseKeys)
 						{
@@ -26410,7 +26547,7 @@ Function OutputVDIDetails
 					{
 						Line 4 "License key management type: " "Multple Activation Key (MAK)"
 						
-						$LicenseKeys = Get-RASVDITemplateLicenseKey -Id $VDITemplate.Id -EA 0 4>$Null
+						$LicenseKeys = Get-RASTemplateLicenseKey -Id $RDSTemplate.Id -ObjType VDITemplate -EA 0 4>$Null
 
 						ForEach($Item in $LicenseKeys)
 						{
@@ -26431,7 +26568,7 @@ Function OutputVDIDetails
 					{
 						$columnHeaders = @("License key management type",($Script:htmlsb),"Multple Activation Key (MAK)",$htmlwhite)
 						
-						$LicenseKeys = Get-RASVDITemplateLicenseKey -Id $VDITemplate.Id -EA 0 4>$Null
+						$LicenseKeys = Get-RASTemplateLicenseKey -Id $RDSTemplate.Id -ObjType VDITemplate -EA 0 4>$Null
 
 						$cnt = -1
 						ForEach($Item in $LicenseKeys)
@@ -27626,7 +27763,7 @@ Function OutputAVDDetails
 						Line 5 "Resource group`t: " $AVDHostPoolHost.ResourceGroup
 						Line 5 "Location`t: " $AVDLocation
 						Line 5 "Virtual network`t: " 
-						Line 5 "Provider	t: " $AVDProviderName
+						Line 5 "Provider`t: " $AVDProviderName
 						Line 0 ""
 					}
 					If($HTML)
@@ -30950,9 +31087,9 @@ Function OutputAVDDetails
 			}
 			If($Text)
 			{
-				Line 4 "Template name: " $AVDTemplate.Name
-				Line 4 "Template type: " $AVDTemplateType
-				Line 4 "Description: " $AVDTemplate.Description
+				Line 4 "Template name`t: " $AVDTemplate.Name
+				Line 4 "Template type`t: " $AVDTemplateType
+				Line 4 "Description`t: " $AVDTemplate.Description
 				Line 4 "High availability"
 				Line 5 "Availability set: " $AvailabilitySet
 				Line 0 ""
@@ -40807,8 +40944,10 @@ Function OutputApplicationPackagesDetails
 		}
 	}
 }
+#endregion
 
-Function OutputSettingsDetails
+#region site settings
+Function OutputSiteSettingsDetails
 {
 	#Settings
 	
@@ -40951,226 +41090,7 @@ Function OutputSettingsDetails
 	}
 	Else
 	{
-		If($URLRedirectionSettings.URLs.Count -eq 0)
-		{
-			If($URLRedirectionSettings.DefaultAction -eq "Redirect")
-			{
-				$URLAction = "Redirect"
-			}
-			Else
-			{
-				$URLAction = "Do not redirect"
-			}
-			
-			If($MSWord -or $PDF)
-			{
-				WriteWordLine 3 0 "URL redirection"
-				$ScriptInformation = New-Object System.Collections.ArrayList
-				$ScriptInformation.Add(@{Data = "URL"; Value = "*"; }) > $Null
-				$ScriptInformation.Add(@{Data = "Enabled"; Value = "True"; }) > $Null
-				$ScriptInformation.Add(@{Data = "Action"; Value = $URLAction; }) > $Null
-				$ScriptInformation.Add(@{Data = "ID"; Value = "0"; }) > $Null
-				$ScriptInformation.Add(@{Data = "Settings are replicated to all Sites"; Value = $URLRedirectionSettings.Replicate.ToString(); }) > $Null
-
-				$Table = AddWordTable -Hashtable $ScriptInformation `
-				-Columns Data,Value `
-				-List `
-				-Format $wdTableGrid `
-				-AutoFit $wdAutoFitFixed;
-
-				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
-				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
-				$Table.Columns.Item(1).Width = 200;
-				$Table.Columns.Item(2).Width = 250;
-
-				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-				FindWordDocumentEnd
-				$Table = $Null
-				WriteWordLine 0 0 ""
-			}
-			If($Text)
-			{
-				Line 2 "URL redirection"
-				Line 3 "URL: " "*"
-				Line 3 "Enabled: " "True"
-				Line 3 "Action: " $URLAction
-				Line 3 "ID: " "0"
-				Line 3 "Settings are replicated to all Sites: " $URLRedirectionSettings.Replicate.ToString()
-				Line 0 ""
-			}
-			If($HTML)
-			{
-				WriteHTMLLine 3 0 "URL redirection"
-				$rowdata = @()
-				$columnHeaders = @("URL",($Script:htmlsb),"*",$htmlwhite)
-				$rowdata += @(,("URL",($Script:htmlsb), "*",$htmlwhite))
-				$rowdata += @(,("Enabled",($Script:htmlsb), "True",$htmlwhite))
-				$rowdata += @(,("Action",($Script:htmlsb), $URLAction,$htmlwhite))
-				$rowdata += @(,("ID",($Script:htmlsb), "0",$htmlwhite))
-				$rowdata += @(,("Settings are replicated to all Sites",($Script:htmlsb), $URLRedirectionSettings.Replicate.ToString(),$htmlwhite))
-
-				$msg = ""
-				$columnWidths = @("200","275")
-				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-
-				WriteHTMLLine 0 0 ""
-			}
-		}
-		Else
-		{
-			If($URLRedirectionSettings.DefaultAction -eq "Redirect")
-			{
-				$URLAction = "Redirect"
-			}
-			Else
-			{
-				$URLAction = "Do not redirect"
-			}
-
-			$URLList = New-Object System.Collections.ArrayList
-			
-			$obj = [PSCustomObject]@{	
-				URL      = "*"
-				Enabled  = "True"
-				Priority = "4294967295"
-				Action   = $URLAction
-				ID       = "0"
-			}			
-			$Null = $URLList.Add($obj)
-			
-			ForEach($item in $URLRedirectionSettings.URLs)
-			{
-				$Result = Get-RASURLRedirectionEntry -Siteid $Site.Id -Id $item.Id -EA 0 4> $Null
-				
-				If($item.Action -eq "Redirect")
-				{
-					$URLAction = "Redirect"
-				}
-				Else
-				{
-					$URLAction = "Do not redirect"
-				}
-
-				$obj = [PSCustomObject]@{	
-					URL      = $item.URL
-					Enabled  = $item.Enabled.ToString()
-					Priority = $item.Priority.ToString()
-					Action   = $URLAction
-					ID       = $item.Id.ToString()
-				}			
-				$Null = $URLList.Add($obj)
-			}
-			
-			$URLList = $URLList | Sort-Object Priority
-			
-			If($MSWord -or $PDF)
-			{
-				[System.Collections.Hashtable[]] $URLListWordTable = @();
-				ForEach($URL in $URLList)
-				{
-					$URLListWordTable += @{
-						URL      = $URL.URL;
-						Enabled  = $URL.Enabled;
-						Priority = $URL.Priority;
-						Action   = $URL.Action;
-						ID       = $URL.Id;
-					}						
-				}
-				
-				WriteWordLine 3 0 "URL redirection"
-				$Table = AddWordTable -Hashtable $URLListWordTable `
-				-Columns URL, Enabled, Action, ID `
-				-Headers "URL", "Enabled", "Action", "ID" `
-				-Format $wdTableGrid `
-				-AutoFit $wdAutoFitFixed;
-
-				SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
-				$Table.Columns.Item(1).Width = 250;
-				$Table.Columns.Item(2).Width = 50;
-				$Table.Columns.Item(3).Width = 100;
-				$Table.Columns.Item(4).Width = 50;
-				
-				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-				FindWordDocumentEnd
-				$Table = $Null
-				WriteWordLine 0 0 ""
-
-				$ScriptInformation = New-Object System.Collections.ArrayList
-				$ScriptInformation.Add(@{Data = "Settings are replicated to all Sites"; Value = $URLRedirectionSettings.Replicate.ToString(); }) > $Null
-
-				$Table = AddWordTable -Hashtable $ScriptInformation `
-				-Columns Data,Value `
-				-List `
-				-Format $wdTableGrid `
-				-AutoFit $wdAutoFitFixed;
-
-				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
-				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
-				$Table.Columns.Item(1).Width = 250;
-				$Table.Columns.Item(2).Width = 50;
-
-				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-				FindWordDocumentEnd
-				$Table = $Null
-				WriteWordLine 0 0 ""
-			}
-			If($Text)
-			{
-				Line 2 "URL redirection"
-				Line 0 ""
-				Line 2 "URL                                                 Enabled  Action           ID "
-				Line 2 "================================================================================="
-				#		https://www.somereallylongurl.com/somelongsitename  False    Do not redirect  999
-				#		12345678901234567890123456789012345678901234567890SS1234567SS123456789012345SS123
-				ForEach($item in $URLList)
-				{
-					Line 2 ( "{0,-50}  {1,-7}  {2,-15}  {3,-3}" -f $item.URL, $item.Enabled, $item.Action, $item.ID)
-				}
-				Line 0 ""
-				Line 2 "Settings are replicated to all Sites: " $URLRedirectionSettings.Replicate.ToString()
-				Line 0 ""
-			}
-			If($HTML)
-			{
-				WriteHTMLLine 3 0 "URL redirection"
-				$rowdata = @()
-				ForEach($item in $URLList)
-				{
-					$rowdata += @(,(
-						$item.URL,$htmlwhite,
-						$item.Enabled,$htmlwhite,
-						$item.Action,$htmlwhite,
-						$item.ID,$htmlwhite
-						))
-				}
-
-				$columnHeaders = @(
-				"URL",($Script:htmlsb),
-				"Enabled",($Script:htmlsb),
-				"Action",($Script:htmlsb),
-				"ID",($Script:htmlsb))
-
-				$msg = ""
-				$columnWidths = @("250","50","100","50")
-				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-				WriteHTMLLine 0 0 ""
-
-				$rowdata = @()
-				$columnHeaders = @("Settings are replicated to all Sites",($Script:htmlsb),$URLRedirectionSettings.Replicate.ToString(),$htmlwhite)
-
-				$msg = ""
-				$columnWidths = @("250","50")
-				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-
-				WriteHTMLLine 0 0 ""
-			}
-		}
+		OutputRASURLRedirection $URLRedirectionSettings
 	}
 
 	$RASNotificationHandlers = Get-RASNotification -SiteId $Site.Id -EA 0 4>$Null
@@ -41226,7 +41146,7 @@ Function OutputSettingsDetails
 	}
 	Else
 	{
-		OutputRASNotifications $RASNotificationHandlers
+		OutputRASNotificationHandlers $RASNotificationHandlers
 	}
 	
 	$RASNotificationScripts = Get-RASNotificationScript -SiteId $Site.Id -EA 0 4>$Null
@@ -41291,48 +41211,48 @@ Function OutputSettingsDetails
 	{
 		Write-Warning "
 		`n
-		Unable to retrieve CLient Settings information
+		Unable to retrieve Client Settings information
 		"
 		If($MSWord -or $PDF)
 		{
 			WriteWordLine 0 0 ""
-			WriteWordLine 0 0 "Unable to retrieve CLient Settings information"
+			WriteWordLine 0 0 "Unable to retrieve Client Settings information"
 			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
 			Line 0 ""
-			Line 0 "Unable to retrieve CLient Settings information"
+			Line 0 "Unable to retrieve Client Settings information"
 			Line 0 ""
 		}
 		If($HTML)
 		{
 			WriteHTMLLine 0 0 ""
-			WriteHTMLLine 0 0 "Unable to retrieve CLient Settings information"
+			WriteHTMLLine 0 0 "Unable to retrieve Client Settings information"
 			WriteHTMLLine 0 0 ""
 		}
 	}
 	ElseIf($? -and $null -eq $RASClientSettings)
 	{
 		Write-Host "
-		No CLient Settings information was found
+		No Client Settings information was found
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
 			WriteWordLine 0 0 ""
-			WriteWordLine 0 0 "No CLient Settings information was found"
+			WriteWordLine 0 0 "No Client Settings information was found"
 			WriteWordLine 0 0 ""
 		}
 		If($Text)
 		{
 			Line 0 ""
-			Line 0 "No CLient Settings information was found"
+			Line 0 "No Client Settings information was found"
 			Line 0 ""
 		}
 		If($HTML)
 		{
 			WriteHTMLLine 0 0 ""
-			WriteHTMLLine 0 0 "No CLient Settings information was found"
+			WriteHTMLLine 0 0 "No Client Settings information was found"
 			WriteHTMLLine 0 0 ""
 		}
 	}
@@ -41341,6 +41261,62 @@ Function OutputSettingsDetails
 		OutputRASClientSettings $RASClientSettings
 	}
 
+	$TemplateVersions = Get-RASTemplateVersionSettings -SiteID $Site.Id-EA 0 4>$Null
+
+	If(!($?))
+	{
+		Write-Warning "
+		`n
+		Unable to retrieve Template Versions information
+		"
+		If($MSWord -or $PDF)
+		{
+			WriteWordLine 0 0 ""
+			WriteWordLine 0 0 "Unable to retrieve Template Versions information"
+			WriteWordLine 0 0 ""
+		}
+		If($Text)
+		{
+			Line 0 ""
+			Line 0 "Unable to retrieve Template Versions information"
+			Line 0 ""
+		}
+		If($HTML)
+		{
+			WriteHTMLLine 0 0 ""
+			WriteHTMLLine 0 0 "Unable to retrieve Template Versions information"
+			WriteHTMLLine 0 0 ""
+		}
+	}
+	ElseIf($? -and $null -eq $TemplateVersions)
+	{
+		Write-Host "
+		No Template Versions information was found
+		" -ForegroundColor White
+		If($MSWord -or $PDF)
+		{
+			WriteWordLine 0 0 ""
+			WriteWordLine 0 0 "No Template Versions information was found"
+			WriteWordLine 0 0 ""
+		}
+		If($Text)
+		{
+			Line 0 ""
+			Line 0 "No Template Versions information was found"
+			Line 0 ""
+		}
+		If($HTML)
+		{
+			WriteHTMLLine 0 0 ""
+			WriteHTMLLine 0 0 "No Template Versions information was found"
+			WriteHTMLLine 0 0 ""
+		}
+	}
+	Else
+	{
+		OutputRASTemplateVersionSettings $TemplateVersions
+	}
+	
 	$FSLogixDeploymentSettings = Get-RASFSLogixSettings -SiteID $Site.Id-EA 0 4>$Null
 	
 	If(!($?))
@@ -41394,67 +41370,109 @@ Function OutputSettingsDetails
 	}
 	Else
 	{
-		Switch($FSLogixDeploymentSettings.InstallType)
+		OutputRASSiteFeatures $FSLogixDeploymentSettings
+	}
+	
+	$AppPackageSettings = Get-RASAppPackageSettings -SiteID $Site.Id-EA 0 4>$Null
+	
+	If(!($?))
+	{
+		Write-Warning "
+		`n
+		Unable to retrieve Application Packages Settings information
+		"
+		If($MSWord -or $PDF)
 		{
-			"Manually"		{$FSLogixDeploymentSettingsDeploymentMethod = "Install manually"; Break}
-			"Online"		{$FSLogixDeploymentSettingsDeploymentMethod = "Install online"; Break}
-			"NetworkDrive"	{$FSLogixDeploymentSettingsDeploymentMethod = "Install from a network share"; Break}
-			"UploadInstall"	{$FSLogixDeploymentSettingsDeploymentMethod = "Push from RAS Publishing Agent"; Break}
-			Default			{$FSLogixDeploymentSettingsDeploymentMethod = "Unable to determine FSLogix Deployment method: $($FSLogixDeploymentSettings.InstallType)"; Break}
+			WriteWordLine 0 0 ""
+			WriteWordLine 0 0 "Unable to retrieve Application Packages Settings information"
+			WriteWordLine 0 0 ""
 		}
-		
-		$FSLogixDeploymentSettingsInstallOnlineURL  = $FSLogixDeploymentSettings.InstallOnlineURL
-		$FSLogixDeploymentSettingsNetworkDrivePath  = $FSLogixDeploymentSettings.NetworkDrivePath
-		$FSLogixDeploymentSettingsInstallerFileName = $FSLogixDeploymentSettings.InstallerFileName
-		$FSLogixDeploymentSettingsReplicate         = $FSLogixDeploymentSettings.Replicate.ToString()
-		
-		$AVDSettings = Get-RASAVDSettings -SiteID $Site.Id-EA 0 4>$Null
-		
-		If(!($?) -or $Null -eq $AVDSettings)
+		If($Text)
 		{
-			$AVDMgmtEnabled = "False"
-			$AVDClientFeatureSet = ""
-			$AVDReplicate = "False"
+			Line 0 ""
+			Line 0 "Unable to retrieve Application Packages Settings information"
+			Line 0 ""
+		}
+		If($HTML)
+		{
+			WriteHTMLLine 0 0 ""
+			WriteHTMLLine 0 0 "Unable to retrieve Application Packages Settings information"
+			WriteHTMLLine 0 0 ""
+		}
+	}
+	ElseIf($? -and $null -eq $AppPackageSettings)
+	{
+		Write-Host "
+		No Application Packages Settings information was found
+		" -ForegroundColor White
+		If($MSWord -or $PDF)
+		{
+			WriteWordLine 0 0 ""
+			WriteWordLine 0 0 "No Application Packages Settings information was found"
+			WriteWordLine 0 0 ""
+		}
+		If($Text)
+		{
+			Line 0 ""
+			Line 0 "No Application Packages Settings information was found"
+			Line 0 ""
+		}
+		If($HTML)
+		{
+			WriteHTMLLine 0 0 ""
+			WriteHTMLLine 0 0 "No Application Packages Settings information was found"
+			WriteHTMLLine 0 0 ""
+		}
+	}
+	Else
+	{
+		OutputRASAppPackageSettings $AppPackageSettings
+	}
+}
+
+Function OutputRASURLRedirection
+{
+	Param([object] $URLRedirectionSettings)
+	
+	Write-Verbose "$(Get-Date -Format G): `t`tOutput URL Redirection"
+	
+	If($MSWord -or $PDF)
+	{
+		WriteWordLine 3 0 "URL redirection"
+	}
+	If($Text)
+	{
+		Line 2 "URL redirection"
+	}
+	If($HTML)
+	{
+		WriteHTMLLine 3 0 "URL redirection"
+	}
+		
+	If($URLRedirectionSettings.URLs.Count -eq 0)
+	{
+		If($URLRedirectionSettings.DefaultAction -eq "Redirect")
+		{
+			$URLAction = "Redirect"
 		}
 		Else
 		{
-			$AVDMgmtEnabled      = $AVDSettings.Enabled.ToString()
-			$AVDReplicate        = $AVDSettings.Replicate.ToString()
-			$AVDClientFeatureSet = ""
-			Switch($AVDSettings.ClientFeatureSet)
-			{
-				"Standard"				{$AVDClientFeatureSet = "Standard"; Break}
-				"Advanced"				{$AVDClientFeatureSet = "Advanced"; Break}
-				"AdvancedWithFallback"	{$AVDClientFeatureSet = "Advanced with fallback"; Break}
-				Default					{$AVDClientFeatureSet = "Unable to determine AVD Client feature set: $($AVDSettings.ClientFeatureSet)"; Break}
-			}
+			$URLAction = "Do not redirect"
+		}
+		If($HTML)
+		{
+			WriteHTMLLine 3 0 "URL redirection"
 		}
 		
 		If($MSWord -or $PDF)
 		{
-			WriteWordLine 3 0 "Features"
 			$ScriptInformation = New-Object System.Collections.ArrayList
-			$ScriptInformation.Add(@{Data = "FSLogix"; Value = ""; }) > $Null
-			$ScriptInformation.Add(@{Data = "     Deployment method"; Value = $FSLogixDeploymentSettingsDeploymentMethod; }) > $Null
-			If($FSLogixDeploymentSettings.InstallType -eq "Online")
-			{
-				$ScriptInformation.Add(@{Data = "     URL"; Value = $FSLogixDeploymentSettingsInstallOnlineURL; }) > $Null
-			}
-			ElseIf($FSLogixDeploymentSettings.InstallType -eq "NetworkDrive")
-			{
-				$ScriptInformation.Add(@{Data = "     Install from a network share"; Value = $FSLogixDeploymentSettingsNetworkDrivePath; }) > $Null
-			}
-			ElseIf($FSLogixDeploymentSettings.InstallType -eq "UploadInstall")
-			{
-				$ScriptInformation.Add(@{Data = "     Push from a Connection Broker"; Value = $FSLogixDeploymentSettingsInstallerFileName; }) > $Null
-			}
-			$ScriptInformation.Add(@{Data = "     Settings are replicated to all Sites"; Value = $FSLogixDeploymentSettingsReplicate; }) > $Null
-			$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
-			$ScriptInformation.Add(@{Data = "Azure Virtual Desktop"; Value = ""; }) > $Null
-			$ScriptInformation.Add(@{Data = "     Enable Azure Virtual Desktop management"; Value = $AVDMgmtEnabled; }) > $Null
-			$ScriptInformation.Add(@{Data = "     Client feature set"; Value = $AVDClientFeatureSet; }) > $Null
-			$ScriptInformation.Add(@{Data = "     Settings are replicated to all Sites"; Value = $AVDReplicate; }) > $Null
-			
+			$ScriptInformation.Add(@{Data = "URL"; Value = "*"; }) > $Null
+			$ScriptInformation.Add(@{Data = "Enabled"; Value = "True"; }) > $Null
+			$ScriptInformation.Add(@{Data = "Action"; Value = $URLAction; }) > $Null
+			$ScriptInformation.Add(@{Data = "ID"; Value = "0"; }) > $Null
+			$ScriptInformation.Add(@{Data = "Settings are replicated to all Sites"; Value = $URLRedirectionSettings.Replicate.ToString(); }) > $Null
+
 			$Table = AddWordTable -Hashtable $ScriptInformation `
 			-Columns Data,Value `
 			-List `
@@ -41464,7 +41482,7 @@ Function OutputSettingsDetails
 			SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 			SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-			$Table.Columns.Item(1).Width = 250;
+			$Table.Columns.Item(1).Width = 200;
 			$Table.Columns.Item(2).Width = 250;
 
 			$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
@@ -41475,57 +41493,1039 @@ Function OutputSettingsDetails
 		}
 		If($Text)
 		{
-			Line 2 "Features"
-			Line 3 "FSLogix"
-			Line 4 "Deployment method`t`t`t: " $FSLogixDeploymentSettingsDeploymentMethod
-			If($FSLogixDeploymentSettings.InstallType -eq "Online")
-			{
-				Line 4 "URL`t`t`t`t`t: " $FSLogixDeploymentSettingsInstallOnlineURL
-			}
-			ElseIf($FSLogixDeploymentSettings.InstallType -eq "NetworkDrive")
-			{
-				Line 4 "Install from a network share`t`t: " $FSLogixDeploymentSettingsNetworkDrivePath
-			}
-			ElseIf($FSLogixDeploymentSettings.InstallType -eq "UploadInstall")
-			{
-				Line 4 "Push from a Connection Broker`t`t: " $FSLogixDeploymentSettingsInstallerFileName
-			}
-			Line 4 "Settings are replicated to all Sites`t: " $FSLogixDeploymentSettingsReplicate
-			Line 3 "Azure Virtual Desktop"
-			Line 4 "Enable Azure Virtual Desktop management`t: " $AVDMgmtEnabled
-			Line 4 "Client feature set`t`t`t: " $AVDClientFeatureSet
-			Line 4 "Settings are replicated to all Sites`t: " $AVDReplicate
+			Line 3 "URL: " "*"
+			Line 3 "Enabled: " "True"
+			Line 3 "Action: " $URLAction
+			Line 3 "ID: " "0"
+			Line 3 "Settings are replicated to all Sites: " $URLRedirectionSettings.Replicate.ToString()
 			Line 0 ""
 		}
 		If($HTML)
 		{
-			WriteHTMLLine 3 0 "Features"
 			$rowdata = @()
-			$columnHeaders = @("FSLogix",($Script:htmlsb),"",$htmlwhite)
-			$rowdata += @(,("     Deployment method",($Script:htmlsb),$FSLogixDeploymentSettingsDeploymentMethod,$htmlwhite))
-			If($FSLogixDeploymentSettings.InstallType -eq "Online")
-			{
-				$rowdata += @(,("     URL",($Script:htmlsb),$FSLogixDeploymentSettingsInstallOnlineURL,$htmlwhite))
-			}
-			ElseIf($FSLogixDeploymentSettings.InstallType -eq "NetworkDrive")
-			{
-				$rowdata += @(,("     Install from a network share",($Script:htmlsb),$FSLogixDeploymentSettingsNetworkDrivePath,$htmlwhite))
-			}
-			ElseIf($FSLogixDeploymentSettings.InstallType -eq "UploadInstall")
-			{
-				$rowdata += @(,("     Push from a Connection Broker",($Script:htmlsb),$FSLogixDeploymentSettingsInstallerFileName,$htmlwhite))
-			}
-			$rowdata += @(,("     Settings are replicated to all Sites",($Script:htmlsb),$FSLogixDeploymentSettingsReplicate,$htmlwhite))
-			$rowdata += @(,("Azure Virtual Desktop",($Script:htmlsb),"",$htmlwhite))
-			$rowdata += @(,("     Enable Azure Virtual Desktop management",($Script:htmlsb),$AVDMgmtEnabled,$htmlwhite))
-			$rowdata += @(,("     Client feature set",($Script:htmlsb),$AVDClientFeatureSet,$htmlwhite))
-			$rowdata += @(,("     Settings are replicated to all Sites",($Script:htmlsb),$AVDReplicate,$htmlwhite))
-					
+			$columnHeaders = @("URL",($Script:htmlsb),"*",$htmlwhite)
+			$rowdata += @(,("URL",($Script:htmlsb), "*",$htmlwhite))
+			$rowdata += @(,("Enabled",($Script:htmlsb), "True",$htmlwhite))
+			$rowdata += @(,("Action",($Script:htmlsb), $URLAction,$htmlwhite))
+			$rowdata += @(,("ID",($Script:htmlsb), "0",$htmlwhite))
+			$rowdata += @(,("Settings are replicated to all Sites",($Script:htmlsb), $URLRedirectionSettings.Replicate.ToString(),$htmlwhite))
+
 			$msg = ""
-			$columnWidths = @("275","225")
+			$columnWidths = @("200","275")
+			FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+
+			WriteHTMLLine 0 0 ""
+		}
+	}
+	Else
+	{
+		If($URLRedirectionSettings.DefaultAction -eq "Redirect")
+		{
+			$URLAction = "Redirect"
+		}
+		Else
+		{
+			$URLAction = "Do not redirect"
+		}
+
+		$URLList = New-Object System.Collections.ArrayList
+		
+		$obj = [PSCustomObject]@{	
+			URL      = "*"
+			Enabled  = "True"
+			Priority = "4294967295"
+			Action   = $URLAction
+			ID       = "0"
+		}			
+		$Null = $URLList.Add($obj)
+		
+		ForEach($item in $URLRedirectionSettings.URLs)
+		{
+			$Result = Get-RASURLRedirectionEntry -Siteid $Site.Id -Id $item.Id -EA 0 4> $Null
+			
+			If($item.Action -eq "Redirect")
+			{
+				$URLAction = "Redirect"
+			}
+			Else
+			{
+				$URLAction = "Do not redirect"
+			}
+
+			$obj = [PSCustomObject]@{	
+				URL      = $item.URL
+				Enabled  = $item.Enabled.ToString()
+				Priority = $item.Priority.ToString()
+				Action   = $URLAction
+				ID       = $item.Id.ToString()
+			}			
+			$Null = $URLList.Add($obj)
+		}
+		
+		$URLList = $URLList | Sort-Object Priority
+		
+		If($MSWord -or $PDF)
+		{
+			[System.Collections.Hashtable[]] $URLListWordTable = @();
+			ForEach($URL in $URLList)
+			{
+				$URLListWordTable += @{
+					URL      = $URL.URL;
+					Enabled  = $URL.Enabled;
+					Priority = $URL.Priority;
+					Action   = $URL.Action;
+					ID       = $URL.Id;
+				}						
+			}
+			
+			$Table = AddWordTable -Hashtable $URLListWordTable `
+			-Columns URL, Enabled, Action, ID `
+			-Headers "URL", "Enabled", "Action", "ID" `
+			-Format $wdTableGrid `
+			-AutoFit $wdAutoFitFixed;
+
+			SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+			$Table.Columns.Item(1).Width = 250;
+			$Table.Columns.Item(2).Width = 50;
+			$Table.Columns.Item(3).Width = 100;
+			$Table.Columns.Item(4).Width = 50;
+			
+			$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+			FindWordDocumentEnd
+			$Table = $Null
+			WriteWordLine 0 0 ""
+
+			$ScriptInformation = New-Object System.Collections.ArrayList
+			$ScriptInformation.Add(@{Data = "Settings are replicated to all Sites"; Value = $URLRedirectionSettings.Replicate.ToString(); }) > $Null
+
+			$Table = AddWordTable -Hashtable $ScriptInformation `
+			-Columns Data,Value `
+			-List `
+			-Format $wdTableGrid `
+			-AutoFit $wdAutoFitFixed;
+
+			SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+			SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+			$Table.Columns.Item(1).Width = 250;
+			$Table.Columns.Item(2).Width = 50;
+
+			$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+			FindWordDocumentEnd
+			$Table = $Null
+			WriteWordLine 0 0 ""
+		}
+		If($Text)
+		{
+			Line 0 ""
+			Line 2 "URL                                                 Enabled  Action           ID "
+			Line 2 "================================================================================="
+			#		https://www.somereallylongurl.com/somelongsitename  False    Do not redirect  999
+			#		12345678901234567890123456789012345678901234567890SS1234567SS123456789012345SS123
+			ForEach($item in $URLList)
+			{
+				Line 2 ( "{0,-50}  {1,-7}  {2,-15}  {3,-3}" -f $item.URL, $item.Enabled, $item.Action, $item.ID)
+			}
+			Line 0 ""
+			Line 2 "Settings are replicated to all Sites: " $URLRedirectionSettings.Replicate.ToString()
+			Line 0 ""
+		}
+		If($HTML)
+		{
+			$rowdata = @()
+			ForEach($item in $URLList)
+			{
+				$rowdata += @(,(
+					$item.URL,$htmlwhite,
+					$item.Enabled,$htmlwhite,
+					$item.Action,$htmlwhite,
+					$item.ID,$htmlwhite
+					))
+			}
+
+			$columnHeaders = @(
+			"URL",($Script:htmlsb),
+			"Enabled",($Script:htmlsb),
+			"Action",($Script:htmlsb),
+			"ID",($Script:htmlsb))
+
+			$msg = ""
+			$columnWidths = @("250","50","100","50")
+			FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+			WriteHTMLLine 0 0 ""
+
+			$rowdata = @()
+			$columnHeaders = @("Settings are replicated to all Sites",($Script:htmlsb),$URLRedirectionSettings.Replicate.ToString(),$htmlwhite)
+
+			$msg = ""
+			$columnWidths = @("250","50")
+			FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+
+			WriteHTMLLine 0 0 ""
+		}
+	}
+}
+
+Function OutputRASNotificationHandlers
+{
+	Param([object] $RASNotificationHandlers)
+	
+	Write-Verbose "$(Get-Date -Format G): `t`tOutput Notification Handlers"
+	
+	If($MSWord -or $PDF)
+	{
+		WriteWordLine 3 0 "Notifications"
+		WriteWordLine 4 0 "Notification handlers"
+	}
+	If($Text)
+	{
+		Line 1 "Notifications"
+		Line 2 "Notification handlers"
+	}
+	If($HTML)
+	{
+		WriteHTMLLine 3 0 "Notifications"
+		WriteHTMLLine 4 0 "Notification handlers"
+	}
+	
+	ForEach($RASNotificationHandler in $RASNotificationHandlers)
+	{
+		If($RASNotificationHandler.HasThreshold)
+		{
+			Switch ($RASNotificationHandler.Direction)
+			{
+				"LowersBelow"	{$RASNotificationHandlerDirection = "Decreases below"; Break}
+				"RisesAbove"	{$RASNotificationHandlerDirection = "Rises above"; Break}
+				Default			{$RASNotificationHandlerDirection = "Unable to determine notification direction: $($RASNotificationHandler.Direction)"; Break}
+			}
+		}
+		Else
+		{
+			$RASNotificationHandlerDirection = ""
+		}
+		
+		Switch ($RASNotificationHandler.Type)
+		{
+			"CPUEvent"							{$RASNotificationText = "CPU utilization $RASNotificationHandlerDirection $($RASNotificationHandler.Threshold) %"; Break}
+			"MemoryEvent"						{$RASNotificationText = "Memory utilization $RASNotificationHandlerDirection $($RASNotificationHandler.Threshold) %"; Break}
+			"ConnectedSessionEvent"				{$RASNotificationText = "Number of RDSH sessions $RASNotificationHandlerDirection $($RASNotificationHandler.Threshold)"; Break}
+			"DisconnectSessionEvent"			{$RASNotificationText = "Number of disconnected RDSH sessions $RASNotificationHandlerDirection $($RASNotificationHandler.Threshold)"; Break}
+			"RDSHConnectSessionEvent"			{$RASNotificationText = "RDSH active sessions utilization $RASNotificationHandlerDirection $($RASNotificationHandler.Threshold) %"; Break}
+			"RDSHDisconnectSessionEvent"		{$RASNotificationText = "RDSH disconnected sessions utilization $RASNotificationHandlerDirection $($RASNotificationHandler.Threshold)"; Break}
+			"RDSHConnectedSessionEventPerc"		{$RASNotificationText = "RDSH active sessions utilization $RASNotificationHandlerDirection $($RASNotificationHandler.Threshold) %"; Break}
+			"RDSHDisconnectedSessionEventPerc"	{$RASNotificationText = "RDSH disconnected sessions utilization $RASNotificationHandlerDirection $($RASNotificationHandler.Threshold)"; Break}
+			"34660353"							{$RASNotificationText = "AVD active sessions utilization $RASNotificationHandlerDirection $($RASNotificationHandler.Threshold) %"; Break}
+			"34660354"							{$RASNotificationText = "AVD disconnected sessions utilization $RASNotificationHandlerDirection $($RASNotificationHandler.Threshold)"; Break}
+			"TunneledSess"						{$RASNotificationText = "Number of Secure Gateway tunnelled sessions $RASNotificationHandlerDirection $($RASNotificationHandler.Threshold)"; Break}
+			"FailedTunneledSess"				{$RASNotificationText = "Failed Tunneled Session"; Break}
+			"FailedTunneledSessTenantBroker"	{$RASNotificationText = "Failed Tunneled Session Tenant Broker"; Break}
+			"TunneledSess"						{$RASNotificationText = "Number of Secure Gateway tunnelled sessions $RASNotificationHandlerDirection $($RASNotificationHandler.Threshold)"; Break}
+			"CPU"								{$RASNotificationText = "CPU"; Break}
+			"Memory"							{$RASNotificationText = "Memory"; Break}
+			"RDSH"								{$RASNotificationText = "RDSH"; Break}
+			"Gateway"							{$RASNotificationText = "Secure Gateway"; Break}
+			"GW"								{$RASNotificationText = "Failed Secure Gateway tunnelled sessions"; Break}
+			"Disk"								{$RASNotificationText = "Disk"; Break}
+			"Tenant"							{$RASNotificationText = "Tenant"; Break}
+			"1097729"							{$RASNotificationText = "Failed Secure Gateway tunnelled sessions"; Break}
+			"Agent"								{$RASNotificationText = "RAS Agents events"; Break}
+			"License"							{$RASNotificationText = "Licensing events"; Break}
+			"Authentication"					{$RASNotificationText = "Authentication server events"; Break}
+			"PubItem"							{$RASNotificationText = "Published items events"; Break}
+			"VDI"								{$RASNotificationText = "Template events"; Break}
+			"45056"								{$RASNotificationText = "Tenants events"; Break}
+			"AVDActiveSessionsUtilization"		{$RASNotificationText = "AVD Active Sessions Utilization"; Break}
+			"AVDDisconnectedSessionsUtilization"{$RASNotificationText = "AVD Disconnected Sessions Utilization"; Break}
+			"Unknown"							{$RASNotificationText = "Unknown"; Break}
+			Default								{$RASNotificationText = "Unable to determine event type: $($RASNotificationHandler.Type)"; Break}
+		}
+		
+		$GracePeriod           = ($RASNotificationHandler.GracePeriod.ToString())
+		$NotificationsInterval = ($RASNotificationHandler.Interval.ToString())
+		
+		If($MSWord -or $PDF)
+		{
+			$ScriptInformation = New-Object System.Collections.ArrayList
+			$ScriptInformation.Add(@{Data = "Events"; Value = $RASNotificationText; }) > $Null
+			$ScriptInformation.Add(@{Data = 'Enabled'; Value = $RASNotificationHandler.Enabled.ToString(); }) > $Null
+			If($RASNotificationHandler.Enabled)
+			{
+				$ScriptInformation.Add(@{Data = 'Send email to RAS administrators'; Value = $RASNotificationHandler.SendEmail; }) > $Null
+				
+				If($RASNotificationHandler.Recipients -eq "")
+				{
+					$ScriptInformation.Add(@{Data = 'Handler'; Value = ""; }) > $Null
+				}
+				Else
+				{
+					$tmpArray = $RASNotificationHandler.Recipients.Split(",").Split(";")
+					
+					$cnt = -1
+					ForEach($item in $tmpArray)
+					{
+						$cnt++
+						
+						If($cnt -eq 0)
+						{
+							$ScriptInformation.Add(@{Data = 'Handler'; Value = $item; }) > $Null
+						}
+						Else
+						{
+							$ScriptInformation.Add(@{Data = ''; Value = $item; }) > $Null
+						}
+					}
+					$tmpArray = $Null
+				}
+				$ScriptInformation.Add(@{Data = 'Execute a notification script'; Value = $RASNotificationHandler.ExecuteScript; }) > $Null
+				
+				If($RASNotificationHandler.ExecuteScript)
+				{
+					$results = Get-RASNotificationScript -id $RASNotificationHandler.ScriptId -EA 0 4>$Null
+					
+					If(!($?))
+					{
+						$ScriptName = "Unable to retrieve script name"
+					}
+					Else
+					{
+						$ScriptName = $results.Name
+					}
+					
+					$ScriptInformation.Add(@{Data = ''; Value = $ScriptName; }) > $Null
+					$ScriptName = $Null
+				}
+
+				$ScriptInformation.Add(@{Data = 'Notification handler grace period'; Value = "$GracePeriod minutes"; }) > $Null
+				If($RASNotificationHandler.EnableInterval)
+				{
+					$ScriptInformation.Add(@{Data = 'Notifications interval'; Value = "$NotificationsInterval minutes"; }) > $Null
+				}
+				Else
+				{
+					$ScriptInformation.Add(@{Data = 'Send one notification and suspend further notifications until recovered'; Value = ""; }) > $Null
+				}
+			}
+
+			$Table = AddWordTable -Hashtable $ScriptInformation `
+			-Columns Data,Value `
+			-List `
+			-Format $wdTableGrid `
+			-AutoFit $wdAutoFitFixed;
+
+			SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+			SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+			$Table.Columns.Item(1).Width = 200;
+			$Table.Columns.Item(2).Width = 250;
+
+			$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+			FindWordDocumentEnd
+			$Table = $Null
+			WriteWordLine 0 0 ""
+		}
+		If($Text)
+		{
+			Line 3 "Events`t`t`t`t`t: " $RASNotificationText
+			Line 3 "Enabled`t`t`t`t`t: " $RASNotificationHandler.Enabled.ToString()
+			If($RASNotificationHandler.Enabled)
+			{
+				Line 3 "Send email to RAS administrators`t: " $RASNotificationHandler.SendEmail
+				
+				If($RASNotificationHandler.Recipients -eq "")
+				{
+					Line 3 "Handler`t`t`t`t`t: " ""
+				}
+				Else
+				{
+					$tmpArray = $RASNotificationHandler.Recipients.Split(",").Split(";")
+					
+					$cnt = -1
+					ForEach($item in $tmpArray)
+					{
+						$cnt++
+						
+						If($cnt -eq 0)
+						{
+							Line 3 "Handler`t`t`t`t`t: " $item
+						}
+						Else
+						{
+							Line 8 '  ' $item
+						}
+					}
+					$tmpArray = $Null
+				}
+				Line 3 "Execute a notification script`t`t: " $RASNotificationHandler.ExecuteScript
+				
+				If($RASNotificationHandler.ExecuteScript)
+				{
+					$results = Get-RASNotificationScript -id $RASNotificationHandler.ScriptId -EA 0 4>$Null
+					
+					If(!($?))
+					{
+						$ScriptName = "Unable to retrieve script name"
+					}
+					Else
+					{
+						$ScriptName = $results.Name
+					}
+					
+					Line 8 '  ' $ScriptName
+					$ScriptName = $Null
+				}
+
+				Line 3 "Notification handler grace period`t: " "$GracePeriod minutes"
+				If($RASNotificationHandler.EnableInterval)
+				{
+					Line 3 "Notifications interval`t`t`t: " "$NotificationsInterval minutes"
+				}
+				Else
+				{
+					Line 3 'Send one notification and suspend further notifications until recovered'
+				}
+			}
+			Line 0 ""
+		}
+		If($HTML)
+		{
+			$rowdata = @()
+			$columnHeaders = @("Events",($Script:htmlsb),$RASNotificationText,$htmlwhite)
+			$rowdata += @(,("Enabled",($Script:htmlsb),$RASNotificationHandler.Enabled.ToString(),$htmlwhite))
+			If($RASNotificationHandler.Enabled)
+			{
+				$rowdata += @(,("Send email to RAS administrators",($Script:htmlsb),$RASNotificationHandler.SendEmail.ToString(),$htmlwhite))
+				
+				If($RASNotificationHandler.Recipients -eq "")
+				{
+					$rowdata += @(,("Handler",($Script:htmlsb),"",$htmlwhite))
+				}
+				Else
+				{
+					$tmpArray = $RASNotificationHandler.Recipients.Split(",").Split(";")
+					
+					$cnt = -1
+					ForEach($item in $tmpArray)
+					{
+						$cnt++
+						
+						If($cnt -eq 0)
+						{
+							$rowdata += @(,("Handler",($Script:htmlsb),$item,$htmlwhite))
+						}
+						Else
+						{
+							$rowdata += @(,("",($Script:htmlsb),$item,$htmlwhite))
+						}
+					}
+					$tmpArray = $Null
+				}
+				$rowdata += @(,("Execute a notification script",($Script:htmlsb),$RASNotificationHandler.ExecuteScript.ToString(),$htmlwhite))
+				
+				If($RASNotificationHandler.ExecuteScript)
+				{
+					$results = Get-RASNotificationScript -id $RASNotificationHandler.ScriptId -EA 0 4>$Null
+					
+					If(!($?))
+					{
+						$ScriptName = "Unable to retrieve script name"
+					}
+					Else
+					{
+						$ScriptName = $results.Name
+					}
+					
+					$rowdata += @(,("",($Script:htmlsb),$ScriptName,$htmlwhite))
+					$ScriptName = $Null
+				}
+
+				$rowdata += @(,( "Notification handler grace period",($Script:htmlsb),"$GracePeriod minutes",$htmlwhite))
+				If($RASNotificationHandler.EnableInterval)
+				{
+					$rowdata += @(,("Notifications interval",($Script:htmlsb),"$NotificationsInterval minutes",$htmlwhite))
+				}
+				Else
+				{
+					$rowdata += @(,("Send one notification and suspend further notifications until recovered",($Script:htmlsb),"",$htmlwhite))
+				}
+			}
+
+			$msg = ""
+			$columnWidths = @("250","225")
 			FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 			WriteHTMLLine 0 0 ""
 		}
+	}
+}
+
+Function OutputRASNotificationScripts
+{
+	Param([object] $RASNotificationScripts)
+	
+	Write-Verbose "$(Get-Date -Format G): `t`tOutput Notification Scripts"
+	
+	If($MSWord -or $PDF)
+	{
+		WriteWordLine 4 0 "Notification scripts"
+	}
+	If($Text)
+	{
+		Line 2 "Notification scripts"
+	}
+	If($HTML)
+	{
+		WriteHTMLLine 4 0 "Notification scripts"
+	}
+	
+	ForEach($RASNotificationScript in $RASNotificationScripts)
+	{
+		If($MSWord -or $PDF)
+		{
+			$ScriptInformation = New-Object System.Collections.ArrayList
+			$ScriptInformation.Add(@{Data = "Script name"; Value = $RASNotificationScript.Name; }) > $Null
+			$ScriptInformation.Add(@{Data = 'Command'; Value = $RASNotificationScript.Command; }) > $Null
+			$ScriptInformation.Add(@{Data = 'Arguments'; Value = $RASNotificationScript.Arguments; }) > $Null
+			$ScriptInformation.Add(@{Data = 'Initial directory'; Value = $RASNotificationScript.InitialDirectory; }) > $Null
+			$ScriptInformation.Add(@{Data = 'User name'; Value = $RASNotificationScript.Username; }) > $Null
+
+			$Table = AddWordTable -Hashtable $ScriptInformation `
+			-Columns Data,Value `
+			-List `
+			-Format $wdTableGrid `
+			-AutoFit $wdAutoFitFixed;
+
+			SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+			SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+			$Table.Columns.Item(1).Width = 100;
+			$Table.Columns.Item(2).Width = 350;
+
+			$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+			FindWordDocumentEnd
+			$Table = $Null
+			WriteWordLine 0 0 ""
+		}
+		If($Text)
+		{
+			Line 3 "Script name`t`t`t: " $RASNotificationScript.Name
+			Line 3 "Command`t`t`t`t: " $RASNotificationScript.Command
+			Line 3 "Arguments`t`t`t: " $RASNotificationScript.Arguments
+			Line 3 "Initial directory`t`t: " $RASNotificationScript.InitialDirectory
+			Line 3 "User name`t`t`t: " $RASNotificationScript.Username
+			Line 0 ""
+		}
+		If($HTML)
+		{
+			$rowdata = @()
+			$columnHeaders = @("Script name",($Script:htmlsb),$RASNotificationScript.Name,$htmlwhite)
+			$rowdata += @(,("Command",($Script:htmlsb),$RASNotificationScript.Command,$htmlwhite))
+			$rowdata += @(,("Arguments",($Script:htmlsb),$RASNotificationScript.Arguments,$htmlwhite))
+			$rowdata += @(,("Initial directory",($Script:htmlsb),$RASNotificationScript.InitialDirectory,$htmlwhite))
+			$rowdata += @(,("User name",($Script:htmlsb),$RASNotificationScript.Username,$htmlwhite))
+
+			$msg = ""
+			$columnWidths = @("100","350")
+			FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+			WriteHTMLLine 0 0 ""
+		}
+	}
+}
+
+Function OutputRASClientSettings
+{
+	Param([object] $RASClientSettings)
+
+	Write-Verbose "$(Get-Date -Format G): `t`tOutput Client Settings"
+	
+	<#
+		ExcludeDirectRDP         :
+		ExcludeDirectRDPForVDI   :
+		SendHDIcons              : True
+		ReplicateSendHDIcons     : True
+		EnableOverlayIcons       : True
+		OverlayIcon              : ParallelsRemoteApplication
+		ShowPasswordExpiry       : False
+		ForceSessionsReset       : False
+		TokenValidationExpireMin : 60
+	#>
+
+	Switch($RASClientSettings.OverlayIcon)
+	{
+		"None"							{$Overlay = "None"; Break}
+		"ParallelsRemoteApplication"	{$Overlay = "Parallels Remote Application Server"; Break}
+		"MicrosoftRemoteApp"			{$Overlay = "Microsoft RemoteApp"; Break}
+		Default							{$Overlay = "Unable to determine Overlay option: $($RASClientSettings.OverlayIcon)"; Break}
+	}
+	
+	If($MSWord -or $PDF)
+	{
+		WriteWordLine 3 0 "Client settings"
+		$ScriptInformation = New-Object System.Collections.ArrayList
+		$ScriptInformation.Add(@{Data = "Published application icons"; Value = ""; }) > $Null
+		If($RASClientSettings.SendHDIcons)
+		{
+			$ScriptInformation.Add(@{Data = "     Resolution"; Value = "High resolution icons (uses more network bandwidth)"; }) > $Null
+		}
+		Else
+		{
+			$ScriptInformation.Add(@{Data = "     Resolution"; Value = "Standard resolution icons"; }) > $Null
+		}
+		$ScriptInformation.Add(@{Data = "     Overlay:"; Value = $Overlay; }) > $Null
+		$ScriptInformation.Add(@{Data = "Password notifications"; Value = ""; }) > $Null
+		$ScriptInformation.Add(@{Data = "     Show password expiration reminder"; Value = $RASClientSettings.ShowPasswordExpiry.ToString(); }) > $Null
+		$ScriptInformation.Add(@{Data = "Session reset"; Value = ""; }) > $Null
+		$ScriptInformation.Add(@{Data = "     Force session reset on logoff from Parallels Client"; Value = $RASClientSettings.ForceSessionsReset.ToString(); }) > $Null
+		$ScriptInformation.Add(@{Data = "Settings are replicated to all Sites"; Value = $RASClientSettings.ReplicateSendHDIcons.ToString(); }) > $Null
+
+		$Table = AddWordTable -Hashtable $ScriptInformation `
+		-Columns Data,Value `
+		-List `
+		-Format $wdTableGrid `
+		-AutoFit $wdAutoFitFixed;
+
+		SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
+		SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+		$Table.Columns.Item(1).Width = 200;
+		$Table.Columns.Item(2).Width = 225;
+
+		$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+		FindWordDocumentEnd
+		$Table = $Null
+
+		WriteWordLine 0 0 ""
+	}
+	If($Text)
+	{
+		Line 2 "Client settings"
+		Line 3 "Published application icons"
+		If($RASClientSettings.SendHDIcons)
+		{
+			Line 4 "Resolution`t: " "High resolution (uses more network bandwidth)"
+		}
+		Else
+		{
+			Line 4 "Resolution`t: " "Standard resolution"
+		}
+		Line 4 "Overlay`t`t: " $Overlay
+		Line 3 "Password notifications"
+		Line 4 "Show password expiration reminder: " $RASClientSettings.ShowPasswordExpiry.ToString()
+		Line 3 "Session reset"
+		Line 4 "Force session reset on logoff from Parallels Client: " $RASClientSettings.ForceSessionsReset.ToString()
+		Line 3 "Settings are replicated to all Sites`t : " $RASClientSettings.ReplicateSendHDIcons.ToString()
+		Line 0 ""
+	}
+	If($HTML)
+	{
+		WriteHTMLLine 3 0 "Client settings"
+		$rowdata = @()
+		$columnHeaders = @("Published application icons",($Script:htmlsb),"",$htmlwhite)
+		If($RASClientSettings.SendHDIcons)
+		{
+			$rowdata += @(,("     Resolution:",($Script:htmlsb),"High resolution (uses more network bandwidth)",$htmlwhite))
+		}
+		Else
+		{
+			$rowdata += @(,("     Resolution:",($Script:htmlsb),"Standard resolution",$htmlwhite))
+		}
+		$rowdata += @(,("     Overlay:",($Script:htmlsb),$Overlay,$htmlwhite))
+		$rowdata += @(,("Password notifications",($Script:htmlsb),"",$htmlwhite))
+		$rowdata += @(,("     Show password expiration reminder",($Script:htmlsb),$RASClientSettings.ShowPasswordExpiry.ToString(),$htmlwhite))
+		$rowdata += @(,("Session reset",($Script:htmlsb),"",$htmlwhite))
+		$rowdata += @(,("     Force session reset on logoff from Parallels Client",($Script:htmlsb),$RASClientSettings.ForceSessionsReset.ToString(),$htmlwhite))
+		$rowdata += @(,("Settings are replicated to all Sites",($Script:htmlsb),$RASClientSettings.ReplicateSendHDIcons.ToString(),$htmlwhite))
+
+		$msg = ""
+		$columnWidths = @("350","350")
+		FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+
+		WriteHTMLLine 0 0 ""
+	}
+}
+
+Function OutputRASTemplateVersionSettings
+{
+	Param([object] $TemplateVersions)
+
+	Write-Verbose "$(Get-Date -Format G): `t`tOutput Template Versions"
+
+	If($MSWord -or $PDF)
+	{
+		WriteWordLine 3 0 "Template Versions"
+		$ScriptInformation = New-Object System.Collections.ArrayList
+		$VersionTable = @()
+	}
+	If($Text)
+	{
+		Line 2 "Template Versions"
+		Line 3 "ID   Tag name                      "
+		Line 3 "==================================="
+		#       999  123456789012345678901234567890  
+	}
+	If($HTML)
+	{
+		WriteHTMLLine 3 0 "Template Versions"
+		$rowdata = @()
+	}
+	
+	ForEach($TemplateVersion in $TemplateVersions)
+	{
+		If($MSWord -or $PDF)
+		{
+			ForEach($Tag in $TemplateVersion.Tags)
+			{
+				$VersionTable += @{
+					VersionID   = $Tag.Id
+					VersionName = $Tag.Name
+				}
+			}
+		}
+		If($Text)
+		{
+			ForEach($Tag in $TemplateVersion.Tags)
+			{
+				Line 3 ( "{0,-3}  {1,-30}" -f $Tag.Id, $Tag.Name)
+			}
+		}
+		If($HTML)
+		{
+			ForEach($Tag in $TemplateVersion.Tags)
+			{
+				$rowdata += @(,(
+					$Tag.Id,$htmlwhite,
+					$Tag.Name,$htmlwhite)
+				)
+			}
+		}
+	}
+	
+	If($MSWord -or $PDF)
+	{
+		If($VersionTable.Count -gt 0)
+		{
+			$Table = AddWordTable -Hashtable $VersionTable `
+			-Columns VersionID, VersionName `
+			-Headers "ID", "Tag name" `
+			-Format $wdTableGrid `
+			-AutoFit $wdAutoFitFixed;
+
+			SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+			$Table.Columns.Item(1).Width = 50;
+			$Table.Columns.Item(2).Width = 200;
+			
+			$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+			FindWordDocumentEnd
+			$Table = $Null
+			WriteWordLine 0 0 ""
+		}
+	}
+	If($Text)
+	{
+		Line 0 ""
+	}
+	If($HTML)
+	{
+		$columnHeaders = @(
+			"ID",($Script:htmlsb),
+			"Tag name",($Script:htmlsb)
+		)
+
+		$msg = ""
+		$columnWidths = @("50","200")
+		FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+		WriteHTMLLine 0 0 ""
+	}
+}
+
+Function OutputRASSiteFeatures
+{
+	Param([object] $FSLogixDeploymentSettings)
+
+	Write-Verbose "$(Get-Date -Format G): `t`tOutput Features"
+
+	Switch($FSLogixDeploymentSettings.InstallType)
+	{
+		"Manually"		{$FSLogixDeploymentSettingsDeploymentMethod = "Install manually"; Break}
+		"Online"		{$FSLogixDeploymentSettingsDeploymentMethod = "Install online"; Break}
+		"NetworkDrive"	{$FSLogixDeploymentSettingsDeploymentMethod = "Install from a network share"; Break}
+		"UploadInstall"	{$FSLogixDeploymentSettingsDeploymentMethod = "Push from RAS Publishing Agent"; Break}
+		Default			{$FSLogixDeploymentSettingsDeploymentMethod = "Unable to determine FSLogix Deployment method: $($FSLogixDeploymentSettings.InstallType)"; Break}
+	}
+	
+	$FSLogixDeploymentSettingsInstallOnlineURL  = $FSLogixDeploymentSettings.InstallOnlineURL
+	$FSLogixDeploymentSettingsNetworkDrivePath  = $FSLogixDeploymentSettings.NetworkDrivePath
+	$FSLogixDeploymentSettingsInstallerFileName = $FSLogixDeploymentSettings.InstallerFileName
+	$FSLogixDeploymentSettingsReplicate         = $FSLogixDeploymentSettings.Replicate.ToString()
+	
+	$AVDSettings = Get-RASAVDSettings -SiteID $Site.Id-EA 0 4>$Null
+	
+	If(!($?) -or $Null -eq $AVDSettings)
+	{
+		$AVDMgmtEnabled = "False"
+		$AVDClientFeatureSet = ""
+		$AVDReplicate = "False"
+	}
+	Else
+	{
+		$AVDMgmtEnabled      = $AVDSettings.Enabled.ToString()
+		$AVDReplicate        = $AVDSettings.Replicate.ToString()
+		$AVDClientFeatureSet = ""
+		Switch($AVDSettings.ClientFeatureSet)
+		{
+			"Standard"				{$AVDClientFeatureSet = "Standard"; Break}
+			"Advanced"				{$AVDClientFeatureSet = "Advanced"; Break}
+			"AdvancedWithFallback"	{$AVDClientFeatureSet = "Advanced with fallback"; Break}
+			Default					{$AVDClientFeatureSet = "Unable to determine AVD Client feature set: $($AVDSettings.ClientFeatureSet)"; Break}
+		}
+	}
+
+	If($MSWord -or $PDF)
+	{
+		WriteWordLine 3 0 "Features"
+	}
+	If($Text)
+	{
+		Line 2 "Features"
+	}
+	If($HTML)
+	{
+		WriteHTMLLine 3 0 "Features"
+	}
+	
+	If($MSWord -or $PDF)
+	{
+		$ScriptInformation = New-Object System.Collections.ArrayList
+		$ScriptInformation.Add(@{Data = "FSLogix"; Value = ""; }) > $Null
+		$ScriptInformation.Add(@{Data = "     Deployment method"; Value = $FSLogixDeploymentSettingsDeploymentMethod; }) > $Null
+		If($FSLogixDeploymentSettings.InstallType -eq "Online")
+		{
+			$ScriptInformation.Add(@{Data = "     URL"; Value = $FSLogixDeploymentSettingsInstallOnlineURL; }) > $Null
+		}
+		ElseIf($FSLogixDeploymentSettings.InstallType -eq "NetworkDrive")
+		{
+			$ScriptInformation.Add(@{Data = "     Install from a network share"; Value = $FSLogixDeploymentSettingsNetworkDrivePath; }) > $Null
+		}
+		ElseIf($FSLogixDeploymentSettings.InstallType -eq "UploadInstall")
+		{
+			$ScriptInformation.Add(@{Data = "     Push from a Connection Broker"; Value = $FSLogixDeploymentSettingsInstallerFileName; }) > $Null
+		}
+		$ScriptInformation.Add(@{Data = "     Settings are replicated to all Sites"; Value = $FSLogixDeploymentSettingsReplicate; }) > $Null
+		$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+		$ScriptInformation.Add(@{Data = "Azure Virtual Desktop"; Value = ""; }) > $Null
+		$ScriptInformation.Add(@{Data = "     Enable Azure Virtual Desktop management"; Value = $AVDMgmtEnabled; }) > $Null
+		$ScriptInformation.Add(@{Data = "     Client feature set"; Value = $AVDClientFeatureSet; }) > $Null
+		$ScriptInformation.Add(@{Data = "     Settings are replicated to all Sites"; Value = $AVDReplicate; }) > $Null
+		
+		$Table = AddWordTable -Hashtable $ScriptInformation `
+		-Columns Data,Value `
+		-List `
+		-Format $wdTableGrid `
+		-AutoFit $wdAutoFitFixed;
+
+		SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
+		SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+		$Table.Columns.Item(1).Width = 200;
+		$Table.Columns.Item(2).Width = 300;
+
+		$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+		FindWordDocumentEnd
+		$Table = $Null
+		WriteWordLine 0 0 ""
+	}
+	If($Text)
+	{
+		Line 3 "FSLogix"
+		Line 4 "Deployment method`t`t`t: " $FSLogixDeploymentSettingsDeploymentMethod
+		If($FSLogixDeploymentSettings.InstallType -eq "Online")
+		{
+			Line 4 "URL`t`t`t`t`t: " $FSLogixDeploymentSettingsInstallOnlineURL
+		}
+		ElseIf($FSLogixDeploymentSettings.InstallType -eq "NetworkDrive")
+		{
+			Line 4 "Install from a network share`t`t: " $FSLogixDeploymentSettingsNetworkDrivePath
+		}
+		ElseIf($FSLogixDeploymentSettings.InstallType -eq "UploadInstall")
+		{
+			Line 4 "Push from a Connection Broker`t`t: " $FSLogixDeploymentSettingsInstallerFileName
+		}
+		Line 4 "Settings are replicated to all Sites`t: " $FSLogixDeploymentSettingsReplicate
+		Line 3 "Azure Virtual Desktop"
+		Line 4 "Enable Azure Virtual Desktop management`t: " $AVDMgmtEnabled
+		Line 4 "Client feature set`t`t`t: " $AVDClientFeatureSet
+		Line 4 "Settings are replicated to all Sites`t: " $AVDReplicate
+		Line 0 ""
+	}
+	If($HTML)
+	{
+		$rowdata = @()
+		$columnHeaders = @("FSLogix",($Script:htmlsb),"",$htmlwhite)
+		$rowdata += @(,("     Deployment method",($Script:htmlsb),$FSLogixDeploymentSettingsDeploymentMethod,$htmlwhite))
+		If($FSLogixDeploymentSettings.InstallType -eq "Online")
+		{
+			$rowdata += @(,("     URL",($Script:htmlsb),$FSLogixDeploymentSettingsInstallOnlineURL,$htmlwhite))
+		}
+		ElseIf($FSLogixDeploymentSettings.InstallType -eq "NetworkDrive")
+		{
+			$rowdata += @(,("     Install from a network share",($Script:htmlsb),$FSLogixDeploymentSettingsNetworkDrivePath,$htmlwhite))
+		}
+		ElseIf($FSLogixDeploymentSettings.InstallType -eq "UploadInstall")
+		{
+			$rowdata += @(,("     Push from a Connection Broker",($Script:htmlsb),$FSLogixDeploymentSettingsInstallerFileName,$htmlwhite))
+		}
+		$rowdata += @(,("     Settings are replicated to all Sites",($Script:htmlsb),$FSLogixDeploymentSettingsReplicate,$htmlwhite))
+		$rowdata += @(,("Azure Virtual Desktop",($Script:htmlsb),"",$htmlwhite))
+		$rowdata += @(,("     Enable Azure Virtual Desktop management",($Script:htmlsb),$AVDMgmtEnabled,$htmlwhite))
+		$rowdata += @(,("     Client feature set",($Script:htmlsb),$AVDClientFeatureSet,$htmlwhite))
+		$rowdata += @(,("     Settings are replicated to all Sites",($Script:htmlsb),$AVDReplicate,$htmlwhite))
+				
+		$msg = ""
+		$columnWidths = @("275","425")
+		FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+		WriteHTMLLine 0 0 ""
+	}
+}
+	
+Function OutputRASAppPackageSettings
+{
+	Param([object] $AppPackageSettings)
+
+	Write-Verbose "$(Get-Date -Format G): `t`tOutput Application Packages"
+
+	<#
+		PS C:\Users\carl.webster> Get-RASAppPackageSettings | fl
+
+		SiteId                                    : 1
+		Enabled                                   : True
+		Tags                                      : {Production, Pre-production, Custom}
+		ProvisionPackageCertificatesAutomatically : True
+	#>
+	
+	If($MSWord -or $PDF)
+	{
+		WriteWordLine 3 0 "Application Packages"
+		$ScriptInformation = New-Object System.Collections.ArrayList
+		$ScriptInformation.Add(@{Data = "Enable Application Packages feature"; Value = $AppPackageSettings.Enabled.ToString(); }) > $Null
+
+		$Table = AddWordTable -Hashtable $ScriptInformation `
+		-Columns Data,Value `
+		-List `
+		-Format $wdTableGrid `
+		-AutoFit $wdAutoFitFixed;
+
+		SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
+		SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+		$Table.Columns.Item(1).Width = 250;
+		$Table.Columns.Item(2).Width = 50;
+
+		$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+		FindWordDocumentEnd
+		$Table = $Null
+
+		WriteWordLine 0 0 ""
+		$ScriptInformation = New-Object System.Collections.ArrayList
+		$VersionTable = @()
+	}
+	If($Text)
+	{
+		Line 2 "Application Packages"
+		Line 3 "Enable Application Packages feature: " $AppPackageSettings.Enabled.ToString()
+		Line 3 "ID   Tag name                      "
+		Line 3 "==================================="
+		#       999  123456789012345678901234567890  
+	}
+	If($HTML)
+	{
+		WriteHTMLLine 3 0 "Application Packages"
+		$rowdata = @()
+		$columnHeaders = @("Enable Application Packages feature",($Script:htmlsb),$AppPackageSettings.Enabled.ToString(),$htmlwhite)
+
+		$msg = ""
+		$columnWidths = @("250","50")
+		FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+
+		WriteHTMLLine 0 0 ""
+		$rowdata = @()
+	}
+		
+	ForEach($AppPackageSetting in $AppPackageSettings)
+	{
+		If($MSWord -or $PDF)
+		{
+			ForEach($Tag in $AppPackageSetting.Tags)
+			{
+				$VersionTable += @{
+					VersionID = $Tag.Id
+					VersionName = $Tag.Name
+				}
+			}
+		}
+		If($Text)
+		{
+			ForEach($Tag in $AppPackageSetting.Tags)
+			{
+				Line 3 ( "{0,-3}  {1,-30}" -f $Tag.Id, $Tag.Name)
+			}
+		}
+		If($HTML)
+		{
+			ForEach($Tag in $AppPackageSetting.Tags)
+			{
+				$rowdata += @(,(
+					$Tag.Id,$htmlwhite,
+					$Tag.Name,$htmlwhite)
+				)
+			}
+		}
+	}
+	
+	If($MSWord -or $PDF)
+	{
+		If($VersionTable.Count -gt 0)
+		{
+			$Table = AddWordTable -Hashtable $VersionTable `
+			-Columns VersionID, VersionName `
+			-Headers "ID", "Tag name" `
+			-Format $wdTableGrid `
+			-AutoFit $wdAutoFitFixed;
+
+			SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+			$Table.Columns.Item(1).Width = 50;
+			$Table.Columns.Item(2).Width = 200;
+			
+			$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+			FindWordDocumentEnd
+			$Table = $Null
+			WriteWordLine 0 0 ""
+		}
+	}
+	If($Text)
+	{
+		Line 0 ""
+	}
+	If($HTML)
+	{
+		$columnHeaders = @(
+			"ID",($Script:htmlsb),
+			"Tag name",($Script:htmlsb)
+		)
+
+		$msg = ""
+		$columnWidths = @("50","200")
+		FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+		WriteHTMLLine 0 0 ""
 	}
 }
 #endregion
@@ -67491,7 +68491,7 @@ Function ProcessAdministration
 		}
 	}
 
-	OutputRASFeatures $RASHelpdesk $RASSupport
+	OutputRASAdminFeatures $RASHelpdesk $RASSupport
 
 	Write-Verbose "$(Get-Date -Format G): `tProcessing Settings"
 	
@@ -67981,7 +68981,7 @@ Function OutputRASAccounts
 	}
 }
 
-Function OutputRASFeatures
+Function OutputRASAdminFeatures
 {
 	Param([object] $RASHelpdesk, [object] $RASSupport)
 	
@@ -68787,454 +69787,6 @@ Function OutputRASPerformanceMonitorSettings
 		WriteHTMLLine 0 0 ""
 	}
 }
-
-Function OutputRASNotifications
-{
-	Param([object] $RASNotificationHandlers)
-	
-	Write-Verbose "$(Get-Date -Format G): `t`tOutput Notifications"
-	
-	If($MSWord -or $PDF)
-	{
-		WriteWordLine 3 0 "Notifications"
-		WriteWordLine 4 0 "Notification handlers"
-	}
-	If($Text)
-	{
-		Line 1 "Notifications"
-		Line 2 "Notification handlers"
-	}
-	If($HTML)
-	{
-		WriteHTMLLine 3 0 "Notifications"
-		WriteHTMLLine 4 0 "Notification handlers"
-	}
-	
-	ForEach($RASNotificationHandler in $RASNotificationHandlers)
-	{
-		If($RASNotificationHandler.HasThreshold)
-		{
-			Switch ($RASNotificationHandler.Direction)
-			{
-				"LowersBelow"	{$RASNotificationHandlerDirection = "Decreases below"; Break}
-				"RisesAbove"	{$RASNotificationHandlerDirection = "Rises above"; Break}
-				Default			{$RASNotificationHandlerDirection = "Unable to determine notification direction: $($RASNotificationHandler.Direction)"; Break}
-			}
-		}
-		Else
-		{
-			$RASNotificationHandlerDirection = ""
-		}
-		
-		Switch ($RASNotificationHandler.Type)
-		{
-			#listed in the order they appear in the console
-			"CPUEvent"						{$RASNotificationText = "CPU utilization $RASNotificationHandlerDirection $($RASNotificationHandler.Threshold) %"; Break}
-			"MemoryEvent"					{$RASNotificationText = "Memory utilization $RASNotificationHandlerDirection $($RASNotificationHandler.Threshold) %"; Break}
-			"ConnectedSessionEvent"			{$RASNotificationText = "Number of RDSH sessions $RASNotificationHandlerDirection $($RASNotificationHandler.Threshold)"; Break}
-			"DisconnectSessionEvent"		{$RASNotificationText = "Number of disconnected RDSH sessions $RASNotificationHandlerDirection $($RASNotificationHandler.Threshold)"; Break}
-			"RDSHConnectSessionEvent"		{$RASNotificationText = "RDSH active sessions utilization $RASNotificationHandlerDirection $($RASNotificationHandler.Threshold) %"; Break}
-			"RDSHDisconnectSessionEvent"	{$RASNotificationText = "RDSH disconnected sessions utilization $RASNotificationHandlerDirection $($RASNotificationHandler.Threshold)"; Break}
-			"34660353"						{$RASNotificationText = "AVD active sessions utilization $RASNotificationHandlerDirection $($RASNotificationHandler.Threshold) %"; Break}
-			"34660354"						{$RASNotificationText = "AVD disconnected sessions utilization $RASNotificationHandlerDirection $($RASNotificationHandler.Threshold)"; Break}
-			"TunneledSess"					{$RASNotificationText = "Number of Secure Gateway tunnelled sessions $RASNotificationHandlerDirection $($RASNotificationHandler.Threshold)"; Break}
-			"GW"							{$RASNotificationText = "Failed Secure Gateway tunnelled sessions"; Break}
-			"1097729"						{$RASNotificationText = "Failed Secure Gateway tunnelled sessions"; Break}
-			"Agent"							{$RASNotificationText = "RAS Agents events"; Break}
-			"License"						{$RASNotificationText = "Licensing events"; Break}
-			"Authentication"				{$RASNotificationText = "Authentication server events"; Break}
-			"PubItem"						{$RASNotificationText = "Published items events"; Break}
-			"VDI"							{$RASNotificationText = "Template events"; Break}
-			"45056"							{$RASNotificationText = "Tenants events"; Break}
-			"Unknown"						{$RASNotificationText = "Unknown"; Break}
-			Default							{$RASNotificationText = "Unable to determine event type: $($RASNotificationHandler.Type)"; Break}
-		}
-		
-		$GracePeriod           = ($RASNotificationHandler.GracePeriod.ToString())
-		$NotificationsInterval = ($RASNotificationHandler.Interval.ToString())
-		
-		If($MSWord -or $PDF)
-		{
-			$ScriptInformation = New-Object System.Collections.ArrayList
-			$ScriptInformation.Add(@{Data = "Events"; Value = $RASNotificationText; }) > $Null
-			$ScriptInformation.Add(@{Data = 'Enabled'; Value = $RASNotificationHandler.Enabled.ToString(); }) > $Null
-			If($RASNotificationHandler.Enabled)
-			{
-				$ScriptInformation.Add(@{Data = 'Send email to RAS administrators'; Value = $RASNotificationHandler.SendEmail; }) > $Null
-				
-				If($RASNotificationHandler.Recipients -eq "")
-				{
-					$ScriptInformation.Add(@{Data = 'Handler'; Value = ""; }) > $Null
-				}
-				Else
-				{
-					$tmpArray = $RASNotificationHandler.Recipients.Split(",").Split(";")
-					
-					$cnt = -1
-					ForEach($item in $tmpArray)
-					{
-						$cnt++
-						
-						If($cnt -eq 0)
-						{
-							$ScriptInformation.Add(@{Data = 'Handler'; Value = $item; }) > $Null
-						}
-						Else
-						{
-							$ScriptInformation.Add(@{Data = ''; Value = $item; }) > $Null
-						}
-					}
-					$tmpArray = $Null
-				}
-				$ScriptInformation.Add(@{Data = 'Execute a notification script'; Value = $RASNotificationHandler.ExecuteScript; }) > $Null
-				
-				If($RASNotificationHandler.ExecuteScript)
-				{
-					$results = Get-RASNotificationScript -id $RASNotificationHandler.ScriptId -EA 0 4>$Null
-					
-					If(!($?))
-					{
-						$ScriptName = "Unable to retrieve script name"
-					}
-					Else
-					{
-						$ScriptName = $results.Name
-					}
-					
-					$ScriptInformation.Add(@{Data = ''; Value = $ScriptName; }) > $Null
-					$ScriptName = $Null
-				}
-
-				$ScriptInformation.Add(@{Data = 'Notification handler grace period'; Value = "$GracePeriod minutes"; }) > $Null
-				If($RASNotificationHandler.EnableInterval)
-				{
-					$ScriptInformation.Add(@{Data = 'Notifications interval'; Value = "$NotificationsInterval minutes"; }) > $Null
-				}
-				Else
-				{
-					$ScriptInformation.Add(@{Data = 'Send one notification and suspend further notifications until recovered'; Value = ""; }) > $Null
-				}
-			}
-
-			$Table = AddWordTable -Hashtable $ScriptInformation `
-			-Columns Data,Value `
-			-List `
-			-Format $wdTableGrid `
-			-AutoFit $wdAutoFitFixed;
-
-			SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
-			SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
-			$Table.Columns.Item(1).Width = 200;
-			$Table.Columns.Item(2).Width = 250;
-
-			$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-			FindWordDocumentEnd
-			$Table = $Null
-			WriteWordLine 0 0 ""
-		}
-		If($Text)
-		{
-			Line 3 "Events`t`t`t`t`t: " $RASNotificationText
-			Line 3 "Enabled`t`t`t`t`t: " $RASNotificationHandler.Enabled.ToString()
-			If($RASNotificationHandler.Enabled)
-			{
-				Line 3 "Send email to RAS administrators`t: " $RASNotificationHandler.SendEmail
-				
-				If($RASNotificationHandler.Recipients -eq "")
-				{
-					Line 3 "Handler`t`t`t`t`t: " ""
-				}
-				Else
-				{
-					$tmpArray = $RASNotificationHandler.Recipients.Split(",").Split(";")
-					
-					$cnt = -1
-					ForEach($item in $tmpArray)
-					{
-						$cnt++
-						
-						If($cnt -eq 0)
-						{
-							Line 3 "Handler`t`t`t`t`t: " $item
-						}
-						Else
-						{
-							Line 8 '  ' $item
-						}
-					}
-					$tmpArray = $Null
-				}
-				Line 3 "Execute a notification script`t`t: " $RASNotificationHandler.ExecuteScript
-				
-				If($RASNotificationHandler.ExecuteScript)
-				{
-					$results = Get-RASNotificationScript -id $RASNotificationHandler.ScriptId -EA 0 4>$Null
-					
-					If(!($?))
-					{
-						$ScriptName = "Unable to retrieve script name"
-					}
-					Else
-					{
-						$ScriptName = $results.Name
-					}
-					
-					Line 8 '  ' $ScriptName
-					$ScriptName = $Null
-				}
-
-				Line 3 "Notification handler grace period`t: " "$GracePeriod minutes"
-				If($RASNotificationHandler.EnableInterval)
-				{
-					Line 3 "Notifications interval`t`t`t: " "$NotificationsInterval minutes"
-				}
-				Else
-				{
-					Line 3 'Send one notification and suspend further notifications until recovered'
-				}
-			}
-			Line 0 ""
-		}
-		If($HTML)
-		{
-			$rowdata = @()
-			$columnHeaders = @("Events",($Script:htmlsb),$RASNotificationText,$htmlwhite)
-			$rowdata += @(,("Enabled",($Script:htmlsb),$RASNotificationHandler.Enabled.ToString(),$htmlwhite))
-			If($RASNotificationHandler.Enabled)
-			{
-				$rowdata += @(,("Send email to RAS administrators",($Script:htmlsb),$RASNotificationHandler.SendEmail.ToString(),$htmlwhite))
-				
-				If($RASNotificationHandler.Recipients -eq "")
-				{
-					$rowdata += @(,("Handler",($Script:htmlsb),"",$htmlwhite))
-				}
-				Else
-				{
-					$tmpArray = $RASNotificationHandler.Recipients.Split(",").Split(";")
-					
-					$cnt = -1
-					ForEach($item in $tmpArray)
-					{
-						$cnt++
-						
-						If($cnt -eq 0)
-						{
-							$rowdata += @(,("Handler",($Script:htmlsb),$item,$htmlwhite))
-						}
-						Else
-						{
-							$rowdata += @(,("",($Script:htmlsb),$item,$htmlwhite))
-						}
-					}
-					$tmpArray = $Null
-				}
-				$rowdata += @(,("Execute a notification script",($Script:htmlsb),$RASNotificationHandler.ExecuteScript.ToString(),$htmlwhite))
-				
-				If($RASNotificationHandler.ExecuteScript)
-				{
-					$results = Get-RASNotificationScript -id $RASNotificationHandler.ScriptId -EA 0 4>$Null
-					
-					If(!($?))
-					{
-						$ScriptName = "Unable to retrieve script name"
-					}
-					Else
-					{
-						$ScriptName = $results.Name
-					}
-					
-					$rowdata += @(,("",($Script:htmlsb),$ScriptName,$htmlwhite))
-					$ScriptName = $Null
-				}
-
-				$rowdata += @(,( "Notification handler grace period",($Script:htmlsb),"$GracePeriod minutes",$htmlwhite))
-				If($RASNotificationHandler.EnableInterval)
-				{
-					$rowdata += @(,("Notifications interval",($Script:htmlsb),"$NotificationsInterval minutes",$htmlwhite))
-				}
-				Else
-				{
-					$rowdata += @(,("Send one notification and suspend further notifications until recovered",($Script:htmlsb),"",$htmlwhite))
-				}
-			}
-
-			$msg = ""
-			$columnWidths = @("250","225")
-			FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-			WriteHTMLLine 0 0 ""
-		}
-	}
-}
-
-Function OutputRASNotificationScripts
-{
-	Param([object] $RASNotificationScripts)
-	
-	If($MSWord -or $PDF)
-	{
-		WriteWordLine 4 0 "Notification scripts"
-	}
-	If($Text)
-	{
-		Line 2 "Notification scripts"
-	}
-	If($HTML)
-	{
-		WriteHTMLLine 4 0 "Notification scripts"
-	}
-	
-	ForEach($RASNotificationScript in $RASNotificationScripts)
-	{
-		If($MSWord -or $PDF)
-		{
-			$ScriptInformation = New-Object System.Collections.ArrayList
-			$ScriptInformation.Add(@{Data = "Script name"; Value = $RASNotificationScript.Name; }) > $Null
-			$ScriptInformation.Add(@{Data = 'Command'; Value = $RASNotificationScript.Command; }) > $Null
-			$ScriptInformation.Add(@{Data = 'Arguments'; Value = $RASNotificationScript.Arguments; }) > $Null
-			$ScriptInformation.Add(@{Data = 'Initial directory'; Value = $RASNotificationScript.InitialDirectory; }) > $Null
-			$ScriptInformation.Add(@{Data = 'User name'; Value = $RASNotificationScript.Username; }) > $Null
-
-			$Table = AddWordTable -Hashtable $ScriptInformation `
-			-Columns Data,Value `
-			-List `
-			-Format $wdTableGrid `
-			-AutoFit $wdAutoFitFixed;
-
-			SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
-			SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
-			$Table.Columns.Item(1).Width = 200;
-			$Table.Columns.Item(2).Width = 250;
-
-			$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-			FindWordDocumentEnd
-			$Table = $Null
-			WriteWordLine 0 0 ""
-		}
-		If($Text)
-		{
-			Line 3 "Script name`t`t`t: " $RASNotificationScript.Name
-			Line 3 "Command`t`t`t`t: " $RASNotificationScript.Command
-			Line 3 "Arguments`t`t`t: " $RASNotificationScript.Arguments
-			Line 3 "Initial directory`t`t: " $RASNotificationScript.InitialDirectory
-			Line 3 "User name`t`t`t: " $RASNotificationScript.Username
-			Line 0 ""
-		}
-		If($HTML)
-		{
-			$rowdata = @()
-			$columnHeaders = @("Script name",($Script:htmlsb),$RASNotificationScript.Name,$htmlwhite)
-			$rowdata += @(,("Command",($Script:htmlsb),$RASNotificationScript.Command,$htmlwhite))
-			$rowdata += @(,("Arguments",($Script:htmlsb),$RASNotificationScript.Arguments,$htmlwhite))
-			$rowdata += @(,("Initial directory",($Script:htmlsb),$RASNotificationScript.InitialDirectory,$htmlwhite))
-			$rowdata += @(,("User name",($Script:htmlsb),$RASNotificationScript.Username,$htmlwhite))
-
-			$msg = ""
-			$columnWidths = @("250","225")
-			FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-			WriteHTMLLine 0 0 ""
-		}
-	}
-}
-
-Function OutputRASClientSettings
-{
-	Param([object] $RASClientSettings)
-
-	<#
-		ExcludeDirectRDP         :
-		ExcludeDirectRDPForVDI   :
-		SendHDIcons              : True
-		ReplicateSendHDIcons     : True
-		EnableOverlayIcons       : True
-		ShowPasswordExpiry       : False
-		TokenValidationExpireMin : 60
-	#>
-
-	If($MSWord -or $PDF)
-	{
-		WriteWordLine 3 0 "Client settings"
-		$ScriptInformation = New-Object System.Collections.ArrayList
-		$ScriptInformation.Add(@{Data = "Published application icons"; Value = ""; }) > $Null
-		If($RASClientSettings.SendHDIcons)
-		{
-			$ScriptInformation.Add(@{Data = "     Resolution"; Value = "High resolution icons (uses more network bandwidth)"; }) > $Null
-		}
-		Else
-		{
-			$ScriptInformation.Add(@{Data = "     Resolution"; Value = "Standard resolution icons"; }) > $Null
-		}
-		$ScriptInformation.Add(@{Data = "     Overlay:"; Value = $RASClientSettings.EnableOverlayIcons.ToString(); }) > $Null
-		$ScriptInformation.Add(@{Data = "Password notifications"; Value = ""; }) > $Null
-		$ScriptInformation.Add(@{Data = "     Show password expiration reminder"; Value = $RASClientSettings.ShowPasswordExpiry.ToString(); }) > $Null
-		$ScriptInformation.Add(@{Data = "Settings are replicated to all Sites"; Value = $RASClientSettings.ReplicateSendHDIcons.ToString(); }) > $Null
-
-		$Table = AddWordTable -Hashtable $ScriptInformation `
-		-Columns Data,Value `
-		-List `
-		-Format $wdTableGrid `
-		-AutoFit $wdAutoFitFixed;
-
-		SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
-		SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
-		$Table.Columns.Item(1).Width = 200;
-		$Table.Columns.Item(2).Width = 250;
-
-		$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-		FindWordDocumentEnd
-		$Table = $Null
-
-		WriteWordLine 0 0 ""
-	}
-	If($Text)
-	{
-		Line 2 "Client settings"
-		Line 3 "Published application icons"
-		If($RASClientSettings.SendHDIcons)
-		{
-			Line 4 "Resolution`t: " "High resolution (uses more network bandwidth)"
-		}
-		Else
-		{
-			Line 4 "Resolution`t: " "Standard resolution"
-		}
-		Line 4 "Overlay`t`t: " $RASClientSettings.EnableOverlayIcons.ToString()
-		LIne 3 "Password notifications"
-		Line 4 "Show password expiration reminder: " $RASClientSettings.ShowPasswordExpiry.ToString()
-		Line 3 "Settings are replicated to all Sites`t : " $RASClientSettings.ReplicateSendHDIcons.ToString()
-		Line 0 ""
-	}
-	If($HTML)
-	{
-		WriteHTMLLine 3 0 "Client settings"
-		$rowdata = @()
-		$columnHeaders = @("Published application icons",($Script:htmlsb),"",$htmlwhite)
-		If($RASClientSettings.SendHDIcons)
-		{
-			$rowdata += @(,("     Resolution:",($Script:htmlsb),"High resolution (uses more network bandwidth)",$htmlwhite))
-		}
-		Else
-		{
-			$rowdata += @(,("     Resolution:",($Script:htmlsb),"Standard resolution",$htmlwhite))
-		}
-		$rowdata += @(,("     Overlay:",($Script:htmlsb),$RASClientSettings.EnableOverlayIcons.ToString(),$htmlwhite))
-		$rowdata += @(,("Password notifications",($Script:htmlsb),"",$htmlwhite))
-		$rowdata += @(,("     Show password expiration reminder",($Script:htmlsb),$RASClientSettings.ShowPasswordExpiry.ToString(),$htmlwhite))
-		$rowdata += @(,("Settings are replicated to all Sites",($Script:htmlsb),$RASClientSettings.ReplicateSendHDIcons.ToString(),$htmlwhite))
-
-		$msg = ""
-		$columnWidths = @("250","225")
-		FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-
-		WriteHTMLLine 0 0 ""
-	}
-
-}
 #endregion
 
 #region process licensing
@@ -69632,8 +70184,8 @@ ProcessScriptEnd
 # SIG # Begin signature block
 # MIIthQYJKoZIhvcNAQcCoIItdjCCLXICAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUtHCQy8l76JiXobHow/87LEie
-# ObOggibfMIIFjTCCBHWgAwIBAgIQDpsYjvnQLefv21DiCEAYWjANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUQB8HKuc4lEY+ml5AIA+uvMkv
+# 3ISggibfMIIFjTCCBHWgAwIBAgIQDpsYjvnQLefv21DiCEAYWjANBgkqhkiG9w0B
 # AQwFADBlMQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYD
 # VQQLExB3d3cuZGlnaWNlcnQuY29tMSQwIgYDVQQDExtEaWdpQ2VydCBBc3N1cmVk
 # IElEIFJvb3QgQ0EwHhcNMjIwODAxMDAwMDAwWhcNMzExMTA5MjM1OTU5WjBiMQsw
@@ -69844,33 +70396,33 @@ ProcessScriptEnd
 # UzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/BgNVBAMTOERpZ2lDZXJ0IFRy
 # dXN0ZWQgRzQgQ29kZSBTaWduaW5nIFJTQTQwOTYgU0hBMzg0IDIwMjEgQ0ExAhAL
 # bN+2Z4EOKufLWhG6HUlwMAkGBSsOAwIaBQCgQDAZBgkqhkiG9w0BCQMxDAYKKwYB
-# BAGCNwIBBDAjBgkqhkiG9w0BCQQxFgQUWUC3a8Imz4CFs8opCviiLJB0PV8wDQYJ
-# KoZIhvcNAQEBBQAEggIAixfsMGfj8+qd14cwczgD+n0ASl97NY7jVilkGbT6cYfV
-# i/LWlEuqQ068jUHwSSPVMfHDxU20GpBYDdr0v12IbLxh16fUctD4l10iI/m8jNKw
-# jxxf8Q2Y0M/lW+ydaEnNCMZAdWoNYwjT77Ph7Kjvnx1C9a75zoiznD5mLklPqUxU
-# ZZQA2pe2tGSIkAbVs1QcEyDidl7oNhSNS6MaajGF3xDt20aKaPyPxZtQoO8aPNyq
-# Zh3E0L5o9ejq6tNDLaQdb+hmw/Rkfd8lWmGr68vQFLpweAh3tu/GfV5J3qU0OUll
-# OSAE86j3JU6+W75Lqj1O0ORKmbQywyfzzlto6rGvZG6tBvJNeIJ7H4CRWNCZMpUk
-# 2pfNdlKvKyK/t2t3MrW845a/iRroiJ3YdmfrZnrZRaTU2lQgt+TCzjPyDp2WowVU
-# f45ubYpxJjVf3PhaD7yxPg8amlC3Jp9/iFIAgsoK5BoyL6A0oRc1teG/loppqd8w
-# UAV/GrqbTK+jtOOyC7DyJIdRtujHeW1jhA3IzeGH7Bxdq0D37lD/AgayV3l3P8Dz
-# Gwcb74KbhzyzP5M5uB7pFPgLgHC5b3rBD18qvyINwHHoq72M0YiGcfj18b8iO/qO
-# QdXHN5iIwx6o1KZ96LhWCFnyRSQiIa/Y8BzINhC0BfuoCqML5SFlfONBPjB7n9uh
+# BAGCNwIBBDAjBgkqhkiG9w0BCQQxFgQUz+3r+gm4+US/ghFjwD4jDVp+sY8wDQYJ
+# KoZIhvcNAQEBBQAEggIAjUy1zO4NHrnCz6d0TcK7ldKsIbOfTt8ki6WshQZeOkVN
+# GN3wmHq5HC2K8drNae1EmKhOY6tJRfzcR1nxXOEcgvGQ/+dIMoUnn8/uth/9ZJGj
+# uTzbBRgkmVVc7J7i4A31PBrUdqD34Zrn6EaQSxUjSxZJJPpr0lcpwJYet5sHdRtb
+# b2Zjxgp8hK2ZAeGpoudRlt9Tliq2DsS2Najbr5cM+3mckqI0ehh/bZMkqtF72b/x
+# qrXFN3B0dqB/68kKOEJXK6+HuaqCkIDGIIbm6awZuNW0f/JMe4TnZoEBWri8H/kk
+# fcHqeXOMTEYMJpOZuS+u115o4/yKY3zNkWYKZFTgOx1CI2CdH8Dgbs5uAuhjOhrD
+# XU7ahrKMkcP90c1Y1VG1H+Zeh+tJRIU0fU34Tot5jU6sOHE4nYvOUo94hpBaF5fm
+# ZjSBtvMBVjqqtVb4gsLhzVGvSb5RNLJZ0x3WVOHekuwyd6GdwmfzgCvg5SW20FFX
+# uuTraSa/LEtckrgugOdtLueGfdeEvioRiWyqgN15XlRxJo7PTK4HjYq3eDiIsbYQ
+# bwKPHYa/aA+F0WnpBwOzV1M8KiIYmkxOa8cVIi4Sj/05KXzh+xcdQqgvuyslNEsO
+# E5BydMq+1mpupLXKshW133Klp2eV1cX62qwsNRY4t/kWO/SQtIYmiw5HKvyBi5Wh
 # ggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8CAQEwfTBpMQswCQYDVQQGEwJVUzEX
 # MBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/BgNVBAMTOERpZ2lDZXJ0IFRydXN0
 # ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYgU0hBMjU2IDIwMjUgQ0ExAhAKgO8Y
 # S43xBYLRxHanlXRoMA0GCWCGSAFlAwQCAQUAoGkwGAYJKoZIhvcNAQkDMQsGCSqG
-# SIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjUxMjE4MjA1ODI0WjAvBgkqhkiG9w0B
-# CQQxIgQg/AJTv+j2Z7qgw0kW2hf3RLW7eslAMptydrsjHZfLyrkwDQYJKoZIhvcN
-# AQEBBQAEggIAxeCwuxgWGuEtgILd1ocnKnwFOHb2G11A+OrWBwDJedXT0jvp0DA6
-# py3ncEIC5KGpwNxMESdmVKM+DVr3+lpNdjftQ3qBBYFqHErYWul1TZmNITi5aMM2
-# 66VVmOpy1545B2suPyyqxCA5f9rahQS2/zYgio/i8ePBwAkSxIKgleoBKiJ0EPZ1
-# LYaOwZ0QlKT5hJeZWAN71yN6ATUIfEFQ5yCDANYcAenPX/4psR/jCNNs5AUrrGSx
-# ZiRRSxlXmdTPJUq1sUReRxt8PYmmG7uFtU6xGZ6Hgd62oqYSvJh2Nx4M/akg53me
-# iCClCCA5JytqMtT5UBgcL5pvvNfPmuJgBOy+C18L05y/LXiXdtG7/Vzi7Ob6RPmL
-# UXnHmJ0Yuc1tQvLCtRlUVFY+kuoohXbpEibVpsYlcGMTO/AcI5Yi6zuqDcK4SO+Y
-# SKgJNkJa4pffqZ+11+kav5EXLHLCMuTsCW+pBGFjMSz0ODZHRVaKNmIxeqeTfIuC
-# OcQr+Zky2DMS6e1tuN/+NlDbDCecxJHTeu/m6nvzO/YWNJsNlZrvJ8Y8d3kiw1GR
-# wlifxeviPKuUCnlVnBHYEmCZFfck7x4c69jTat6SAJRAQmFzs1Y7zC82fReWmUsf
-# 7bSHe+Jk7ED2nMi6Xt4bwzeJniWtZXb3Q5IBf6hqWEgd7ewMtglNCEU=
+# SIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjUxMjIyMjAxMjMyWjAvBgkqhkiG9w0B
+# CQQxIgQg7AxhrW8HTywAH0g85fWZByf8Uy/b67bt+L5+zrYE6QYwDQYJKoZIhvcN
+# AQEBBQAEggIAQTq4KQrt5MytvfcNTKzA3kSK+huXRS9sMm+2P7oT87NovP6z3Y7G
+# zpX3ru8hjLCmyCHLZyZOYiT8QP05FmR2BEDcEBaFVu2RxhhDTSzMdClj0wn0bvEK
+# +WqRglywF4hMBv21SmrOivdVz8mn9IYCOLKlfFv2maod5ax9I9Fp4+1zxATzA8xK
+# pRmIrchbTjESU+egiOBIp0/5YihxF/vXYkDP3wNjdNRqCGmWJ+ArtiqwahNl8xlG
+# CZwgcJbST7t954BPF/Jyo4kZgT39WqIHxQrWs4SDvMnXAOe4s5unH6lRv+dkZG9C
+# x0MegyU2hKXo4ob7BSNAPdhCjdh32EepzwodD4a6fY8Dpu3YlxYAGfqJJVd7JL5s
+# pd4SBuCS/Zndu2VPutQm3MX+1OpT7jylFaPOjSG1DJebnyJ8Hu5jyTo1jIvVrUdk
+# wkiZf50L2hgNlXHL64BR+279hH0c+Z7pkV8pE38ONsGi78hdSKfiMTcsrToEq5mL
+# xph7T+3liriX5ZbnlPwPbKtTI90qf3mH60HYnvtZNnDIXjtkD7I7e2uBDSDHU07L
+# GnkPLbboKWhZ3FfaMrpFMVg53BkGhOYfJrD6DlQx5jqpGzTl8RV0S/8PRr0VUT6h
+# eOVn4g6h/mjSxpN9NffnxxK1aZLdipcAFAZsnFDCPLKRyvN9Ey6Vl34=
 # SIG # End signature block
