@@ -39,6 +39,11 @@
 #
 #	General code cleanup and fixed some typos
 #
+#	In Function GetRASStatus:
+#		Added a String parameter to tell who or what is checking the status
+#
+#		Updated all calls to GetRASStatus to add the new second parameter
+#
 #	In Function OutputFarmSite, 
 #		Add Farm Properties
 #		For RAS V20 and later, add Access addresses
@@ -203,6 +208,7 @@
 #				Add Manage RDP transport protocol
 #				Add Enable Z-Order (Experimental)
 #		For Host pools:
+#			Rename the variables $RDSGroups and $RDSGroup to $RDSHostPools and $RDSHostPool
 #			Add "Enabled"
 #			For HTML output, rename "Server" to "Name"
 #			Add Application packages
@@ -231,7 +237,7 @@
 #
 #	In Function OutputSiteSummary:
 #		Changed "VDI Host" to "Provider"
-#		For Providers, remove the CPU, RAM, DIsk read time, and Disk write time metrics, as they are no longer shown in the console.
+#		For Providers, remove the CPU, RAM, Disk read time, and Disk write time metrics, as they are no longer shown in the console.
 #
 #	In Function OutputThemesDetails
 #		Change HTML5 URL to User Portal URL
@@ -243,6 +249,8 @@
 #			Template version
 #			ID
 #		For Host Pool Properties, add:
+#			Template tab
+#			Provisioning tab
 #			Action tab
 #			User profile tab
 #			Application Packages
@@ -256,6 +264,9 @@
 #			RDP Printer
 #				Add the missing "Remove client name from printer name"
 #			Security
+#		For Templates:
+#			Update the Advanced and Preparation sections to match the console
+#			Remove the Settings and Security sections as those no longer exist
 #
 #	In Function ProcessAdministration
 #		Rename variable $RASFeatures to $RASHelpdesk
