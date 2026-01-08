@@ -268,6 +268,7 @@
 #			Update the Advanced and Preparation sections to match the console
 #			Remove the Settings and Security sections as those no longer exist
 #		Added Hosts
+#		Added Scheduler
 #
 #	In Function ProcessAdministration
 #		Rename variable $RASFeatures to $RASHelpdesk

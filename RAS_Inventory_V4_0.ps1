@@ -450,9 +450,9 @@
 	text document.
 .NOTES
 	NAME: RAS_Inventory_V4_0.ps1
-	VERSION: 4.00 Beta 40
+	VERSION: 4.00 Beta 41
 	AUTHOR: Carl Webster
-	LASTEDIT: January 7, 2026
+	LASTEDIT: January 8, 2026
 #>
 
 
@@ -830,6 +830,7 @@ Param(
 #			Update the Advanced and Preparation sections to match the console
 #			Remove the Settings and Security sections as those no longer exist
 #		Added Hosts
+#		Added Scheduler
 #
 #	In Function ProcessAdministration
 #		Rename variable $RASFeatures to $RASHelpdesk
@@ -925,9 +926,9 @@ $ErrorActionPreference    = 'SilentlyContinue'
 $Error.Clear()
 
 $Script:emailCredentials  = $Null
-$script:MyVersion         = '4.00 Beta 40'
+$script:MyVersion         = '4.00 Beta 41'
 $Script:ScriptName        = "RAS_Inventory_V4_0.ps1"
-$tmpdate                  = [datetime] "01/07/2026"
+$tmpdate                  = [datetime] "01/08/2026"
 $Script:ReleaseDate       = $tmpdate.ToUniversalTime().ToShortDateString()
 
 If($MSWord -eq $False -and $PDF -eq $False -and $Text -eq $False -and $HTML -eq $False)
@@ -17413,13 +17414,13 @@ Function OutputRDSessionHostsDetails
 					If($Action -eq "Startup")
 					{
 						$ScriptInformation.Add(@{Data = "Power on pool members"; Value = ""; }) > $Null
-						If($AVDSchedule.Options.PoolMembersType -eq 0)
+						If($RDSSchedule.Options.PoolMembersType -eq 0)
 						{
-							$ScriptInformation.Add(@{Data = "     Percentage of members"; Value = $AVDSchedule.Options.PercentageMembers.ToString(); }) > $Null
+							$ScriptInformation.Add(@{Data = "     Percentage of members"; Value = $RDSSchedule.Options.PercentageMembers.ToString(); }) > $Null
 						}
-						If($AVDSchedule.Options.PoolMembersType -eq 1)
+						If($RDSSchedule.Options.PoolMembersType -eq 1)
 						{
-							$ScriptInformation.Add(@{Data = "     Specific number of members to be started"; Value = $AVDSchedule.Options.MembersToStart.ToString(); }) > $Null
+							$ScriptInformation.Add(@{Data = "     Specific number of members to be started"; Value = $RDSSchedule.Options.MembersToStart.ToString(); }) > $Null
 						}
 					}
 					Else
@@ -17493,13 +17494,13 @@ Function OutputRDSessionHostsDetails
 					If($Action -eq "Startup")
 					{
 						Line 4 "Power on pool members"
-						If($AVDSchedule.Options.PoolMembersType -eq 0)
+						If($RDSSchedule.Options.PoolMembersType -eq 0)
 						{
-							Line 5 "Percentage of members: " $AVDSchedule.Options.PercentageMembers.ToString()
+							Line 5 "Percentage of members: " $RDSSchedule.Options.PercentageMembers.ToString()
 						}
-						If($AVDSchedule.Options.PoolMembersType -eq 1)
+						If($RDSSchedule.Options.PoolMembersType -eq 1)
 						{
-							Line 5 "Specific number of members to be started: " $AVDSchedule.Options.MembersToStart.ToString()
+							Line 5 "Specific number of members to be started: " $RDSSchedule.Options.MembersToStart.ToString()
 						}
 					}
 					Else
@@ -17557,13 +17558,13 @@ Function OutputRDSessionHostsDetails
 					If($Action -eq "Startup")
 					{
 						$columnHeaders = @("Power on pool members",($Script:htmlsb),"",$htmlwhite)
-						If($AVDSchedule.Options.PoolMembersType -eq 0)
+						If($RDSSchedule.Options.PoolMembersType -eq 0)
 						{
-							$rowdata += @(,("     Percentage of members",($Script:htmlsb),$AVDSchedule.Options.PercentageMembers.ToString(),$htmlwhite))
+							$rowdata += @(,("     Percentage of members",($Script:htmlsb),$RDSSchedule.Options.PercentageMembers.ToString(),$htmlwhite))
 						}
-						ElseIf($AVDSchedule.Options.PoolMembersType -eq 1)
+						ElseIf($RDSSchedule.Options.PoolMembersType -eq 1)
 						{
-							$rowdata += @(,("     Specific number of members to be started",($Script:htmlsb),$AVDSchedule.Options.MembersToStart.ToString(),$htmlwhite))
+							$rowdata += @(,("     Specific number of members to be started",($Script:htmlsb),$RDSSchedule.Options.MembersToStart.ToString(),$htmlwhite))
 						}
 					}
 					Else
@@ -25449,6 +25450,737 @@ Function OutputVDIDetails
 					$columnWidths = @("100","275")
 					FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 					WriteHTMLLine 0 0 ""
+				}
+			}
+		}
+		
+		#Scheduler
+		Write-Verbose "$(Get-Date -Format G): `tOutput VDI Scheduler"
+
+		If($MSWord -or $PDF)
+		{
+			WriteWordLine 3 0 "Scheduler"
+		}
+		If($Text)
+		{
+			Line 2 "Scheduler"
+		}
+		If($HTML)
+		{
+			WriteHTMLLine 3 0 "Scheduler"
+		}
+
+		$VDISchedules = Get-RASSchedule -Siteid $Site.Id -ObjType "VDI" -EA 0 4> $Null
+		
+		If(!($?))
+		{
+			Write-Warning "
+			`n
+			Unable to retrieve VDI Scheduler`
+			"
+			If($MSWord -or $PDF)
+			{
+				WriteWordLine 0 0 ""
+				WriteWordLine 0 0 "Unable to retrieve VDI Scheduler"
+				WriteWordLine 0 0 ""
+			}
+			If($Text)
+			{
+				Line 0 ""
+				Line 0 "Unable to retrieve VDI Scheduler"
+				Line 0 ""
+			}
+			If($HTML)
+			{
+				WriteHTMLLine 0 0 ""
+				WriteHTMLLine 0 0 "Unable to retrieve VDI Scheduler"
+				WriteHTMLLine 0 0 ""
+			}
+		}
+		ElseIf($? -and $Null -eq $VDISchedules)
+		{
+			Write-Host "
+		No VDI Scheduler retrieved.`
+			" -ForegroundColor White
+			If($MSWord -or $PDF)
+			{
+				WriteWordLine 0 0 ""
+				WriteWordLine 0 0 "No VDI Scheduler retrieved"
+				WriteWordLine 0 0 ""
+			}
+			If($Text)
+			{
+				Line 0 ""
+				Line 0 "No VDI Scheduler retrieved"
+				Line 0 ""
+			}
+			If($HTML)
+			{
+				WriteHTMLLine 0 0 ""
+				WriteHTMLLine 0 0 "No VDI Scheduler retrieved"
+				WriteHTMLLine 0 0 ""
+			}
+		}
+		Else
+		{
+			ForEach($VDISchedule in $VDISchedules)
+			{
+				Write-Verbose "$(Get-Date -Format G): `t`t$($VDISchedule.Name)"
+				
+				$Action = $VDISchedule.Action.ToString()
+				
+				If($VDISchedule.Action -eq "Reboot")
+				{
+					If($VDISchedule.Options.EnableDrainMode)
+					{
+						$Action = "Reboot - Drain Mode"
+					}
+					Else
+					{
+						$Action = "Reboot"
+					}
+				}
+				ElseIf($VDISchedule.Action -eq "Shutdown")
+				{
+					If($VDISchedule.Options.EnableDrainMode)
+					{
+						$Action = "Shutdown - Drain Mode"
+					}
+					Else
+					{
+						$Action = "Shutdown"
+					}
+				}
+
+				If($Action -eq "Reboot - Drain Mode" -or $Action -eq "Shutdown - Drain Mode")
+				{
+					If(validObject $VDISchedule.Options ForceServerRebootAfter)
+					{
+						Switch ($VDISchedule.Options.ForceServerRebootAfter)
+						{
+							900		{$ForceRebootTime = "15 minutes"; Break}
+							1800	{$ForceRebootTime = "30 minutes"; Break}
+							2700	{$ForceRebootTime = "45 minutes"; Break}
+							3600	{$ForceRebootTime = "1 hour"; Break}
+							7200	{$ForceRebootTime = "2 hours"; Break}
+							10800	{$ForceRebootTime = "3 hours"; Break}
+							21600	{$ForceRebootTime = "6 hours"; Break}
+							43200	{$ForceRebootTime = "12 hours"; Break}
+							86400	{$ForceRebootTime = "1 day"; Break}
+							Default	{$ForceRebootTime = "Unable to determine Force reboot after seconds: $($VDISchedule.Options.ForceServerRebootAfter)"; Break}
+						}
+					}
+					Else
+					{
+						$ForceRebootTime = ""
+					}
+				}
+
+				If($Null -ne $VDISchedule.Trigger.Repeat)
+				{
+					Switch ($VDISchedule.Trigger.Repeat)
+					{
+						"Never"			{$Repeat = "Never "; Break}
+						"EveryDay"		{$Repeat = "Every day"; Break}
+						"EveryWeek"		{$Repeat = "Every week"; Break}
+						"Every2Weeks"	{$Repeat = "Every 2 weeks"; Break}
+						"EveryMonth"	{$Repeat = "Every month"; Break}
+						"EveryYear"		{$Repeat = "Every year"; Break}
+						"SpecificDays"	{$Repeat = "Every $($VDISchedule.Trigger.SpecificDays)"; Break}
+						Default			{$Repeat = "Unable to determine the Repeat: $($VDISchedule.Trigger.Repeat)"; Break}
+					}
+				}
+				
+				$Target = @()
+				If($VDISchedule.TargetType -eq "Host")
+				{
+					ForEach($Item in $VDISchedule.TargetNativeHosts)
+					{
+						$Target += $Item.GuestName
+					}
+					$TargetType = "Host"
+				}
+				ElseIf($VDISchedule.TargetType -eq "HostPool")
+				{
+					ForEach($Item in $VDISchedule.TargetNativeHosts)
+					{
+						$Target += $Item.GuestName
+					}
+					$TargetType = "Host Pool"
+				}
+				Else
+				{
+					$Target += "Unable to determine Target for TargetType: $($VDISchedule.TargetType)"
+					$TargetType = "Unable to determine TargetType: $($VDISchedule.TargetType)"
+				}
+				
+				If(ValidObject $VDISchedule.Trigger DurationInSecs)
+				{
+					If($Null -ne $VDISchedule.Trigger.DurationInSecs)
+					{
+						Switch ($VDISchedule.Trigger.DurationInSecs)
+						{
+							900		{$TriggerDuration = "15 minutes"; Break}
+							1800	{$TriggerDuration = "30 minutes"; Break}
+							2700	{$TriggerDuration = "45 minutes"; Break}
+							3600	{$TriggerDuration = "1 hour"; Break}
+							7200	{$TriggerDuration = "2 hours"; Break}
+							10800	{$TriggerDuration = "3 hours"; Break}
+							21600	{$TriggerDuration = "6 hours"; Break}
+							43200	{$TriggerDuration = "12 hours"; Break}
+							86400	{$TriggerDuration = "1 day"; Break}
+							Default	{$TriggerDuration = "Unable to determine trigger duration: $($VDISchedule.Trigger.DurationInSecs)"; Break}
+						}
+					}
+					Else
+					{
+						$TriggerDuration = $Null
+					}
+				}
+				Else
+				{
+					$TriggerDuration = $Null
+				}
+				
+				If($MSWord -or $PDF)
+				{
+					WriteWordLine 4 0 "Schedule Name $($VDISchedule.Name)"
+				}
+				If($Text)
+				{
+					Line 3 "Name`t`t`t: " $VDISchedule.Name
+				}
+				If($HTML)
+				{
+					WriteHTMLLine 4 0 "Schedule Name $($VDISchedule.Name)"
+				}
+				
+				If($MSWord -or $PDF)
+				{
+					$ScriptInformation = New-Object System.Collections.ArrayList
+					$ScriptInformation.Add(@{Data = "Name"; Value = $VDISchedule.Name; }) > $Null
+					$ScriptInformation.Add(@{Data = "Enabled"; Value = $VDISchedule.Enabled.ToString(); }) > $Null
+					$ScriptInformation.Add(@{Data = "Action"; Value = $Action; }) > $Null
+					$ScriptInformation.Add(@{Data = "Target type"; Value = $TargetType; }) > $Null
+					
+					$cnt=-1
+					ForEach($Item in $Target)
+					{
+						$cnt++
+						If($cnt -eq 0)
+						{
+							$ScriptInformation.Add(@{Data = "Target"; Value = $Item; }) > $Null
+						}
+						Else
+						{
+							$ScriptInformation.Add(@{Data = ""; Value = $Item; }) > $Null
+						}
+					}
+					
+					$ScriptInformation.Add(@{Data = "Start"; Value = "$($VDISchedule.Trigger.StartDateTime.ToShortDateString()) $($VDISchedule.Trigger.StartDateTime.ToShortTImeString())"; }) > $Null
+					$ScriptInformation.Add(@{Data = "Repeat"; Value = $Repeat; }) > $Null
+					$ScriptInformation.Add(@{Data = "Description"; Value = $VDISchedule.Description; }) > $Null
+					$ScriptInformation.Add(@{Data = "Last modification by"; Value = $VDISchedule.AdminLastMod; }) > $Null
+					$ScriptInformation.Add(@{Data = "Modified on"; Value = (Get-Date -UFormat "%c" $VDISchedule.TimeLastMod); }) > $Null
+					$ScriptInformation.Add(@{Data = "Created by"; Value = $VDISchedule.AdminCreate; }) > $Null
+					$ScriptInformation.Add(@{Data = "Created on"; Value = (Get-Date -UFormat "%c" $VDISchedule.TimeCreate); }) > $Null
+					$ScriptInformation.Add(@{Data = "ID"; Value = $VDISchedule.Id.ToString(); }) > $Null
+
+					$Table = AddWordTable -Hashtable $ScriptInformation `
+					-Columns Data,Value `
+					-List `
+					-Format $wdTableGrid `
+					-AutoFit $wdAutoFitFixed;
+
+					SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+					SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+					$Table.Columns.Item(1).Width = 150;
+					$Table.Columns.Item(2).Width = 250;
+
+					$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+					FindWordDocumentEnd
+					$Table = $Null
+					WriteWordLine 0 0 ""
+				}
+				If($Text)
+				{
+					Line 3 "Enabled`t`t`t: " $VDISchedule.Enabled.ToString()
+					Line 3 "Action`t`t`t: " $Action
+					Line 3 "Target type`t`t: " $TargetType
+					
+					$cnt=-1
+					ForEach($Item in $Target)
+					{
+						$cnt++
+						If($cnt -eq 0)
+						{
+							Line 3 "Target`t`t`t: " $Item
+						}
+						Else
+						{
+							Line 7 "  " $Item
+						}
+					}
+					
+					Line 3 "Start`t`t`t: " "$($VDISchedule.Trigger.StartDateTime.ToShortDateString()) $($VDISchedule.Trigger.StartDateTime.ToShortTImeString())"
+					Line 3 "Repeat`t`t`t: " $Repeat
+					Line 3 "Description`t`t: " $VDISchedule.Description
+					Line 3 "Last modification by`t: " $VDISchedule.AdminLastMod
+					Line 3 "Modified on`t`t: " (Get-Date -UFormat "%c" $VDISchedule.TimeLastMod)
+					Line 3 "Created by`t`t: " $VDISchedule.AdminCreate
+					Line 3 "Created on`t`t: " (Get-Date -UFormat "%c" $VDISchedule.TimeCreate)
+					Line 3 "ID`t`t`t: " $VDISchedule.Id.ToString()
+					Line 0 ""
+				}
+				If($HTML)
+				{
+					$rowdata = @()
+					$columnHeaders = @("Name",($Script:htmlsb),$VDISchedule.Name,$htmlwhite)
+					$rowdata += @(,("Enabled",($Script:htmlsb),$VDISchedule.Enabled.ToString(),$htmlwhite))
+					$rowdata += @(,("Action",($Script:htmlsb),$Action,$htmlwhite))
+					$rowdata += @(,("Target type",($Script:htmlsb),$TargetType,$htmlwhite))
+					
+					$cnt=-1
+					ForEach($Item in $Target)
+					{
+						$cnt++
+						If($cnt -eq 0)
+						{
+							$rowdata += @(,("Target",($Script:htmlsb),$Item,$htmlwhite))
+						}
+						Else
+						{
+							$rowdata += @(,("",($Script:htmlsb),$Item,$htmlwhite))
+						}
+					}
+					
+					$rowdata += @(,("Start",($Script:htmlsb),"$($VDISchedule.Trigger.StartDateTime.ToShortDateString()) $($VDISchedule.Trigger.StartDateTime.ToShortTImeString())",$htmlwhite))
+					$rowdata += @(,("Repeat",($Script:htmlsb),$Repeat,$htmlwhite))
+					$rowdata += @(,("Description",($Script:htmlsb),$VDISchedule.Description,$htmlwhite))
+					$rowdata += @(,("Last modification by",($Script:htmlsb),$VDISchedule.AdminLastMod,$htmlwhite))
+					$rowdata += @(,("Modified on",($Script:htmlsb),(Get-Date -UFormat "%c" $VDISchedule.TimeLastMod),$htmlwhite))
+					$rowdata += @(,("Created by",($Script:htmlsb),$VDISchedule.AdminCreate,$htmlwhite))
+					$rowdata += @(,("Created on",($Script:htmlsb),(Get-Date -UFormat "%c" $VDISchedule.TimeCreate),$htmlwhite))
+					$rowdata += @(,("ID",($Script:htmlsb),$VDISchedule.Id.ToString(),$htmlwhite))
+
+					$msg = ""
+					$columnWidths = @("150","275")
+					FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+					WriteHTMLLine 0 0 ""
+				}
+
+				#Properties
+				
+				If($MSWord -or $PDF)
+				{
+					WriteWordLine 5 0 "General"
+				}
+				If($Text)
+				{
+					Line 3 "General"
+				}
+				If($HTML)
+				{
+					#Nothing
+				}
+				
+				If($MSWord -or $PDF)
+				{
+					$ScriptInformation = New-Object System.Collections.ArrayList
+					$ScriptInformation.Add(@{Data = "Enable Schedule"; Value = $VDISchedule.Enabled.ToString(); }) > $Null
+					$ScriptInformation.Add(@{Data = "Name"; Value = $VDISchedule.Name; }) > $Null
+					$ScriptInformation.Add(@{Data = "Action"; Value = $Action; }) > $Null
+					$ScriptInformation.Add(@{Data = "Description"; Value = $VDISchedule.Description; }) > $Null
+					
+					$cnt=-1
+					ForEach($Item in $Target)
+					{
+						$cnt++
+						If($cnt -eq 0)
+						{
+							$ScriptInformation.Add(@{Data = "Target"; Value = $Item; }) > $Null
+						}
+						Else
+						{
+							$ScriptInformation.Add(@{Data = ""; Value = $Item; }) > $Null
+						}
+					}
+
+					$Table = AddWordTable -Hashtable $ScriptInformation `
+					-Columns Data,Value `
+					-List `
+					-Format $wdTableGrid `
+					-AutoFit $wdAutoFitFixed;
+
+					SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+					SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+					$Table.Columns.Item(1).Width = 150;
+					$Table.Columns.Item(2).Width = 250;
+
+					$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+					FindWordDocumentEnd
+					$Table = $Null
+					WriteWordLine 0 0 ""
+				}
+				If($Text)
+				{
+					Line 4 "Enable Schedule`t`t`t: " $VDISchedule.Enabled.ToString()
+					Line 4 "Name`t`t`t`t: " $VDISchedule.Name
+					Line 4 "Action`t`t`t`t: " $Action
+					Line 4 "Description`t`t`t: " $VDISchedule.Description
+					
+					$cnt=-1
+					ForEach($Item in $Target)
+					{
+						$cnt++
+						If($cnt -eq 0)
+						{
+							Line 4 "Target`t`t`t`t: " $Item
+						}
+						Else
+						{
+							Line 8 "  " $Item
+						}
+					}
+					Line 0 ""
+				}
+				If($HTML)
+				{
+					$rowdata = @()
+					$columnHeaders = @("Enable schedule",($Script:htmlsb),$VDISchedule.Enabled.ToString(),$htmlwhite)
+					$rowdata += @(,("Name",($Script:htmlsb),$VDISchedule.Name,$htmlwhite))
+					$rowdata += @(,("Action",($Script:htmlsb),$Action,$htmlwhite))
+					$rowdata += @(,("Description",($Script:htmlsb),$VDISchedule.Description,$htmlwhite))
+					
+					$cnt=-1
+					ForEach($Item in $Target)
+					{
+						$cnt++
+						If($cnt -eq 0)
+						{
+							$rowdata += @(,("Target",($Script:htmlsb),$Item,$htmlwhite))
+						}
+						Else
+						{
+							$rowdata += @(,("",($Script:htmlsb),$Item,$htmlwhite))
+						}
+					}
+					
+					$msg = "General"
+					$columnWidths = @("150","275")
+					FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+					WriteHTMLLine 0 0 ""
+				}
+
+				#Trigger
+				
+				If($MSWord -or $PDF)
+				{
+					WriteWordLine 5 0 "Trigger"
+				}
+				If($Text)
+				{
+					Line 3 "Trigger"
+				}
+				If($HTML)
+				{
+					#Nothing
+				}
+				
+				If($MSWord -or $PDF)
+				{
+					$ScriptInformation = New-Object System.Collections.ArrayList
+					$ScriptInformation.Add(@{Data = "Date"; Value = $VDISchedule.Trigger.StartDateTime.ToShortDateString(); }) > $Null
+					$ScriptInformation.Add(@{Data = "Start"; Value = $VDISchedule.Trigger.StartDateTime.ToShortTimeString(); }) > $Null
+					If($Null -ne $TriggerDuration)
+					{
+						$ScriptInformation.Add(@{Data = "Duration"; Value = $TriggerDuration; }) > $Null
+					}
+					$ScriptInformation.Add(@{Data = "Recur"; Value = $Repeat; }) > $Null
+
+					$Table = AddWordTable -Hashtable $ScriptInformation `
+					-Columns Data,Value `
+					-List `
+					-Format $wdTableGrid `
+					-AutoFit $wdAutoFitFixed;
+
+					SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+					SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+					$Table.Columns.Item(1).Width = 150;
+					$Table.Columns.Item(2).Width = 250;
+
+					$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+					FindWordDocumentEnd
+					$Table = $Null
+					WriteWordLine 0 0 ""
+				}
+				If($Text)
+				{
+					Line 4 "Date`t`t`t`t: " $VDISchedule.Trigger.StartDateTime.ToShortDateString()
+					Line 4 "Start`t`t`t`t: " $VDISchedule.Trigger.StartDateTime.ToShortTimeString()
+					If($Null -ne $TriggerDuration)
+					{
+						Line 4 "Duration`t`t`t: " $TriggerDuration
+					}
+					Line 4 "Recur`t`t`t`t: " $Repeat
+					Line 0 ""
+				}
+				If($HTML)
+				{
+					$rowdata = @()
+					$columnHeaders = @("Date",($Script:htmlsb),$VDISchedule.Trigger.StartDateTime.ToShortDateString(),$htmlwhite)
+					$rowdata += @(,("Start",($Script:htmlsb),$VDISchedule.Trigger.StartDateTime.ToShortTimeString(),$htmlwhite))
+					If($Null -ne $TriggerDuration)
+					{
+						$rowdata += @(,("Duration",($Script:htmlsb),$TriggerDuration,$htmlwhite))
+					}
+					$rowdata += @(,("Recur",($Script:htmlsb),$Repeat,$htmlwhite))
+
+					$msg = "Trigger"
+					$columnWidths = @("150","275")
+					FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+					WriteHTMLLine 0 0 ""
+				}
+
+				#Options
+				
+				If($Action -eq "Startup" -and $TargetType -eq "Host")
+				{
+					#Do nothing. there is no Options tab
+				}
+				Else
+				{
+					If($MSWord -or $PDF)
+					{
+						WriteWordLine 5 0 "Options"
+					}
+					If($Text)
+					{
+						Line 3 "Options"
+					}
+					If($HTML)
+					{
+						#Nothing
+					}
+					
+					If($MSWord -or $PDF)
+					{
+						$ScriptInformation = New-Object System.Collections.ArrayList
+						If($Action -eq "Startup")
+						{
+							$ScriptInformation.Add(@{Data = "Power on pool members"; Value = ""; }) > $Null
+							If($VDISchedule.Options.PoolMembersType -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "     Percentage of members"; Value = $VDISchedule.Options.PercentageMembers.ToString(); }) > $Null
+							}
+							If($VDISchedule.Options.PoolMembersType -eq 1)
+							{
+								$ScriptInformation.Add(@{Data = "     Specific number of members to be started"; Value = $VDISchedule.Options.MembersToStart.ToString(); }) > $Null
+							}
+						}
+						Else
+						{
+							$ScriptInformation.Add(@{Data = "Send message before schedule is triggered"; Value = ""; }) > $Null
+
+							If($Null -ne $VDISchedule.Options.Messages -and $VDISchedule.Options.Messages.Count -gt 0)
+							{
+								ForEach($Item in $VDISchedule.Options.Messages)
+								{
+									Switch ($Item.SendMsgSecs)
+									{
+										900		{$MsgTime = "15 minutes $($Item.SendMsgWhen)"; Break}
+										1800	{$MsgTime = "30 minutes $($Item.SendMsgWhen)"; Break}
+										2700	{$MsgTime = "45 minutes $($Item.SendMsgWhen)"; Break}
+										3600	{$MsgTime = "1 hour $($Item.SendMsgWhen)"; Break}
+										7200	{$MsgTime = "2 hours $($Item.SendMsgWhen)"; Break}
+										10800	{$MsgTime = "3 hours $($Item.SendMsgWhen)"; Break}
+										Default	{$MsgTime = "Unable to determine scheduled message Time: $($Item.SendMsgSecs)"; Break}
+									}
+									
+									$ScriptInformation.Add(@{Data = "Enabled"; Value = $Item.Enabled.ToString(); }) > $Null
+									$ScriptInformation.Add(@{Data = "Body"; Value = $Item.Message; }) > $Null
+									$ScriptInformation.Add(@{Data = "Title"; Value = $Item.MessageTitle; }) > $Null
+									$ScriptInformation.Add(@{Data = "Time"; Value = $MsgTime; }) > $Null
+								}
+							}
+
+							If($null -ne $VDISchedule.Options.EnableDrainMode)
+							{
+								$ScriptInformation.Add(@{Data = "Enable Drain Mode"; Value = $VDISchedule.Options.EnableDrainMode.ToString(); }) > $Null
+							}
+							If($Action -like "Reboot*")
+							{
+								$ScriptInformation.Add(@{Data = "Force host reboot after"; Value = $ForceRebootTime; }) > $Null
+							}
+							If($Action -like "Shutdown*")
+							{
+								$ScriptInformation.Add(@{Data = "Force host shutdown after"; Value = $ForceRebootTime; }) > $Null
+							}
+							If($Null -ne $VDISchedule.Options.OnDisable)
+							{
+								$ScriptInformation.Add(@{Data = "On disable"; Value = $VDISchedule.Options.OnDisable.ToString(); }) > $Null
+							}
+							If($Null -ne $VDISchedule.Options.EnforceScheduleInactiveHost)
+							{
+								$ScriptInformation.Add(@{Data = "Enforce schedule for currently inactive host"; Value = $VDISchedule.Options.EnforceScheduleInactiveHost.ToString(); }) > $Null
+							}
+						}
+
+						$Table = AddWordTable -Hashtable $ScriptInformation `
+						-Columns Data,Value `
+						-List `
+						-Format $wdTableGrid `
+						-AutoFit $wdAutoFitFixed;
+
+						SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
+						SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+						$Table.Columns.Item(1).Width = 200;
+						$Table.Columns.Item(2).Width = 250;
+
+						$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+						FindWordDocumentEnd
+						$Table = $Null
+						WriteWordLine 0 0 ""
+					}
+					If($Text)
+					{
+						If($Action -eq "Startup")
+						{
+							Line 4 "Power on pool members"
+							If($VDISchedule.Options.PoolMembersType -eq 0)
+							{
+								Line 5 "Percentage of members: " $VDISchedule.Options.PercentageMembers.ToString()
+							}
+							If($VDISchedule.Options.PoolMembersType -eq 1)
+							{
+								Line 5 "Specific number of members to be started: " $VDISchedule.Options.MembersToStart.ToString()
+							}
+						}
+						Else
+						{
+							Line 4 "Send message before schedule is triggered"
+							
+							If($Null -ne $VDISchedule.Options.Messages -and $VDISchedule.Options.Messages.Count -gt 0)
+							{
+								ForEach($Item in $VDISchedule.Options.Messages)
+								{
+									Switch ($Item.SendMsgSecs)
+									{
+										900		{$MsgTime = "15 minutes $($Item.SendMsgWhen)"; Break}
+										1800	{$MsgTime = "30 minutes $($Item.SendMsgWhen)"; Break}
+										2700	{$MsgTime = "45 minutes $($Item.SendMsgWhen)"; Break}
+										3600	{$MsgTime = "1 hour $($Item.SendMsgWhen)"; Break}
+										7200	{$MsgTime = "2 hours $($Item.SendMsgWhen)"; Break}
+										10800	{$MsgTime = "3 hours $($Item.SendMsgWhen)"; Break}
+										Default	{$MsgTime = "Unable to determine scheduled message Time: $($Item.SendMsgSecs)"; Break}
+									}
+									
+									Line 4 "Enabled`t`t`t`t: " $Item.Enabled.ToString()
+									Line 4 "Body`t`t`t`t: " $Item.Message
+									Line 4 "Title`t`t`t`t: " $Item.MessageTitle
+									Line 4 "Time`t`t`t`t: " $MsgTime
+								}
+							}
+
+							If($null -ne $VDISchedule.Options.EnableDrainMode)
+							{
+								Line 4 "Enable Drain Mode`t`t`t`t: " $VDISchedule.Options.EnableDrainMode.ToString()
+							}
+							If($Action -like "Reboot*")
+							{
+								Line 4 "Force host reboot after`t`t`t`t: " $ForceRebootTime
+							}
+							If($Action -like "Shutdown*")
+							{
+								Line 4 "Force host shutdown after`t`t`t: " $ForceRebootTime
+							}
+							If($Null -ne $VDISchedule.Options.OnDisable)
+							{
+								Line 4 "On disable`t`t`t`t`t: " $VDISchedule.Options.OnDisable.ToString()
+							}
+							If($Null -ne $VDISchedule.Options.EnforceScheduleInactiveHost)
+							{
+								Line 4 "Enforce schedule for currently inactive host`t: " $VDISchedule.Options.EnforceScheduleInactiveHost.ToString()
+							}
+						}
+						Line 0 ""
+					}
+					If($HTML)
+					{
+						$rowdata = @()
+						If($Action -eq "Startup")
+						{
+							$columnHeaders = @("Power on pool members",($Script:htmlsb),"",$htmlwhite)
+							If($VDISchedule.Options.PoolMembersType -eq 0)
+							{
+								$rowdata += @(,("     Percentage of members",($Script:htmlsb),$VDISchedule.Options.PercentageMembers.ToString(),$htmlwhite))
+							}
+							ElseIf($VDISchedule.Options.PoolMembersType -eq 1)
+							{
+								$rowdata += @(,("     Specific number of members to be started",($Script:htmlsb),$VDISchedule.Options.MembersToStart.ToString(),$htmlwhite))
+							}
+						}
+						Else
+						{
+							$columnHeaders = @("Send message before schedule is triggered",($Script:htmlsb),"",$htmlwhite)
+							
+							If($Null -ne $VDISchedule.Options.Messages -and $VDISchedule.Options.Messages.Count -gt 0)
+							{
+								ForEach($Item in $VDISchedule.Options.Messages)
+								{
+									Switch ($Item.SendMsgSecs)
+									{
+										900		{$MsgTime = "15 minutes $($Item.SendMsgWhen)"; Break}
+										1800	{$MsgTime = "30 minutes $($Item.SendMsgWhen)"; Break}
+										2700	{$MsgTime = "45 minutes $($Item.SendMsgWhen)"; Break}
+										3600	{$MsgTime = "1 hour $($Item.SendMsgWhen)"; Break}
+										7200	{$MsgTime = "2 hours $($Item.SendMsgWhen)"; Break}
+										10800	{$MsgTime = "3 hours $($Item.SendMsgWhen)"; Break}
+										Default	{$MsgTime = "Unable to determine scheduled message Time: $($Item.SendMsgSecs)"; Break}
+									}
+									
+									$rowdata += @(,("Enabled",($Script:htmlsb),$Item.Enabled.ToString(),$htmlwhite))
+									$rowdata += @(,("Body",($Script:htmlsb),$Item.Message,$htmlwhite))
+									$rowdata += @(,("Title",($Script:htmlsb),$Item.MessageTitle,$htmlwhite))
+									$rowdata += @(,("Time",($Script:htmlsb),$MsgTime,$htmlwhite))
+								}
+							}
+
+							If($null -ne $VDISchedule.Options.EnableDrainMode)
+							{
+								$rowdata += @(,("Enable Drain Mode",($Script:htmlsb),$VDISchedule.Options.EnableDrainMode.ToString(),$htmlwhite))
+							}
+							If($Action -eq "Reboot - Drain Mode")
+							{
+								$rowdata += @(,("Force host reboot after",($Script:htmlsb),$ForceRebootTime,$htmlwhite))
+							}
+							If($Action -like "Shutdown*")
+							{
+								$rowdata += @(,("Force host shutdown after",($Script:htmlsb),$ForceRebootTime,$htmlwhite))
+							}
+							If($Null -ne $VDISchedule.Options.OnDisable)
+							{
+								$rowdata += @(,("On disable",($Script:htmlsb),$VDISchedule.Options.OnDisable.ToString(),$htmlwhite))
+							}
+							If($Null -ne $VDISchedule.Options.EnforceScheduleInactiveHost)
+							{
+								$rowdata += @(,("Enforce schedule for currently inactive host",($Script:htmlsb),$VDISchedule.Options.EnforceScheduleInactiveHost.ToString(),$htmlwhite))
+							}
+						}
+
+						$msg = "Options"
+						$columnWidths = @("350","275")
+						FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+						WriteHTMLLine 0 0 ""
+					}
 				}
 			}
 		}
