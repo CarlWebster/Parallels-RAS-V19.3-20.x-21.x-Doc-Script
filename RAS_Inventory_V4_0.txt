@@ -450,7 +450,7 @@
 	text document.
 .NOTES
 	NAME: RAS_Inventory_V4_0.ps1
-	VERSION: 4.00 Beta 41
+	VERSION: 4.00 Beta 42
 	AUTHOR: Carl Webster
 	LASTEDIT: January 8, 2026
 #>
@@ -779,6 +779,8 @@ Param(
 #
 #	In Function OutputSAMLSetting, handle multiple SAML items
 #
+#	In Function OutputSecureGatewaysDetails, add Tunneling Policies
+#
 #	In Function OutputSiteSettingsDetails
 #		Add Azure Virtual Desktop to the Features section
 #		Add Template Versions section
@@ -926,7 +928,7 @@ $ErrorActionPreference    = 'SilentlyContinue'
 $Error.Clear()
 
 $Script:emailCredentials  = $Null
-$script:MyVersion         = '4.00 Beta 41'
+$script:MyVersion         = '4.00 Beta 42'
 $Script:ScriptName        = "RAS_Inventory_V4_0.ps1"
 $tmpdate                  = [datetime] "01/08/2026"
 $Script:ReleaseDate       = $tmpdate.ToUniversalTime().ToShortDateString()
@@ -34045,6 +34047,19 @@ Function OutputSecureGatewaysDetails
 	{
 		ForEach($SecureGateway in $SecureGateways)
 		{
+			If($MSWord -or $PDF)
+			{
+				WriteWordLine 3 0 "Secure Gateway $($SecureGateway.Server)"
+			}
+			If($Text)
+			{
+				Line 2 "Secure Gateway $($SecureGateway.Server)"
+			}
+			If($HTML)
+			{
+				WriteHTMLLine 3 0 "Secure Gateway $($SecureGateway.Server)"
+			}
+
 			$SecureGatewayStatus = Get-RASGatewayStatus -Id $SecureGateway.Id -EA 0 4>$Null
 			
 			If(!($?))
@@ -34252,7 +34267,6 @@ Function OutputSecureGatewaysDetails
 				
 				If($MSWord -or $PDF)
 				{
-					WriteWordLine 3 0 "Secure Gateway $($SecureGateway.Server)"
 					$ScriptInformation = New-Object System.Collections.ArrayList
 					$ScriptInformation.Add(@{Data = "Server"; Value = $SecureGateway.Server; }) > $Null
 					$ScriptInformation.Add(@{Data = "Mode"; Value = $SecureGateway.Mode; }) > $Null
@@ -34286,7 +34300,6 @@ Function OutputSecureGatewaysDetails
 				}
 				If($Text)
 				{
-					Line 2 "Secure Gateway $($SecureGateway.Server)"
 					Line 3 "Server`t`t`t: " $SecureGateway.Server
 					Line 3 "Mode`t`t`t: " $SecureGateway.Mode
 					Line 3 "Status`t`t`t: " $SecureGatewayStatusAgentState
@@ -34302,7 +34315,6 @@ Function OutputSecureGatewaysDetails
 				}
 				If($HTML)
 				{
-					WriteHTMLLine 3 0 "Secure Gateway $($SecureGateway.Server)"
 					$rowdata = @()
 					$columnHeaders = @("Server",($Script:htmlsb),$SecureGateway.Server,$htmlwhite)
 					$rowdata += @(,("Mode",($Script:htmlsb),$SecureGateway.Mode.ToString(),$htmlwhite))
@@ -35722,6 +35734,196 @@ Function OutputSecureGatewaysDetails
 
 				$msg = "Web"
 				$columnWidths = @("300","275")
+				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+				WriteHTMLLine 0 0 ""
+			}
+		}
+	}
+
+	Write-Verbose "$(Get-Date -Format G): Output Tunneling Policies"
+	If($MSWord -or $PDF)
+	{
+		WriteWordLine 2 0 "Tunneling Policies"
+	}
+	If($Text)
+	{
+		Line 1 "Tunneling Policies"
+	}
+	If($HTML)
+	{
+		WriteHTMLLine 2 0 "Tunneling Policies"
+	}
+
+	$TunnelPolicies = Get-RASTunnelingPolicy -Siteid $Site.Id -EA 0 4> $Null
+	
+	If(!($?))
+	{
+		Write-Warning "
+		`n
+		Unable to retrieve Tunneling Policies for Site $($Site.Name)`
+		"
+		If($MSWord -or $PDF)
+		{
+			WriteWordLine 0 0 ""
+			WriteWordLine 0 0 "Unable to retrieve Tunneling Policies for Site $($Site.Name)"
+			WriteWordLine 0 0 ""
+		}
+		If($Text)
+		{
+			Line 0 ""
+			Line 0 "Unable to retrieve Tunneling Policies for Site $($Site.Name)"
+			Line 0 ""
+		}
+		If($HTML)
+		{
+			WriteHTMLLine 0 0 ""
+			WriteHTMLLine 0 0 "Unable to retrieve Tunneling Policies for Site $($Site.Name)"
+			WriteHTMLLine 0 0 ""
+		}
+	}
+	ElseIf($? -and $Null -eq $TunnelPolicies)
+	{
+		Write-Host "
+	No Tunneling Policies retrieved for Site $($Site.Name).`
+		" -ForegroundColor White
+		If($MSWord -or $PDF)
+		{
+			WriteWordLine 0 0 ""
+			WriteWordLine 0 0 "No Tunneling Policies retrieved for Site $($Site.Name)"
+			WriteWordLine 0 0 ""
+		}
+		If($Text)
+		{
+			Line 0 ""
+			Line 0 "No Tunneling Policies retrieved for Site $($Site.Name)"
+			Line 0 ""
+		}
+		If($HTML)
+		{
+			WriteHTMLLine 0 0 ""
+			WriteHTMLLine 0 0 "No Tunneling Policies retrieved for Site $($Site.Name)"
+			WriteHTMLLine 0 0 ""
+		}
+	}
+	Else
+	{
+		ForEach($TunnelPolicy in $TunnelPolicies)
+		{
+			If($MSWord -or $PDF)
+			{
+				WriteWordLine 3 0 "Tunneling Policy $($TunnelPolicy.IP)"
+			}
+			If($Text)
+			{
+				Line 2 "Tunneling Policy $($TunnelPolicy.IP)"
+			}
+			If($HTML)
+			{
+				WriteHTMLLine 3 0 "Tunneling Policy $($TunnelPolicy.IP)"
+			}
+			
+			If($TunnelPolicy.PublishType -eq "None")
+			{
+				$PublishType = "<None>"
+				$Description = "No hosts selected"
+			}
+			ElseIf($TunnelPolicy.PublishType -eq "AllRDSessionHostsInSite")
+			{
+				$PublishType = "Site"
+				$Description = "All Sites"
+			}
+			ElseIf($TunnelPolicy.PublishType -eq "RDSessionHostPool")
+			{
+				$PublishType = "RD Session Host Pool"
+				
+				$Results = Get-RASRDSHostPool -Id $TunnelPolicy.RDSHostPoolIds[0]
+				
+				If($?)
+				{
+					$Description = $Results.Name
+				}
+				Else
+				{
+					$Description = "Unable to determine"
+				}
+			}
+			ElseIf($TunnelPolicy.PublishType -eq "RDSessionHosts")
+			{
+				$PublishType = "Individual"
+				
+				$Results = Get-RASRDSHost -Id $TunnelPolicy.RDSHostIds[0]
+				
+				If($?)
+				{
+					$Description = $Results.Server
+				}
+				Else
+				{
+					$Description = "Unable to determine"
+				}
+			}
+			Else
+			{
+				$PublishType = "Unable to determine Publish Type: $($TunnelPolicy.PublishType)"
+				$Description = "Unable to determine"
+			}
+
+			If($MSWord -or $PDF)
+			{
+				$ScriptInformation = New-Object System.Collections.ArrayList
+				$ScriptInformation.Add(@{Data = "Gateway IP"; Value = $TunnelPolicy.IP; }) > $Null
+				$ScriptInformation.Add(@{Data = "Type"; Value = $PublishType; }) > $Null
+				$ScriptInformation.Add(@{Data = "Description"; Value = $Description; }) > $Null
+				$ScriptInformation.Add(@{Data = "Last modification by"; Value = $TunnelPolicy.AdminLastMod; }) > $Null
+				$ScriptInformation.Add(@{Data = "Modified on"; Value = (Get-Date -UFormat "%c" $TunnelPolicy.TimeLastMod); }) > $Null
+				$ScriptInformation.Add(@{Data = "Created by"; Value = $TunnelPolicy.AdminCreate.ToString(); }) > $Null
+				$ScriptInformation.Add(@{Data = "Created on"; Value = (Get-Date -UFormat "%c" $TunnelPolicy.TimeCreate); }) > $Null
+				$ScriptInformation.Add(@{Data = "ID"; Value = $TunnelPolicy.Id.ToString(); }) > $Null
+
+				$Table = AddWordTable -Hashtable $ScriptInformation `
+				-Columns Data,Value `
+				-List `
+				-Format $wdTableGrid `
+				-AutoFit $wdAutoFitFixed;
+
+				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+				$Table.Columns.Item(1).Width = 200;
+				$Table.Columns.Item(2).Width = 250;
+
+				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+				FindWordDocumentEnd
+				$Table = $Null
+				WriteWordLine 0 0 ""
+			}
+			If($Text)
+			{
+				Line 3 "Gateway IP`t`t: " $TunnelPolicy.IP
+				Line 3 "Type`t`t`t: " $PublishType
+				Line 3 "Description`t`t: " $Description
+				Line 3 "Last modification by`t: " $TunnelPolicy.AdminLastMod
+				Line 3 "Modified on`t`t: " (Get-Date -UFormat "%c" $TunnelPolicy.TimeLastMod)
+				Line 3 "Created by`t`t: " $TunnelPolicy.AdminCreate.ToString()
+				Line 3 "Created on`t`t: " (Get-Date -UFormat "%c" $TunnelPolicy.TimeCreate)
+				Line 3 "ID`t`t`t: " $TunnelPolicy.Id.ToString()
+				Line 0 ""
+			}
+			If($HTML)
+			{
+				$rowdata = @()
+				$columnHeaders = @("Gateway IP",($Script:htmlsb),$TunnelPolicy.IP.Trim("<",">"),$htmlwhite)
+				$rowdata += @(,( "Type",($Script:htmlsb),$PublishType.Trim("<",">"),$htmlwhite))
+				$rowdata += @(,( "Description",($Script:htmlsb),$Description.Trim("<",">"),$htmlwhite))
+				$rowdata += @(,( "Last modification by",($Script:htmlsb),$TunnelPolicy.AdminLastMod,$htmlwhite))
+				$rowdata += @(,( "Modified on",($Script:htmlsb),(Get-Date -UFormat "%c" $TunnelPolicy.TimeLastMod),$htmlwhite))
+				$rowdata += @(,( "Created by",($Script:htmlsb),$TunnelPolicy.AdminCreate.ToString(),$htmlwhite))
+				$rowdata += @(,( "Created on",($Script:htmlsb),(Get-Date -UFormat "%c" $TunnelPolicy.TimeCreate),$htmlwhite))
+				$rowdata += @(,( "ID",($Script:htmlsb), $TunnelPolicy.Id.ToString(),$htmlwhite))
+
+				$msg = ""
+				$columnWidths = @("150","250")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 			}

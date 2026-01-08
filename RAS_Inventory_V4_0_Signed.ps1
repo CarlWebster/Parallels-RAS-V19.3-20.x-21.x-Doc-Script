@@ -450,7 +450,7 @@
 	text document.
 .NOTES
 	NAME: RAS_Inventory_V4_0.ps1
-	VERSION: 4.00 Beta 41
+	VERSION: 4.00 Beta 42
 	AUTHOR: Carl Webster
 	LASTEDIT: January 8, 2026
 #>
@@ -779,6 +779,8 @@ Param(
 #
 #	In Function OutputSAMLSetting, handle multiple SAML items
 #
+#	In Function OutputSecureGatewaysDetails, add Tunneling Policies
+#
 #	In Function OutputSiteSettingsDetails
 #		Add Azure Virtual Desktop to the Features section
 #		Add Template Versions section
@@ -926,7 +928,7 @@ $ErrorActionPreference    = 'SilentlyContinue'
 $Error.Clear()
 
 $Script:emailCredentials  = $Null
-$script:MyVersion         = '4.00 Beta 41'
+$script:MyVersion         = '4.00 Beta 42'
 $Script:ScriptName        = "RAS_Inventory_V4_0.ps1"
 $tmpdate                  = [datetime] "01/08/2026"
 $Script:ReleaseDate       = $tmpdate.ToUniversalTime().ToShortDateString()
@@ -34045,6 +34047,19 @@ Function OutputSecureGatewaysDetails
 	{
 		ForEach($SecureGateway in $SecureGateways)
 		{
+			If($MSWord -or $PDF)
+			{
+				WriteWordLine 3 0 "Secure Gateway $($SecureGateway.Server)"
+			}
+			If($Text)
+			{
+				Line 2 "Secure Gateway $($SecureGateway.Server)"
+			}
+			If($HTML)
+			{
+				WriteHTMLLine 3 0 "Secure Gateway $($SecureGateway.Server)"
+			}
+
 			$SecureGatewayStatus = Get-RASGatewayStatus -Id $SecureGateway.Id -EA 0 4>$Null
 			
 			If(!($?))
@@ -34252,7 +34267,6 @@ Function OutputSecureGatewaysDetails
 				
 				If($MSWord -or $PDF)
 				{
-					WriteWordLine 3 0 "Secure Gateway $($SecureGateway.Server)"
 					$ScriptInformation = New-Object System.Collections.ArrayList
 					$ScriptInformation.Add(@{Data = "Server"; Value = $SecureGateway.Server; }) > $Null
 					$ScriptInformation.Add(@{Data = "Mode"; Value = $SecureGateway.Mode; }) > $Null
@@ -34286,7 +34300,6 @@ Function OutputSecureGatewaysDetails
 				}
 				If($Text)
 				{
-					Line 2 "Secure Gateway $($SecureGateway.Server)"
 					Line 3 "Server`t`t`t: " $SecureGateway.Server
 					Line 3 "Mode`t`t`t: " $SecureGateway.Mode
 					Line 3 "Status`t`t`t: " $SecureGatewayStatusAgentState
@@ -34302,7 +34315,6 @@ Function OutputSecureGatewaysDetails
 				}
 				If($HTML)
 				{
-					WriteHTMLLine 3 0 "Secure Gateway $($SecureGateway.Server)"
 					$rowdata = @()
 					$columnHeaders = @("Server",($Script:htmlsb),$SecureGateway.Server,$htmlwhite)
 					$rowdata += @(,("Mode",($Script:htmlsb),$SecureGateway.Mode.ToString(),$htmlwhite))
@@ -35722,6 +35734,196 @@ Function OutputSecureGatewaysDetails
 
 				$msg = "Web"
 				$columnWidths = @("300","275")
+				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+				WriteHTMLLine 0 0 ""
+			}
+		}
+	}
+
+	Write-Verbose "$(Get-Date -Format G): Output Tunneling Policies"
+	If($MSWord -or $PDF)
+	{
+		WriteWordLine 2 0 "Tunneling Policies"
+	}
+	If($Text)
+	{
+		Line 1 "Tunneling Policies"
+	}
+	If($HTML)
+	{
+		WriteHTMLLine 2 0 "Tunneling Policies"
+	}
+
+	$TunnelPolicies = Get-RASTunnelingPolicy -Siteid $Site.Id -EA 0 4> $Null
+	
+	If(!($?))
+	{
+		Write-Warning "
+		`n
+		Unable to retrieve Tunneling Policies for Site $($Site.Name)`
+		"
+		If($MSWord -or $PDF)
+		{
+			WriteWordLine 0 0 ""
+			WriteWordLine 0 0 "Unable to retrieve Tunneling Policies for Site $($Site.Name)"
+			WriteWordLine 0 0 ""
+		}
+		If($Text)
+		{
+			Line 0 ""
+			Line 0 "Unable to retrieve Tunneling Policies for Site $($Site.Name)"
+			Line 0 ""
+		}
+		If($HTML)
+		{
+			WriteHTMLLine 0 0 ""
+			WriteHTMLLine 0 0 "Unable to retrieve Tunneling Policies for Site $($Site.Name)"
+			WriteHTMLLine 0 0 ""
+		}
+	}
+	ElseIf($? -and $Null -eq $TunnelPolicies)
+	{
+		Write-Host "
+	No Tunneling Policies retrieved for Site $($Site.Name).`
+		" -ForegroundColor White
+		If($MSWord -or $PDF)
+		{
+			WriteWordLine 0 0 ""
+			WriteWordLine 0 0 "No Tunneling Policies retrieved for Site $($Site.Name)"
+			WriteWordLine 0 0 ""
+		}
+		If($Text)
+		{
+			Line 0 ""
+			Line 0 "No Tunneling Policies retrieved for Site $($Site.Name)"
+			Line 0 ""
+		}
+		If($HTML)
+		{
+			WriteHTMLLine 0 0 ""
+			WriteHTMLLine 0 0 "No Tunneling Policies retrieved for Site $($Site.Name)"
+			WriteHTMLLine 0 0 ""
+		}
+	}
+	Else
+	{
+		ForEach($TunnelPolicy in $TunnelPolicies)
+		{
+			If($MSWord -or $PDF)
+			{
+				WriteWordLine 3 0 "Tunneling Policy $($TunnelPolicy.IP)"
+			}
+			If($Text)
+			{
+				Line 2 "Tunneling Policy $($TunnelPolicy.IP)"
+			}
+			If($HTML)
+			{
+				WriteHTMLLine 3 0 "Tunneling Policy $($TunnelPolicy.IP)"
+			}
+			
+			If($TunnelPolicy.PublishType -eq "None")
+			{
+				$PublishType = "<None>"
+				$Description = "No hosts selected"
+			}
+			ElseIf($TunnelPolicy.PublishType -eq "AllRDSessionHostsInSite")
+			{
+				$PublishType = "Site"
+				$Description = "All Sites"
+			}
+			ElseIf($TunnelPolicy.PublishType -eq "RDSessionHostPool")
+			{
+				$PublishType = "RD Session Host Pool"
+				
+				$Results = Get-RASRDSHostPool -Id $TunnelPolicy.RDSHostPoolIds[0]
+				
+				If($?)
+				{
+					$Description = $Results.Name
+				}
+				Else
+				{
+					$Description = "Unable to determine"
+				}
+			}
+			ElseIf($TunnelPolicy.PublishType -eq "RDSessionHosts")
+			{
+				$PublishType = "Individual"
+				
+				$Results = Get-RASRDSHost -Id $TunnelPolicy.RDSHostIds[0]
+				
+				If($?)
+				{
+					$Description = $Results.Server
+				}
+				Else
+				{
+					$Description = "Unable to determine"
+				}
+			}
+			Else
+			{
+				$PublishType = "Unable to determine Publish Type: $($TunnelPolicy.PublishType)"
+				$Description = "Unable to determine"
+			}
+
+			If($MSWord -or $PDF)
+			{
+				$ScriptInformation = New-Object System.Collections.ArrayList
+				$ScriptInformation.Add(@{Data = "Gateway IP"; Value = $TunnelPolicy.IP; }) > $Null
+				$ScriptInformation.Add(@{Data = "Type"; Value = $PublishType; }) > $Null
+				$ScriptInformation.Add(@{Data = "Description"; Value = $Description; }) > $Null
+				$ScriptInformation.Add(@{Data = "Last modification by"; Value = $TunnelPolicy.AdminLastMod; }) > $Null
+				$ScriptInformation.Add(@{Data = "Modified on"; Value = (Get-Date -UFormat "%c" $TunnelPolicy.TimeLastMod); }) > $Null
+				$ScriptInformation.Add(@{Data = "Created by"; Value = $TunnelPolicy.AdminCreate.ToString(); }) > $Null
+				$ScriptInformation.Add(@{Data = "Created on"; Value = (Get-Date -UFormat "%c" $TunnelPolicy.TimeCreate); }) > $Null
+				$ScriptInformation.Add(@{Data = "ID"; Value = $TunnelPolicy.Id.ToString(); }) > $Null
+
+				$Table = AddWordTable -Hashtable $ScriptInformation `
+				-Columns Data,Value `
+				-List `
+				-Format $wdTableGrid `
+				-AutoFit $wdAutoFitFixed;
+
+				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+				$Table.Columns.Item(1).Width = 200;
+				$Table.Columns.Item(2).Width = 250;
+
+				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+				FindWordDocumentEnd
+				$Table = $Null
+				WriteWordLine 0 0 ""
+			}
+			If($Text)
+			{
+				Line 3 "Gateway IP`t`t: " $TunnelPolicy.IP
+				Line 3 "Type`t`t`t: " $PublishType
+				Line 3 "Description`t`t: " $Description
+				Line 3 "Last modification by`t: " $TunnelPolicy.AdminLastMod
+				Line 3 "Modified on`t`t: " (Get-Date -UFormat "%c" $TunnelPolicy.TimeLastMod)
+				Line 3 "Created by`t`t: " $TunnelPolicy.AdminCreate.ToString()
+				Line 3 "Created on`t`t: " (Get-Date -UFormat "%c" $TunnelPolicy.TimeCreate)
+				Line 3 "ID`t`t`t: " $TunnelPolicy.Id.ToString()
+				Line 0 ""
+			}
+			If($HTML)
+			{
+				$rowdata = @()
+				$columnHeaders = @("Gateway IP",($Script:htmlsb),$TunnelPolicy.IP.Trim("<",">"),$htmlwhite)
+				$rowdata += @(,( "Type",($Script:htmlsb),$PublishType.Trim("<",">"),$htmlwhite))
+				$rowdata += @(,( "Description",($Script:htmlsb),$Description.Trim("<",">"),$htmlwhite))
+				$rowdata += @(,( "Last modification by",($Script:htmlsb),$TunnelPolicy.AdminLastMod,$htmlwhite))
+				$rowdata += @(,( "Modified on",($Script:htmlsb),(Get-Date -UFormat "%c" $TunnelPolicy.TimeLastMod),$htmlwhite))
+				$rowdata += @(,( "Created by",($Script:htmlsb),$TunnelPolicy.AdminCreate.ToString(),$htmlwhite))
+				$rowdata += @(,( "Created on",($Script:htmlsb),(Get-Date -UFormat "%c" $TunnelPolicy.TimeCreate),$htmlwhite))
+				$rowdata += @(,( "ID",($Script:htmlsb), $TunnelPolicy.Id.ToString(),$htmlwhite))
+
+				$msg = ""
+				$columnWidths = @("150","250")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 			}
@@ -69596,8 +69798,8 @@ ProcessScriptEnd
 # SIG # Begin signature block
 # MIIthQYJKoZIhvcNAQcCoIItdjCCLXICAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUh0CoZPHAEauHaSCkTiVLeRPM
-# kDSggibfMIIFjTCCBHWgAwIBAgIQDpsYjvnQLefv21DiCEAYWjANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUJTYy9Uac84PESpM66qp3k+G+
+# JBqggibfMIIFjTCCBHWgAwIBAgIQDpsYjvnQLefv21DiCEAYWjANBgkqhkiG9w0B
 # AQwFADBlMQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYD
 # VQQLExB3d3cuZGlnaWNlcnQuY29tMSQwIgYDVQQDExtEaWdpQ2VydCBBc3N1cmVk
 # IElEIFJvb3QgQ0EwHhcNMjIwODAxMDAwMDAwWhcNMzExMTA5MjM1OTU5WjBiMQsw
@@ -69808,33 +70010,33 @@ ProcessScriptEnd
 # UzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/BgNVBAMTOERpZ2lDZXJ0IFRy
 # dXN0ZWQgRzQgQ29kZSBTaWduaW5nIFJTQTQwOTYgU0hBMzg0IDIwMjEgQ0ExAhAL
 # bN+2Z4EOKufLWhG6HUlwMAkGBSsOAwIaBQCgQDAZBgkqhkiG9w0BCQMxDAYKKwYB
-# BAGCNwIBBDAjBgkqhkiG9w0BCQQxFgQUwafF0Bu/X9HCGj+yCqxe1eqAUSQwDQYJ
-# KoZIhvcNAQEBBQAEggIAqmYkN2FQpcXkuYOzEjnGFIbxSqfUfBrcfMrTb855QkoD
-# yU2CoR2cgjTbTxJyT7zjEUkZ3L8Kw8+K3OqQv7e9mtMyWz9EE1Y8hmZdoQOBO4FB
-# kSJz/JsXF+GEaJoZfMLjG7Bxv0qiE7jZbYqrrCiU6jE/O9q//+5S9+zbHHswfjKW
-# U1h7zVpW42bS9NyNf1c33ScAyNPXtW+8AwTm996OtrUPwKhSzaIfda2xqXxq/1eu
-# KYubGvfAFhsekcC3OT14MdhufDaxd5Cp9gdRPM+p8Zncpd5fTF/AzRWI7hiiLWgM
-# 5l4SK6VDq56lb6AjhlXgrNIBn4j4lrSVUJks4l5/WdvCX6B+3tnnO0t8hODJGZ30
-# JQgFAi0YUwcp/fLhJ3cSRm4mtfY0xxXCz0QXtFs7glm7/KUW3EYWSR5fULQlQCe2
-# p9n5GfkT3+r/wC0Y1CmoGYndXEslYHU5AY8R5nMureCPe8g4Sk0YqUL2bztzUlsy
-# 6BISrjPbVGosDdm6SePb2nL1MY9632BlxsOhT8kcQd0j4TQhbRnaNIWaXqF4KHfm
-# SbZzXa+G9n8+nEjd+7L5TuvHamVF9grso43TqvrOpyOEFwPnuxZjnuA67+lBBRKm
-# m0wKvYmrbIfUiiYSxWOxKP7xohxoe+YfrtQrEKwGw13Mm4CRA86OB0ocUIAEfymh
+# BAGCNwIBBDAjBgkqhkiG9w0BCQQxFgQUDTKI8wuB9NJremSsBi3M7fduhCEwDQYJ
+# KoZIhvcNAQEBBQAEggIAsnqkURP/nFjLUk4BbpP5S+wIqSURsHMDorVUDVSenLB6
+# 7yXpFQKqZYfhFoxOhbTUS6UFXOxiDkpaAoe6AvSDUKc+eU78srZcsO5WDaxBItku
+# cQhJxmiotq2vBoTQ0NYVsQMCbVvSatWa60SOeR8r2LaS50YSUHnh8/VoHvl88jmU
+# LzDH95a3Fb/E+5ZwleBdpfPjVQSVLA4TTqCIQrvCnl0P/zC2AEo62vJI/NuSJIQX
+# rJstOxaQYUAYMgdHXYpMbCMkPINjU7aysi1gllobWihvmFyKKW3g9KRZX/AZUS9J
+# CACeHNsGeDNePU9hC6K3C6aw9yAJA7mzLmCah5thlL5wsoGRsHJfecccN3gUSSiH
+# pqPCquX2jCkbwElp90tlpIigdTs6INj0Gh0aXqmLyZb5xnshI2RbKa42imlvRJ7p
+# IddUZaufUBZDBnOAl4e4a1LefIId1/77gl1PfrCFXjYJWe0MVuJLW9tanLxvlvVj
+# 0lOGW7H8DOzVB4h9A0Re2yT60zlQTsrrNqX4z1IAAmPXxUhrQhEL1O2b9k0uFhLq
+# gebl2COfr02ZAxi1WmRWjz0+SxXGv/kIgdjlQs6Ton3wQxuKOVj3J7Nlv6qHqAwj
+# qh1Idtd87urG3hikgX6JmCzaIBd0AIwn1lWMeu4B0trUp59u00VY2qnAkI3Vtoqh
 # ggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8CAQEwfTBpMQswCQYDVQQGEwJVUzEX
 # MBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/BgNVBAMTOERpZ2lDZXJ0IFRydXN0
 # ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYgU0hBMjU2IDIwMjUgQ0ExAhAKgO8Y
 # S43xBYLRxHanlXRoMA0GCWCGSAFlAwQCAQUAoGkwGAYJKoZIhvcNAQkDMQsGCSqG
-# SIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjYwMTA4MTM0NTE0WjAvBgkqhkiG9w0B
-# CQQxIgQgPPb9NutRNk/zjPcyYRMVB72O39DelPk2zJxEL/2LkJkwDQYJKoZIhvcN
-# AQEBBQAEggIAvjXqb17OzY6jgeqnyDuzb45j35sbXDFn/0Eo0DYyuw7Hzz2RdiF8
-# 0VTSvb8InxWTqkaMXyaXjSyyb87YysAQZ6mRpDOqub9CP9s7cxglFWl0BHOy7iiI
-# oDvZjSdfITmKTQd2VsSlRGCe93x6UEVlzxFMAkF76qT5dCfU6dVchSrcpDYEHj8r
-# bfTkTGMMpd3d3ASYeQWOqBy+Z9rH66eRlhzmexQ5vcjaYmAz6JjsH8p5TJGp2CTE
-# 80/kUBQm1gN5Qlo7/oagTMfhWfsqOGEzDraQ86eL7jwT61SP5pfoDW8PO+lBLCSE
-# PgDjLTcid7fc4MshF+97f2G9ruJ9BCxdpKwyJ+7qNhONd0ig+ic8gv5o5RcIWOMy
-# YMmgA5NJ7NWBlpZy3Bhacuxt41ZX9zL7EqFs5R1124v7SN6xOYz9SidWZv84dV4L
-# eloxPMCSLmVm+9ciC2RKzu2kHGeif6RH13q/thVyR8ui/8+CKDuxISb7RJYWvHxu
-# WVTCoM7zsJ6kWzZll0d0vM3+arikVUs4yE7SPrU2yltIxQF3u9OvqYcIOzektxb8
-# Q33enzrRQbeN3J6gBPvL8jPu54YrWFm8NUXYYU2l79BIROnjq0dEoTo9hyUyaPl4
-# MsJm16fg8IzZG2Sh1tnl/UsPd+D0MzkH27KWGwXNSbQO94r7mNrhxsM=
+# SIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjYwMTA4MTcyNzM5WjAvBgkqhkiG9w0B
+# CQQxIgQg7AaAEvmLxqgHt4qFwdpNLsvcWCTZYsfwvI6VKB/7zk4wDQYJKoZIhvcN
+# AQEBBQAEggIAQYUrLKkiGqFJAFK2YxnIouEpYJzizF5q8kpPV0WO7h3DnV+HbIyo
+# opX9G//35Xy5jK6R8evtaJi5WR++9PVcwvETuqQSl9iz0mPI6vZs26fwRmezHLYG
+# 8YiU03RF1i8o6mu0lBHBtDyS5omKG0ABfuQIpRH4DX/cpkJE0NwE44ycf4M1oPSn
+# mon+ESw+xfP8SJ2RkGT6PmdA/QA5Y2Nrf3n+TDX0FJ+3a3kjAKB17C8dpH8b+CGa
+# 0sDCSOBGdQ3nKXjkfwvkoyk4HRg0bJNiTvS6VbbC5QtC5OxKH0/ABD2wPgnXj+2u
+# srlyOqLuIdh6F1UIS1Q7uy43fC+CjN3VWXTtk3G7DUZBz4ZyuxC2xtElJCfu9CkI
+# xgkseFmZUeL8M+tyOxaWe8/319WkABQ+8mBQG86KRvNzLleN1/ThpUErE/qKFhuH
+# I3G4ihuy9b9t3zCLVoISMJd5NOV3D2HZHprQ1hYXMVoQR9AjxhkfDwjs36KPJIrj
+# /vG5QcCTYRpO6xRz7i1hIiA6ACWEmZswJUFX5/qlRJFbhDaSbOWY9aj8UEtLk6QO
+# zZEFVf7U19u0xcwdjtdkNsCFNhPKPk1heNywen1z/lOxhb4sot6Y3cSS+/ATbgl/
+# M9viFfZMnWyKQdEahOb+orNxdndU1k10mEd+UI9ouL0Bf3gix7ta6Xg=
 # SIG # End signature block
