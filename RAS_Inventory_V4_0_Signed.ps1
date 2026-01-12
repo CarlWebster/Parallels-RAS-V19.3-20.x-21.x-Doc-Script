@@ -450,9 +450,9 @@
 	text document.
 .NOTES
 	NAME: RAS_Inventory_V4_0.ps1
-	VERSION: 4.00 Beta 42
+	VERSION: 4.00 Beta 43
 	AUTHOR: Carl Webster
-	LASTEDIT: January 8, 2026
+	LASTEDIT: January 12, 2026
 #>
 
 
@@ -805,6 +805,9 @@ Param(
 #
 #	In Function OutputThemesDetails
 #		Change HTML5 URL to User Portal URL
+#		Update several ENUMs
+#		Update to reflect the additions, deletions, and changes in the console
+#		Fixed numerous output formatting issues
 #
 #	In Function OutputVDIDetails:
 #		For Host pools, add:
@@ -928,9 +931,9 @@ $ErrorActionPreference    = 'SilentlyContinue'
 $Error.Clear()
 
 $Script:emailCredentials  = $Null
-$script:MyVersion         = '4.00 Beta 42'
+$script:MyVersion         = '4.00 Beta 43'
 $Script:ScriptName        = "RAS_Inventory_V4_0.ps1"
-$tmpdate                  = [datetime] "01/08/2026"
+$tmpdate                  = [datetime] "01/12/2026"
 $Script:ReleaseDate       = $tmpdate.ToUniversalTime().ToShortDateString()
 
 If($MSWord -eq $False -and $PDF -eq $False -and $Text -eq $False -and $HTML -eq $False)
@@ -37731,6 +37734,7 @@ Function OutputThemesDetails
 			$ThemeUserPortalPostlogonMessage	= $Theme.UserPortal.Message.UserPortalPostLogonMessage.Split("`n")
 			$ThemeWindowsPostlogonMessage		= $Theme.WindowsClient.Messages.WindowsClientPostLogonMessage.Split("`n")
 			$ThemeUserPortalURL					= "https://FQDN/$($Theme.UserPortal.Url.LoginPageURLPath)"
+			$ThemeClientConnection				= "FQDN/$($Theme.UserPortal.Url.LoginPageURLPath)"
 			$ThemeShowDownloadURL				= $Theme.UserPortal.Url.ShowDownloadURL.ToString()
 			$ThemeOverrideDownloadURL			= $Theme.UserPortal.Url.OverrideWindowsClientDownloadURL
 			$ThemeFooterURLs					= @(Get-RASThemeFooterURL -Name $Theme.Name -EA 0) 4> $Null #fixed in 2.52 thanks to Thomas Krampe
@@ -37750,14 +37754,12 @@ Function OutputThemesDetails
 				$ThemeCompanyLogo = ""
 			}
 			
-			
 			$ThemeFaviconIcon = Get-RASThemeImage -Name $Theme.name -ImageType FaviconIcon -EA 0 4>$Null
 			
 			If(!($?))
 			{
 				$ThemeFaviconIcon = ""
 			}
-
 			
 			$ThemeConnectionBanner = Get-RASThemeImage -Name $Theme.name -ImageType ConnectionBanner -EA 0 4>$Null
 			
@@ -37765,7 +37767,6 @@ Function OutputThemesDetails
 			{
 				$ThemeConnectionBanner = ""
 			}
-
 			
 			$ThemeApplicationIcon = Get-RASThemeImage -Name $Theme.name -ImageType ApplicationIcon -EA 0 4>$Null
 			
@@ -37777,9 +37778,9 @@ Function OutputThemesDetails
 			$ThemeUserPortalLaunchSessionsUsing = ""
 			Switch($Theme.UserPortal.Gateway.LaunchMethod)
 			{
-				"Launch_Applications_with_Parallels_Client_Fallback_to_HTML_5"	{$ThemeUserPortalLaunchSessionsUsing = "Launch apps with Parallels Client & Fallback to HTML5"; Break}
-				"Launch_Applications_with_Parallels_Client"						{$ThemeUserPortalLaunchSessionsUsing = "Launch apps with Parallels Client"; Break}
-				"Launch_Applications_with_Browser_HTML5"						{$ThemeUserPortalLaunchSessionsUsing = "Launch apps in Browser only (HTML5 Only)"; Break}
+				"Launch_Applications_with_Parallels_Client_Fallback_to_HTML_5"	{$ThemeUserPortalLaunchSessionsUsing = "Parallels Client with Fallback to Browser"; Break}
+				"Launch_Applications_with_Parallels_Client"						{$ThemeUserPortalLaunchSessionsUsing = "Parallels Client only"; Break}
+				"Launch_Applications_with_Browser_HTML5"						{$ThemeUserPortalLaunchSessionsUsing = "Browser Only"; Break}
 				Default															{$ThemeUserPortalLaunchSessionsUsing = "Unable to determine Launch sessions using: $($Theme.UserPortal.Gateway.LaunchMethod)"; Break}
 			}
 			
@@ -37803,14 +37804,60 @@ Function OutputThemesDetails
 				Default				{$ThemeHTMLClipboardDirection = "Unable to determine Clipboard direction: $($Theme.UserPortal.Gateway.ClipboardDirection)"; Break}
 			}
 			
+			$Results = Get-RASSAMLIDP -SiteId $Site.Id -EA 0 4>$Null | Where-Object {$_.ThemeId -eq $Theme.Id}
+			
+			If($? -and $Null -ne $Results)
+			{
+				$SAMLProvider = $Results.Name
+			}
+			Else
+			{
+				$SAMLProvider = ""
+			}
+			
+			If($Theme.MFAId -eq 0)
+			{
+				$Results     = $Null
+				$MFAProvider = "#0"
+			}
+			Else
+			{
+				$Results = Get-RASMFA -Id $Theme.MFAId -EA 0 4>$Null
+
+				If($? -and $Null -ne $Results)
+				{
+					$MFAProvider = $Results.Name
+				}
+				Else
+				{
+					$MFAProvider = "Unable to determine MFA provider"
+				}
+			}
+			
 			If($MSWord -or $PDF)
 			{
 				WriteWordLine 3 0 "Theme $($Theme.Name)"
+			}
+			If($Text)
+			{
+				Line 2 "Theme $($Theme.Name)"
+			}
+			If($HTML)
+			{
+				$ThemeName = $Theme.Name.Trim("<",">")
+				WriteHTMLLine 3 0 "Theme $ThemeName"
+			}
+
+			If($MSWord -or $PDF)
+			{
 				$ScriptInformation = New-Object System.Collections.ArrayList
 				$ScriptInformation.Add(@{Data = "Name"; Value = $Theme.Name; }) > $Null
 				$ScriptInformation.Add(@{Data = "Enabled"; Value = $Theme.Enabled.ToString(); }) > $Null
 				$ScriptInformation.Add(@{Data = "Description"; Value = $Theme.Description; }) > $Null
 				$ScriptInformation.Add(@{Data = "User Portal URL"; Value = $ThemeUserPortalURL; }) > $Null
+				$ScriptInformation.Add(@{Data = "Client Connection"; Value = $ThemeClientConnection; }) > $Null
+				$ScriptInformation.Add(@{Data = "MFA provider"; Value = $MFAProvider; }) > $Null
+				$ScriptInformation.Add(@{Data = "SAML IDP"; Value = $SAMLProvider; }) > $Null
 				$ScriptInformation.Add(@{Data = "Last modification by"; Value = $Theme.AdminLastMod; }) > $Null
 				$ScriptInformation.Add(@{Data = "Modified on"; Value = (Get-Date -UFormat "%c" $Theme.TimeLastMod); }) > $Null
 				$ScriptInformation.Add(@{Data = "Created by"; Value = $Theme.AdminCreate; }) > $Null
@@ -37837,10 +37884,13 @@ Function OutputThemesDetails
 			}
 			If($Text)
 			{
-				Line 2 "Theme $($Theme.Name)"
 				Line 3 "Name`t`t`t: " $Theme.Name
+				Line 3 "Enabled`t`t`t: " $Theme.Enabled.ToString()
 				Line 3 "Description`t`t: " $Theme.Description
 				Line 3 "User Portal URL`t`t: " $ThemeUserPortalURL
+				Line 3 "Client Connection`t: " $ThemeClientConnection
+				Line 3 "MFA provider`t`t: " $MFAProvider
+				Line 3 "SAML IDP`t`t: " $SAMLProvider
 				Line 3 "Last modification by`t: " $Theme.AdminLastMod
 				Line 3 "Modified on`t`t: " (Get-Date -UFormat "%c" $Theme.TimeLastMod)
 				Line 3 "Created by`t`t: " $Theme.AdminCreate
@@ -37850,13 +37900,14 @@ Function OutputThemesDetails
 			}
 			If($HTML)
 			{
-				#$ThemeName = $Theme.Name.Replace("<","").Replace(">","")
-				$ThemeName = $Theme.Name.Trim("<",">")
-				WriteHTMLLine 3 0 "Theme $ThemeName"
 				$rowdata = @()
 				$columnHeaders = @("Name",($Script:htmlsb),$ThemeName,$htmlwhite)
+				$rowdata += @(,("Enabled",($Script:htmlsb),$Theme.Enabled.ToString(),$htmlwhite))
 				$rowdata += @(,("Description",($Script:htmlsb),$Theme.Description,$htmlwhite))
 				$rowdata += @(,("User Portal URL",($Script:htmlsb),$ThemeUserPortalURL,$htmlwhite))
+				$rowdata += @(,("Client Connection",($Script:htmlsb),$ThemeClientConnection,$htmlwhite))
+				$rowdata += @(,("MFA provider",($Script:htmlsb),$MFAProvider,$htmlwhite))
+				$rowdata += @(,("SAML IDP",($Script:htmlsb),$SAMLProvider,$htmlwhite))
 				$rowdata += @(,("Last modification by",($Script:htmlsb), $Theme.AdminLastMod,$htmlwhite))
 				$rowdata += @(,("Modified on",($Script:htmlsb), (Get-Date -UFormat "%c" $Theme.TimeLastMod),$htmlwhite))
 				$rowdata += @(,("Created by",($Script:htmlsb), $Theme.AdminCreate,$htmlwhite))
@@ -37875,7 +37926,7 @@ Function OutputThemesDetails
 			}
 			If($Text)
 			{
-				Line 2 "General"
+				Line 3 "General"
 			}
 			If($HTML)
 			{
@@ -37888,19 +37939,9 @@ Function OutputThemesDetails
 				$ScriptInformation.Add(@{Data = "Enable Theme"; Value = $Theme.Enabled.ToString(); }) > $Null
 				$ScriptInformation.Add(@{Data = "Name"; Value = $Theme.Name; }) > $Null
 				$ScriptInformation.Add(@{Data = "Description"; Value = $Theme.Description; }) > $Null
-				$ScriptInformation.Add(@{Data = "Override authentication domain"; Value = $Theme.OverrideAuthenticationDomain.ToString(); }) > $Null
-				If($Theme.OverrideAuthenticationDomain)
-				{
-					$ScriptInformation.Add(@{Data = "     Domain"; Value = $Theme.Domain; }) > $Null
-				}
-				$ScriptInformation.Add(@{Data = "Limit access to this theme to members of these AD groups"; Value = $Theme.GroupEnabled.ToString(); }) > $Null
-				If($Theme.GroupEnabled)
-				{
-					ForEach($Group in $Theme.GroupFilters)
-					{
-						$ScriptInformation.Add(@{Data = ""; Value = "Group: $($Group.name) SID: $($Group.sid)"; }) > $Null
-					}
-				}
+				$ScriptInformation.Add(@{Data = "Path"; Value = $Theme.UserPortal.Url.LoginPageURLPath; }) > $Null
+				$ScriptInformation.Add(@{Data = "User Portal URL"; Value = $ThemeUserPortalURL; }) > $Null
+				$ScriptInformation.Add(@{Data = "Client Connection"; Value = $ThemeClientConnection; }) > $Null
 
 				$Table = AddWordTable -Hashtable $ScriptInformation `
 				-Columns Data,Value `
@@ -37922,9 +37963,12 @@ Function OutputThemesDetails
 			}
 			If($Text)
 			{
-				Line 3 "Enable Theme`t`t`t: " $Theme.Enabled.ToString()
-				Line 3 "Name`t`t`t`t: " $Theme.Name
-				Line 3 "Description`t`t`t: " $Theme.Description
+				Line 4 "Enable Theme`t`t`t: " $Theme.Enabled.ToString()
+				Line 4 "Name`t`t`t`t: " $Theme.Name
+				Line 4 "Description`t`t`t: " $Theme.Description
+				Line 4 "Path`t`t`t`t: " $Theme.UserPortal.Url.LoginPageURLPath
+				Line 4 "User Portal URL`t`t`t: " $ThemeUserPortalURL
+				Line 4 "Client Connection`t`t: " $ThemeClientConnection
 				Line 0 ""
 			}
 			If($HTML)
@@ -37934,6 +37978,9 @@ Function OutputThemesDetails
 				$columnHeaders = @("Enable Theme",($Script:htmlsb),$Theme.Enabled.ToString(),$htmlwhite)
 				$rowdata += @(,("Name",($Script:htmlsb),$ThemeName,$htmlwhite))
 				$rowdata += @(,("Description",($Script:htmlsb),$Theme.Description,$htmlwhite))
+				$rowdata += @(,("Path",($Script:htmlsb),$Theme.UserPortal.Url.LoginPageURLPath,$htmlwhite))
+				$rowdata += @(,("User Portal URL",($Script:htmlsb),$ThemeUserPortalURL,$htmlwhite))
+				$rowdata += @(,("Client Connection",($Script:htmlsb),$ThemeClientConnection,$htmlwhite))
 
 				$msg = "General"
 				$columnWidths = @("200","400")
@@ -37947,7 +37994,7 @@ Function OutputThemesDetails
 			}
 			If($Text)
 			{
-				Line 2 "Access"
+				Line 3 "Access"
 			}
 			If($HTML)
 			{
@@ -37956,35 +38003,12 @@ Function OutputThemesDetails
 			
 			If($Theme.MFAId -eq 0)
 			{
-				$Results = $Null
+				$MFAProvider = "<not used>"
 			}
-			Else
+
+			If($SAMLProvider -eq "")
 			{
-				$Results = Get-RASMFA -Id $Theme.MFAId -EA 0 4>$Null
-			}
-			
-			If($? -and $Null -ne $Results)
-			{
-				$MFAProvider = $Results.Name
-			}
-			ElseIf($Theme.MFAId -eq 0)
-			{
-				$MFAProvider = "No MFA provider selected for this Theme"
-			}
-			Else
-			{
-				$MFAProvider = "Unable to determine MFA provider"
-			}
-			
-			$Results = Get-RASSAMLIDP -SiteId $Site.Id -EA 0 4>$Null | Where-Object {$_.ThemeId -eq $Theme.Id}
-			
-			If($? -and $Null -ne $Results)
-			{
-				$SAMLProvider = $Results.Name
-			}
-			Else
-			{
-				$SAMLProvider = ""
+				$SAMLProvider = "<not used>"
 			}
 			
 			If($MSWord -or $PDF)
@@ -38000,11 +38024,17 @@ Function OutputThemesDetails
 				{
 					ForEach($Group in $Theme.GroupFilters)
 					{
-						$ScriptInformation.Add(@{Data = ""; Value = "Group: $($Group.name) SID: $($Group.sid)"; }) > $Null
+						$ScriptInformation.Add(@{Data = ""; Value = "Group: $($Group.name)"; }) > $Null
+						$ScriptInformation.Add(@{Data = ""; Value = "SID: $($Group.sid)"; }) > $Null
+						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
 					}
 				}
 				$ScriptInformation.Add(@{Data = "MFA provider"; Value = $MFAProvider; }) > $Null
 				$ScriptInformation.Add(@{Data = "SAML Single Sign-in IdP"; Value = $SAMLProvider; }) > $Null
+				If($Theme.Name -eq "<Default>")
+				{
+					$ScriptInformation.Add(@{Data = "Allow gateway tunneling connections"; Value = $Theme.AllowTunneling.ToString(); }) > $Null
+				}
 
 				$Table = AddWordTable -Hashtable $ScriptInformation `
 				-Columns Data,Value `
@@ -38026,27 +38056,32 @@ Function OutputThemesDetails
 			}
 			If($Text)
 			{
-				Line 3 "Override authentication domain`t: " $Theme.OverrideAuthenticationDomain.ToString()
+				Line 4 "Override authentication domain`t: " $Theme.OverrideAuthenticationDomain.ToString()
 				If($Theme.OverrideAuthenticationDomain)
 				{
-					Line 6 "Domain  : " $Theme.Domain
+					Line 7 "Domain  : " $Theme.Domain
 				}
-				Line 3 "Limit access to this theme to "
-				Line 3 "members of these AD groups`t: " $Theme.GroupEnabled.ToString()
+				Line 4 "Limit access to this theme to "
+				Line 4 "members of these AD groups`t: " $Theme.GroupEnabled.ToString()
 				If($Theme.GroupEnabled)
 				{
 					ForEach($Group in $Theme.GroupFilters)
 					{
-						Line 7 "  Group: $($Group.name) SID: $($Group.sid)"
+						Line 8 "  Group: $($Group.name) SID: $($Group.sid)"
+						Line 8 "  SID: $($Group.sid)"
+						Line 8 "  "
 					}
 				}
-				Line 3 "MFA provider`t`t`t: " $MFAProvider
-				Line 3 "SAML Single Sign-in IdP`t`t: " $SAMLProvider
+				Line 4 "MFA provider`t`t`t: " $MFAProvider
+				Line 4 "SAML Single Sign-in IdP`t`t: " $SAMLProvider
+				If($Theme.Name -eq "<Default>")
+				{
+					Line 4 "Allow gateway tunneling connections: " $Theme.AllowTunneling.ToString()
+				}
 				Line 0 ""
 			}
 			If($HTML)
 			{
-				$ThemeName = $Theme.Name.Replace("<","").Replace(">","")
 				$rowdata = @()
 				$columnHeaders = @("Override authentication domain",($Script:htmlsb),$Theme.OverrideAuthenticationDomain.ToString(),$htmlwhite)
 				If($Theme.OverrideAuthenticationDomain)
@@ -38058,11 +38093,17 @@ Function OutputThemesDetails
 				{
 					ForEach($Group in $Theme.GroupFilters)
 					{
-						$rowdata += @(,("",($Script:htmlsb),"Group: $($Group.name) SID: $($Group.sid)",$htmlwhite))
+						$rowdata += @(,("",($Script:htmlsb),"Group: $($Group.name)",$htmlwhite))
+						$rowdata += @(,("",($Script:htmlsb),"SID: $($Group.sid)",$htmlwhite))
+						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 					}
 				}
-				$rowdata += @(,("MFA provider",($Script:htmlsb),$MFAProvider,$htmlwhite))
-				$rowdata += @(,("SAML Single Sign-in IdP",($Script:htmlsb),$SAMLProvider,$htmlwhite))
+				$rowdata += @(,("MFA provider",($Script:htmlsb),$MFAProvider.Replace("<","").Replace(">",""),$htmlwhite))
+				$rowdata += @(,("SAML Single Sign-in IdP",($Script:htmlsb),$SAMLProvider.Replace("<","").Replace(">",""),$htmlwhite))
+				If($Theme.Name -eq "<Default>")
+				{
+					$rowdata += @(,("Allow gateway tunneling connections",($Script:htmlsb),$Theme.AllowTunneling.ToString(),$htmlwhite))
+				}
 				
 				$msg = "Access"
 				$columnWidths = @("350","400")
@@ -38076,7 +38117,7 @@ Function OutputThemesDetails
 			}
 			If($Text)
 			{
-				Line 2 "Messages"
+				Line 3 "Messages"
 			}
 			If($HTML)
 			{
@@ -38128,11 +38169,11 @@ Function OutputThemesDetails
 					
 					If($cnt -eq 0)
 					{
-						Line 3 "Post-logon message: " $line
+						Line 4 "Post-logon message: " $line
 					}
 					Else
 					{
-						Line 5 "    " $line
+						Line 6 "    " $line
 					}
 				}
 				Line 0 ""
@@ -38163,11 +38204,111 @@ Function OutputThemesDetails
 			
 			If($MSWord -or $PDF)
 			{
+				WriteWordLine 4 0 "Client public IP detection"
+			}
+			If($Text)
+			{
+				Line 3 "Client public IP detection"
+			}
+			If($HTML)
+			{
+				#Nothing
+			}
+			
+			If($MSWord -or $PDF)
+			{
+				$ScriptInformation = New-Object System.Collections.ArrayList
+				If($Theme.ClientPublicIPDetection.DetectMode -eq "Disabled")
+				{
+					$ScriptInformation.Add(@{Data = "Do not use client public IP detection"; Value = ""; }) > $Null
+				}
+				ElseIf($Theme.ClientPublicIPDetection.DetectMode -eq "Parallels")
+				{
+					$ScriptInformation.Add(@{Data = "Use Parallels client public IP detection service"; Value = ""; }) > $Null
+				}
+				ElseIf($Theme.ClientPublicIPDetection.DetectMode -eq "Custom")
+				{
+					$ScriptInformation.Add(@{Data = "Use Custom public client IP detection service"; Value = ""; }) > $Null
+					$ScriptInformation.Add(@{Data = "     Service URL"; Value = $Theme.ClientPublicIPDetection.CustomURL; }) > $Null
+				}
+				Else
+				{
+					$ScriptInformation.Add(@{Data = "Unable to determine Client public IP detection"; Value = "$($Theme.ClientPublicIPDetection.DetectMode)"; }) > $Null
+				}
+
+				$Table = AddWordTable -Hashtable $ScriptInformation `
+				-Columns Data,Value `
+				-List `
+				-Format $wdTableGrid `
+				-AutoFit $wdAutoFitFixed;
+
+				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
+				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+				$Table.Columns.Item(1).Width = 200;
+				$Table.Columns.Item(2).Width = 300;
+
+				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+				FindWordDocumentEnd
+				$Table = $Null
+				WriteWordLine 0 0 ""
+			}
+			If($Text)
+			{
+				If($Theme.ClientPublicIPDetection.DetectMode -eq "Disabled")
+				{
+					Line 4 "Do not use client public IP detection"
+				}
+				ElseIf($Theme.ClientPublicIPDetection.DetectMode -eq "Parallels")
+				{
+					Line 4 "Use Parallels client public IP detection service"
+				}
+				ElseIf($Theme.ClientPublicIPDetection.DetectMode -eq "Custom")
+				{
+					Line 4 "Use Custom public client IP detection service"
+					Line 5 "Service URL: " $Theme.ClientPublicIPDetection.CustomURL
+				}
+				Else
+				{
+					Line 4 "Unable to determine Client public IP detection: $($Theme.ClientPublicIPDetection.DetectMode)"
+				}
+				Line 0 ""
+			}
+			If($HTML)
+			{
+				$rowdata = @()
+				If($Theme.ClientPublicIPDetection.DetectMode -eq "Disabled")
+				{
+					$columnHeaders = @("Do not use client public IP detection",($Script:htmlsb),"",$htmlwhite)
+				}
+				ElseIf($Theme.ClientPublicIPDetection.DetectMode -eq "Parallels")
+				{
+					$columnHeaders = @("Use Parallels client public IP detection service",($Script:htmlsb),"",$htmlwhite)
+				}
+				ElseIf($Theme.ClientPublicIPDetection.DetectMode -eq "Custom")
+				{
+					$columnHeaders = @("Use Custom public client IP detection service",($Script:htmlsb),"",$htmlwhite)
+					$rowdata += @(,("     Service URL",($Script:htmlsb),$Theme.ClientPublicIPDetection.CustomURL,$htmlwhite))
+				}
+				Else
+				{
+					$columnHeaders = @("Unable to determine Client public IP detection",($Script:htmlsb),"$($Theme.ClientPublicIPDetection.DetectMode)",$htmlwhite)
+				}
+
+				$msg = "Client public IP detection"
+				$columnWidths = @("250","400")
+				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+				WriteHTMLLine 0 0 ""
+			}
+			
+			If($MSWord -or $PDF)
+			{
 				WriteWordLine 4 0 "User Portal (Web client)/URLs"
 			}
 			If($Text)
 			{
-				Line 2 "User Portal (Web client)/URLs"
+				Line 3 "User Portal (Web client)/URLs"
 			}
 			If($HTML)
 			{
@@ -38178,7 +38319,6 @@ Function OutputThemesDetails
 			{
 				
 				$ScriptInformation = New-Object System.Collections.ArrayList
-				$ScriptInformation.Add(@{Data = "Theme login page:"; Value = $ThemeUserPortalURL; }) > $Null
 				$ScriptInformation.Add(@{Data = "Show Parallels Client download URL"; Value = $ThemeShowDownloadURL; }) > $Null
 				$ScriptInformation.Add(@{Data = "Override download URL for branded Parallels Client (Windows)"; Value = $ThemeOverrideDownloadURL; }) > $Null
 
@@ -38223,11 +38363,12 @@ Function OutputThemesDetails
 						-Format $wdTableGrid `
 						-AutoFit $wdAutoFitFixed;
 
+						SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 						SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-						$Table.Columns.Item(1).Width = 150;
-						$Table.Columns.Item(2).Width = 150;
-						$Table.Columns.Item(3).Width = 150;
+						$Table.Columns.Item(1).Width = 165;
+						$Table.Columns.Item(2).Width = 165;
+						$Table.Columns.Item(3).Width = 170;
 
 						$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -38245,22 +38386,22 @@ Function OutputThemesDetails
 			}
 			If($Text)
 			{
-				Line 3 "Theme login page`t`t  : " $ThemeUserPortalURL
-				Line 3 "Show Parallels Client download URL: " $ThemeShowDownloadURL
-				Line 3 "Override download URL for branded "
-				Line 3 "Parallels Client (Windows)`t  : " $ThemeOverrideDownloadURL
+				Line 4 "Show Parallels Client download URL: " $ThemeShowDownloadURL
+				Line 4 "Override download URL for branded "
+				Line 4 "Parallels Client (Windows)`t  : " $ThemeOverrideDownloadURL
 				Line 0 ""
 
 				If($ThemeFooterURLs -is [array] -and $ThemeFooterURLs.Count -gt 0) #don't process if array is empty
 				{
-					Line 3 "Footer URLs:"
-					Line 3 "URL                             Text                            Tooltip                       "
-					Line 3 "=============================================================================================="
-					#       123456789012345678901234567890SS123456789012345678901234567890SS123456789012345678901234567890
+					Line 4 "Footer URLs:"
+					Line 4 "URL                                 Text                            Tooltip                       "
+					Line 4 "=================================================================================================="
+					#       https://carlwebster.com/footerurls  This is a footerURL text        This is a footer URL tooltip
+					#       1234567890123456789012345678901234SS123456789012345678901234567890SS123456789012345678901234567890
 
 					ForEach($FooterURL in $ThemeFooterURLs)
 					{
-						Line 3 ( "{0,-30}  {1,-30}  {2,-30}" -f `
+						Line 4 ( "{0,-34}  {1,-30}  {2,-30}" -f `
 						$FooterURL.URL, $FooterURL.Text, $FooterURL.Tooltip)
 					}
 					
@@ -38268,8 +38409,8 @@ Function OutputThemesDetails
 				}
 				Else
 				{
-					Line 3 "Footer URLs:"
-					Line 3 "There are no Footer URLs"
+					Line 4 "Footer URLs:"
+					Line 4 "There are no Footer URLs"
 					Line 0 ""
 				}	
 			}
@@ -38277,8 +38418,7 @@ Function OutputThemesDetails
 			{
 				$ThemeName = $Theme.Name.Replace("<","").Replace(">","")
 				$rowdata = @()
-				$columnHeaders = @("Theme login page:",($Script:htmlsb),$ThemeUserPortalURL,$htmlwhite)
-				$rowdata += @(,("Show Parallels Client download URL",($Script:htmlsb),$ThemeShowDownloadURL,$htmlwhite))
+				$columnHeaders = @("Show Parallels Client download URL",($Script:htmlsb),$ThemeShowDownloadURL,$htmlwhite)
 				$rowdata += @(,("Override download URL for branded Parallels Client (Windows)",($Script:htmlsb),$ThemeOverrideDownloadURL,$htmlwhite))
 
 				$msg = "User Portal (Web client)/URLs"
@@ -38304,8 +38444,8 @@ Function OutputThemesDetails
 					"Tooltip",($Script:htmlsb))
 
 					$msg = "Footer URLs:"
-					$columnWidths = @("150","150","150")
-					FormatHTMLTable $msg -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths -tablewidth "450"
+					$columnWidths = @("200","200","200")
+					FormatHTMLTable $msg -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 					WriteHTMLLine 0 0 ""
 				}
 				Else
@@ -38322,7 +38462,7 @@ Function OutputThemesDetails
 			}
 			If($Text)
 			{
-				Line 2 "User Portal (Web client)/Branding"
+				Line 3 "User Portal (Web client)/Branding"
 			}
 			If($HTML)
 			{
@@ -38357,10 +38497,10 @@ Function OutputThemesDetails
 			}
 			If($Text)
 			{
-				Line 3 "Webpage title`t: " $Theme.UserPortal.Branding.WebpageTitle
-				Line 3 "Login to`t: " $Theme.UserPortal.Branding.LoginTo
-				Line 3 "Company logo`t: " $ThemeCompanyLogo
-				Line 3 "Favicon icon`t: " $ThemeFaviconIcon
+				Line 4 "Webpage title`t: " $Theme.UserPortal.Branding.WebpageTitle
+				Line 4 "Login to`t: " $Theme.UserPortal.Branding.LoginTo
+				Line 4 "Company logo`t: " $ThemeCompanyLogo
+				Line 4 "Favicon icon`t: " $ThemeFaviconIcon
 				Line 0 ""
 			}
 			If($HTML)
@@ -38384,7 +38524,7 @@ Function OutputThemesDetails
 			}
 			If($Text)
 			{
-				Line 2 "User Portal (Web client)/Colors"
+				Line 3 "User Portal (Web client)/Colors"
 			}
 			If($HTML)
 			{
@@ -38400,11 +38540,24 @@ Function OutputThemesDetails
 			If($MSWord -or $PDF)
 			{
 				$ScriptInformation = New-Object System.Collections.ArrayList
-				$ScriptInformation.Add(@{Data = "Header background" ; Value = $HeaderBackgroundColor; }) > $Null
-				$ScriptInformation.Add(@{Data = "Work area background" ; Value = $WorkAreaBackgroundColor; }) > $Null
-				$ScriptInformation.Add(@{Data = "Work area text" ; Value = $WorkAreaTextColor; }) > $Null
-				$ScriptInformation.Add(@{Data = "Buttons background and links" ; Value = $ButtonsBackgroundColor; }) > $Null
-				$ScriptInformation.Add(@{Data = "Button text" ; Value = $ButtonsTextColor; }) > $Null
+				If($Theme.UserPortal.Color.HeaderOptions.ToString() -eq "Blurred")
+				{
+					$ScriptInformation.Add(@{Data = "Header options" ; Value = "Blurred header"; }) > $Null
+				}
+				ElseIf($Theme.UserPortal.Color.HeaderOptions.ToString() -eq "SolidColor")
+				{
+					$ScriptInformation.Add(@{Data = "Header options" ; Value = "Solid color"; }) > $Null
+				}
+				Else
+				{
+					$ScriptInformation.Add(@{Data = "Header options" ; Value = "Unable to determine Header options: $($Theme.UserPortal.Color.HeaderOptions)"; }) > $Null
+				}
+				$ScriptInformation.Add(@{Data = "Colors" ; Value = ""; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Header background" ; Value = $HeaderBackgroundColor; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Work area background" ; Value = $WorkAreaBackgroundColor; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Work area text" ; Value = $WorkAreaTextColor; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Buttons background and links" ; Value = $ButtonsBackgroundColor; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Button text" ; Value = $ButtonsTextColor; }) > $Null
 
 				$Table = AddWordTable -Hashtable $ScriptInformation `
 				-Columns Data,Value `
@@ -38426,21 +38579,47 @@ Function OutputThemesDetails
 			}
 			If($Text)
 			{
-				Line 3 "Header background`t`t: " $HeaderBackgroundColor
-				Line 3 "Work area background`t`t: " $WorkAreaBackgroundColor
-				Line 3 "Work area text`t`t`t: " $WorkAreaTextColor
-				Line 3 "Buttons background and links`t: " $ButtonsBackgroundColor
-				Line 3 "Button text`t`t`t: " $ButtonsTextColor
+				If($Theme.UserPortal.Color.HeaderOptions.ToString() -eq "Blurred")
+				{
+					Line 4 "Header options: " "Blurred header"
+				}
+				ElseIf($Theme.UserPortal.Color.HeaderOptions.ToString() -eq "SolidColor")
+				{
+					Line 4 "Header options: " "Solid color"
+				}
+				Else
+				{
+					Line 4 "Header options: " "Unable to determine Header options: $($Theme.UserPortal.Color.HeaderOptions)"
+				}
+				Line 4 "Colors"
+				Line 5 "Header background`t`t: " $HeaderBackgroundColor
+				Line 5 "Work area background`t`t: " $WorkAreaBackgroundColor
+				Line 5 "Work area text`t`t`t: " $WorkAreaTextColor
+				Line 5 "Buttons background and links`t: " $ButtonsBackgroundColor
+				Line 5 "Button text`t`t`t: " $ButtonsTextColor
 				Line 0 ""
 			}
 			If($HTML)
 			{
 				$rowdata = @()
-				$columnHeaders = @("Header background" ,($Script:htmlsb),$HeaderBackgroundColor,$htmlwhite)
-				$rowdata += @(,("Work area background" ,($Script:htmlsb),$WorkAreaBackgroundColor,$htmlwhite))
-				$rowdata += @(,("Work area text" ,($Script:htmlsb),$WorkAreaTextColor,$htmlwhite))
-				$rowdata += @(,("Buttons background and links",($Script:htmlsb),$ButtonsBackgroundColor,$htmlwhite))
-				$rowdata += @(,("Button text" ,($Script:htmlsb),$ButtonsTextColor,$htmlwhite))
+				If($Theme.UserPortal.Color.HeaderOptions.ToString() -eq "Blurred")
+				{
+					$columnHeaders = @("Header options" ,($Script:htmlsb),"Blurred header",$htmlwhite)
+				}
+				ElseIf($Theme.UserPortal.Color.HeaderOptions.ToString() -eq "SolidColor")
+				{
+					$columnHeaders = @("Header options" ,($Script:htmlsb),"Solid color",$htmlwhite)
+				}
+				Else
+				{
+					$columnHeaders = @("Header options" ,($Script:htmlsb),"Unable to determine Header options: $($Theme.UserPortal.Color.HeaderOptions)",$htmlwhite)
+				}
+				$rowdata += @(,("Colors",($Script:htmlsb),"",$htmlwhite))
+				$rowdata += @(,("     Header background",($Script:htmlsb),$HeaderBackgroundColor,$htmlwhite))
+				$rowdata += @(,("     Work area background",($Script:htmlsb),$WorkAreaBackgroundColor,$htmlwhite))
+				$rowdata += @(,("     Work area text",($Script:htmlsb),$WorkAreaTextColor,$htmlwhite))
+				$rowdata += @(,("     Buttons background and links",($Script:htmlsb),$ButtonsBackgroundColor,$htmlwhite))
+				$rowdata += @(,("     Button text",($Script:htmlsb),$ButtonsTextColor,$htmlwhite))
 
 				$msg = "User Portal (Web client)/Colors"
 				$columnWidths = @("200","275")
@@ -38454,7 +38633,7 @@ Function OutputThemesDetails
 			}
 			If($Text)
 			{
-				Line 2 "User Portal (Web client)/Language bar"
+				Line 3 "User Portal (Web client)/Language bar"
 			}
 			If($HTML)
 			{
@@ -38497,18 +38676,18 @@ Function OutputThemesDetails
 			}
 			If($Text)
 			{
-				Line 3 "Default language`t: "    $Theme.UserPortal.LanguageBar.Default.ToString()
-				Line 3 "English`t`t`t: "         $Theme.UserPortal.LanguageBar.en_US.ToString()
-				Line 3 "German`t`t`t: "          $Theme.UserPortal.LanguageBar.de_DE.ToString()
-				Line 3 "Japanese`t`t: "          $Theme.UserPortal.LanguageBar.ja_JP.ToString()
-				Line 3 "French`t`t`t: "          $Theme.UserPortal.LanguageBar.fr_FR.ToString()
-				Line 3 "Spanish`t`t`t: "         $Theme.UserPortal.LanguageBar.es_ES.ToString()
-				Line 3 "Italian`t`t`t: "         $Theme.UserPortal.LanguageBar.it_IT.ToString()
-				Line 3 "Portuguese`t`t: "        $Theme.UserPortal.LanguageBar.pt_BR.ToString()
-				Line 3 "Chinese Simplified`t: "  $Theme.UserPortal.LanguageBar.zh_CN.ToString()
-				Line 3 "Chinese Traditional`t: " $Theme.UserPortal.LanguageBar.zh_TW.ToString()
-				Line 3 "Korean`t`t`t: "          $Theme.UserPortal.LanguageBar.ko_KR.ToString()
-				Line 3 "Dutch`t`t`t: "           $Theme.UserPortal.LanguageBar.nl_NL.ToString()
+				Line 4 "Default language`t: "    $Theme.UserPortal.LanguageBar.Default.ToString()
+				Line 4 "English`t`t`t: "         $Theme.UserPortal.LanguageBar.en_US.ToString()
+				Line 4 "German`t`t`t: "          $Theme.UserPortal.LanguageBar.de_DE.ToString()
+				Line 4 "Japanese`t`t: "          $Theme.UserPortal.LanguageBar.ja_JP.ToString()
+				Line 4 "French`t`t`t: "          $Theme.UserPortal.LanguageBar.fr_FR.ToString()
+				Line 4 "Spanish`t`t`t: "         $Theme.UserPortal.LanguageBar.es_ES.ToString()
+				Line 4 "Italian`t`t`t: "         $Theme.UserPortal.LanguageBar.it_IT.ToString()
+				Line 4 "Portuguese`t`t: "        $Theme.UserPortal.LanguageBar.pt_BR.ToString()
+				Line 4 "Chinese Simplified`t: "  $Theme.UserPortal.LanguageBar.zh_CN.ToString()
+				Line 4 "Chinese Traditional`t: " $Theme.UserPortal.LanguageBar.zh_TW.ToString()
+				Line 4 "Korean`t`t`t: "          $Theme.UserPortal.LanguageBar.ko_KR.ToString()
+				Line 4 "Dutch`t`t`t: "           $Theme.UserPortal.LanguageBar.nl_NL.ToString()
 				Line 0 ""
 			}
 			If($HTML)
@@ -38539,7 +38718,7 @@ Function OutputThemesDetails
 			}
 			If($Text)
 			{
-				Line 2 "User Portal (Web client)/Messages"
+				Line 3 "User Portal (Web client)/Messages"
 			}
 			If($HTML)
 			{
@@ -38619,21 +38798,21 @@ Function OutputThemesDetails
 					
 					If($cnt -eq 0)
 					{
-						Line 3 "Pre-logon message: " $line
+						Line 4 "Pre-logon message: " $line
 					}
 					Else
 					{
-						Line 5 "    " $line
+						Line 6 "    " $line
 					}
 				}
 				Line 0 ""
 
-				Line 3 "Override post-logon message: " $Theme.UserPortal.Message.OverridePostLogonMessage.ToString()
+				Line 4 "Override post-logon message: " $Theme.UserPortal.Message.OverridePostLogonMessage.ToString()
 				If($Theme.UserPortal.Message.OverridePostLogonMessage)
 				{
 					ForEach($line in $ThemeUserPortalPostlogonMessage)
 					{
-						Line 5 "    " $line
+						Line 6 "    " $line
 					}
 				}
 				Line 0 ""
@@ -38683,7 +38862,7 @@ Function OutputThemesDetails
 			}
 			If($Text)
 			{
-				Line 2 "User Portal (Web client)/Input prompt"
+				Line 3 "User Portal (Web client)/Input prompt"
 			}
 			If($HTML)
 			{
@@ -38693,15 +38872,15 @@ Function OutputThemesDetails
 			$InputPromptTable = @()
 			
 			$InputPromptTable += @{
-				Language = "German"
-				LoginHint = $Theme.UserPortal.InputPrompt.de_DE.LoginHint
-				PasswordHint = $Theme.UserPortal.InputPrompt.de_DE.PasswordHint
-			}
-
-			$InputPromptTable += @{
 				Language = "English"
 				LoginHint = $Theme.UserPortal.InputPrompt.en_US.LoginHint
 				PasswordHint = $Theme.UserPortal.InputPrompt.en_US.PasswordHint
+			}
+
+			$InputPromptTable += @{
+				Language = "German"
+				LoginHint = $Theme.UserPortal.InputPrompt.de_DE.LoginHint
+				PasswordHint = $Theme.UserPortal.InputPrompt.de_DE.PasswordHint
 			}
 
 			$InputPromptTable += @{
@@ -38775,7 +38954,7 @@ Function OutputThemesDetails
 
 					$Table.Columns.Item(1).Width = 100;
 					$Table.Columns.Item(2).Width = 100;
-					$Table.Columns.Item(3).Width = 100;
+					$Table.Columns.Item(3).Width = 150;
 					
 					$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -38786,15 +38965,15 @@ Function OutputThemesDetails
 			}
 			If($Text)
 			{
-				Line 3 "Language             Login hint           Password hint"
-				Line 3 "======================================================="
+				Line 4 "Language             Login hint           Password hint"
+				Line 4 "======================================================="
 				#       1234567890123456789SS1234567890123456789SS1234567890123
 				#		Chinese Traditional  utilisateur@domaine  mot de passe
 				#                            ユーザー@ドメイン
 
 				ForEach($Item in $InputPromptTable)
 				{
-					Line 3 ( "{0,-19}  {1,-19}  {2,-13}" -f 
+					Line 4 ( "{0,-19}  {1,-19}  {2,-13}" -f 
 						$Item.Language, 
 						$Item.LoginHint, 
 						$Item.PasswordHint
@@ -38823,7 +39002,7 @@ Function OutputThemesDetails
 				)
 
 				$msg = "User Portal (Web client)/Input prompt"
-				$columnWidths = @("110","120","100")
+				$columnWidths = @("110","120","150")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 			}
@@ -38834,7 +39013,7 @@ Function OutputThemesDetails
 			}
 			If($Text)
 			{
-				Line 2 "User Portal (Web client)/Secure Gateway"
+				Line 3 "User Portal (Web client)/Secure Gateway"
 			}
 			If($HTML)
 			{
@@ -38879,14 +39058,19 @@ Function OutputThemesDetails
 						
 						If($cnt -eq 0)
 						{
-							$ScriptInformation.Add(@{Data = "Allow domains"; Value = $Domain; }) > $Null
+							$ScriptInformation.Add(@{Data = "     Allow domains"; Value = $Domain; }) > $Null
 						}
 						Else
 						{
 							$ScriptInformation.Add(@{Data = ""; Value = $Domain; }) > $Null
 						}
 					}
-					$ScriptInformation.Add(@{Data = "Browser cache time"; Value = "$($Theme.UserPortal.Gateway.BrowserCacheTimeInMonths.ToString()) months"; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Browser cache time"; Value = "$($Theme.UserPortal.Gateway.BrowserCacheTimeInMonths.ToString()) months"; }) > $Null
+				}
+				$ScriptInformation.Add(@{Data = "     Use client private IP detection service"; Value = $Theme.UserPortal.Gateway.UseClientIPDetectionService.ToString(); }) > $Null
+				If($Theme.UserPortal.Gateway.UseClientIPDetectionService)
+				{
+					$ScriptInformation.Add(@{Data = "          Service URL"; Value = $Theme.UserPortal.Gateway.ClientIPPDetectionServiceURL; }) > $Null
 				}
 
 				$Table = AddWordTable -Hashtable $ScriptInformation `
@@ -38909,15 +39093,15 @@ Function OutputThemesDetails
 			}
 			If($Text)
 			{
-				Line 3 "Override Secure Gateway settings for theme`t: " $Theme.UserPortal.Gateway.OverrideGatewaySettings.ToString()
-				Line 3 "Client"
-				Line 4 "Launch sessions using`t`t`t: " $ThemeUserPortalLaunchSessionsUsing
+				Line 4 "Override Secure Gateway settings for theme`t: " $Theme.UserPortal.Gateway.OverrideGatewaySettings.ToString()
+				Line 4 "Client"
+				Line 5 "Launch sessions using`t`t`t: " $ThemeUserPortalLaunchSessionsUsing
 				Switch($Theme.UserPortal.Gateway.LaunchMethod)
 				{
 					"Launch_Applications_with_Parallels_Client_Fallback_to_HTML_5"	
 					{
-						Line 4 "Allow user to select a launch method`t: " $Theme.UserPortal.Gateway.AllowLaunchMethod.ToString()
-						Line 4 "Allow opening applications in a new tab`t: " $Theme.UserPortal.Gateway.AllowAppsInNewTab.ToString()
+						Line 5 "Allow user to select a launch method`t: " $Theme.UserPortal.Gateway.AllowLaunchMethod.ToString()
+						Line 5 "Allow opening applications in a new tab`t: " $Theme.UserPortal.Gateway.AllowAppsInNewTab.ToString()
 						Break
 					}
 					"Launch_Applications_with_Parallels_Client"						
@@ -38926,16 +39110,16 @@ Function OutputThemesDetails
 					}
 					"Launch_Applications_with_Browser_HTML5"						
 					{
-						Line 4 "Allow opening applications in a new tab`t: " $Theme.UserPortal.Gateway.AllowAppsInNewTab.ToString()
+						Line 5 "Allow opening applications in a new tab`t: " $Theme.UserPortal.Gateway.AllowAppsInNewTab.ToString()
 						Break
 					}
 				}
-				Line 4 "Use Pre Windows 2000 login format`t: " $Theme.UserPortal.Gateway.Pre2000Cred.ToString()
-				Line 4 "Allow embedding of User Portal "
-				Line 4 "Client into other web pages`t`t: " $Theme.UserPortal.Gateway.AllowEmbed.ToString()
-				Line 4 "Allow file transfer command`t`t: " $ThemeHTMLFileTransfer
-				Line 4 "Allow clipboard command`t`t`t: " $ThemeHTMLClipboardDirection
-				Line 4 "Allow cross-origin resource sharing`t: " $Theme.UserPortal.Gateway.AllowCORS.ToString()
+				Line 5 "Use Pre Windows 2000 login format`t: " $Theme.UserPortal.Gateway.Pre2000Cred.ToString()
+				Line 5 "Allow embedding of User Portal "
+				Line 5 "Client into other web pages`t`t: " $Theme.UserPortal.Gateway.AllowEmbed.ToString()
+				Line 5 "Allow file transfer command`t`t: " $ThemeHTMLFileTransfer
+				Line 5 "Allow clipboard command`t`t`t: " $ThemeHTMLClipboardDirection
+				Line 5 "Allow cross-origin resource sharing`t: " $Theme.UserPortal.Gateway.AllowCORS.ToString()
 				If($Theme.UserPortal.Gateway.AllowCORS)
 				{
 					$cnt=-1
@@ -38945,14 +39129,19 @@ Function OutputThemesDetails
 						
 						If($cnt -eq 0)
 						{
-							Line 5 "Allow domains`t`t`t: " $Domain
+							Line 6 "Allow domains`t`t`t: " $Domain
 						}
 						Else
 						{
-							Line 9 "  " $Domain
+							Line 10 "  " $Domain
 						}
 					}
-					Line 5 "Browser cache time`t`t: "  "$($Theme.UserPortal.Gateway.BrowserCacheTimeInMonths.ToString()) months"
+					Line 6 "Browser cache time`t`t: "  "$($Theme.UserPortal.Gateway.BrowserCacheTimeInMonths.ToString()) months"
+				}
+				Line 5 "Use client private IP detection service`t: " $Theme.UserPortal.Gateway.UseClientIPDetectionService.ToString()
+				If($Theme.UserPortal.Gateway.UseClientIPDetectionService)
+				{
+					Line 6 "Service URL`t`t`t: " $Theme.UserPortal.Gateway.ClientIPPDetectionServiceURL
 				}
 
 				Line 0 ""
@@ -38995,14 +39184,19 @@ Function OutputThemesDetails
 						
 						If($cnt -eq 0)
 						{
-							$rowdata += @(,("Allow domains",($Script:htmlsb),$Domain,$htmlwhite))
+							$rowdata += @(,("     Allow domains",($Script:htmlsb),$Domain,$htmlwhite))
 						}
 						Else
 						{
 							$rowdata += @(,("",($Script:htmlsb),$Domain,$htmlwhite))
 						}
 					}
-					$rowdata += @(,("Browser cache time",($Script:htmlsb),"$($Theme.UserPortal.Gateway.BrowserCacheTimeInMonths.ToString()) months",$htmlwhite))
+					$rowdata += @(,("          Browser cache time",($Script:htmlsb),"$($Theme.UserPortal.Gateway.BrowserCacheTimeInMonths.ToString()) months",$htmlwhite))
+				}
+				$rowdata += @(,("     Use client private IP detection service",($Script:htmlsb),$Theme.UserPortal.Gateway.UseClientIPDetectionService.ToString(),$htmlwhite))
+				If($Theme.UserPortal.Gateway.UseClientIPDetectionService)
+				{
+					$rowdata += @(,("          Service URL",($Script:htmlsb),$Theme.UserPortal.Gateway.ClientIPPDetectionServiceURL,$htmlwhite))
 				}
 
 				$msg = "User Portal (Web client)/Secure Gateway"
@@ -39017,7 +39211,7 @@ Function OutputThemesDetails
 			}
 			If($Text)
 			{
-				Line 2 "User Portal (Web client)/Legal policies"
+				Line 3 "User Portal (Web client)/Legal policies"
 			}
 			If($HTML)
 			{
@@ -39027,10 +39221,12 @@ Function OutputThemesDetails
 			If($MSWord -or $PDF)
 			{
 				$ScriptInformation = New-Object System.Collections.ArrayList
-				$ScriptInformation.Add(@{Data = "Cookie consent"; Value = ""; }) > $Null
-				$ScriptInformation.Add(@{Data = "     Enable cookie consent"; Value = $Theme.UserPortal.LegalPolicies.AllowCookieConsent.ToString(); }) > $Null
+				$ScriptInformation.Add(@{Data = "Cookie notification"; Value = ""; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Enable Cookie notification"; Value = $Theme.UserPortal.LegalPolicies.AllowCookieConsent.ToString(); }) > $Null
 				$ScriptInformation.Add(@{Data = "End User License Agreement"; Value = ""; }) > $Null
 				$ScriptInformation.Add(@{Data = "     Enable EULA"; Value = $Theme.UserPortal.LegalPolicies.AllowEULA.ToString(); }) > $Null
+				$ScriptInformation.Add(@{Data = "Customer Experience Program opt-in"; Value = ""; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Enable CEP opt-in dialog"; Value = $Theme.UserPortal.LegalPolicies.AllowCEPOptIn.ToString(); }) > $Null
 
 				$Table = AddWordTable -Hashtable $ScriptInformation `
 				-Columns Data,Value `
@@ -39052,19 +39248,23 @@ Function OutputThemesDetails
 			}
 			If($Text)
 			{
-				Line 3 "Cookie consent" 
-				Line 4 "Enable cookie consent`t: " $Theme.UserPortal.LegalPolicies.AllowCookieConsent.ToString()
-				Line 3 "End User License Agreement" 
-				Line 4 "Enable EULA`t`t: " $Theme.UserPortal.LegalPolicies.AllowEULA.ToString()
+				Line 4 "Cookie notification" 
+				Line 5 "Enable Cookie notification`t: " $Theme.UserPortal.LegalPolicies.AllowCookieConsent.ToString()
+				Line 4 "End User License Agreement" 
+				Line 5 "Enable EULA`t`t`t: " $Theme.UserPortal.LegalPolicies.AllowEULA.ToString()
+				Line 4 "Customer Experience Program opt-in"
+				Line 5 "Enable CEP opt-in dialog`t: " $Theme.UserPortal.LegalPolicies.AllowCEPOptIn.ToString()
 				Line 0 ""
 			}
 			If($HTML)
 			{
 				$rowdata = @()
-				$columnHeaders = @("Cookie consent",($Script:htmlsb),"",$htmlwhite)
-				$rowdata += @(,("     Enable cookie consent",($Script:htmlsb),$Theme.UserPortal.LegalPolicies.AllowCookieConsent.ToString(),$htmlwhite))
+				$columnHeaders = @("Cookie notification",($Script:htmlsb),"",$htmlwhite)
+				$rowdata += @(,("     Enable Cookie notification",($Script:htmlsb),$Theme.UserPortal.LegalPolicies.AllowCookieConsent.ToString(),$htmlwhite))
 				$rowdata += @(,("End User License Agreement",($Script:htmlsb),"",$htmlwhite))
-				$rowdata += @(,("     Enable EULA",($Script:htmlsb), $Theme.UserPortal.LegalPolicies.AllowEULA.ToString(),$htmlwhite))
+				$rowdata += @(,("     Enable EULA",($Script:htmlsb),$Theme.UserPortal.LegalPolicies.AllowEULA.ToString(),$htmlwhite))
+				$rowdata += @(,("Customer Experience Program opt-in",($Script:htmlsb),"",$htmlwhite))
+				$rowdata += @(,("     Enable CEP opt-in dialog",($Script:htmlsb),$Theme.UserPortal.LegalPolicies.AllowCEPOptIn.ToString(),$htmlwhite))
 
 				$msg = "User Portal (Web client)/Legal policies"
 				$columnWidths = @("200","275")
@@ -39113,10 +39313,10 @@ Function OutputThemesDetails
 			}
 			If($Text)
 			{
-				Line 3 "Company name`t`t: " $Theme.WindowsClient.Branding.CompanyName
-				Line 3 "Application name`t: " $Theme.WindowsClient.Branding.ApplicationName
-				Line 3 "Connection banner`t: " $ThemeConnectionBanner
-				Line 3 "Application icon`t: " $ThemeApplicationIcon
+				Line 4 "Company name`t`t: " $Theme.WindowsClient.Branding.CompanyName
+				Line 4 "Application name`t: " $Theme.WindowsClient.Branding.ApplicationName
+				Line 4 "Connection banner`t: " $ThemeConnectionBanner
+				Line 4 "Application icon`t: " $ThemeApplicationIcon
 				Line 0 ""
 			}
 			If($HTML)
@@ -39139,7 +39339,7 @@ Function OutputThemesDetails
 			}
 			If($Text)
 			{
-				Line 2 "Windows client/Messages"
+				Line 3 "Windows client/Messages"
 			}
 			If($HTML)
 			{
@@ -39178,12 +39378,12 @@ Function OutputThemesDetails
 			}
 			If($Text)
 			{
-				Line 3 "Override post-logon message: " $Theme.WindowsClient.Messages.WindowsClientOverridePostLogonMessage.ToString()
+				Line 4 "Override post-logon message: " $Theme.WindowsClient.Messages.WindowsClientOverridePostLogonMessage.ToString()
 				If($Theme.WindowsClient.Messages.WindowsClientOverridePostLogonMessage)
 				{
 					ForEach($line in $ThemeWindowsPostlogonMessage)
 					{
-						Line 5 "    " $line
+						Line 5 "" $line
 					}
 				}
 				Line 0 ""
@@ -39212,7 +39412,7 @@ Function OutputThemesDetails
 			}
 			If($Text)
 			{
-				Line 2 "Windows client/Custom menu"
+				Line 3 "Windows client/Custom menu"
 			}
 			If($HTML)
 			{
@@ -39245,8 +39445,8 @@ Function OutputThemesDetails
 			}
 			If($Text)
 			{
-				Line 3 "Menu item: " $Theme.WindowsClient.CustomMenu.MenuItem
-				Line 3 "Command`t : " $Theme.WindowsClient.CustomMenu.Command
+				Line 4 "Menu item: " $Theme.WindowsClient.CustomMenu.MenuItem
+				Line 4 "Command`t : " $Theme.WindowsClient.CustomMenu.Command
 				Line 0 ""
 			}
 			If($HTML)
@@ -69798,8 +69998,8 @@ ProcessScriptEnd
 # SIG # Begin signature block
 # MIIthQYJKoZIhvcNAQcCoIItdjCCLXICAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUJTYy9Uac84PESpM66qp3k+G+
-# JBqggibfMIIFjTCCBHWgAwIBAgIQDpsYjvnQLefv21DiCEAYWjANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUpMovzMmR6P2c4aKBEpYTuZwe
+# e36ggibfMIIFjTCCBHWgAwIBAgIQDpsYjvnQLefv21DiCEAYWjANBgkqhkiG9w0B
 # AQwFADBlMQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYD
 # VQQLExB3d3cuZGlnaWNlcnQuY29tMSQwIgYDVQQDExtEaWdpQ2VydCBBc3N1cmVk
 # IElEIFJvb3QgQ0EwHhcNMjIwODAxMDAwMDAwWhcNMzExMTA5MjM1OTU5WjBiMQsw
@@ -70010,33 +70210,33 @@ ProcessScriptEnd
 # UzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/BgNVBAMTOERpZ2lDZXJ0IFRy
 # dXN0ZWQgRzQgQ29kZSBTaWduaW5nIFJTQTQwOTYgU0hBMzg0IDIwMjEgQ0ExAhAL
 # bN+2Z4EOKufLWhG6HUlwMAkGBSsOAwIaBQCgQDAZBgkqhkiG9w0BCQMxDAYKKwYB
-# BAGCNwIBBDAjBgkqhkiG9w0BCQQxFgQUDTKI8wuB9NJremSsBi3M7fduhCEwDQYJ
-# KoZIhvcNAQEBBQAEggIAsnqkURP/nFjLUk4BbpP5S+wIqSURsHMDorVUDVSenLB6
-# 7yXpFQKqZYfhFoxOhbTUS6UFXOxiDkpaAoe6AvSDUKc+eU78srZcsO5WDaxBItku
-# cQhJxmiotq2vBoTQ0NYVsQMCbVvSatWa60SOeR8r2LaS50YSUHnh8/VoHvl88jmU
-# LzDH95a3Fb/E+5ZwleBdpfPjVQSVLA4TTqCIQrvCnl0P/zC2AEo62vJI/NuSJIQX
-# rJstOxaQYUAYMgdHXYpMbCMkPINjU7aysi1gllobWihvmFyKKW3g9KRZX/AZUS9J
-# CACeHNsGeDNePU9hC6K3C6aw9yAJA7mzLmCah5thlL5wsoGRsHJfecccN3gUSSiH
-# pqPCquX2jCkbwElp90tlpIigdTs6INj0Gh0aXqmLyZb5xnshI2RbKa42imlvRJ7p
-# IddUZaufUBZDBnOAl4e4a1LefIId1/77gl1PfrCFXjYJWe0MVuJLW9tanLxvlvVj
-# 0lOGW7H8DOzVB4h9A0Re2yT60zlQTsrrNqX4z1IAAmPXxUhrQhEL1O2b9k0uFhLq
-# gebl2COfr02ZAxi1WmRWjz0+SxXGv/kIgdjlQs6Ton3wQxuKOVj3J7Nlv6qHqAwj
-# qh1Idtd87urG3hikgX6JmCzaIBd0AIwn1lWMeu4B0trUp59u00VY2qnAkI3Vtoqh
+# BAGCNwIBBDAjBgkqhkiG9w0BCQQxFgQUIn15ly7BMkYd47fpdHIlu54DE+0wDQYJ
+# KoZIhvcNAQEBBQAEggIARk4EX6aHCai8TNeDC7BvWrK5JRh0ReHr8hK5Wu77IrUO
+# p8y0BX7DhRg7x3Y8YcOUIvjYxAllL8dAjxCrnvTXd0+y0C1B4+4KLXsiR+UNcwZe
+# HPdPf5hvXMz8DxdX8lB3tELqgm/a2VaZ+OGGnNblCftaqQO5ePc/+Hbq1E927Wve
+# uosT8l7D+33Wrckw9eBRyb7InIUCHGHE+KtHb4subeBesHaX58CwCvgqTbNjVOO3
+# YC7V1LmOkt2FWHcQlJMHhkYzu8wjZWqEZxsTne1P7AxrcyKemzylTLQoRuC01Ja1
+# IC/ZkmKu0xMTlfvkvazOjRJQcwQxAuh+U44KuDGa+7OLxEaPmOIB89uDr86JEl5b
+# hnCSMbkQQ1A1KGIyR+oIl2XADBY30oPJhLejAObNs+Hi0Eh4fMTvJN3SSgWxRogj
+# X8b3KQ3LIJprph5SdyYeoo49uQV3w7F6a/T84M+jPdlp7dpEEe0S6SSEVYQ2Cysw
+# J5PcAlnrSbCBNXnv0x595lBmV5p+fnThrHB9EmZlmPLamroGOwrQrzH7sP5IB0I7
+# KI9YNeAsbIJVqqIeUTiW8vaWFvJQX9r2g975HT4uUtZkOVm08itNMnea1/WnlgOp
+# eJLLzAHOFaLmbruZtNkp2wUQV+tHl4CZ0toBgfDUuiPwptD18B5pVSmjfgEOwD+h
 # ggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8CAQEwfTBpMQswCQYDVQQGEwJVUzEX
 # MBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/BgNVBAMTOERpZ2lDZXJ0IFRydXN0
 # ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYgU0hBMjU2IDIwMjUgQ0ExAhAKgO8Y
 # S43xBYLRxHanlXRoMA0GCWCGSAFlAwQCAQUAoGkwGAYJKoZIhvcNAQkDMQsGCSqG
-# SIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjYwMTA4MTcyNzM5WjAvBgkqhkiG9w0B
-# CQQxIgQg7AaAEvmLxqgHt4qFwdpNLsvcWCTZYsfwvI6VKB/7zk4wDQYJKoZIhvcN
-# AQEBBQAEggIAQYUrLKkiGqFJAFK2YxnIouEpYJzizF5q8kpPV0WO7h3DnV+HbIyo
-# opX9G//35Xy5jK6R8evtaJi5WR++9PVcwvETuqQSl9iz0mPI6vZs26fwRmezHLYG
-# 8YiU03RF1i8o6mu0lBHBtDyS5omKG0ABfuQIpRH4DX/cpkJE0NwE44ycf4M1oPSn
-# mon+ESw+xfP8SJ2RkGT6PmdA/QA5Y2Nrf3n+TDX0FJ+3a3kjAKB17C8dpH8b+CGa
-# 0sDCSOBGdQ3nKXjkfwvkoyk4HRg0bJNiTvS6VbbC5QtC5OxKH0/ABD2wPgnXj+2u
-# srlyOqLuIdh6F1UIS1Q7uy43fC+CjN3VWXTtk3G7DUZBz4ZyuxC2xtElJCfu9CkI
-# xgkseFmZUeL8M+tyOxaWe8/319WkABQ+8mBQG86KRvNzLleN1/ThpUErE/qKFhuH
-# I3G4ihuy9b9t3zCLVoISMJd5NOV3D2HZHprQ1hYXMVoQR9AjxhkfDwjs36KPJIrj
-# /vG5QcCTYRpO6xRz7i1hIiA6ACWEmZswJUFX5/qlRJFbhDaSbOWY9aj8UEtLk6QO
-# zZEFVf7U19u0xcwdjtdkNsCFNhPKPk1heNywen1z/lOxhb4sot6Y3cSS+/ATbgl/
-# M9viFfZMnWyKQdEahOb+orNxdndU1k10mEd+UI9ouL0Bf3gix7ta6Xg=
+# SIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjYwMTEyMTk1NTIxWjAvBgkqhkiG9w0B
+# CQQxIgQgkOdk0GDBJkQK+vlUaQQ73m6H+SrZaz96BMBRRAhoWP4wDQYJKoZIhvcN
+# AQEBBQAEggIAy+9eXB8kqcXWW8ZGMEqd7BUFu6Uu/oBmsOcuNCnZ53g3O5q6kq5V
+# uvjtrkpx4DYKKZocGv0kAKfQ7a/Bg8gj5zcGnjeCRvMaevBoAW3Nh1IATOOUA/LL
+# YCcBb1RiVfeTCtboTEaLnmuKyOd/3PdXSiYVqJVokMVnDMzoU35nICNA7XViktKp
+# QCSkrUf23a8MU1dB8xVVj8UX/UZUyl+FPoxVXHZoTgo6hjZ0B2aa6b/sgaCT1Tnb
+# 2JkDuMNlygJqQPuUTJ9sYhmoKD7Ft7YgpKifxMKgqCYQHCOIGA+bRxTkU7jA9XyH
+# wrZ7VuiZhSCrJX3W6La1x5ECo5qTyhaBhSxFevUu5jRXQW2e6fiqa9nmX1dKMwrk
+# WQz9UMmieoiXhjwsoqzH3dKr1erPakxsyabxhIj6oe+H7XFppaM8IsKh+COky4Ed
+# Ze1D0ogIXYZn/nPF2fPmJvCCehtOeLO5k1RfUu5nlMSe+ALnrh41xoi5d2M+xyXB
+# YuyGj7EEflvBrYvaSyyU2ZctuifD6sP2uQXH9wu6SDkGsMeAaCEfbCogOzONsnaT
+# XSAfdUp+zTYPV69o34UFgwNHTw3yLhH8I+lreLzJtzlr/6mG6wu7TFLoJt/R1OyD
+# eHVbd7hALivIA8NsAaS4vhp6bMWBoYEsgDe3hL1BtPC4JCj3LjucFOM=
 # SIG # End signature block

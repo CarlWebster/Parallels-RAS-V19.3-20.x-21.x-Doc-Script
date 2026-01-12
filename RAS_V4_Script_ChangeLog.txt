@@ -243,6 +243,9 @@
 #
 #	In Function OutputThemesDetails
 #		Change HTML5 URL to User Portal URL
+#		Update several ENUMs
+#		Update to reflect the additions, deletions, and changes in the console
+#		Fixed numerous output formatting issues
 #
 #	In Function OutputVDIDetails:
 #		For Host pools, add:
