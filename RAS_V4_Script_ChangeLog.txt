@@ -108,15 +108,16 @@
 #		Add test for the default filter
 #		For each filter, add Enabled/Disabled
 #
-#	In Function OutputPubItemFilter
+#	In Function OutputPubItemFilters
 #		For the Default Rule, add "Enabled", "Default Rule", and the Allow or Deny text to the output
+#		Rewrite the output for all threee output formats so the output is more readable and formatted better
 #
 #	In Function OutputPublishingSettings
 #		Add "Routing" to all published item types that have a Routing tab
 #		Add "Status" of Enabled, Disabled, or In Maintenance to all published item types
 #		Add LocalApp published item type
 #		Add the published item type to all published items
-#		Ensure the output for all sections for all published item types matches the RAS V20.x console
+#		Ensure the output for all sections for all published item types matches the RAS V20.x and 21.x consoles
 #		Fix bug where "Allow if no other rule matches" was always the default filter setting. Move this check to Function OutputPubItemFilterSummary
 #		Fix bug for Word/PDF output for the VDIDesktop published item type
 #		Fix bug in the Text output for Sites
@@ -137,6 +138,13 @@
 #			Session Sharing 
 #			Settings for Site
 #		Remove the Site section from the published item types that no longer have that tab in the console
+#		For HTML output for individual hosts, and RD Session Host pools, add .Replace("<","").Replace(">","") to remove "<" and ">" since that messes up the HTML output
+#		Update output to match the changes made in the console
+#		For all calls to OutputPubItemShortCuts, add parameter for $DefaultInheritShortcutSettings
+#
+#	In Function OutputPubItemShortCuts
+#		Add parameter for $DefaultInheritShortcutSettings
+#		Add code for "Inherit default settings"
 #
 #	In Function OutputRASAccounts
 #		Add the Enabled property
@@ -151,16 +159,19 @@
 #			Permissions
 #			Receive system notifications
 #
-#	In Function OutputRASClientSettings
-#		Add Enum for Published application icons
-#		Add Force session reset on logon from Parallels Client
-#
 #	In Function OutputRASAdminFeatures
 #		Rename function from Function OutputRASFeatures to OutputRASAdminFeatures to separate it from the Site Features
 #		Rename variable $RASFeatures to $RASHelpdesk
 #		Add variable $RASSupport
 #		Change function to use two parameters: $RASHelpdesk and $RASSupport
 #		Add output for "Overwrite support actions with the following URL"
+#
+#	In Function OutputRASClientSettings
+#		Add Enum for Published application icons
+#		Add Force session reset on logon from Parallels Client
+#
+#	In Function OutputRASLBSettings
+#		Fix output formatting to match the console
 #
 #	In Function OutputRASLicense
 #		Add missing section header 
@@ -184,6 +195,10 @@
 #					Track Bandwidth when change is more than (%)
 #
 #	In Function OutputRASSettings, add the setting "Check for updates when launching RAS console"
+#
+#	In Function OutputRASURLRedirection:
+#		Remove a duplicate HTML "URL Redirection" heading
+#		Remove a duplicate HTML URL data row
 #
 #	In Function OutputRDSessionHostsDetails:
 #		Add Application Packages

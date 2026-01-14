@@ -450,9 +450,9 @@
 	text document.
 .NOTES
 	NAME: RAS_Inventory_V4_0.ps1
-	VERSION: 4.00 Beta 43
+	VERSION: 4.00 Beta 44
 	AUTHOR: Carl Webster
-	LASTEDIT: January 12, 2026
+	LASTEDIT: January 14, 2026
 #>
 
 
@@ -670,15 +670,16 @@ Param(
 #		Add test for the default filter
 #		For each filter, add Enabled/Disabled
 #
-#	In Function OutputPubItemFilter
+#	In Function OutputPubItemFilters
 #		For the Default Rule, add "Enabled", "Default Rule", and the Allow or Deny text to the output
+#		Rewrite the output for all threee output formats so the output is more readable and formatted better
 #
 #	In Function OutputPublishingSettings
 #		Add "Routing" to all published item types that have a Routing tab
 #		Add "Status" of Enabled, Disabled, or In Maintenance to all published item types
 #		Add LocalApp published item type
 #		Add the published item type to all published items
-#		Ensure the output for all sections for all published item types matches the RAS V20.x console
+#		Ensure the output for all sections for all published item types matches the RAS V20.x and 21.x consoles
 #		Fix bug where "Allow if no other rule matches" was always the default filter setting. Move this check to Function OutputPubItemFilterSummary
 #		Fix bug for Word/PDF output for the VDIDesktop published item type
 #		Fix bug in the Text output for Sites
@@ -699,6 +700,13 @@ Param(
 #			Session Sharing 
 #			Settings for Site
 #		Remove the Site section from the published item types that no longer have that tab in the console
+#		For HTML output for individual hosts, and RD Session Host pools, add .Replace("<","").Replace(">","") to remove "<" and ">" since that messes up the HTML output
+#		Update output to match the changes made in the console
+#		For all calls to OutputPubItemShortCuts, add parameter for $DefaultInheritShortcutSettings
+#
+#	In Function OutputPubItemShortCuts
+#		Add parameter for $DefaultInheritShortcutSettings
+#		Add code for "Inherit default settings"
 #
 #	In Function OutputRASAccounts
 #		Add the Enabled property
@@ -713,16 +721,19 @@ Param(
 #			Permissions
 #			Receive system notifications
 #
-#	In Function OutputRASClientSettings
-#		Add Enum for Published application icons
-#		Add Force session reset on logon from Parallels Client
-#
 #	In Function OutputRASAdminFeatures
 #		Rename function from Function OutputRASFeatures to OutputRASAdminFeatures to separate it from the Site Features
 #		Rename variable $RASFeatures to $RASHelpdesk
 #		Add variable $RASSupport
 #		Change function to use two parameters: $RASHelpdesk and $RASSupport
 #		Add output for "Overwrite support actions with the following URL"
+#
+#	In Function OutputRASClientSettings
+#		Add Enum for Published application icons
+#		Add Force session reset on logon from Parallels Client
+#
+#	In Function OutputRASLBSettings
+#		Fix output formatting to match the console
 #
 #	In Function OutputRASLicense
 #		Add missing section header 
@@ -746,6 +757,10 @@ Param(
 #					Track Bandwidth when change is more than (%)
 #
 #	In Function OutputRASSettings, add the setting "Check for updates when launching RAS console"
+#
+#	In Function OutputRASURLRedirection:
+#		Remove a duplicate HTML "URL Redirection" heading
+#		Remove a duplicate HTML URL data row
 #
 #	In Function OutputRDSessionHostsDetails:
 #		Add Application Packages
@@ -931,9 +946,9 @@ $ErrorActionPreference    = 'SilentlyContinue'
 $Error.Clear()
 
 $Script:emailCredentials  = $Null
-$script:MyVersion         = '4.00 Beta 43'
+$script:MyVersion         = '4.00 Beta 44'
 $Script:ScriptName        = "RAS_Inventory_V4_0.ps1"
-$tmpdate                  = [datetime] "01/12/2026"
+$tmpdate                  = [datetime] "01/14/2026"
 $Script:ReleaseDate       = $tmpdate.ToUniversalTime().ToShortDateString()
 
 If($MSWord -eq $False -and $PDF -eq $False -and $Text -eq $False -and $HTML -eq $False)
@@ -36060,7 +36075,7 @@ Function OutputConnectionBrokersDetails
 			{
 				If($ConnectionBroker.Standby -eq $False)
 				{
-					$ConnectionBrokerPriority = "Master"
+					$ConnectionBrokerPriority = "Priority"
 				}
 				Else
 				{
@@ -36276,7 +36291,7 @@ Function OutputConnectionBrokersDetails
 				If($MSWord -or $PDF)
 				{
 					$ScriptInformation = New-Object System.Collections.ArrayList
-					$ScriptInformation.Add(@{Data = "Auto-promotion Enabled"; Value = $ConnectionBrokerAutoPromotion.Enabled.ToString(); }) > $Null
+					$ScriptInformation.Add(@{Data = "Enable auto-promotion"; Value = $ConnectionBrokerAutoPromotion.Enabled.ToString(); }) > $Null
 					If($ConnectionBrokerAutoPromotion.Enabled)
 					{
 						$ScriptInformation.Add(@{Data = "Enable auto-promotion after (minutes)"; Value = $ConnectionBrokerAutoPromotion.AutoPromoteAfterMins.ToString(); }) > $Null
@@ -40858,10 +40873,6 @@ Function OutputRASURLRedirection
 		{
 			$URLAction = "Do not redirect"
 		}
-		If($HTML)
-		{
-			WriteHTMLLine 3 0 "URL redirection"
-		}
 		
 		If($MSWord -or $PDF)
 		{
@@ -40903,7 +40914,6 @@ Function OutputRASURLRedirection
 		{
 			$rowdata = @()
 			$columnHeaders = @("URL",($Script:htmlsb),"*",$htmlwhite)
-			$rowdata += @(,("URL",($Script:htmlsb), "*",$htmlwhite))
 			$rowdata += @(,("Enabled",($Script:htmlsb), "True",$htmlwhite))
 			$rowdata += @(,("Action",($Script:htmlsb), $URLAction,$htmlwhite))
 			$rowdata += @(,("ID",($Script:htmlsb), "0",$htmlwhite))
@@ -42097,17 +42107,19 @@ Function OutputRASLBSettings
 	If($MSWord -or $PDF)
 	{
 		$ScriptInformation = New-Object System.Collections.ArrayList
-		$ScriptInformation.Add(@{Data = "Method"; Value = $RASLBSettingsMethod; }) > $Null
-		$ScriptInformation.Add(@{Data = "Counters"; Value = ""; }) > $Null
-		$ScriptInformation.Add(@{Data = "     User Sessions"; Value = $RASLBSettings.SessionsCounter; }) > $Null
-		$ScriptInformation.Add(@{Data = "     Memory"; Value = $RASLBSettings.MemoryCounter; }) > $Null
-		$ScriptInformation.Add(@{Data = "     CPU"; Value = $RASLBSettings.CPUCounter; }) > $Null
-		$ScriptInformation.Add(@{Data = "Reconnect to disconnected sessions"; Value = $RASLBSettings.ReconnectDisconnect; }) > $Null
-		$ScriptInformation.Add(@{Data = "Reconnect sessions using client's IP address only"; Value = $RASLBSettings.ReconnectUsingIPOnly; }) > $Null
-		$ScriptInformation.Add(@{Data = "Limit each user to one session per desktop"; Value = $RASLBSettings.ReconnectUser; }) > $Null
-		$ScriptInformation.Add(@{Data = "Disable Microsoft RD Connection Broker"; Value = $RASLBSettings.DisableRDSLB; }) > $Null
-		$ScriptInformation.Add(@{Data = "Declare Agent dead if not responding for"; Value = "$($RASLBSettings.DeadTimeout) seconds"; }) > $Null
-		$ScriptInformation.Add(@{Data = "Agent Refresh Time"; Value = "$($RASLBSettings.RefreshTimeout) seconds"; }) > $Null
+		$ScriptInformation.Add(@{Data = "Method"; Value = ""; }) > $Null
+		$ScriptInformation.Add(@{Data = "     Method"; Value = $RASLBSettingsMethod; }) > $Null
+		$ScriptInformation.Add(@{Data = "     Counters"; Value = ""; }) > $Null
+		$ScriptInformation.Add(@{Data = "          User Sessions"; Value = $RASLBSettings.SessionsCounter; }) > $Null
+		$ScriptInformation.Add(@{Data = "          Memory"; Value = $RASLBSettings.MemoryCounter; }) > $Null
+		$ScriptInformation.Add(@{Data = "          CPU"; Value = $RASLBSettings.CPUCounter; }) > $Null
+		$ScriptInformation.Add(@{Data = "Options"; Value = ""; }) > $Null
+		$ScriptInformation.Add(@{Data = "     Reconnect to disconnected sessions"; Value = $RASLBSettings.ReconnectDisconnect; }) > $Null
+		$ScriptInformation.Add(@{Data = "     Reconnect sessions using client's IP address only"; Value = $RASLBSettings.ReconnectUsingIPOnly; }) > $Null
+		$ScriptInformation.Add(@{Data = "     Limit each user to one session per desktop"; Value = $RASLBSettings.ReconnectUser; }) > $Null
+		$ScriptInformation.Add(@{Data = "     Disable Microsoft RD Connection Broker"; Value = $RASLBSettings.DisableRDSLB; }) > $Null
+		$ScriptInformation.Add(@{Data = "     Declare Agent dead if not responding for"; Value = "$($RASLBSettings.DeadTimeout) seconds"; }) > $Null
+		$ScriptInformation.Add(@{Data = "     Agent Refresh Time"; Value = "$($RASLBSettings.RefreshTimeout) seconds"; }) > $Null
 		$ScriptInformation.Add(@{Data = "Settings are replicated to all Sites"; Value = $RASLBSettings.Replicate.ToString(); }) > $Null
 
 		$Table = AddWordTable -Hashtable $ScriptInformation `
@@ -42130,34 +42142,38 @@ Function OutputRASLBSettings
 	}
 	If($Text)
 	{
-		Line 2 "Method`t`t`t: " $RASLBSettingsMethod
-		Line 2 "Counters"
-		Line 3 "User Sessions`t: " $RASLBSettings.SessionsCounter
-		Line 3 "Memory`t`t: " $RASLBSettings.MemoryCounter
-		Line 3 "CPU`t`t: " $RASLBSettings.CPUCounter
-		Line 2 "Reconnect to disconnected sessions`t`t`t: " $RASLBSettings.ReconnectDisconnect
-		Line 2 "Reconnect sessions using client's IP address only`t: " $RASLBSettings.ReconnectUsingIPOnly
-		Line 2 "Limit each user to one session per desktop`t`t: " $RASLBSettings.ReconnectUser
-		Line 2 "Disable Microsoft RD Connection Broker`t`t`t: " $RASLBSettings.DisableRDSLB
-		Line 2 "Declare Agent dead if not responding for`t`t: " "$($RASLBSettings.DeadTimeout) seconds"
-		Line 2 "Agent Refresh Time`t`t`t`t`t: " "$($RASLBSettings.RefreshTimeout) seconds"
-		Line 2 "Settings are replicated to all Sites`t`t`t: " $RASLBSettings.Replicate.ToString()
+		Line 2 "Method"
+		Line 3 "Method`t`t`t: " $RASLBSettingsMethod
+		Line 3 "Counters"
+		Line 4 "User Sessions`t: " $RASLBSettings.SessionsCounter
+		Line 4 "Memory`t`t: " $RASLBSettings.MemoryCounter
+		Line 4 "CPU`t`t: " $RASLBSettings.CPUCounter
+		Line 2 "Options"
+		Line 3 "Reconnect to disconnected sessions`t`t`t: " $RASLBSettings.ReconnectDisconnect
+		Line 3 "Reconnect sessions using client's IP address only`t: " $RASLBSettings.ReconnectUsingIPOnly
+		Line 3 "Limit each user to one session per desktop`t`t: " $RASLBSettings.ReconnectUser
+		Line 3 "Disable Microsoft RD Connection Broker`t`t`t: " $RASLBSettings.DisableRDSLB
+		Line 3 "Declare Agent dead if not responding for`t`t: " "$($RASLBSettings.DeadTimeout) seconds"
+		Line 3 "Agent Refresh Time`t`t`t`t`t: " "$($RASLBSettings.RefreshTimeout) seconds"
+		Line 3 "Settings are replicated to all Sites`t`t`t: " $RASLBSettings.Replicate.ToString()
 		Line 0 ""
 	}
 	If($HTML)
 	{
 		$rowdata = @()
-		$columnHeaders = @("Method",($Script:htmlsb),$RASLBSettingsMethod,$htmlwhite)
-		$rowdata += @(,("Counters",($Script:htmlsb),"",$htmlwhite))
-		$rowdata += @(,("     User Sessions",($Script:htmlsb),$RASLBSettings.SessionsCounter.ToString(),$htmlwhite))
-		$rowdata += @(,("     Memory",($Script:htmlsb),$RASLBSettings.MemoryCounter.ToString(),$htmlwhite))
-		$rowdata += @(,("     CPU",($Script:htmlsb),$RASLBSettings.CPUCounter.ToString(),$htmlwhite))
-		$rowdata += @(,("Reconnect to disconnected sessions",($Script:htmlsb),$RASLBSettings.ReconnectDisconnect.ToString(),$htmlwhite))
-		$rowdata += @(,("Reconnect sessions using client's IP address only",($Script:htmlsb),$RASLBSettings.ReconnectUsingIPOnly.ToString(),$htmlwhite))
-		$rowdata += @(,("Limit each user to one session per desktop",($Script:htmlsb),$RASLBSettings.ReconnectUser.ToString(),$htmlwhite))
-		$rowdata += @(,("Disable Microsoft RD Connection Broker",($Script:htmlsb),$RASLBSettings.DisableRDSLB.ToString(),$htmlwhite))
-		$rowdata += @(,("Declare Agent dead if not responding for",($Script:htmlsb),"$($RASLBSettings.DeadTimeout) seconds",$htmlwhite))
-		$rowdata += @(,("Agent Refresh Time",($Script:htmlsb),"$($RASLBSettings.RefreshTimeout) seconds",$htmlwhite))
+		$columnHeaders = @("Method",($Script:htmlsb),"",$htmlwhite)
+		$rowdata += @(,("     Method",($Script:htmlsb),$RASLBSettingsMethod,$htmlwhite))
+		$rowdata += @(,("     Counters",($Script:htmlsb),"",$htmlwhite))
+		$rowdata += @(,("          User Sessions",($Script:htmlsb),$RASLBSettings.SessionsCounter.ToString(),$htmlwhite))
+		$rowdata += @(,("          Memory",($Script:htmlsb),$RASLBSettings.MemoryCounter.ToString(),$htmlwhite))
+		$rowdata += @(,("          CPU",($Script:htmlsb),$RASLBSettings.CPUCounter.ToString(),$htmlwhite))
+		$rowdata += @(,("Options",($Script:htmlsb),"",$htmlwhite))
+		$rowdata += @(,("     Reconnect to disconnected sessions",($Script:htmlsb),$RASLBSettings.ReconnectDisconnect.ToString(),$htmlwhite))
+		$rowdata += @(,("     Reconnect sessions using client's IP address only",($Script:htmlsb),$RASLBSettings.ReconnectUsingIPOnly.ToString(),$htmlwhite))
+		$rowdata += @(,("     Limit each user to one session per desktop",($Script:htmlsb),$RASLBSettings.ReconnectUser.ToString(),$htmlwhite))
+		$rowdata += @(,("     Disable Microsoft RD Connection Broker",($Script:htmlsb),$RASLBSettings.DisableRDSLB.ToString(),$htmlwhite))
+		$rowdata += @(,("     Declare Agent dead if not responding for",($Script:htmlsb),"$($RASLBSettings.DeadTimeout) seconds",$htmlwhite))
+		$rowdata += @(,("     Agent Refresh Time",($Script:htmlsb),"$($RASLBSettings.RefreshTimeout) seconds",$htmlwhite))
 		$rowdata += @(,("Settings are replicated to all Sites",($Script:htmlsb),$RASLBSettings.Replicate.ToString(),$htmlwhite))
 
 		$msg = ""
@@ -42473,21 +42489,22 @@ Function OutputPublishingSettings
 		Unable to retrieve Publishing Default Site Settings for Site $xSiteName, using built-in defaults
 		" -ForegroundColor White
 		<#
-			StartPath                     : RAS Remote Desktops & Applications\%Groups%
-			CreateShortcutOnDesktop       : False
-			CreateShortcutInStartFolder   : True
-			CreateShortcutInStartUpFolder : False
-			ReplicateShortcutSettings     : False
-			ReplicateDisplaySettings      : False
-			WaitForPrinters               : False
-			StartMaximized                : True
-			WaitForPrintersTimeout        : 20
-			ColorDepth                    : ClientSpecified
-			DisableSessionSharing         : False
-			OneInstancePerUser            : False
-			ConCurrentLicenses            : 0
-			LicenseLimitNotify            : WarnUserAndNoStart
-			ReplicateLicenseSettings      : False
+			StartPath                      : RAS Remote Desktops & Applications\%Groups%
+			InheritShortcutDefaultSettings : True
+			CreateShortcutOnDesktop        : False
+			CreateShortcutInStartFolder    : True
+			CreateShortcutInStartUpFolder  : False
+			ReplicateShortcutSettings      : False
+			ReplicateDisplaySettings       : False
+			WaitForPrinters                : False
+			StartMaximized                 : True
+			WaitForPrintersTimeout         : 20
+			ColorDepth                     : ClientSpecified
+			DisableSessionSharing          : False
+			OneInstancePerUser             : False
+			ConCurrentLicenses             : 0
+			LicenseLimitNotify             : WarnUserAndNoStart
+			ReplicateLicenseSettings       : False
 		#>
 		
 		#Shortcuts tab
@@ -42583,6 +42600,15 @@ Function OutputPublishingSettings
 	ForEach($PubItem in $PubItems)
 	{
 		Write-Verbose "$(Get-Date -Format G): `t`t$($PubItem.Name)"
+		
+		If(ValidObject $PubItem InheritShortcutDefaultSettings)
+		{
+			$DefaultInheritShortcutSettings = $PubItem.InheritShortcutDefaultSettings.ToString()
+		}
+		Else
+		{
+			$DefaultInheritShortcutSettings = "N/A"
+		}
 
 		If(ValidObject $PubItem WinType)
 		{
@@ -43288,6 +43314,7 @@ Function OutputPublishingSettings
 				WriteWordLine 0 0 ""
 
 				OutputPubItemShortcuts $PubItem "MSWordPDF" `
+				$DefaultInheritShortcutSettings `
 				$DefaultCreateShortcutOnDesktop `
 				$DefaultCreateShortcutInStartFolder `
 				$DefaultStartPath `
@@ -43455,6 +43482,7 @@ Function OutputPublishingSettings
 				Line 0 ""
 
 				OutputPubItemShortcuts $PubItem "Text" `
+				$DefaultInheritShortcutSettings `
 				$DefaultCreateShortcutOnDesktop `
 				$DefaultCreateShortcutInStartFolder `
 				$DefaultStartPath `
@@ -43559,11 +43587,11 @@ Function OutputPublishingSettings
 							
 							If($cnt -eq 0)
 							{
-								$columnHeaders = @("$PublishedFrom",($Script:htmlsb),$ItemName,$htmlwhite)
+								$columnHeaders = @("$PublishedFrom",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite)
 							}
 							Else
 							{
-								$rowdata += @(,("",($Script:htmlsb),$ItemName,$htmlwhite))
+								$rowdata += @(,("",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite))
 							}
 						}
 					}
@@ -43577,11 +43605,11 @@ Function OutputPublishingSettings
 							
 							If($cnt -eq 0)
 							{
-								$columnHeaders = @("$PublishedFrom",($Script:htmlsb),$ItemName,$htmlwhite)
+								$columnHeaders = @("$PublishedFrom",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite)
 							}
 							Else
 							{
-								$rowdata += @(,("",($Script:htmlsb),$ItemName,$htmlwhite))
+								$rowdata += @(,("",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite))
 							}
 						}
 					}
@@ -43664,6 +43692,7 @@ Function OutputPublishingSettings
 				WriteHTMLLine 0 0 ""
 
 				OutputPubItemShortcuts $PubItem "HTML" `
+				$DefaultInheritShortcutSettings `
 				$DefaultCreateShortcutOnDesktop `
 				$DefaultCreateShortcutInStartFolder `
 				$DefaultStartPath `
@@ -43801,11 +43830,11 @@ Function OutputPublishingSettings
 							
 							If($cnt -eq 0)
 							{
-								$ScriptInformation.Add(@{Data = "$PublishedFrom"; Value = $ItemName; }) > $Null
+								$ScriptInformation.Add(@{Data = "$PublishedFrom"; Value = $ItemName.Replace("<","").Replace(">",""); }) > $Null
 							}
 							Else
 							{
-								$ScriptInformation.Add(@{Data = ""; Value = $ItemName; }) > $Null
+								$ScriptInformation.Add(@{Data = ""; Value = $ItemName.Replace("<","").Replace(">",""); }) > $Null
 							}
 						}
 					}
@@ -43820,11 +43849,11 @@ Function OutputPublishingSettings
 							
 							If($cnt -eq 0)
 							{
-								$ScriptInformation.Add(@{Data = "$PublishedFrom"; Value = $ItemName; }) > $Null
+								$ScriptInformation.Add(@{Data = "$PublishedFrom"; Value = $ItemName.Replace("<","").Replace(">",""); }) > $Null
 							}
 							Else
 							{
-								$ScriptInformation.Add(@{Data = ""; Value = $ItemName; }) > $Null
+								$ScriptInformation.Add(@{Data = ""; Value = $ItemName.Replace("<","").Replace(">",""); }) > $Null
 							}
 						}
 					}
@@ -43965,6 +43994,7 @@ Function OutputPublishingSettings
 				WriteWordLine 0 0 ""
 
 				OutputPubItemShortcuts $PubItem "MSWordPDF" `
+				$DefaultInheritShortcutSettings `
 				$DefaultCreateShortcutOnDesktop `
 				$DefaultCreateShortcutInStartFolder `
 				$DefaultStartPath `
@@ -44127,6 +44157,7 @@ Function OutputPublishingSettings
 				Line 0 ""
 
 				OutputPubItemShortcuts $PubItem "Text" `
+				$DefaultInheritShortcutSettings `
 				$DefaultCreateShortcutOnDesktop `
 				$DefaultCreateShortcutInStartFolder `
 				$DefaultStartPath `
@@ -44225,11 +44256,11 @@ Function OutputPublishingSettings
 							
 							If($cnt -eq 0)
 							{
-								$columnHeaders = @("$PublishedFrom",($Script:htmlsb),$ItemName,$htmlwhite)
+								$columnHeaders = @("$PublishedFrom",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite)
 							}
 							Else
 							{
-								$rowdata += @(,("",($Script:htmlsb),$ItemName,$htmlwhite))
+								$rowdata += @(,("",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite))
 							}
 						}
 					}
@@ -44243,11 +44274,11 @@ Function OutputPublishingSettings
 							
 							If($cnt -eq 0)
 							{
-								$columnHeaders = @("$PublishedFrom",($Script:htmlsb),$ItemName,$htmlwhite)
+								$columnHeaders = @("$PublishedFrom",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite)
 							}
 							Else
 							{
-								$rowdata += @(,("",($Script:htmlsb),$ItemName,$htmlwhite))
+								$rowdata += @(,("",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite))
 							}
 						}
 					}
@@ -44337,6 +44368,7 @@ Function OutputPublishingSettings
 				WriteHTMLLine 0 0 ""
 
 				OutputPubItemShortcuts $PubItem "HTML" `
+				$DefaultInheritShortcutSettings `
 				$DefaultCreateShortcutOnDesktop `
 				$DefaultCreateShortcutInStartFolder `
 				$DefaultStartPath `
@@ -44363,11 +44395,11 @@ Function OutputPublishingSettings
 			{
 				Switch ($PubItem.PublishFrom)
 				{
-					"All"		{$PublishedFrom = "All Servers in Site"; Break}
-					"HostPools"	{$PublishedFrom = "Host Pools:"; Break}
-					"Group"		{$PublishedFrom = "Server Groups:"; Break}
+					"All"		{$PublishedFrom = "All Hosts in Site"; Break}
+					"HostPools"	{$PublishedFrom = "RD Session Host Pools:"; Break}
+					"Group"		{$PublishedFrom = "RD Session Host Pools:"; Break}
 					"Host"		{$PublishedFrom = "Individual Hosts:"; Break}
-					"Server"	{$PublishedFrom = "Individual Servers:"; Break}
+					"Server"	{$PublishedFrom = "Individual Hosts:"; Break}
 					Default		{$PublishedFrom = "Unable to determine Published From: $($PubItem.PublishFrom)"; Break}
 				}
 			}
@@ -44763,6 +44795,7 @@ Function OutputPublishingSettings
 				WriteWordLine 0 0 ""
 
 				OutputPubItemShortcuts $PubItem "MSWordPDF" `
+				$DefaultInheritShortcutSettings `
 				$DefaultCreateShortcutOnDesktop `
 				$DefaultCreateShortcutInStartFolder `
 				$DefaultStartPath `
@@ -45152,6 +45185,7 @@ Function OutputPublishingSettings
 				Line 0 ""
 
 				OutputPubItemShortcuts $PubItem "Text" `
+				$DefaultInheritShortcutSettings `
 				$DefaultCreateShortcutOnDesktop `
 				$DefaultCreateShortcutInStartFolder `
 				$DefaultStartPath `
@@ -45306,11 +45340,11 @@ Function OutputPublishingSettings
 							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
 							If($cnt -eq 0)
 							{
-								$rowdata += @(,("Published from",($Script:htmlsb),$ItemName,$htmlwhite))
+								$rowdata += @(,("Published from",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite))
 							}
 							Else
 							{
-								$rowdata += @(,("",($Script:htmlsb),$ItemName,$htmlwhite))
+								$rowdata += @(,("",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite))
 							}
 						}
 					}
@@ -45323,11 +45357,11 @@ Function OutputPublishingSettings
 							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
 							If($cnt -eq 0)
 							{
-								$rowdata += @(,("Published from",($Script:htmlsb),$ItemName,$htmlwhite))
+								$rowdata += @(,("Published from",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite))
 							}
 							Else
 							{
-								$rowdata += @(,("",($Script:htmlsb),$ItemName,$htmlwhite))
+								$rowdata += @(,("",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite))
 							}
 						}
 					}
@@ -45418,11 +45452,11 @@ Function OutputPublishingSettings
 							
 							If($cnt -eq 0)
 							{
-								$columnHeaders = @("$PublishedFrom",($Script:htmlsb),$ItemName,$htmlwhite)
+								$columnHeaders = @("$PublishedFrom",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite)
 							}
 							Else
 							{
-								$rowdata += @(,("",($Script:htmlsb),$ItemName,$htmlwhite))
+								$rowdata += @(,("",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite))
 							}
 						}
 					}
@@ -45436,11 +45470,11 @@ Function OutputPublishingSettings
 							
 							If($cnt -eq 0)
 							{
-								$columnHeaders = @("$PublishedFrom",($Script:htmlsb),$ItemName,$htmlwhite)
+								$columnHeaders = @("$PublishedFrom",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite)
 							}
 							Else
 							{
-								$rowdata += @(,("",($Script:htmlsb),$ItemName,$htmlwhite))
+								$rowdata += @(,("",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite))
 							}
 						}
 					}
@@ -45531,6 +45565,7 @@ Function OutputPublishingSettings
 				WriteHTMLLine 0 0 ""
 
 				OutputPubItemShortcuts $PubItem "HTML" `
+				$DefaultInheritShortcutSettings `
 				$DefaultCreateShortcutOnDesktop `
 				$DefaultCreateShortcutInStartFolder `
 				$DefaultStartPath `
@@ -45659,11 +45694,11 @@ Function OutputPublishingSettings
 			{
 				Switch ($PubItem.PublishFrom)
 				{
-					"All"		{$PublishedFrom = "All Servers in Site"; Break}
-					"HostPools"	{$PublishedFrom = "Host Pools:"; Break}
-					"Group"		{$PublishedFrom = "Server Groups:"; Break}
+					"All"		{$PublishedFrom = "All Hosts in Site"; Break}
+					"HostPools"	{$PublishedFrom = "RD Session Host Pools:"; Break}
+					"Group"		{$PublishedFrom = "RD Session Host Pools:"; Break}
 					"Host"		{$PublishedFrom = "Individual Hosts:"; Break}
-					"Server"	{$PublishedFrom = "Individual Servers:"; Break}
+					"Server"	{$PublishedFrom = "Individual Hosts:"; Break}
 					Default		{$PublishedFrom = "Unable to determine Published From: $($PubItem.PublishFrom)"; Break}
 				}
 			}
@@ -45895,13 +45930,19 @@ Function OutputPublishingSettings
 				WriteWordLine 3 0 "Desktop"
 				WriteWordLine 4 0 "Desktop"
 				$ScriptInformation = New-Object System.Collections.ArrayList
-				$ScriptInformation.Add(@{Data = "Name"; Value = $PubItem.Name; }) > $Null
-				$ScriptInformation.Add(@{Data = "Description"; Value = $PubItem.Description; }) > $Null
+				$ScriptInformation.Add(@{Data = "Desktop"; Value = ""; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Name"; Value = $PubItem.Name; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Description"; Value = $PubItem.Description; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Status"; Value = $PubItemStatus; }) > $Null
 				If(validObject $PubItem ConnectToConsole)
 				{
-					$ScriptInformation.Add(@{Data = "Connect to administrative session"; Value = $PubItem.ConnectToConsole.ToString(); }) > $Null
+					$ScriptInformation.Add(@{Data = "     Connect to administrative session"; Value = $PubItem.ConnectToConsole.ToString(); }) > $Null
 				}
-				$ScriptInformation.Add(@{Data = "Start automatically when user logs on"; Value = $PubItem.StartOnLogon.ToString(); }) > $Null
+				$ScriptInformation.Add(@{Data = "     Start automatically when user logs on"; Value = $PubItem.StartOnLogon.ToString(); }) > $Null
+				$ScriptInformation.Add(@{Data = "     Exclude from session prelaunch"; Value = $PubItem.ExcludePrelaunch.ToString(); }) > $Null
+				$ScriptInformation.Add(@{Data = "Properties"; Value = ""; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Desktop size"; Value = $DesktopSize; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Multi-Monitor"; Value = $AllowMultiMonitor; }) > $Null
 
 				$Table = AddWordTable -Hashtable $ScriptInformation `
 				-Columns Data,Value `
@@ -45913,29 +45954,6 @@ Function OutputPublishingSettings
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 				$Table.Columns.Item(1).Width = 300;
-				$Table.Columns.Item(2).Width = 300;
-
-				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-				FindWordDocumentEnd
-				$Table = $Null
-				WriteWordLine 0 0 ""
-				
-				WriteWordLine 4 0 "Properties"
-				$ScriptInformation = New-Object System.Collections.ArrayList
-				$ScriptInformation.Add(@{Data = "Desktop size"; Value = $DesktopSize; }) > $Null
-				$ScriptInformation.Add(@{Data = "Multi-Monitor"; Value = $AllowMultiMonitor; }) > $Null
-
-				$Table = AddWordTable -Hashtable $ScriptInformation `
-				-Columns Data,Value `
-				-List `
-				-Format $wdTableGrid `
-				-AutoFit $wdAutoFitFixed;
-
-				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
-				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
-				$Table.Columns.Item(1).Width = 200;
 				$Table.Columns.Item(2).Width = 300;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
@@ -45990,11 +46008,11 @@ Function OutputPublishingSettings
 				-Format $wdTableGrid `
 				-AutoFit $wdAutoFitFixed;
 
-				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 200;
-				$Table.Columns.Item(2).Width = 300;
+				$Table.Columns.Item(1).Width = 225;
+				$Table.Columns.Item(2).Width = 275;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -46003,6 +46021,7 @@ Function OutputPublishingSettings
 				WriteWordLine 0 0 ""
 
 				OutputPubItemShortcuts $PubItem "MSWordPDF" `
+				$DefaultInheritShortcutSettings `
 				$DefaultCreateShortcutOnDesktop `
 				$DefaultCreateShortcutInStartFolder `
 				$DefaultStartPath `
@@ -46163,13 +46182,13 @@ Function OutputPublishingSettings
 				Line 3 "Desktop"
 				Line 4 "Name`t`t`t`t`t`t: " $PubItem.Name
 				Line 4 "Description`t`t`t`t`t: " $PubItem.Description
+				Line 4 "Status`t`t`t`t`t`t: " $PubItemStatus
 				If(validObject $PubItem ConnectToConsole)
 				{
 					Line 4 "Connect to administrative session`t`t: " $PubItem.ConnectToConsole.ToString()
 				}
 				Line 4 "Start automatically when user logs on`t`t: " $PubItem.StartOnLogon.ToString()
-				Line 0 ""
-				
+				Line 4 "Exclude from session prelaunch`t`t`t: " $PubItem.ExcludePrelaunch.ToString()
 				Line 3 "Properties"
 				Line 4 "Desktop size`t`t`t`t`t: " $DesktopSize
 				Line 4 "Multi-Monitor`t`t`t`t`t: " $AllowMultiMonitor
@@ -46216,6 +46235,7 @@ Function OutputPublishingSettings
 				Line 0 ""
 
 				OutputPubItemShortcuts $PubItem "Text" `
+				$DefaultInheritShortcutSettings `
 				$DefaultCreateShortcutOnDesktop `
 				$DefaultCreateShortcutInStartFolder `
 				$DefaultStartPath `
@@ -46251,11 +46271,11 @@ Function OutputPublishingSettings
 							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
 							If($cnt -eq 0)
 							{
-								$rowdata += @(,("Published from",($Script:htmlsb),$ItemName,$htmlwhite))
+								$rowdata += @(,("Published from",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite))
 							}
 							Else
 							{
-								$rowdata += @(,("",($Script:htmlsb),$ItemName,$htmlwhite))
+								$rowdata += @(,("",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite))
 							}
 						}
 					}
@@ -46268,11 +46288,11 @@ Function OutputPublishingSettings
 							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
 							If($cnt -eq 0)
 							{
-								$rowdata += @(,("Published from",($Script:htmlsb),$ItemName,$htmlwhite))
+								$rowdata += @(,("Published from",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite))
 							}
 							Else
 							{
-								$rowdata += @(,("",($Script:htmlsb),$ItemName,$htmlwhite))
+								$rowdata += @(,("",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite))
 							}
 						}
 					}
@@ -46349,30 +46369,6 @@ Function OutputPublishingSettings
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 
-				WriteHTMLLine 3 0 "Sites"
-				$rowdata = @()
-
-				$cnt =-1
-				ForEach($Site in $PubItem.PublishToSite)
-				{
-					$cnt++
-					$SiteName = @(Get-RASSite -Id $Site -EA 0 4>$Null).Name
-					
-					If($cnt -eq 0)
-					{
-						$columnHeaders = @("This published item will be available from the following Sites",($Script:htmlsb),$SiteName,$htmlwhite)
-					}
-					Else
-					{
-						$rowdata += @(,("",($Script:htmlsb),$SiteName,$htmlwhite))
-					}
-				}
-
-				$msg = ""
-				$columnWidths = @("200","300")
-				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-				WriteHTMLLine 0 0 ""
-
 				WriteHTMLLine 3 0 "Publish from"
 				$rowdata = @()
 				If(validObject $PubItem PublishFrom)
@@ -46387,11 +46383,11 @@ Function OutputPublishingSettings
 							
 							If($cnt -eq 0)
 							{
-								$columnHeaders = @("$PublishedFrom",($Script:htmlsb),$ItemName,$htmlwhite)
+								$columnHeaders = @("$PublishedFrom",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite)
 							}
 							Else
 							{
-								$rowdata += @(,("",($Script:htmlsb),$ItemName,$htmlwhite))
+								$rowdata += @(,("",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite))
 							}
 						}
 					}
@@ -46405,11 +46401,11 @@ Function OutputPublishingSettings
 							
 							If($cnt -eq 0)
 							{
-								$columnHeaders = @("$PublishedFrom",($Script:htmlsb),$ItemName,$htmlwhite)
+								$columnHeaders = @("$PublishedFrom",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite)
 							}
 							Else
 							{
-								$rowdata += @(,("",($Script:htmlsb),$ItemName,$htmlwhite))
+								$rowdata += @(,("",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite))
 							}
 						}
 					}
@@ -46431,25 +46427,22 @@ Function OutputPublishingSettings
 				WriteHTMLLine 3 0 "Desktop"
 				$rowdata = @()
 
-				$columnHeaders = @("Name",($Script:htmlsb),$PubItem.Name,$htmlwhite)
-				$rowdata += @(,("Description",($Script:htmlsb),$PubItem.Description,$htmlwhite))
+				$columnHeaders = @("Desktop",($Script:htmlsb),"",$htmlwhite)
+				$rowdata += @(,("     Name",($Script:htmlsb),$PubItem.Name,$htmlwhite))
+				$rowdata += @(,("     Description",($Script:htmlsb),$PubItem.Description,$htmlwhite))
+				$rowdata += @(,("     Status",($Script:htmlsb),$PubItemStatus,$htmlwhite))
 				If(validObject $PubItem ConnectToConsole)
 				{
-					$rowdata += @(,("Connect to administrative session",($Script:htmlsb),$PubItem.ConnectToConsole.ToString(),$htmlwhite))
+					$rowdata += @(,("     Connect to administrative session",($Script:htmlsb),$PubItem.ConnectToConsole.ToString(),$htmlwhite))
 				}
-				$rowdata += @(,("Start automatically when user logs on",($Script:htmlsb),$PubItem.StartOnLogon.ToString(),$htmlwhite))
+				$rowdata += @(,("     Start automatically when user logs on",($Script:htmlsb),$PubItem.StartOnLogon.ToString(),$htmlwhite))
+				$rowdata += @(,("     Exclude from session prelaunch",($Script:htmlsb),$PubItem.ExcludePrelaunch.ToString(),$htmlwhite))
+				$rowdata += @(,("Properties",($Script:htmlsb),"",$htmlwhite))
+				$rowdata += @(,("     Desktop size",($Script:htmlsb),$DesktopSize,$htmlwhite))
+				$rowdata += @(,("     Multi-Monitor",($Script:htmlsb),$AllowMultiMonitor,$htmlwhite))
 
 				$msg = "Desktop"
-				$columnWidths = @("200","300")
-				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-				WriteHTMLLine 0 0 ""
-				
-				$rowdata = @()
-				$columnHeaders = @("Desktop size",($Script:htmlsb),$DesktopSize,$htmlwhite)
-				$rowdata += @(,("Multi-Monitor",($Script:htmlsb),$AllowMultiMonitor,$htmlwhite))
-
-				$msg = "Properties"
-				$columnWidths = @("300","300")
+				$columnWidths = @("250","300")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 
@@ -46499,6 +46492,7 @@ Function OutputPublishingSettings
 				WriteHTMLLine 0 0 ""
 
 				OutputPubItemShortcuts $PubItem "HTML" `
+				$DefaultInheritShortcutSettings `
 				$DefaultCreateShortcutOnDesktop `
 				$DefaultCreateShortcutInStartFolder `
 				$DefaultStartPath `
@@ -46850,6 +46844,7 @@ Function OutputPublishingSettings
 				WriteWordLine 0 0 ""
 
 				OutputPubItemShortcuts $PubItem "MSWordPDF" `
+				$DefaultInheritShortcutSettings `
 				$DefaultCreateShortcutOnDesktop `
 				$DefaultCreateShortcutInStartFolder `
 				$DefaultStartPath `
@@ -47066,6 +47061,7 @@ Function OutputPublishingSettings
 				Line 0 ""
 
 				OutputPubItemShortcuts $PubItem "Text" `
+				$DefaultInheritShortcutSettings `
 				$DefaultCreateShortcutOnDesktop `
 				$DefaultCreateShortcutInStartFolder `
 				$DefaultStartPath `
@@ -47199,11 +47195,11 @@ Function OutputPublishingSettings
 							
 							If($cnt -eq 0)
 							{
-								$columnHeaders = @("$PublishedFrom",($Script:htmlsb),$ItemName,$htmlwhite)
+								$columnHeaders = @("$PublishedFrom",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite)
 							}
 							Else
 							{
-								$rowdata += @(,("",($Script:htmlsb),$ItemName,$htmlwhite))
+								$rowdata += @(,("",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite))
 							}
 						}
 					}
@@ -47217,11 +47213,11 @@ Function OutputPublishingSettings
 							
 							If($cnt -eq 0)
 							{
-								$columnHeaders = @("$PublishedFrom",($Script:htmlsb),$ItemName,$htmlwhite)
+								$columnHeaders = @("$PublishedFrom",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite)
 							}
 							Else
 							{
-								$rowdata += @(,("",($Script:htmlsb),$ItemName,$htmlwhite))
+								$rowdata += @(,("",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite))
 							}
 						}
 					}
@@ -47313,6 +47309,7 @@ Function OutputPublishingSettings
 				WriteHTMLLine 0 0 ""
 
 				OutputPubItemShortcuts $PubItem "HTML" `
+				$DefaultInheritShortcutSettings `
 				$DefaultCreateShortcutOnDesktop `
 				$DefaultCreateShortcutInStartFolder `
 				$DefaultStartPath `
@@ -47667,6 +47664,7 @@ Function OutputPublishingSettings
 				WriteWordLine 0 0 ""
 
 				OutputPubItemShortcuts $PubItem "MSWordPDF" `
+				$DefaultInheritShortcutSettings `
 				$DefaultCreateShortcutOnDesktop `
 				$DefaultCreateShortcutInStartFolder `
 				$DefaultStartPath `
@@ -47854,6 +47852,7 @@ Function OutputPublishingSettings
 				Line 0 ""
 
 				OutputPubItemShortcuts $PubItem "Text" `
+				$DefaultInheritShortcutSettings `
 				$DefaultCreateShortcutOnDesktop `
 				$DefaultCreateShortcutInStartFolder `
 				$DefaultStartPath `
@@ -47984,11 +47983,11 @@ Function OutputPublishingSettings
 							
 							If($cnt -eq 0)
 							{
-								$columnHeaders = @("$PublishedFrom",($Script:htmlsb),$ItemName,$htmlwhite)
+								$columnHeaders = @("$PublishedFrom",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite)
 							}
 							Else
 							{
-								$rowdata += @(,("",($Script:htmlsb),$ItemName,$htmlwhite))
+								$rowdata += @(,("",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite))
 							}
 						}
 					}
@@ -48002,11 +48001,11 @@ Function OutputPublishingSettings
 							
 							If($cnt -eq 0)
 							{
-								$columnHeaders = @("$PublishedFrom",($Script:htmlsb),$ItemName,$htmlwhite)
+								$columnHeaders = @("$PublishedFrom",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite)
 							}
 							Else
 							{
-								$rowdata += @(,("",($Script:htmlsb),$ItemName,$htmlwhite))
+								$rowdata += @(,("",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite))
 							}
 						}
 					}
@@ -48094,6 +48093,7 @@ Function OutputPublishingSettings
 				WriteHTMLLine 0 0 ""
 
 				OutputPubItemShortcuts $PubItem "HTML" `
+				$DefaultInheritShortcutSettings `
 				$DefaultCreateShortcutOnDesktop `
 				$DefaultCreateShortcutInStartFolder `
 				$DefaultStartPath `
@@ -48120,11 +48120,11 @@ Function OutputPublishingSettings
 			{
 				Switch ($PubItem.PublishFrom)
 				{
-					"All"		{$PublishedFrom = "All Servers in Site"; Break}
-					"HostPools"	{$PublishedFrom = "Host Pools:"; Break}
-					"Group"		{$PublishedFrom = "Server Groups:"; Break}
+					"All"		{$PublishedFrom = "All Hosts in Site"; Break}
+					"HostPools"	{$PublishedFrom = "RD Session Host Pools:"; Break}
+					"Group"		{$PublishedFrom = "RD Session Host Pools:"; Break}
 					"Host"		{$PublishedFrom = "Individual Hosts:"; Break}
-					"Server"	{$PublishedFrom = "Individual Servers:"; Break}
+					"Server"	{$PublishedFrom = "Individual Hosts:"; Break}
 					Default		{$PublishedFrom = "Unable to determine Published From: $($PubItem.PublishFrom)"; Break}
 				}
 			}
@@ -48385,6 +48385,7 @@ Function OutputPublishingSettings
 				OutputPubItemFilters $PubItem "MSWordPDF"
 				
 				OutputPubItemShortcuts $PubItem "MSWordPDF" `
+				$DefaultInheritShortcutSettings `
 				$DefaultCreateShortcutOnDesktop `
 				$DefaultCreateShortcutInStartFolder `
 				$DefaultStartPath `
@@ -48746,6 +48747,7 @@ Function OutputPublishingSettings
 				OutputPubItemFilters $PubItem "Text"
 				
 				OutputPubItemShortcuts $PubItem "Text" `
+				$DefaultInheritShortcutSettings `
 				$DefaultCreateShortcutOnDesktop `
 				$DefaultCreateShortcutInStartFolder `
 				$DefaultStartPath `
@@ -48854,11 +48856,11 @@ Function OutputPublishingSettings
 							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
 							If($cnt -eq 0)
 							{
-								$rowdata += @(,("Published from",($Script:htmlsb),$ItemName,$htmlwhite))
+								$rowdata += @(,("Published from",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite))
 							}
 							Else
 							{
-								$rowdata += @(,("",($Script:htmlsb),$ItemName,$htmlwhite))
+								$rowdata += @(,("",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite))
 							}
 						}
 					}
@@ -48871,11 +48873,11 @@ Function OutputPublishingSettings
 							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
 							If($cnt -eq 0)
 							{
-								$rowdata += @(,("Published from",($Script:htmlsb),$ItemName,$htmlwhite))
+								$rowdata += @(,("Published from",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite))
 							}
 							Else
 							{
-								$rowdata += @(,("",($Script:htmlsb),$ItemName,$htmlwhite))
+								$rowdata += @(,("",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite))
 							}
 						}
 					}
@@ -48957,11 +48959,11 @@ Function OutputPublishingSettings
 							
 							If($cnt -eq 0)
 							{
-								$columnHeaders = @("$PublishedFrom",($Script:htmlsb),$ItemName,$htmlwhite)
+								$columnHeaders = @("$PublishedFrom",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite)
 							}
 							Else
 							{
-								$rowdata += @(,("",($Script:htmlsb),$ItemName,$htmlwhite))
+								$rowdata += @(,("",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite))
 							}
 						}
 					}
@@ -48975,11 +48977,11 @@ Function OutputPublishingSettings
 							
 							If($cnt -eq 0)
 							{
-								$columnHeaders = @("$PublishedFrom",($Script:htmlsb),$ItemName,$htmlwhite)
+								$columnHeaders = @("$PublishedFrom",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite)
 							}
 							Else
 							{
-								$rowdata += @(,("",($Script:htmlsb),$ItemName,$htmlwhite))
+								$rowdata += @(,("",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite))
 							}
 						}
 					}
@@ -49018,6 +49020,7 @@ Function OutputPublishingSettings
 				OutputPubItemFilters $PubItem "HTML"
 				
 				OutputPubItemShortcuts $PubItem "HTML" `
+				$DefaultInheritShortcutSettings `
 				$DefaultCreateShortcutOnDesktop `
 				$DefaultCreateShortcutInStartFolder `
 				$DefaultStartPath `
@@ -49165,11 +49168,11 @@ Function OutputPublishingSettings
 			{
 				Switch ($PubItem.PublishFrom)
 				{
-					"All"		{$PublishedFrom = "All Servers in Site"; Break}
-					"HostPools"	{$PublishedFrom = "Host Pools:"; Break}
-					"Group"		{$PublishedFrom = "Server Groups:"; Break}
+					"All"		{$PublishedFrom = "All Hosts in Site"; Break}
+					"HostPools"	{$PublishedFrom = "RD Session Host Pools:"; Break}
+					"Group"		{$PublishedFrom = "RD Session Host Pools:"; Break}
 					"Host"		{$PublishedFrom = "Individual Hosts:"; Break}
-					"Server"	{$PublishedFrom = "Individual Servers:"; Break}
+					"Server"	{$PublishedFrom = "Individual Hosts:"; Break}
 					Default		{$PublishedFrom = "Unable to determine Published From: $($PubItem.PublishFrom)"; Break}
 				}
 			}
@@ -49440,6 +49443,7 @@ Function OutputPublishingSettings
 				OutputPubItemFilters $PubItem "MSWordPDF"
 				
 				OutputPubItemShortcuts $PubItem "MSWordPDF" `
+				$DefaultInheritShortcutSettings `
 				$DefaultCreateShortcutOnDesktop `
 				$DefaultCreateShortcutInStartFolder `
 				$DefaultStartPath `
@@ -49585,6 +49589,7 @@ Function OutputPublishingSettings
 				OutputPubItemFilters $PubItem "Text"
 				
 				OutputPubItemShortcuts $PubItem "Text" `
+				$DefaultInheritShortcutSettings `
 				$DefaultCreateShortcutOnDesktop `
 				$DefaultCreateShortcutInStartFolder `
 				$DefaultStartPath `
@@ -49616,11 +49621,11 @@ Function OutputPublishingSettings
 							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
 							If($cnt -eq 0)
 							{
-								$rowdata += @(,("Published from",($Script:htmlsb),$ItemName,$htmlwhite))
+								$rowdata += @(,("Published from",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite))
 							}
 							Else
 							{
-								$rowdata += @(,("",($Script:htmlsb),$ItemName,$htmlwhite))
+								$rowdata += @(,("",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite))
 							}
 						}
 					}
@@ -49633,11 +49638,11 @@ Function OutputPublishingSettings
 							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
 							If($cnt -eq 0)
 							{
-								$rowdata += @(,("Published from",($Script:htmlsb),$ItemName,$htmlwhite))
+								$rowdata += @(,("Published from",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite))
 							}
 							Else
 							{
-								$rowdata += @(,("",($Script:htmlsb),$ItemName,$htmlwhite))
+								$rowdata += @(,("",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite))
 							}
 						}
 					}
@@ -49719,11 +49724,11 @@ Function OutputPublishingSettings
 							
 							If($cnt -eq 0)
 							{
-								$columnHeaders = @("$PublishedFrom",($Script:htmlsb),$ItemName,$htmlwhite)
+								$columnHeaders = @("$PublishedFrom",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite)
 							}
 							Else
 							{
-								$rowdata += @(,("",($Script:htmlsb),$ItemName,$htmlwhite))
+								$rowdata += @(,("",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite))
 							}
 						}
 					}
@@ -49737,11 +49742,11 @@ Function OutputPublishingSettings
 							
 							If($cnt -eq 0)
 							{
-								$columnHeaders = @("$PublishedFrom",($Script:htmlsb),$ItemName,$htmlwhite)
+								$columnHeaders = @("$PublishedFrom",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite)
 							}
 							Else
 							{
-								$rowdata += @(,("",($Script:htmlsb),$ItemName,$htmlwhite))
+								$rowdata += @(,("",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite))
 							}
 						}
 					}
@@ -49789,6 +49794,7 @@ Function OutputPublishingSettings
 				OutputPubItemFilters $PubItem "HTML"
 				
 				OutputPubItemShortcuts $PubItem "HTML" `
+				$DefaultInheritShortcutSettings `
 				$DefaultCreateShortcutOnDesktop `
 				$DefaultCreateShortcutInStartFolder `
 				$DefaultStartPath `
@@ -50188,6 +50194,7 @@ Function OutputPublishingSettings
 				OutputPubItemFilters $PubItem "MSWordPDF"
 				
 				OutputPubItemShortcuts $PubItem "MSWordPDF" `
+				$DefaultInheritShortcutSettings `
 				$DefaultCreateShortcutOnDesktop `
 				$DefaultCreateShortcutInStartFolder `
 				$DefaultStartPath `
@@ -50423,6 +50430,7 @@ Function OutputPublishingSettings
 				OutputPubItemFilters $PubItem "Text"
 				
 				OutputPubItemShortcuts $PubItem "Text" `
+				$DefaultInheritShortcutSettings `
 				$DefaultCreateShortcutOnDesktop `
 				$DefaultCreateShortcutInStartFolder `
 				$DefaultStartPath `
@@ -50674,6 +50682,7 @@ Function OutputPublishingSettings
 				OutputPubItemFilters $PubItem "HTML"
 				
 				OutputPubItemShortcuts $PubItem "HTML" `
+				$DefaultInheritShortcutSettings `
 				$DefaultCreateShortcutOnDesktop `
 				$DefaultCreateShortcutInStartFolder `
 				$DefaultStartPath `
@@ -51756,14 +51765,16 @@ Function OutputPubItemFilters
 {
 	Param([object] $PubItem, [string] $OutputType)
 	
+	$RuleName = $PubItem.Filter.Rules.Name
+	
 	If($OutputType -eq "MSWordPDF")
 	{
 		WriteWordLine 3 0 "Filtering"
-		WriteWordLine 4 0 "Apply filter to:"
+		$ScriptInformation = New-Object System.Collections.ArrayList
+
 		ForEach($FilterItem in $PubItem.filter.rules)
 		{
 			WriteWordLine 5 0 "$($FilterItem.Name) Properties"
-			$ScriptInformation = New-Object System.Collections.ArrayList
 			$ScriptInformation.Add(@{Data = "Enable rule"; Value = $FilterItem.Enabled.ToString(); }) > $Null
 			$ScriptInformation.Add(@{Data = "General"; Value = ""; }) > $Null
 			$ScriptInformation.Add(@{Data = "     Name"; Value = $FilterItem.Name; }) > $Null
@@ -51777,450 +51788,260 @@ Function OutputPubItemFilters
 				$ScriptInformation.Add(@{Data = "     Deny if"; Value = ""; }) > $Null
 			}
 
-			$Table = AddWordTable -Hashtable $ScriptInformation `
-			-Columns Data,Value `
-			-List `
-			-Format $wdTableGrid `
-			-AutoFit $wdAutoFitFixed;
+			$ScriptInformation.Add(@{Data = "          Criteria"; Value = ""; }) > $Null
 
-			SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
-			SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
-			$Table.Columns.Item(1).Width = 125;
-			$Table.Columns.Item(2).Width = 175;
-
-			$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-			FindWordDocumentEnd
-			$Table = $Null
-			
-			WriteWordLine 4 0 "Criteria"
 			If($FilterItem.Criteria.SecurityPrincipals.Enabled)
 			{
-				WriteWordLine 5 0 "Apply policy if User or group"
-				If($FilterItem.criteria.SecurityPrincipals.MatchingMode -eq "IsOneOfTheFollowing")
-				{
-					WriteWordLine 0 0 "is one of the following"
-				}
-				Else
-				{
-					WriteWordLine 0 0 "is not one of the following"
-				}
-				
-				[System.Collections.Hashtable[]] $NameWordTable = @();
-				
-				ForEach($Item in $FilterItem.criteria.SecurityPrincipals.Members)
-				{
-					$NameTableRowHash = @{
-					Name = $Item.Account;
-					Type = $Item.Type;
-					SID  = $Item.Sid;
-					}
-					$NameWordTable += $NameTableRowHash;
-				}
+				$Enabled = "(Enabled)"
+			}
+			Else
+			{
+				$Enabled = "(Disabled)"
+			}
 
-				If($NameWordTable.Count -gt 0)
-				{
-					$Table = AddWordTable -Hashtable $NameWordTable `
-					-Columns Name,Type,SID `
-					-Headers "Name","Type","SID"`
-					-Format $wdTableGrid `
-					-AutoFit $wdAutoFitFixed;
-
-					SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
-					SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
-					$Table.Columns.Item(1).Width = 200;
-					$Table.Columns.Item(2).Width = 50;
-					$Table.Columns.Item(3).Width = 250;
-
-					$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-					FindWordDocumentEnd
-					$Table = $Null
-					WriteWordLine 0 0 ""
-				}
+			If($FilterItem.criteria.SecurityPrincipals.MatchingMode -eq "IsOneOfTheFollowing")
+			{
+				$ScriptInformation.Add(@{Data = "               Apply policy if User or group $Enabled"; Value = "is one of the following"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{Data = "               Apply policy if User or group $Enabled"; Value = "is not one of the following"; }) > $Null
+			}
+			
+			ForEach($Item in $FilterItem.criteria.SecurityPrincipals.Members)
+			{
+				$ScriptInformation.Add(@{Data = ""; Value = "     Name: $($Item.Account)"; }) > $Null
+				$ScriptInformation.Add(@{Data = ""; Value = "     Type: $($Item.Type)"; }) > $Null
+				$ScriptInformation.Add(@{Data = ""; Value = "     SID: $($Item.Sid)"; }) > $Null
+				$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
 			}
 
 			If($FilterItem.Criteria.Gateways.Enabled)
 			{
-				WriteWordLine 5 0 "Apply policy if Gateway"
-				If($FilterItem.criteria.Gateways.MatchingMode -eq "IsOneOfTheFollowing")
-				{
-					WriteWordLine 0 0 "is one of the following"
-				}
-				Else
-				{
-					WriteWordLine 0 0 "is not one of the following"
-				}
-				
-				[System.Collections.Hashtable[]] $NameWordTable = @();
-				
-				ForEach($Item in $FilterItem.criteria.Gateways.Members)
-				{
-					$NameTableRowHash = @{
-					GatewayIP = $Item.GatewayIP;
-					}
-					$NameWordTable += $NameTableRowHash;
-				}
-
-				If($NameWordTable.Count -gt 0)
-				{
-					$Table = AddWordTable -Hashtable $NameWordTable `
-					-Columns GatewayIP `
-					-Headers "Secure Gateways" `
-					-Format $wdTableGrid `
-					-AutoFit $wdAutoFitFixed;
-
-					SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
-					SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
-					$Table.Columns.Item(1).Width = 200;
-
-					$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-					FindWordDocumentEnd
-					$Table = $Null
-					WriteWordLine 0 0 ""
-				}
+				$Enabled = "(Enabled)"
 			}
+			Else
+			{
+				$Enabled = "(Disabled)"
+			}
+			If($FilterItem.criteria.Gateways.MatchingMode -eq "IsOneOfTheFollowing")
+			{
+				$ScriptInformation.Add(@{Data = "               Apply policy if Gateway $Enabled"; Value = "is one of the following"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{Data = "               Apply policy if Gateway $Enabled"; Value = "is not one of the following"; }) > $Null
+			}
+			
+			ForEach($Item in $FilterItem.criteria.Gateways.Members)
+			{
+				$ScriptInformation.Add(@{Data = ""; Value = "     $($Item.GatewayIP)"; }) > $Null
+			}
+			$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
 
 			If($FilterItem.Criteria.Themes.Enabled)
 			{
-				WriteWordLine 5 0 "Apply policy if Theme"
+				$Enabled = "(Enabled)"
+			}
+			Else
+			{
+				$Enabled = "(Disabled)"
+			}
 
-				If($FilterItem.criteria.Themes.MatchingMode -eq "IsOneOfTheFollowing")
+			If($FilterItem.criteria.Themes.MatchingMode -eq "IsOneOfTheFollowing")
+			{
+				$ScriptInformation.Add(@{Data = "               Apply policy if Theme $Enabled"; Value = "is one of the following"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{Data = "               Apply policy if Theme $Enabled"; Value = "is not one of the following"; }) > $Null
+			}
+			
+			ForEach($item in $FilterItem.Criteria.Themes)
+			{
+				If($Item.Ids.Count -ne 0)
 				{
-					WriteWordLine 0 0 "is one of the following"
+					ForEach($ThemeID in $Item.Ids)
+					{
+						$xTheme = Get-RASTheme -Id $ThemeID -EA 0 4> $Null
+			
+						If(!($?) -or $Null -eq $xTheme)
+						{
+							$FilterTheme = "not used"
+						}
+						Else
+						{
+							$FilterTheme = $xTheme.Name
+						}
+
+						$ScriptInformation.Add(@{Data = ""; Value = "     $($FilterTheme)"; }) > $Null
+					}
 				}
 				Else
 				{
-					WriteWordLine 0 0 "is not one of the following"
-				}
-				
-				[System.Collections.Hashtable[]] $NameWordTable = @();
-				
-				ForEach($item in $FilterItem.Criteria.Themes)
-				{
-					If($Item.Ids.Count -ne 0)
-					{
-						ForEach($ThemeID in $Item.Ids)
-						{
-							$xTheme = Get-RASTheme -Id $ThemeID -EA 0 4> $Null
-				
-							If(!($?) -or $Null -eq $xTheme)
-							{
-								$FilterTheme = "not used"
-							}
-							Else
-							{
-								$FilterTheme = $xTheme.Name
-							}
-
-							$NameTableRowHash = @{
-							Theme = "$FilterTheme";
-							}
-							$NameWordTable += $NameTableRowHash;
-						}
-					}
-					Else
-					{
-						$NameTableRowHash = @{
-						Theme = "not used";
-						}
-						$NameWordTable += $NameTableRowHash;
-					}
-
-					If($NameWordTable.Count -gt 0)
-					{
-						$Table = AddWordTable -Hashtable $NameWordTable `
-						-Columns Theme `
-						-Headers "Themes" `
-						-Format $wdTableGrid `
-						-AutoFit $wdAutoFitFixed;
-
-						SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
-						SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
-						$Table.Columns.Item(1).Width = 200;
-
-						$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-						FindWordDocumentEnd
-						$Table = $Null
-						WriteWordLine 0 0 ""
-					}
+					$ScriptInformation.Add(@{Data = ""; Value = "     not used"; }) > $Null
 				}
 			}
+			$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
 
 			If($FilterItem.Criteria.Devices.Enabled)
 			{
-				WriteWordLine 5 0 "Apply policy if Device"
-				If($FilterItem.criteria.Devices.MatchingMode -eq "IsOneOfTheFollowing")
-				{
-					WriteWordLine 0 0 "is one of the following"
-				}
-				Else
-				{
-					WriteWordLine 0 0 "is not one of the following"
-				}
-				
-				[System.Collections.Hashtable[]] $NameWordTable = @();
-				
-				ForEach($Item in $FilterItem.criteria.Devices.Members)
-				{
-					$NameTableRowHash = @{
-					Device = $Item.Client;
-					}
-					$NameWordTable += $NameTableRowHash;
-				}
-
-				If($NameWordTable.Count -gt 0)
-				{
-					$Table = AddWordTable -Hashtable $NameWordTable `
-					-Columns Device `
-					-Headers "Client" `
-					-Format $wdTableGrid `
-					-AutoFit $wdAutoFitFixed;
-
-					SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
-					SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
-					$Table.Columns.Item(1).Width = 200;
-
-					$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-					FindWordDocumentEnd
-					$Table = $Null
-					WriteWordLine 0 0 ""
-				}
+				$Enabled = "(Enabled)"
 			}
+			Else
+			{
+				$Enabled = "(Disabled)"
+			}
+
+			If($FilterItem.criteria.Devices.MatchingMode -eq "IsOneOfTheFollowing")
+			{
+				$ScriptInformation.Add(@{Data = "               Apply policy if Device $Enabled"; Value = "is one of the following"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{Data = "               Apply policy if Device $Enabled"; Value = "is not one of the following"; }) > $Null
+			}
+			
+			ForEach($Item in $FilterItem.criteria.Devices.Members)
+			{
+				$ScriptInformation.Add(@{Data = ""; Value = "     $($Item.Client)"; }) > $Null
+			}
+			$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
 
 			If($FilterItem.Criteria.OSs.Enabled)
 			{
-				WriteWordLine 5 0 "Apply policy if Operating system"
-				If($FilterItem.criteria.OSs.MatchingMode -eq "IsOneOfTheFollowing")
-				{
-					WriteWordLine 0 0 "is one of the following"
-				}
-				Else
-				{
-					WriteWordLine 0 0 "is not one of the following"
-				}
-				
-				[System.Collections.Hashtable[]] $NameWordTable = @();
-				
-				If($FilterItem.criteria.OSs.AllowedOSes.Windows)
-				{
-					$NameTableRowHash = @{
-					OS = "Windows";
-					}
-					$NameWordTable += $NameTableRowHash;
-				}
-
-				If($FilterItem.criteria.OSs.AllowedOSes.WebClient)
-				{
-					$NameTableRowHash = @{
-					OS = 'User Portal (Web Client)';
-					}
-					$NameWordTable += $NameTableRowHash;
-				}
-
-				If($FilterItem.criteria.OSs.AllowedOSes.Mac)
-				{
-					$NameTableRowHash = @{
-					OS = "macOS";
-					}
-					$NameWordTable += $NameTableRowHash;
-				}
-
-				If($FilterItem.criteria.OSs.AllowedOSes.Linux)
-				{
-					$NameTableRowHash = @{
-					OS = "Linux";
-					}
-					$NameWordTable += $NameTableRowHash;
-				}
-
-				If($FilterItem.criteria.OSs.AllowedOSes.iOS)
-				{
-					$NameTableRowHash = @{
-					OS = 'iOS/iPadOS';
-					}
-					$NameWordTable += $NameTableRowHash;
-				}
-
-				If($FilterItem.criteria.OSs.AllowedOSes.Android)
-				{
-					$NameTableRowHash = @{
-					OS = "Android";
-					}
-					$NameWordTable += $NameTableRowHash;
-				}
-
-				If($FilterItem.criteria.OSs.AllowedOSes.Chrome)
-				{
-					$NameTableRowHash = @{
-					OS = "Chrome OS";
-					}
-					$NameWordTable += $NameTableRowHash;
-				}
-
-				If($NameWordTable.Count -gt 0)
-				{
-					$Table = AddWordTable -Hashtable $NameWordTable `
-					-Columns OS `
-					-Headers "Operating system" `
-					-Format $wdTableGrid `
-					-AutoFit $wdAutoFitFixed;
-
-					SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
-					SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
-					$Table.Columns.Item(1).Width = 200;
-
-					$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-					FindWordDocumentEnd
-					$Table = $Null
-					WriteWordLine 0 0 ""
-				}
+				$Enabled = "(Enabled)"
 			}
+			Else
+			{
+				$Enabled = "(Disabled)"
+			}
+
+			If($FilterItem.criteria.OSs.MatchingMode -eq "IsOneOfTheFollowing")
+			{
+				$ScriptInformation.Add(@{Data = "               Apply policy if Operating system $Enabled"; Value = "is one of the following"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{Data = "               Apply policy if Operating system $Enabled"; Value = "is not one of the following"; }) > $Null
+			}
+			
+			If($FilterItem.criteria.OSs.AllowedOSes.Windows)
+			{
+				$ScriptInformation.Add(@{Data = ""; Value = "     Windows"; }) > $Null
+			}
+
+			If($FilterItem.criteria.OSs.AllowedOSes.WebClient)
+			{
+				$ScriptInformation.Add(@{Data = ""; Value = "     User Portal (Web Client)"; }) > $Null
+			}
+
+			If($FilterItem.criteria.OSs.AllowedOSes.Mac)
+			{
+				$ScriptInformation.Add(@{Data = ""; Value = "     macOS"; }) > $Null
+			}
+
+			If($FilterItem.criteria.OSs.AllowedOSes.Linux)
+			{
+				$ScriptInformation.Add(@{Data = ""; Value = "     Linux"; }) > $Null
+			}
+
+			If($FilterItem.criteria.OSs.AllowedOSes.iOS)
+			{
+				$ScriptInformation.Add(@{Data = ""; Value = "     iOS/iPadOS"; }) > $Null
+			}
+
+			If($FilterItem.criteria.OSs.AllowedOSes.Android)
+			{
+				$ScriptInformation.Add(@{Data = ""; Value = "     Android"; }) > $Null
+			}
+
+			If($FilterItem.criteria.OSs.AllowedOSes.Chrome)
+			{
+				$ScriptInformation.Add(@{Data = ""; Value = "     Chrome OS"; }) > $Null
+			}
+			$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
 
 			If($FilterItem.Criteria.IPs.Enabled)
 			{
-				WriteWordLine 5 0 "Apply policy if IP"
-				If($FilterItem.criteria.IPs.MatchingMode -eq "IsOneOfTheFollowing")
+				$Enabled = "(Enabled)"
+			}
+			Else
+			{
+				$Enabled = "(Disabled)"
+			}
+
+			If($FilterItem.criteria.IPs.MatchingMode -eq "IsOneOfTheFollowing")
+			{
+				$ScriptInformation.Add(@{Data = "               Apply policy if IP $Enabled"; Value = "is one of the following"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{Data = "               Apply policy if IP $Enabled"; Value = "is not one of the following"; }) > $Null
+			}
+
+			ForEach($Item in $FilterItem.criteria.IPs.AllowedIPs.IPv4s)
+			{
+				If($Item.To -eq "")
 				{
-					WriteWordLine 0 0 "is one of the following"
+					$ScriptInformation.Add(@{Data = ""; Value = "     IPv4 Address: $($Item.From)"; }) > $Null
 				}
 				Else
 				{
-					WriteWordLine 0 0 "is not one of the following"
+					$ScriptInformation.Add(@{Data = ""; Value = "     IPv4 Address From: $($Item.From)"; }) > $Null
+					$ScriptInformation.Add(@{Data = ""; Value = "     IPv4 Address To: $($Item.To)"; }) > $Null
 				}
-				
-				[System.Collections.Hashtable[]] $NameWordTable = @();
-				
-				ForEach($Item in $FilterItem.criteria.IPs.AllowedIPs.IPv4s)
+				$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+			}
+
+			ForEach($Item in $FilterItem.criteria.IPs.AllowedIPs.IPv6s)
+			{
+				If($Item.To -eq "")
 				{
-					$NameTableRowHash = @{
-					From = $Item.From;
-					To   = $Item.To;
-					}
-					$NameWordTable += $NameTableRowHash;
+					$ScriptInformation.Add(@{Data = ""; Value = "     IPv6 Address: $($Item.From)"; }) > $Null
 				}
-
-				If($NameWordTable.Count -gt 0)
+				Else
 				{
-					$Table = AddWordTable -Hashtable $NameWordTable `
-					-Columns From, To `
-					-Headers "IPv4 Address From", "IPv4 Address To" `
-					-Format $wdTableGrid `
-					-AutoFit $wdAutoFitFixed;
-
-					SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
-					SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
-					$Table.Columns.Item(1).Width = 200;
-					$Table.Columns.Item(2).Width = 200;
-
-					$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-					FindWordDocumentEnd
-					$Table = $Null
-					WriteWordLine 0 0 ""
+					$ScriptInformation.Add(@{Data = ""; Value = "     IPv6 Address From: $($Item.From)"; }) > $Null
+					$ScriptInformation.Add(@{Data = ""; Value = "     IPv6 Address To: $($Item.To)"; }) > $Null
 				}
-
-				[System.Collections.Hashtable[]] $NameWordTable = @();
-				
-				ForEach($Item in $FilterItem.criteria.IPs.AllowedIPs.IPv6s)
-				{
-					$NameTableRowHash = @{
-					From = $Item.From;
-					To   = $Item.To;
-					}
-					$NameWordTable += $NameTableRowHash;
-				}
-
-				If($NameWordTable.Count -gt 0)
-				{
-					$Table = AddWordTable -Hashtable $NameWordTable `
-					-Columns From, To `
-					-Headers "IPv6 Address From", "IPv6 Address To" `
-					-Format $wdTableGrid `
-					-AutoFit $wdAutoFitFixed;
-
-					SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
-					SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
-					$Table.Columns.Item(1).Width = 200;
-					$Table.Columns.Item(2).Width = 200;
-
-					$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-					FindWordDocumentEnd
-					$Table = $Null
-					WriteWordLine 0 0 ""
-				}
+				$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
 			}
 
 			If($FilterItem.Criteria.HardwareIDs.Enabled)
 			{
-				WriteWordLine 5 0 "Apply policy if Hardware ID"
-				If($FilterItem.criteria.HardwareIDs.MatchingMode -eq "IsOneOfTheFollowing")
-				{
-					WriteWordLine 0 0 "is one of the following"
-				}
-				Else
-				{
-					WriteWordLine 0 0 "is not one of the following"
-				}
-				
-				[System.Collections.Hashtable[]] $NameWordTable = @();
-				
-				ForEach($Item in $FilterItem.criteria.HardwareIDs.Members)
-				{
-					$NameTableRowHash = @{
-					HardwareID = $Item.HardwareID;
-					}
-					$NameWordTable += $NameTableRowHash;
-				}
-
-				If($NameWordTable.Count -gt 0)
-				{
-					$Table = AddWordTable -Hashtable $NameWordTable `
-					-Columns HardwareID `
-					-Headers "Device Hardware ID"`
-					-Format $wdTableGrid `
-					-AutoFit $wdAutoFitFixed;
-
-					SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
-					SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
-					$Table.Columns.Item(1).Width = 200;
-
-					$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-					FindWordDocumentEnd
-					$Table = $Null
-					WriteWordLine 0 0 ""
-				}
+				$Enabled = "(Enabled)"
 			}
+			Else
+			{
+				$Enabled = "(Disabled)"
+			}
+
+			If($FilterItem.criteria.HardwareIDs.MatchingMode -eq "IsOneOfTheFollowing")
+			{
+				$ScriptInformation.Add(@{Data = "               Apply policy if Hardware ID $Enabled"; Value = "is one of the following"; }) > $Null
+			}
+			Else
+			{
+				$ScriptInformation.Add(@{Data = "               Apply policy if Hardware ID $Enabled"; Value = "is not one of the following"; }) > $Null
+			}
+
+			ForEach($Item in $FilterItem.criteria.HardwareIDs.Members)
+			{
+				$ScriptInformation.Add(@{Data = ""; Value = "     $($Item.HardwareID)"; }) > $Null
+			}
+			$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
 		}
 		
-		$ScriptInformation = New-Object System.Collections.ArrayList
-		$ScriptInformation.Add(@{Data = "Enabled"; Value = ""; }) > $Null
-		$ScriptInformation.Add(@{Data = "Default Rule *"; Value = ""; }) > $Null
 
 		If($Pubitem.Filter.Default -eq "Allow")
 		{
-			$ScriptInformation.Add(@{Data = "Summary"; Value = "Allow if no other rule matches"; }) > $Null
+			$ScriptInformation.Add(@{Data = "Default Rule * (Enabled)"; Value = "Allow if no other rule matches"; }) > $Null
 		}
 		Else
 		{
-			$ScriptInformation.Add(@{Data = "Summary"; Value = "Deny if no other rule matches"; }) > $Null
+			$ScriptInformation.Add(@{Data = "Default Rule * (Enabled)"; Value = "Deny if no other rule matches"; }) > $Null
 		}
-		$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
 
 		$Table = AddWordTable -Hashtable $ScriptInformation `
 		-Columns Data,Value `
@@ -52228,11 +52049,11 @@ Function OutputPubItemFilters
 		-Format $wdTableGrid `
 		-AutoFit $wdAutoFitFixed;
 
-		SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+		SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 		SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-		$Table.Columns.Item(1).Width = 125;
-		$Table.Columns.Item(2).Width = 175;
+		$Table.Columns.Item(1).Width = 200;
+		$Table.Columns.Item(2).Width = 300;
 
 		$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -52242,278 +52063,316 @@ Function OutputPubItemFilters
 	If($OutputType -eq "Text")
 	{
 		Line 2 "Filtering"
-		Line 3 "Apply filter to"
+		Line 0 ""
 		ForEach($FilterItem in $PubItem.filter.rules)
 		{
-			Line 4 "$($FilterItem.Name) Properties"
-			Line 0 ""
+			Line 3 "$($FilterItem.Name) Properties"
 			Line 3 "Enable rule: " $FilterItem.Enabled.ToString()
 			Line 3 "General"
-			Line 4 "Name: " $FilterItem.Name
-			Line 4 "Description: " $FilterItem.Description
+			Line 4 "Name`t`t: " $FilterItem.Name
+			Line 4 "Description`t: " $FilterItem.Description
 			If($FilterItem.Criteria.Access.ToString() -eq "AllowCriteriaWhen")
 			{
-				Line 5 "Allow if"
+				Line 4 "Allow if"
 			}
 			Else
 			{
-				Line 5 "Deny if"
+				Line 4 "Deny if"
 			}
 			Line 0 ""
 
 			Line 3 "Criteria"
+
 			If($FilterItem.Criteria.SecurityPrincipals.Enabled)
 			{
-				Line 3 "Apply policy if User or group"
-				Line 3 "Enable criteria: " $FilterItem.criteria.SecurityPrincipals.Enabled.ToString()
-				If($FilterItem.criteria.SecurityPrincipals.MatchingMode -eq "IsOneOfTheFollowing")
-				{
-					Line 3 "is one of the following"
-				}
-				Else
-				{
-					Line 3 "is not one of the following"
-				}
-				Line 0 ""
-				Line 4 "Name                                      Type      SID                                               "
-				Line 4 "======================================================================================================"
-				#       1234567890123456789012345678901234567890SS12345678SS12345678901234567890123456789012345678901234567890
-				
-				ForEach($Item in $FilterItem.criteria.SecurityPrincipals.Members)
-				{
-					Line 4 ( "{0,-40}  {1,-8}  {2,-40}" -f `
-					$Item.Account, $Item.Type, $Item.Sid)
-				}
-				Line 0 ""
+				$Enabled = "(Enabled)"
 			}
+			Else
+			{
+				$Enabled = "(Disabled)"
+			}
+			
+			If($FilterItem.criteria.SecurityPrincipals.MatchingMode -eq "IsOneOfTheFollowing")
+			{
+				Line 4 "Apply policy if User or group $Enabled is one of the following"
+			}
+			Else
+			{
+				Line 4 "Apply policy if User or group $Enabled is not one of the following"
+			}
+			Line 0 ""
+			Line 5 "Name                                      Type      SID                                               "
+			Line 5 "======================================================================================================"
+			#       1234567890123456789012345678901234567890SS12345678SS12345678901234567890123456789012345678901234567890
+			
+			ForEach($Item in $FilterItem.criteria.SecurityPrincipals.Members)
+			{
+				Line 5 ( "{0,-40}  {1,-8}  {2,-40}" -f `
+				$Item.Account, $Item.Type, $Item.Sid)
+			}
+			Line 0 ""
 
 			If($FilterItem.Criteria.Gateways.Enabled)
 			{
-				Line 3 "Apply policy if Gateway"
-				Line 3 "Enable criteria: " $FilterItem.criteria.Gateways.Enabled.ToString()
-				If($FilterItem.criteria.Gateways.MatchingMode -eq "IsOneOfTheFollowing")
-				{
-					Line 3 "is one of the following"
-				}
-				Else
-				{
-					Line 3 "is not one of the following"
-				}
-				Line 0 ""
-				Line 4 "Secure Gateways     "
-				Line 4 "===================="
-				#       12345678901234567890
-				
-				ForEach($Item in $FilterItem.criteria.Gateways.Members)
-				{
-					Line 4 ( "{0,-20}" -f $Item.GatewayIP)
-				}
-				Line 0 ""
+				$Enabled = "(Enabled)"
 			}
+			Else
+			{
+				$Enabled = "(Disabled)"
+			}
+
+			If($FilterItem.criteria.Gateways.MatchingMode -eq "IsOneOfTheFollowing")
+			{
+				Line 4 "Apply policy if Gateway $Enabled is one of the following"
+			}
+			Else
+			{
+				Line 4 "Apply policy if Gateway $Enabled is not one of the following"
+			}
+			Line 0 ""
+			Line 5 "Secure Gateways     "
+			Line 5 "===================="
+			#       12345678901234567890
+			
+			ForEach($Item in $FilterItem.criteria.Gateways.Members)
+			{
+				Line 5 ( "{0,-20}" -f $Item.GatewayIP)
+			}
+			Line 0 ""
 
 			If($FilterItem.Criteria.Themes.Enabled)
 			{
-				Line 3 "Apply policy if Theme"
+				$Enabled = "(Enabled)"
+			}
+			Else
+			{
+				$Enabled = "(Disabled)"
+			}
 
-				If($FilterItem.criteria.Themes.MatchingMode -eq "IsOneOfTheFollowing")
+			If($FilterItem.criteria.Themes.MatchingMode -eq "IsOneOfTheFollowing")
+			{
+				Line 4 "Apply policy if Theme $Enabled is one of the following"
+			}
+			Else
+			{
+				Line 4 "Apply policy if Theme $Enabled is not one of the following"
+			}
+			
+			Line 0 ""
+			Line 5 "Themes              "
+			Line 5 "===================="
+			#       12345678901234567890
+
+			ForEach($item in $FilterItem.Criteria.Themes)
+			{
+				If($Item.Ids.Count -ne 0)
 				{
-					Line 3 "is one of the following"
+					ForEach($ThemeID in $Item.Ids)
+					{
+						$xTheme = Get-RASTheme -Id $ThemeID -EA 0 4> $Null
+			
+						If(!($?) -or $Null -eq $xTheme)
+						{
+							$FilterTheme = "not used"
+						}
+						Else
+						{
+							$FilterTheme = $xTheme.Name
+						}
+
+						Line 5 ( "{0,-20}" -f $FilterTheme)
+					}
 				}
 				Else
 				{
-					Line 3 "is not one of the following"
+					Line 5 ( "{0,-20}" -f "not used")
 				}
-				
-				Line 0 ""
-				Line 4 "Themes              "
-				Line 4 "===================="
-				#       12345678901234567890
-
-				ForEach($item in $FilterItem.Criteria.Themes)
-				{
-					If($Item.Ids.Count -ne 0)
-					{
-						ForEach($ThemeID in $Item.Ids)
-						{
-							$xTheme = Get-RASTheme -Id $ThemeID -EA 0 4> $Null
-				
-							If(!($?) -or $Null -eq $xTheme)
-							{
-								$FilterTheme = "not used"
-							}
-							Else
-							{
-								$FilterTheme = $xTheme.Name
-							}
-
-							Line 4 ( "{0,-20}" -f $FilterTheme)
-						}
-					}
-					Else
-					{
-						Line 4 ( "{0,-20}" -f "not used")
-					}
-				}
-				Line 0 ""
 			}
+			Line 0 ""
 
 			If($FilterItem.Criteria.Devices.Enabled)
 			{
-				Line 3 "Apply policy if Device"
-				If($FilterItem.criteria.Devices.MatchingMode -eq "IsOneOfTheFollowing")
-				{
-					Line 3 "is one of the following"
-				}
-				Else
-				{
-					Line 3 "is not one of the following"
-				}
-				
-				Line 0 ""
-				Line 4 "Secure Gateways     "
-				Line 4 "===================="
-				#       12345678901234567890
-
-				ForEach($Item in $FilterItem.criteria.Devices.Members)
-				{
-					Line 4 ( "{0,-20}" -f $Item.Client)
-				}
-				Line 0 ""
+				$Enabled = "(Enabled)"
 			}
+			Else
+			{
+				$Enabled = "(Disabled)"
+			}
+
+			If($FilterItem.criteria.Devices.MatchingMode -eq "IsOneOfTheFollowing")
+			{
+				Line 4 "Apply policy if Device $Enabled is one of the following"
+			}
+			Else
+			{
+				Line 4 "Apply policy if Device $Enabled is not one of the following"
+			}
+			
+			Line 0 ""
+			Line 5 "Secure Gateways     "
+			Line 5 "===================="
+			#       12345678901234567890
+
+			ForEach($Item in $FilterItem.criteria.Devices.Members)
+			{
+				Line 5 ( "{0,-20}" -f $Item.Client)
+			}
+			Line 0 ""
 
 			If($FilterItem.Criteria.OSs.Enabled)
 			{
-				Line 3 "Apply policy if Operating system"
-				If($FilterItem.criteria.OSs.MatchingMode -eq "IsOneOfTheFollowing")
+				$Enabled = "(Enabled)"
+			}
+			Else
+			{
+				$Enabled = "(Disabled)"
+			}
+
+			If($FilterItem.criteria.OSs.MatchingMode -eq "IsOneOfTheFollowing")
+			{
+				Line 4 "Apply policy if Operating system $Enabled is one of the following"
+			}
+			Else
+			{
+				Line 4 "Apply policy if Operating system $Enabled is not one of the following"
+			}
+			Line 0 ""
+			Line 5 "Operating system         "
+			Line 5 "========================="
+			#       1234567890123456789012345
+			#		User Portal (Web Client)
+			
+			If($FilterItem.criteria.OSs.AllowedOSes.Windows)
+			{
+				Line 5 ( "{0,-25}" -f "Windows")
+			}
+
+			If($FilterItem.criteria.OSs.AllowedOSes.WebClient)
+			{
+				Line 5 ( "{0,-25}" -f 'User Portal (Web Client)')
+			}
+
+			If($FilterItem.criteria.OSs.AllowedOSes.Mac)
+			{
+				Line 5 ( "{0,-25}" -f "macOS")
+			}
+
+			If($FilterItem.criteria.OSs.AllowedOSes.Linux)
+			{
+				Line 5 ( "{0,-25}" -f "Linux")
+			}
+
+			If($FilterItem.criteria.OSs.AllowedOSes.iOS)
+			{
+				Line 5 ( "{0,-25}" -f 'iOS/iPadOS')
+			}
+
+			If($FilterItem.criteria.OSs.AllowedOSes.Android)
+			{
+				Line 5 ( "{0,-25}" -f "Android")
+			}
+
+			If($FilterItem.criteria.OSs.AllowedOSes.Chrome)
+			{
+				Line 5 ( "{0,-25}" -f "Chrome OS")
+			}
+			Line 0 ""
+
+			If($FilterItem.Criteria.IPs.Enabled)
+			{
+				$Enabled = "(Enabled)"
+			}
+			Else
+			{
+				$Enabled = "(Disabled)"
+			}
+
+			If($FilterItem.criteria.IPs.MatchingMode -eq "IsOneOfTheFollowing")
+			{
+				Line 4 "Apply policy if IP $Enabled is one of the following"
+			}
+			Else
+			{
+				Line 4 "Apply policy if IP $Enabled is not one of the following"
+			}
+			Line 0 ""
+			
+			ForEach($Item in $FilterItem.criteria.IPs.AllowedIPs.IPv4s)
+			{
+				If($Item.To -eq "")
 				{
-					Line 3 "is one of the following"
+					Line 5 ( "IPv4 Address: {0,-50}" -f $Item.From)
 				}
 				Else
 				{
-					Line 3 "is not one of the following"
-				}
-				Line 0 ""
-				Line 4 "Operating system         "
-				Line 4 "========================="
-				#       1234567890123456789012345
-				
-				If($FilterItem.criteria.OSs.AllowedOSes.Windows)
-				{
-					Line 4 ( "{0,-25}" -f "Windows")
-				}
-
-				If($FilterItem.criteria.OSs.AllowedOSes.WebClient)
-				{
-					Line 4 ( "{0,-25}" -f 'User Portal (Web Client)')
-				}
-
-				If($FilterItem.criteria.OSs.AllowedOSes.Mac)
-				{
-					Line 4 ( "{0,-25}" -f "macOS")
-				}
-
-				If($FilterItem.criteria.OSs.AllowedOSes.Linux)
-				{
-					Line 4 ( "{0,-25}" -f "Linux")
-				}
-
-				If($FilterItem.criteria.OSs.AllowedOSes.iOS)
-				{
-					Line 4 ( "{0,-25}" -f 'iOS/iPadOS')
-				}
-
-				If($FilterItem.criteria.OSs.AllowedOSes.Android)
-				{
-					Line 4 ( "{0,-25}" -f "Android")
-				}
-
-				If($FilterItem.criteria.OSs.AllowedOSes.Chrome)
-				{
-					Line 4 ( "{0,-25}" -f "Chrome OS")
+					Line 5 ( "IPv4 Address From: {0,-50}" -f $Item.From)
+					Line 5 ( "IPv4 Address To  : {0,-50}" -f $Item.To)
 				}
 				Line 0 ""
 			}
 
-			If($FilterItem.Criteria.IPs.Enabled)
+			ForEach($Item in $FilterItem.criteria.IPs.AllowedIPs.IPv6s)
 			{
-				Line 3 "Apply policy if IP"
-				If($FilterItem.criteria.IPs.MatchingMode -eq "IsOneOfTheFollowing")
+				If($Item.To -eq "")
 				{
-					Line 3 "is one of the following"
+					Line 5 ( "IPv6 Address: {0,-50}" -f $Item.From)
 				}
 				Else
 				{
-					Line 3 "is not one of the following"
-				}
-				Line 0 ""
-				Line 4 "IPv4 Address From                                   IPv4 Address To                                   "
-				Line 4 "======================================================================================================"
-				#       12345678901234567890123456789012345678901234567890SS12345678901234567890123456789012345678901234567890
-				
-				ForEach($Item in $FilterItem.criteria.IPs.AllowedIPs.IPv4s)
-				{
-					Line 4 ( "{0,-50}  {1,-50}" -f `
-					$Item.From, $Item.To)
-				}
-				Line 0 ""
-				Line 4 "IPv6 Address From                                   IPv6 Address To                                   "
-				Line 4 "======================================================================================================"
-				#       12345678901234567890123456789012345678901234567890SS12345678901234567890123456789012345678901234567890
-				
-				ForEach($Item in $FilterItem.criteria.IPs.AllowedIPs.IPv6s)
-				{
-					Line 4 ( "{0,-50}  {1,-50}" -f `
-					$Item.From, $Item.To)
+					Line 5 ( "IPv6 Address From: {0,-50}" -f $Item.From)
+					Line 5 ( "IPv6 Address To  : {0,-50}" -f $Item.To)
 				}
 				Line 0 ""
 			}
 
 			If($FilterItem.Criteria.HardwareIDs.Enabled)
 			{
-				Line 3 "Apply policy if Hardware ID"
-				If($FilterItem.criteria.HardwareIDs.MatchingMode -eq "IsOneOfTheFollowing")
-				{
-					Line 3 "is one of the following"
-				}
-				Else
-				{
-					Line 3 "is not one of the following"
-				}
-				Line 0 ""
-				Line 4 "Device Hardware ID  "
-				Line 4 "===================="
-				#       12345678901234567890
-				
-				ForEach($Item in $FilterItem.criteria.HardwareIDs.Members)
-				{
-					Line 4 ( "{0,-20}" -f $Item.HardwareID)
-				}
-				Line 0 ""
+				$Enabled = "(Enabled)"
 			}
+			Else
+			{
+				$Enabled = "(Disabled)"
+			}
+
+			If($FilterItem.criteria.HardwareIDs.MatchingMode -eq "IsOneOfTheFollowing")
+			{
+				Line 4 "Apply policy if Hardware ID $Enabled is one of the following"
+			}
+			Else
+			{
+				Line 4 "Apply policy if Hardware ID $Enabled is not one of the following"
+			}
+			Line 0 ""
+			Line 5 "Device Hardware ID  "
+			Line 5 "===================="
+			#       12345678901234567890
+			
+			ForEach($Item in $FilterItem.criteria.HardwareIDs.Members)
+			{
+				Line 5 ( "{0,-20}" -f $Item.HardwareID)
+			}
+			Line 0 ""
 		}
 		
-		Line 3 "Enabled"
-		Line 3 "Default Rule *"
+		Line 3 "Default Rule * (Enabled)"
 
 		If($Pubitem.Filter.Default -eq "Allow")
 		{
-			Line 3 "Summary: " "Allow if no other rule matches"
+			Line 4 "Allow if no other rule matches"
 		}
 		Else
 		{
-			Line 3 "Summary: " "Deny if no other rule matches"
+			Line 4 "Deny if no other rule matches"
 		}
 		Line 0 ""
 	}
 	If($OutputType -eq "HTML")
 	{
 		WriteHTMLLine 3 0 "Filtering"
-		WriteHTMLLine 4 0 "Apply filter to:"
+		$rowdata = @()
+
 		ForEach($FilterItem in $PubItem.filter.rules)
 		{
-			WriteHTMLLine 5 0 "$($FilterItem.Name) Properties"
-			
-			$rowdata = @()
 			$columnHeaders = @("Enable rule",($Script:htmlsb),$FilterItem.Enabled.ToString(),$htmlwhite)
 			$rowdata += @(,("General",($Script:htmlsb),"",$htmlwhite))
 			$rowdata += @(,("     Name",($Script:htmlsb),$FilterItem.Name,$htmlwhite))
@@ -52527,300 +52386,265 @@ Function OutputPubItemFilters
 				$rowdata += @(,("     Deny if",($Script:htmlsb),"",$htmlwhite))
 			}
 
-			$msg = ""
-			$columnWidths = @("150","200")
-			FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-			WriteHTMLLine 0 0 ""
+			$rowdata += @(,("          Criteria",($Script:htmlsb),"",$htmlwhite))
 
-			WriteHTMLLine 4 0 "Criteria"
 			If($FilterItem.Criteria.SecurityPrincipals.Enabled)
 			{
-				WriteHTMLLine 5 0 "Apply policy if User or group"
-				If($FilterItem.criteria.SecurityPrincipals.MatchingMode -eq "IsOneOfTheFollowing")
-				{
-					WriteHTMLLine 0 0 "is one of the following"
-				}
-				Else
-				{
-					WriteHTMLLine 0 0 "is not one of the following"
-				}
+				$Enabled = "(Enabled)"
+			}
+			Else
+			{
+				$Enabled = "(Disabled)"
+			}
+			
+			If($FilterItem.criteria.SecurityPrincipals.MatchingMode -eq "IsOneOfTheFollowing")
+			{
+				$rowdata += @(,("               Apply policy if User or group $Enabled",($Script:htmlsb),"is one of the following",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("               Apply policy if User or group $Enabled",($Script:htmlsb),"is not one of the following",$htmlwhite))
+			}
 
-				$rowdata = @()
-
-				ForEach($Item in $FilterItem.criteria.SecurityPrincipals.Members)
-				{
-					$rowdata += @(,(
-					$Item.Account,$htmlwhite,
-					$Item.Type,$htmlwhite,
-					$Item.Sid,$htmlwhite))
-				}
-
-				$columnHeaders = @(
-				"Name",($Script:htmlsb),
-				"Type",($Script:htmlsb),
-				"SID",($Script:htmlsb))
-
-				$msg = ""
-				$columnWidths = @("200","50","300")
-				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-				WriteHTMLLine 0 0 ""
+			ForEach($Item in $FilterItem.criteria.SecurityPrincipals.Members)
+			{
+				$rowdata += @(,("",($Script:htmlsb),"     Name: $($Item.Account)",$htmlwhite))
+				$rowdata += @(,("",($Script:htmlsb),"     Type: $($Item.Type)",$htmlwhite))
+				$rowdata += @(,("",($Script:htmlsb),"     SID: $($Item.Sid)",$htmlwhite))
+				$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 			}
 
 			If($FilterItem.Criteria.Gateways.Enabled)
 			{
-				WriteHTMLLine 5 0 "Apply policy if Gateway"
-				If($FilterItem.criteria.Gateways.MatchingMode -eq "IsOneOfTheFollowing")
-				{
-					WriteHTMLLine 0 0 "is one of the following"
-				}
-				Else
-				{
-					WriteHTMLLine 0 0 "is not one of the following"
-				}
-
-				$rowdata = @()
-
-				ForEach($Item in $FilterItem.criteria.Gateways.Members)
-				{
-					$rowdata += @(,($Item.GatewayIP,$htmlwhite))
-				}
-
-				$columnHeaders = @("Secure Gateways",($Script:htmlsb))
-
-				$msg = ""
-				$columnWidths = @("200")
-				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-				WriteHTMLLine 0 0 ""
+				$Enabled = "(Enabled)"
 			}
+			Else
+			{
+				$Enabled = "(Disabled)"
+			}
+
+			If($FilterItem.criteria.Gateways.MatchingMode -eq "IsOneOfTheFollowing")
+			{
+				$rowdata += @(,("               Apply policy if Gateway $Enabled",($Script:htmlsb),"is one of the following",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("               Apply policy if Gateway $Enabled",($Script:htmlsb),"is not one of the following",$htmlwhite))
+			}
+
+			ForEach($Item in $FilterItem.criteria.Gateways.Members)
+			{
+				$rowdata += @(,("",($Script:htmlsb),"     $($Item.GatewayIP)",$htmlwhite))
+			}
+			$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 
 			If($FilterItem.Criteria.Themes.Enabled)
 			{
-				WriteHTMLLine 5 0 "Apply policy if Theme"
+				$Enabled = "(Enabled)"
+			}
+			Else
+			{
+				$Enabled = "(Disabled)"
+			}
 
-				If($FilterItem.criteria.Themes.MatchingMode -eq "IsOneOfTheFollowing")
+			If($FilterItem.criteria.Themes.MatchingMode -eq "IsOneOfTheFollowing")
+			{
+				$rowdata += @(,("               Apply policy if Theme $Enabled",($Script:htmlsb),"is one of the following",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("               Apply policy if Theme $Enabled",($Script:htmlsb),"is not one of the following",$htmlwhite))
+			}
+			
+			ForEach($item in $FilterItem.Criteria.Themes)
+			{
+				If($Item.Ids.Count -ne 0)
 				{
-					WriteHTMLLine 0 0 "is one of the following"
+					ForEach($ThemeID in $Item.Ids)
+					{
+						$xTheme = Get-RASTheme -Id $ThemeID -EA 0 4> $Null
+			
+						If(!($?) -or $Null -eq $xTheme)
+						{
+							$FilterTheme = "not used"
+						}
+						Else
+						{
+							$FilterTheme = $xTheme.Name.Trim("<",">")
+						}
+
+						$rowdata += @(,("",($Script:htmlsb),"     $($FilterTheme)",$htmlwhite))
+					}
 				}
 				Else
 				{
-					WriteHTMLLine 0 0 "is not one of the following"
-				}
-				
-				$rowdata = @()
-				
-				ForEach($item in $FilterItem.Criteria.Themes)
-				{
-					If($Item.Ids.Count -ne 0)
-					{
-						ForEach($ThemeID in $Item.Ids)
-						{
-							$xTheme = Get-RASTheme -Id $ThemeID -EA 0 4> $Null
-				
-							If(!($?) -or $Null -eq $xTheme)
-							{
-								$FilterTheme = "not used"
-							}
-							Else
-							{
-								$FilterTheme = $xTheme.Name.Trim("<",">")
-							}
-
-							$rowdata += @(,("$FilterTheme",$htmlwhite))
-						}
-					}
-					Else
-					{
-						$rowdata += @(,("not used",$htmlwhite))
-					}
-
-					$columnHeaders = @("Themes",($Script:htmlsb))
-
-					$msg = ""
-					$columnWidths = @("200")
-					FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-					WriteHTMLLine 0 0 ""
+					$rowdata += @(,("",($Script:htmlsb),"     not used",$htmlwhite))
 				}
 			}
+			$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 
 			If($FilterItem.Criteria.Devices.Enabled)
 			{
-				WriteHTMLLine 5 0 "Apply policy if Device"
-				If($FilterItem.criteria.Devices.MatchingMode -eq "IsOneOfTheFollowing")
-				{
-					WriteHTMLLine 0 0 "is one of the following"
-				}
-				Else
-				{
-					WriteHTMLLine 0 0 "is not one of the following"
-				}
-				
-				
-				ForEach($Item in $FilterItem.criteria.Devices.Members)
-				{
-					$rowdata += @(,($Item.Client,$htmlwhite))
-				}
-
-				$columnHeaders = @("Client",($Script:htmlsb))
-
-				$msg = ""
-				$columnWidths = @("200")
-				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-				WriteHTMLLine 0 0 ""
+				$Enabled = "(Enabled)"
 			}
+			Else
+			{
+				$Enabled = "(Disabled)"
+			}
+
+			If($FilterItem.criteria.Devices.MatchingMode -eq "IsOneOfTheFollowing")
+			{
+				$rowdata += @(,("               Apply policy if Device $Enabled",($Script:htmlsb),"is one of the following",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("               Apply policy if Device $Enabled",($Script:htmlsb),"is notone of the following",$htmlwhite))
+			}
+			
+			ForEach($Item in $FilterItem.criteria.Devices.Members)
+			{
+				$rowdata += @(,("",($Script:htmlsb),"     $($Item.Client)",$htmlwhite))
+			}
+			$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 
 			If($FilterItem.Criteria.OSs.Enabled)
 			{
-				WriteHTMLLine 5 0 "Apply policy if Operating system"
-				WriteHTMLLine 0 0 "Enable criteria: " $FilterItem.criteria.OSs.Enabled.ToString()
-				If($FilterItem.criteria.OSs.MatchingMode -eq "IsOneOfTheFollowing")
-				{
-					WriteHTMLLine 0 0 "is one of the following"
-				}
-				Else
-				{
-					WriteHTMLLine 0 0 "is not one of the following"
-				}
-
-				$rowdata = @()
-
-				If($FilterItem.criteria.OSs.AllowedOSes.Windows)
-				{
-					$rowdata += @(,("Windows",$htmlwhite))
-				}
-
-				If($FilterItem.criteria.OSs.AllowedOSes.WebClient)
-				{
-					$rowdata += @(,('User Portal (Web Client)',$htmlwhite))
-				}
-
-				If($FilterItem.criteria.OSs.AllowedOSes.Mac)
-				{
-					$rowdata += @(,("macOS",$htmlwhite))
-				}
-
-				If($FilterItem.criteria.OSs.AllowedOSes.Linux)
-				{
-					$rowdata += @(,("Linux",$htmlwhite))
-				}
-
-				If($FilterItem.criteria.OSs.AllowedOSes.iOS)
-				{
-					$rowdata += @(,('iOS/iPadOS',$htmlwhite))
-				}
-
-				If($FilterItem.criteria.OSs.AllowedOSes.Android)
-				{
-					$rowdata += @(,("Android",$htmlwhite))
-				}
-
-				If($FilterItem.criteria.OSs.AllowedOSes.Chrome)
-				{
-					$rowdata += @(,("Chrome OS",$htmlwhite))
-				}
-
-				$columnHeaders = @("Operating system",($Script:htmlsb))
-
-				$msg = ""
-				$columnWidths = @("200")
-				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-				WriteHTMLLine 0 0 ""
+				$Enabled = "(Enabled)"
 			}
+			Else
+			{
+				$Enabled = "(Disabled)"
+			}
+
+			If($FilterItem.criteria.OSs.MatchingMode -eq "IsOneOfTheFollowing")
+			{
+				$rowdata += @(,("               Apply policy if Operating system $Enabled",($Script:htmlsb),"is one of the following",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("               Apply policy if Operating system $Enabled",($Script:htmlsb),"is not one of the following",$htmlwhite))
+			}
+
+			If($FilterItem.criteria.OSs.AllowedOSes.Windows)
+			{
+				$rowdata += @(,("",($Script:htmlsb),"     Windows",$htmlwhite))
+			}
+
+			If($FilterItem.criteria.OSs.AllowedOSes.WebClient)
+			{
+				$rowdata += @(,("",($Script:htmlsb),"     User Portal (Web Client)",$htmlwhite))
+			}
+
+			If($FilterItem.criteria.OSs.AllowedOSes.Mac)
+			{
+				$rowdata += @(,("",($Script:htmlsb),"     macOS",$htmlwhite))
+			}
+
+			If($FilterItem.criteria.OSs.AllowedOSes.Linux)
+			{
+				$rowdata += @(,("",($Script:htmlsb),"     Linux",$htmlwhite))
+			}
+
+			If($FilterItem.criteria.OSs.AllowedOSes.iOS)
+			{
+				$rowdata += @(,("",($Script:htmlsb),"     iOS/iPadOS",$htmlwhite))
+			}
+
+			If($FilterItem.criteria.OSs.AllowedOSes.Android)
+			{
+				$rowdata += @(,("",($Script:htmlsb),"     Android",$htmlwhite))
+			}
+
+			If($FilterItem.criteria.OSs.AllowedOSes.Chrome)
+			{
+				$rowdata += @(,("",($Script:htmlsb),"     Chrome OS",$htmlwhite))
+			}
+			$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 
 			If($FilterItem.Criteria.IPs.Enabled)
 			{
-				WriteHTMLLine 5 0 "Apply policy if IP"
-				If($FilterItem.criteria.IPs.MatchingMode -eq "IsOneOfTheFollowing")
+				$Enabled = "(Enabled)"
+			}
+			Else
+			{
+				$Enabled = "(Disabled)"
+			}
+
+			If($FilterItem.criteria.IPs.MatchingMode -eq "IsOneOfTheFollowing")
+			{
+				$rowdata += @(,("               Apply policy if IP $Enabled",($Script:htmlsb),"is one of the following",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("               Apply policy if IP $Enabled",($Script:htmlsb),"is not one of the following",$htmlwhite))
+			}
+
+			ForEach($Item in $FilterItem.criteria.IPs.AllowedIPs.IPv4s)
+			{
+				If($Item.To -eq "")
 				{
-					WriteHTMLLine 0 0 "is one of the following"
+					$rowdata += @(,("",($Script:htmlsb),"     IPv4 Address: $($Item.From)",$htmlwhite))
 				}
 				Else
 				{
-					WriteHTMLLine 0 0 "is not one of the following"
+					$rowdata += @(,("",($Script:htmlsb),"     IPv4 Address From: $($Item.From)",$htmlwhite))
+					$rowdata += @(,("",($Script:htmlsb),"     IPv4 Address To: $($Item.To)",$htmlwhite))
 				}
+				$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+			}
 
-				$rowdata = @()
-
-				ForEach($Item in $FilterItem.criteria.IPs.AllowedIPs.IPv4s)
+			ForEach($Item in $FilterItem.criteria.IPs.AllowedIPs.IPv6s)
+			{
+				If($Item.To -eq "")
 				{
-					$rowdata += @(,(
-					$Item.From,$htmlwhite,
-					$Item.To,$htmlwhite))
+					$rowdata += @(,("",($Script:htmlsb),"     IPv6 Address: $($Item.From)",$htmlwhite))
 				}
-
-				$columnHeaders = @(
-				"IPv4 Address From",($Script:htmlsb),
-				"IPv4 Address To",($Script:htmlsb))
-
-				$msg = ""
-				$columnWidths = @("200","200")
-				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-				WriteHTMLLine 0 0 ""
-
-				$rowdata = @()
-
-				ForEach($Item in $FilterItem.criteria.IPs.AllowedIPs.IPv6s)
+				Else
 				{
-					$rowdata += @(,(
-					$Item.From,$htmlwhite,
-					$Item.To,$htmlwhite))
+					$rowdata += @(,("",($Script:htmlsb),"     IPv6 Address From: $($Item.From)",$htmlwhite))
+					$rowdata += @(,("",($Script:htmlsb),"     IPv6 Address To: $($Item.To)",$htmlwhite))
 				}
-
-				$columnHeaders = @(
-				"IPv6 Address From",($Script:htmlsb),
-				"IPv6 Address To",($Script:htmlsb))
-
-				$msg = ""
-				$columnWidths = @("200","200")
-				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-				WriteHTMLLine 0 0 ""
+				$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 			}
 
 			If($FilterItem.Criteria.HardwareIDs.Enabled)
 			{
-				WriteHTMLLine 5 0 "Apply policy if Hardware ID"
-				If($FilterItem.criteria.HardwareIDs.MatchingMode -eq "IsOneOfTheFollowing")
-				{
-					WriteHTMLLine 0 0 "is one of the following"
-				}
-				Else
-				{
-					WriteHTMLLine 0 0 "is not one of the following"
-				}
-
-				$rowdata = @()
-
-				ForEach($Item in $FilterItem.criteria.HardwareIDs.Members)
-				{
-					$rowdata += @(,($Item.HardwareID,$htmlwhite))
-				}
-
-				$columnHeaders = @("Device Hardware ID",($Script:htmlsb))
-
-				$msg = ""
-				$columnWidths = @("200")
-				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-				WriteHTMLLine 0 0 ""
+				$Enabled = "(Enabled)"
 			}
+			Else
+			{
+				$Enabled = "(Disabled)"
+			}
+
+			If($FilterItem.criteria.HardwareIDs.MatchingMode -eq "IsOneOfTheFollowing")
+			{
+				$rowdata += @(,("               Apply policy if Hardware ID $Enabled",($Script:htmlsb),"is one of the following",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("               Apply policy if Hardware ID $Enabled",($Script:htmlsb),"is not one of the following",$htmlwhite))
+			}
+
+			ForEach($Item in $FilterItem.criteria.HardwareIDs.Members)
+			{
+				$rowdata += @(,("",($Script:htmlsb),"     $($Item.HardwareID)",$htmlwhite))
+			}
+			$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 		}
 		
 		#general stuff
-		$rowdata = @()
-		$columnHeaders = @("Enabled",($Script:htmlsb),"",$htmlwhite)
-		$rowdata += @(,("Enabled",($Script:htmlsb),"",$htmlwhite))
-		$rowdata += @(,("Default Rule *",($Script:htmlsb),"",$htmlwhite))
 
 		If($Pubitem.Filter.Default -eq "Allow")
 		{
-			$rowdata += @(,("Summary",($Script:htmlsb),"Allow if no other rule matches",$htmlwhite))
+			$rowdata += @(,("Default Rule * (Enabled)",($Script:htmlsb),"Allow if no other rule matches",$htmlwhite))
 		}
 		Else
 		{
-			$rowdata += @(,("Summary",($Script:htmlsb),"Deny if no other rule matches",$htmlwhite))
+			$rowdata += @(,("Default Rule * (Enabled)",($Script:htmlsb),"Deny if no other rule matches",$htmlwhite))
 		}
-		$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 
-		$msg = ""
-		$columnWidths = @("150","200")
+		$msg = "$RuleName Properties"
+		$columnWidths = @("300","400")
 		FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 		WriteHTMLLine 0 0 ""
 	}
@@ -52830,6 +52654,7 @@ Function OutputPubItemShortCuts
 {
 	Param([object] $PubItem, 
 	[string] $OutputType,
+	[string] $DefaultInheritShortcutSettings,
 	[string] $DefaultCreateShortcutOnDesktop,
 	[string] $DefaultCreateShortcutInStartFolder,
 	[string] $DefaultStartPath,
@@ -52844,6 +52669,7 @@ Function OutputPubItemShortCuts
 		$ScriptInformation = New-Object System.Collections.ArrayList
 		If($PubItem.InheritShortcutDefaultSettings)
 		{
+			$ScriptInformation.Add(@{Data = "Inherit default settings"; Value = $DefaultInheritShortcutSettings; }) > $Null
 			$ScriptInformation.Add(@{Data = "Create shortcut on Desktop"; Value = $DefaultCreateShortcutOnDesktop; }) > $Null
 			$ScriptInformation.Add(@{Data = "Create shortcut in Start Folder"; Value = $DefaultCreateShortcutInStartFolder; }) > $Null
 			If($DefaultCreateShortcutInStartFolder)
@@ -52869,6 +52695,7 @@ Function OutputPubItemShortCuts
 		}
 		Else
 		{
+			$ScriptInformation.Add(@{Data = "Inherit default settings"; Value = $DefaultInheritShortcutSettings; }) > $Null
 			$ScriptInformation.Add(@{Data = "Create shortcut on Desktop"; Value = $PubItem.CreateShortcutOnDesktop; }) > $Null
 			$ScriptInformation.Add(@{Data = "Create shortcut in Start Folder"; Value = $PubItem.CreateShortcutInStartFolder; }) > $Null
 			If($PubItem.CreateShortcutInStartFolder)
@@ -52900,6 +52727,7 @@ Function OutputPubItemShortCuts
 
 		If($PubItem.InheritShortcutDefaultSettings)
 		{
+			Line 3 "Inherit default settings`t`t`t`t: " $DefaultInheritShortcutSettings
 			Line 3 "Create shortcut on Desktop`t`t`t`t: " $DefaultCreateShortcutOnDesktop
 			Line 3 "Create shortcut in Start Folder`t`t`t`t: " $DefaultCreateShortcutInStartFolder
 			If($DefaultCreateShortcutInStartFolder)
@@ -52911,6 +52739,7 @@ Function OutputPubItemShortCuts
 		}
 		Else
 		{
+			Line 3 "Inherit default settings`t`t`t`t: " $DefaultInheritShortcutSettings
 			Line 3 "Create shortcut on Desktop`t`t`t`t: " $PubItem.CreateShortcutOnDesktop
 			Line 3 "Create shortcut in Start Folder`t`t`t`t: " $PubItem.CreateShortcutInStartFolder
 			If($PubItem.CreateShortcutInStartFolder)
@@ -52929,7 +52758,8 @@ Function OutputPubItemShortCuts
 		$rowdata = @()
 		If($PubItem.InheritShortcutDefaultSettings)
 		{
-			$columnHeaders = @("Create shortcut on Desktop",($Script:htmlsb),$DefaultCreateShortcutOnDesktop.ToString(),$htmlwhite)
+			$columnHeaders = @("Inherit default settings",($Script:htmlsb),$DefaultInheritShortcutSettings,$htmlwhite)
+			$rowdata += @(,("Create shortcut on Desktop",($Script:htmlsb),$DefaultCreateShortcutOnDesktop.ToString(),$htmlwhite))
 			$rowdata += @(,("Create shortcut in Start Folder",($Script:htmlsb),$DefaultCreateShortcutInStartFolder.ToString(),$htmlwhite))
 			If($DefaultCreateShortcutInStartFolder)
 			{
@@ -52943,7 +52773,8 @@ Function OutputPubItemShortCuts
 		}
 		Else
 		{
-			$columnHeaders = @("Create shortcut on Desktop",($Script:htmlsb),$PubItem.CreateShortcutOnDesktop.ToString(),$htmlwhite)
+			$columnHeaders = @("Inherit default settings",($Script:htmlsb),$DefaultInheritShortcutSettings,$htmlwhite)
+			$rowdata += @(,("Create shortcut on Desktop",($Script:htmlsb),$PubItem.CreateShortcutOnDesktop.ToString(),$htmlwhite))
 			$rowdata += @(,("Create shortcut in Start Folder",($Script:htmlsb),$PubItem.CreateShortcutInStartFolder.ToString(),$htmlwhite))
 			If($PubItem.CreateShortcutInStartFolder)
 			{
