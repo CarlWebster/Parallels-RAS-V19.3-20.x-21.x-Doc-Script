@@ -141,6 +141,7 @@
 #		For HTML output for individual hosts, and RD Session Host pools, add .Replace("<","").Replace(">","") to remove "<" and ">" since that messes up the HTML output
 #		Update output to match the changes made in the console
 #		For all calls to OutputPubItemShortCuts, add parameter for $DefaultInheritShortcutSettings
+#		Add new variable $ConnectToConsole to show "Connect to administrative session" as Enabled or Disabled instead of True/False
 #
 #	In Function OutputPubItemShortCuts
 #		Add parameter for $DefaultInheritShortcutSettings

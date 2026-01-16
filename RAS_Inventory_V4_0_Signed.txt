@@ -450,9 +450,9 @@
 	text document.
 .NOTES
 	NAME: RAS_Inventory_V4_0.ps1
-	VERSION: 4.00 Beta 44
+	VERSION: 4.00 Beta 45
 	AUTHOR: Carl Webster
-	LASTEDIT: January 14, 2026
+	LASTEDIT: January 16, 2026
 #>
 
 
@@ -703,6 +703,7 @@ Param(
 #		For HTML output for individual hosts, and RD Session Host pools, add .Replace("<","").Replace(">","") to remove "<" and ">" since that messes up the HTML output
 #		Update output to match the changes made in the console
 #		For all calls to OutputPubItemShortCuts, add parameter for $DefaultInheritShortcutSettings
+#		Add new variable $ConnectToConsole to show "Connect to administrative session" as Enabled or Disabled instead of True/False
 #
 #	In Function OutputPubItemShortCuts
 #		Add parameter for $DefaultInheritShortcutSettings
@@ -946,9 +947,9 @@ $ErrorActionPreference    = 'SilentlyContinue'
 $Error.Clear()
 
 $Script:emailCredentials  = $Null
-$script:MyVersion         = '4.00 Beta 44'
+$script:MyVersion         = '4.00 Beta 45'
 $Script:ScriptName        = "RAS_Inventory_V4_0.ps1"
-$tmpdate                  = [datetime] "01/14/2026"
+$tmpdate                  = [datetime] "01/16/2026"
 $Script:ReleaseDate       = $tmpdate.ToUniversalTime().ToShortDateString()
 
 If($MSWord -eq $False -and $PDF -eq $False -and $Text -eq $False -and $HTML -eq $False)
@@ -15279,11 +15280,12 @@ Function OutputRDSessionHostsDetails
 						-Format $wdTableGrid `
 						-AutoFit $wdAutoFitFixed;
 
+						SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 						SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 						$Table.Columns.Item(1).Width = 200;
 						$Table.Columns.Item(2).Width = 50;
-						$Table.Columns.Item(3).Width = 300;
+						$Table.Columns.Item(3).Width = 250;
 						
 						$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -19903,7 +19905,7 @@ Function OutputVDIDetails
 							SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 							$Table.Columns.Item(1).Width = 250;
-							$Table.Columns.Item(2).Width = 300;
+							$Table.Columns.Item(2).Width = 250;
 
 							$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -20149,11 +20151,12 @@ Function OutputVDIDetails
 								-Format $wdTableGrid `
 								-AutoFit $wdAutoFitFixed;
 
+								SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 								SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 								$Table.Columns.Item(1).Width = 200;
 								$Table.Columns.Item(2).Width = 50;
-								$Table.Columns.Item(3).Width = 300;
+								$Table.Columns.Item(3).Width = 250;
 								
 								$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -38060,7 +38063,7 @@ Function OutputThemesDetails
 				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 300;
+				$Table.Columns.Item(1).Width = 250;
 				$Table.Columns.Item(2).Width = 250;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
@@ -38346,7 +38349,7 @@ Function OutputThemesDetails
 				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 300;
+				$Table.Columns.Item(1).Width = 250;
 				$Table.Columns.Item(2).Width = 250;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
@@ -39097,7 +39100,7 @@ Function OutputThemesDetails
 				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 300;
+				$Table.Columns.Item(1).Width = 250;
 				$Table.Columns.Item(2).Width = 250;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
@@ -42516,7 +42519,8 @@ Function OutputPublishingSettings
 		
 		#License tab
 		$DefaultDisableSessionSharing         = "False"
-		$DefaultOneInstancePerUser            = "False"
+		$DefaultSessionSharing                = "Enabled"
+		$DefaultOneInstancePerUser            = $False
 		$DefaultConCurrentLicenses            = "Unlimited"
 		$DefaultLicenseLimitNotify            = "Warn user and do not start"
 		$DefaultReplicateLicenseSettings      = "False"
@@ -42525,7 +42529,9 @@ Function OutputPublishingSettings
 		$DefaultWaitForPrinters               = "False"
 		$DefaultWaitForPrintersTimeout        = "20"
 		$DefaultColorDepth                    = "Client Specified"
+		$DefaultResolution                    = "Client Specified"
 		$DefaultStartMaximized                = "True"
+		$DefaultStartFullscreen               = "False"   
 		$DefaultReplicateDisplaySettings      = "False"
 
 		If($MSWord -or $PDF)
@@ -42557,7 +42563,13 @@ Function OutputPublishingSettings
 		$DefaultReplicateShortcutSettings     = $results.ReplicateShortcutSettings.ToString()
 
 		#License tab
-		$DefaultDisableSessionSharing         = $results.DisableSessionSharing.ToString()    
+		$DefaultDisableSessionSharing         = $results.DisableSessionSharing.ToString()
+		Switch ($results.DisableSessionSharing)
+		{
+			$False	{$DefaultSessionSharing = "Enabled"; Break}
+			$True	{$DefaultSessionSharing = "Disabled"; Break}
+			Default	{$DefaultSessionSharing = "Unable to determine Session Sharing state: $($results.DisableSessionSharing)"; Break}
+		}
 		$DefaultOneInstancePerUser            = $results.OneInstancePerUser.ToString()
 		If($results.ConCurrentLicenses -eq 0)
 		{
@@ -42593,7 +42605,9 @@ Function OutputPublishingSettings
 			"ClientSpecified"	{$DefaultColorDepth = "Client Specified"; Break}
 			Default				{$DefaultColorDepth = "Unable to determine Color Depth: $($PubItem.ColorDepth)"; Break}
 		}
+		$DefaultResolution                    = "Client Specified"
 		$DefaultStartMaximized                = $results.StartMaximized.ToString()   
+		$DefaultStartFullscreen               = $results.StartFullscreen.ToString()   
 		$DefaultReplicateDisplaySettings      = $results.ReplicateDisplaySettings.ToString()
 	}
 	
@@ -42618,6 +42632,18 @@ Function OutputPublishingSettings
 				"Maximized"	{$WinType = "Maximized"; Break}
 				"Minimized"	{$WinType = "Minimized"; Break}
 				Default		{$WinType = "Unable to determine window Run type: $($PubItem.WinType)"; Break}
+			}
+		}
+
+		If(ValidObject $PubItem ConnectToConsole)
+		{
+			If($PubItem.ConnectToConsole)
+			{
+				$ConnectToConsole = "Enabled"
+			}
+			Else
+			{
+				$ConnectToConsole = "Disabled"
 			}
 		}
 		
@@ -42713,7 +42739,10 @@ Function OutputPublishingSettings
 			{
 				$ScriptInformation = New-Object System.Collections.ArrayList
 				$ScriptInformation.Add(@{Data = "Folder"; Value = "#$($PubItem.Id): $($PubItem.Name)"; }) > $Null
-				$ScriptInformation.Add(@{Data = "Description"; Value = $PubItem.Description; }) > $Null
+				If(![String]::IsNullOrEmpty($PubItem.Description))
+				{
+					$ScriptInformation.Add(@{Data = "Description"; Value = $PubItem.Description; }) > $Null
+				}
 				$ScriptInformation.Add(@{Data = "Last modification by"; Value = $PubItem.AdminLastMod; }) > $Null
 				$ScriptInformation.Add(@{Data = "Modified on"; Value = (Get-Date -UFormat "%c" $PubItem.TimeLastMod); }) > $Null
 				$ScriptInformation.Add(@{Data = "Created by"; Value = $PubItem.AdminCreate; }) > $Null
@@ -42857,7 +42886,10 @@ Function OutputPublishingSettings
 			If($Text)
 			{
 				Line 3 "Folder`t`t`t`t`t`t`t: " "#$($PubItem.Id): $($PubItem.Name)"
-				Line 3 "Description`t`t`t`t`t`t: " $PubItem.Description
+				If(![String]::IsNullOrEmpty($PubItem.Description))
+				{
+					Line 3 "Description`t`t`t`t`t`t: " $PubItem.Description
+				}
 				Line 3 "Last modification by`t`t`t`t`t: " $PubItem.AdminLastMod
 				Line 3 "Modified on`t`t`t`t`t`t: " (Get-Date -UFormat "%c" $PubItem.TimeLastMod)
 				Line 3 "Created by`t`t`t`t`t`t: " $PubItem.AdminCreate
@@ -42952,7 +42984,10 @@ Function OutputPublishingSettings
 				$rowdata = @()
 
 				$columnHeaders = @("Folder",($Script:htmlsb),"#$($PubItem.Id): $($PubItem.Name)",$htmlwhite)
-				$rowdata += @(,("Description",($Script:htmlsb),$PubItem.Description,$htmlwhite))
+				If(![String]::IsNullOrEmpty($PubItem.Description))
+				{
+					$rowdata += @(,("Description",($Script:htmlsb),$PubItem.Description,$htmlwhite))
+				}
 				$rowdata += @(,("Last modification by",($Script:htmlsb),$PubItem.AdminLastMod,$htmlwhite))
 				$rowdata += @(,("Modified on",($Script:htmlsb),(Get-Date -UFormat "%c" $PubItem.TimeLastMod),$htmlwhite))
 				$rowdata += @(,("Created by",($Script:htmlsb),$PubItem.AdminCreate,$htmlwhite))
@@ -43002,6 +43037,7 @@ Function OutputPublishingSettings
 
 				$columnHeaders = @("Folder",($Script:htmlsb),"#$($PubItem.Id): $($PubItem.Name)",$htmlwhite)
 				$rowdata += @(,("Description",($Script:htmlsb),$PubItem.Description,$htmlwhite))
+				$rowdata += @(,("Status",($Script:htmlsb),$PubItemStatus,$htmlwhite))
 				$rowdata += @(,("Use for administrative purposes",($Script:htmlsb),$PubItem.AdminOnly.ToString(),$htmlwhite))
 
 				$msg = ""
@@ -43062,7 +43098,10 @@ Function OutputPublishingSettings
 				WriteWordLine 3 0 "Information"
 				$ScriptInformation = New-Object System.Collections.ArrayList
 				$ScriptInformation.Add(@{Data = "Remote PC Application"; Value = "#$($PubItem.Id): $($PubItem.Name)"; }) > $Null
-				$ScriptInformation.Add(@{Data = "Description"; Value = $PubItem.Description; }) > $Null
+				If(![String]::IsNullOrEmpty($PubItem.Description))
+				{
+					$ScriptInformation.Add(@{Data = "Description"; Value = $PubItem.Description; }) > $Null
+				}
 				$ScriptInformation.Add(@{Data = "Last modification by"; Value = $PubItem.AdminLastMod; }) > $Null
 				$ScriptInformation.Add(@{Data = "Modified on"; Value = (Get-Date -UFormat "%c" $PubItem.TimeLastMod); }) > $Null
 				$ScriptInformation.Add(@{Data = "Created by"; Value = $PubItem.AdminCreate; }) > $Null
@@ -43246,8 +43285,8 @@ Function OutputPublishingSettings
 				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 300;
-				$Table.Columns.Item(2).Width = 300;
+				$Table.Columns.Item(1).Width = 250;
+				$Table.Columns.Item(2).Width = 250;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -43325,7 +43364,10 @@ Function OutputPublishingSettings
 			{
 				Line 2 "Information"
 				Line 3 "Remote PC Application`t`t`t`t`t: " "#$($PubItem.Id): $($PubItem.Name)"
-				Line 3 "Description`t`t`t`t`t`t: " $PubItem.Description
+				If(![String]::IsNullOrEmpty($PubItem.Description))
+				{
+					Line 3 "Description`t`t`t`t`t`t: " $PubItem.Description
+				}
 				Line 3 "Last modification by`t`t`t`t`t: " $PubItem.AdminLastMod
 				Line 3 "Modified on`t`t`t`t`t`t: " (Get-Date -UFormat "%c" $PubItem.TimeLastMod)
 				Line 3 "Created by`t`t`t`t`t`t: " $PubItem.AdminCreate
@@ -43495,7 +43537,10 @@ Function OutputPublishingSettings
 				$rowdata = @()
 
 				$columnHeaders = @("Remote PC Application",($Script:htmlsb),"#$($PubItem.Id): $($PubItem.Name)",$htmlwhite)
-				$rowdata += @(,("Description",($Script:htmlsb),$PubItem.Description,$htmlwhite))
+				If(![String]::IsNullOrEmpty($PubItem.Description))
+				{
+					$rowdata += @(,("Description",($Script:htmlsb),$PubItem.Description,$htmlwhite))
+				}
 				$rowdata += @(,("Last modification by",($Script:htmlsb), $PubItem.AdminLastMod,$htmlwhite))
 				$rowdata += @(,("Modified on",($Script:htmlsb), (Get-Date -UFormat "%c" $PubItem.TimeLastMod),$htmlwhite))
 				$rowdata += @(,("Created by",($Script:htmlsb), $PubItem.AdminCreate,$htmlwhite))
@@ -43731,7 +43776,10 @@ Function OutputPublishingSettings
 				
 				$ScriptInformation = New-Object System.Collections.ArrayList
 				$ScriptInformation.Add(@{Data = "Remote PC Desktop"; Value = "#$($PubItem.Id): $($PubItem.Name)"; }) > $Null
-				$ScriptInformation.Add(@{Data = "Description"; Value = $PubItem.Description; }) > $Null
+				If(![String]::IsNullOrEmpty($PubItem.Description))
+				{
+					$ScriptInformation.Add(@{Data = "Description"; Value = $PubItem.Description; }) > $Null
+				}
 				$ScriptInformation.Add(@{Data = "Last modification by"; Value = $PubItem.AdminLastMod; }) > $Null
 				$ScriptInformation.Add(@{Data = "Modified on"; Value = (Get-Date -UFormat "%c" $PubItem.TimeLastMod); }) > $Null
 				$ScriptInformation.Add(@{Data = "Created by"; Value = $PubItem.AdminCreate; }) > $Null
@@ -43903,8 +43951,8 @@ Function OutputPublishingSettings
 				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 300;
-				$Table.Columns.Item(2).Width = 300;
+				$Table.Columns.Item(1).Width = 250;
+				$Table.Columns.Item(2).Width = 250;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -44005,7 +44053,10 @@ Function OutputPublishingSettings
 			{
 				Line 2 "Information"
 				Line 3 "Remote PC Desktop`t`t`t`t`t: " "#$($PubItem.Id): $($PubItem.Name)"
-				Line 3 "Description`t`t`t`t`t`t: " $PubItem.Description
+				If(![String]::IsNullOrEmpty($PubItem.Description))
+				{
+					Line 3 "Description`t`t`t`t`t`t: " $PubItem.Description
+				}
 				Line 3 "Last modification by`t`t`t`t`t: " $PubItem.AdminLastMod
 				Line 3 "Modified on`t`t`t`t`t`t: " (Get-Date -UFormat "%c" $PubItem.TimeLastMod)
 				Line 3 "Created by`t`t`t`t`t`t: " $PubItem.AdminCreate
@@ -44170,7 +44221,10 @@ Function OutputPublishingSettings
 				$rowdata = @()
 
 				$columnHeaders = @("Remote PC Desktop",($Script:htmlsb),"#$($PubItem.Id): $($PubItem.Name)",$htmlwhite)
-				$rowdata += @(,("Description",($Script:htmlsb),$PubItem.Description,$htmlwhite))
+				If(![String]::IsNullOrEmpty($PubItem.Description))
+				{
+					$rowdata += @(,("Description",($Script:htmlsb),$PubItem.Description,$htmlwhite))
+				}
 				$rowdata += @(,("Last modification by",($Script:htmlsb), $PubItem.AdminLastMod,$htmlwhite))
 				$rowdata += @(,("Modified on",($Script:htmlsb), (Get-Date -UFormat "%c" $PubItem.TimeLastMod),$htmlwhite))
 				$rowdata += @(,("Created by",($Script:htmlsb), $PubItem.AdminCreate,$htmlwhite))
@@ -44434,7 +44488,10 @@ Function OutputPublishingSettings
 				WriteWordLine 3 0 "Information"
 				$ScriptInformation = New-Object System.Collections.ArrayList
 				$ScriptInformation.Add(@{Data = "Application"; Value = "#$($PubItem.Id): $($PubItem.Name)"; }) > $Null
-				$ScriptInformation.Add(@{Data = "Description"; Value = $PubItem.Description; }) > $Null
+				If(![String]::IsNullOrEmpty($PubItem.Description))
+				{
+					$ScriptInformation.Add(@{Data = "Description"; Value = $PubItem.Description; }) > $Null
+				}
 				$ScriptInformation.Add(@{Data = "Last modification by"; Value = $PubItem.AdminLastMod; }) > $Null
 				$ScriptInformation.Add(@{Data = "Modified on"; Value = (Get-Date -UFormat "%c" $PubItem.TimeLastMod); }) > $Null
 				$ScriptInformation.Add(@{Data = "Created by"; Value = $PubItem.AdminCreate; }) > $Null
@@ -44443,7 +44500,6 @@ Function OutputPublishingSettings
 				$ScriptInformation.Add(@{Data = "Status"; Value = $PubItemStatus; }) > $Null
 				$ScriptInformation.Add(@{Data = "Target"; Value = $PubItem.Target; }) > $Null
 				$ScriptInformation.Add(@{Data = "Start In"; Value = $PubItem.StartIn; }) > $Null
-				$ScriptInformation.Add(@{Data = "Start automatically when user logs on"; Value = $PubItem.StartOnLogon.ToString(); }) > $Null
 
 				If(![String]::IsNullOrEmpty($PubItem.Parameters))
 				{
@@ -44461,30 +44517,12 @@ Function OutputPublishingSettings
 				
 				If($PubItem.InheritLicenseDefaultSettings)
 				{
-					If($DefaultOneInstancePerUser)
-					{
-						$ScriptInformation.Add(@{Data = "Allow users to start only 1 instance of this application"; Value = "True"; }) > $Null
-					}
-					Else
-					{
-						$ScriptInformation.Add(@{Data = "Allow users to start only 1 instance of this application"; Value = "False"; }) > $Null
-					}
 					$ScriptInformation.Add(@{Data = "Concurrent licenses"; Value = $DefaultConCurrentLicenses; }) > $Null
-					$ScriptInformation.Add(@{Data = "If limit is exceeded"; Value = $DefaultLicenseLimitNotify; }) > $Null
-					$ScriptInformation.Add(@{Data = "Session Sharing"; Value = $DefaultDisableSessionSharing ; }) > $Null
+					$ScriptInformation.Add(@{Data = "Session Sharing"; Value = $DefaultSessionSharing ; }) > $Null
 				}
 				Else
 				{
-					If($PubItem.OneInstancePerUser)
-					{
-						$ScriptInformation.Add(@{Data = "Allow users to start only 1 instance of this application"; Value = "True"; }) > $Null
-					}
-					Else
-					{
-						$ScriptInformation.Add(@{Data = "Allow users to start only 1 instance of this application"; Value = "False"; }) > $Null
-					}
 					$ScriptInformation.Add(@{Data = "Concurrent licenses"; Value = $ConCurrentLicenses; }) > $Null
-					$ScriptInformation.Add(@{Data = "If limit is exceeded"; Value = $LicenseLimitNotify; }) > $Null
 					$ScriptInformation.Add(@{Data = "Session Sharing"; Value = $SessionSharing; }) > $Null
 				}
 
@@ -44529,7 +44567,7 @@ Function OutputPublishingSettings
 					}
 					Else
 					{
-						$ScriptInformation.Add(@{Data = "Published from"; Value = "All Servers in Site"; }) > $Null
+						$ScriptInformation.Add(@{Data = "Published from"; Value = "All Hosts in Site"; }) > $Null
 					}
 				}
 				Else
@@ -44604,8 +44642,8 @@ Function OutputPublishingSettings
 				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 300;
-				$Table.Columns.Item(2).Width = 300;
+				$Table.Columns.Item(1).Width = 250;
+				$Table.Columns.Item(2).Width = 250;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -44684,14 +44722,19 @@ Function OutputPublishingSettings
 				WriteWordLine 0 0 ""
 
 				WriteWordLine 3 0 "Application"
-				WriteWordLine 4 0 "Application"
 				$ScriptInformation = New-Object System.Collections.ArrayList
-				$ScriptInformation.Add(@{Data = "Name"; Value = $PubItem.Name; }) > $Null
-				$ScriptInformation.Add(@{Data = "Description"; Value = $PubItem.Description; }) > $Null
-				$ScriptInformation.Add(@{Data = "Run"; Value = $WinType; }) > $Null
-				$ScriptInformation.Add(@{Data = "Status"; Value = $PubItemStatus; }) > $Null
-				$ScriptInformation.Add(@{Data = "Start automatically when user logs on"; Value = $PubItem.StartOnLogon.ToString(); }) > $Null
-				$ScriptInformation.Add(@{Data = "Exclude from session prelaunch"; Value = $PubItem.ExcludePrelaunch.ToString(); }) > $Null
+				$ScriptInformation.Add(@{Data = "Application"; Value = ""; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Name"; Value = $PubItem.Name; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Description"; Value = $PubItem.Description; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Run"; Value = $WinType; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Status"; Value = $PubItemStatus; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Start automatically when user logs on"; Value = $PubItem.StartOnLogon.ToString(); }) > $Null
+				$ScriptInformation.Add(@{Data = "     Exclude from session prelaunch"; Value = $PubItem.ExcludePrelaunch.ToString(); }) > $Null
+				$ScriptInformation.Add(@{Data = "Host settings"; Value = ""; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Host(s)"; Value = "Default settings"; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Target"; Value = $PubItem.Target; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Start in"; Value = $PubItem.StartIn; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Parameters"; Value = $PubItem.Parameters; }) > $Null
 
 				$Table = AddWordTable -Hashtable $ScriptInformation `
 				-Columns Data,Value `
@@ -44702,33 +44745,8 @@ Function OutputPublishingSettings
 				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 300;
-				$Table.Columns.Item(2).Width = 300;
-
-				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-				FindWordDocumentEnd
-				$Table = $Null
-				WriteWordLine 0 0 ""
-				
-				WriteWordLine 4 0 "Host settings"
-				$ScriptInformation = New-Object System.Collections.ArrayList
-				$ScriptInformation.Add(@{Data = "Host(s)"; Value = "Default settings"; }) > $Null
-				$ScriptInformation.Add(@{Data = "Target"; Value = $PubItem.Target; }) > $Null
-				$ScriptInformation.Add(@{Data = "Start in"; Value = $PubItem.StartIn; }) > $Null
-				$ScriptInformation.Add(@{Data = "Parameters"; Value = $PubItem.Parameters; }) > $Null
-
-				$Table = AddWordTable -Hashtable $ScriptInformation `
-				-Columns Data,Value `
-				-List `
-				-Format $wdTableGrid `
-				-AutoFit $wdAutoFitFixed;
-
-				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
-				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
-				$Table.Columns.Item(1).Width = 200;
-				$Table.Columns.Item(2).Width = 300;
+				$Table.Columns.Item(1).Width = 250;
+				$Table.Columns.Item(2).Width = 250;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -44849,7 +44867,7 @@ Function OutputPublishingSettings
 
 				If($PubItem.InheritLicenseDefaultSettings)
 				{
-					$ScriptInformation.Add(@{Data = "Session Sharing"; Value = $DefaultDisableSessionSharing ; }) > $Null
+					$ScriptInformation.Add(@{Data = "Disable session sharing"; Value = $DefaultDisableSessionSharing ; }) > $Null
 					If($DefaultOneInstancePerUser)
 					{
 						$ScriptInformation.Add(@{Data = "Allow users to start only 1 instance of this application"; Value = "True"; }) > $Null
@@ -44863,7 +44881,7 @@ Function OutputPublishingSettings
 				}
 				Else
 				{
-					$ScriptInformation.Add(@{Data = "Session Sharing"; Value = $SessionSharing; }) > $Null
+					$ScriptInformation.Add(@{Data = "Disable session sharing"; Value = $PubItem.DisableSessionSharing; }) > $Null
 					If($PubItem.OneInstancePerUser)
 					{
 						$ScriptInformation.Add(@{Data = "Allow users to start only 1 instance of this application"; Value = "True"; }) > $Null
@@ -44890,7 +44908,7 @@ Function OutputPublishingSettings
 				-Format $wdTableGrid `
 				-AutoFit $wdAutoFitFixed;
 
-				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 				$Table.Columns.Item(1).Width = 200;
@@ -44911,14 +44929,18 @@ Function OutputPublishingSettings
 					$ScriptInformation.Add(@{Data = "Wait until all RAS Universal Printers are redirected before showing the application"; Value = $DefaultWaitForPrinters; }) > $Null
 					$ScriptInformation.Add(@{Data = "Maximum time to wait is"; Value = "$($DefaultWaitForPrintersTimeout) seconds"; }) > $Null
 					$ScriptInformation.Add(@{Data = "Color Depth"; Value = $DefaultColorDepth; }) > $Null
+					#$ScriptInformation.Add(@{Data = "Resolution"; Value = $DefaultResolution; }) > $Null
 					$ScriptInformation.Add(@{Data = "Start the application as maximized when using mobile clients"; Value = $DefaultStartMaximized; }) > $Null
+					$ScriptInformation.Add(@{Data = "Start in fullscreen mode for Wyse ThinOS clients"; Value = $DefaultStartFullscreen; }) > $Null
 				}
 				Else
 				{
 					$ScriptInformation.Add(@{Data = "Wait until all RAS Universal Printers are redirected before showing the application"; Value = $PubItem.WaitForPrinters.ToString(); }) > $Null
 					$ScriptInformation.Add(@{Data = "Maximum time to wait is"; Value = "$($PubItem.WaitForPrintersTimeout.ToString()) seconds"; }) > $Null
 					$ScriptInformation.Add(@{Data = "Color Depth"; Value = $ColorDepth; }) > $Null
+					#$ScriptInformation.Add(@{Data = "Resolution"; Value = $Resolution; }) > $Null
 					$ScriptInformation.Add(@{Data = "Start the application as maximized when using mobile clients"; Value = $PubItem.StartMaximized.ToString(); }) > $Null
+					$ScriptInformation.Add(@{Data = "Start in fullscreen mode for Wyse ThinOS clients"; Value = $PubItem.StartFullscreen.ToString(); }) > $Null
 				}
 				If($PubItem.InheritDisplayDefaultSettings)
 				{
@@ -44952,7 +44974,10 @@ Function OutputPublishingSettings
 			{
 				Line 2 "Information"
 				Line 3 "Application`t`t`t`t`t`t: " "#$($PubItem.Id): $($PubItem.Name)"
-				Line 3 "Description`t`t`t`t`t`t: " $PubItem.Description
+				If(![String]::IsNullOrEmpty($PubItem.Description))
+				{
+					Line 3 "Description`t`t`t`t`t`t: " $PubItem.Description
+				}
 				Line 3 "Last modification by`t`t`t`t`t: " $PubItem.AdminLastMod
 				Line 3 "Modified on`t`t`t`t`t`t: " (Get-Date -UFormat "%c" $PubItem.TimeLastMod)
 				Line 3 "Created by`t`t`t`t`t`t: " $PubItem.AdminCreate
@@ -44961,7 +44986,6 @@ Function OutputPublishingSettings
 				Line 3 "Type`t`t`t`t`t`t`t: " $PubItem.Type
 				Line 3 "Target`t`t`t`t`t`t`t: " $PubItem.Target
 				Line 3 "Start In`t`t`t`t`t`t: " $PubItem.StartIn
-				Line 3 "Start automatically when user logs on`t`t`t: " $PubItem.StartOnLogon.ToString()
 				
 				If(![String]::IsNullOrEmpty($PubItem.Parameters))
 				{
@@ -44979,16 +45003,12 @@ Function OutputPublishingSettings
 				
 				If($PubItem.InheritLicenseDefaultSettings)
 				{
-					Line 3 "Allow users to start only 1 instance of this application: " $DefaultOneInstancePerUser.ToString()
 					Line 3 "Concurrent licenses`t`t`t`t`t: " $DefaultConCurrentLicenses
-					Line 3 "If limit is exceeded`t`t`t`t`t: " $DefaultLicenseLimitNotify
-					Line 3 "Session Sharing`t`t`t`t`t`t: " $DefaultDisableSessionSharing 
+					Line 3 "Session Sharing`t`t`t`t`t`t: " $DefaultSessionSharing 
 				}
 				Else
 				{
-					Line 3 "Allow users to start only 1 instance of this application: " $PubItem.OneInstancePerUser.ToString()
 					Line 3 "Concurrent licenses`t`t`t`t`t: " $ConCurrentLicenses
-					Line 3 "If limit is exceeded`t`t`t`t`t: " $LicenseLimitNotify
 					Line 3 "Session Sharing`t`t`t`t`t`t: " $SessionSharing
 				}
 
@@ -45032,7 +45052,7 @@ Function OutputPublishingSettings
 					}
 					Else
 					{
-						Line 3 "Published from`t`t`t`t`t`t: " "All Servers in Site"
+						Line 3 "Published from`t`t`t`t`t`t: " "All Hosts in Site"
 					}
 				}
 				Else
@@ -45129,14 +45149,12 @@ Function OutputPublishingSettings
 
 				Line 2 "Application"
 				Line 3 "Application"
-				Line 4 "Name`t`t`t`t`t`t":  $PubItem.Name
+				Line 4 "Name`t`t`t`t`t`t: "  $PubItem.Name
 				Line 4 "Description`t`t`t`t`t: " $PubItem.Description
 				Line 4 "Run`t`t`t`t`t`t: " $WinType
 				Line 4 "Status`t`t`t`t`t`t: " $PubItemStatus
 				Line 4 "Start automatically when user logs on`t`t: " $PubItem.StartOnLogon.ToString()
 				Line 4 "Exclude from session prelaunch`t`t`t: " $PubItem.ExcludePrelaunch.ToString()
-				Line 0 ""
-				
 				Line 3 "Host settings"
 				Line 4 "Host(s)`t`t`t`t`t`t: " "Default settings"
 				Line 4 "Target`t`t`t`t`t`t: " $PubItem.Target
@@ -45219,14 +45237,14 @@ Function OutputPublishingSettings
 
 				If($PubItem.InheritLicenseDefaultSettings)
 				{
-					Line 3 "Session Sharing`t`t`t`t`t`t: " $DefaultDisableSessionSharing
+					Line 3 "Disable session sharing`t`t`t`t`t: " $DefaultDisableSessionSharing
 					Line 3 "Allow users to start only 1 instance of this application: " $DefaultOneInstancePerUser.ToString()
 					Line 3 "Concurrent licenses`t`t`t`t`t: " $DefaultConCurrentLicenses
 					Line 3 "If limit is exceeded`t`t`t`t`t: " $DefaultLicenseLimitNotify
 				}
 				Else
 				{
-					Line 3 "Session Sharing`t`t`t`t`t`t: " $SessionSharing
+					Line 3 "Disable session sharing`t`t`t`t`t: " $PubItem.DisableSessionSharing
 					Line 3 "Allow users to start only 1 instance of this application: " $PubItem.OneInstancePerUser.ToString()
 					Line 3 "Concurrent licenses`t`t`t`t`t: " $ConCurrentLicenses
 					Line 3 "If limit is exceeded`t`t`t`t`t: " $LicenseLimitNotify
@@ -45243,28 +45261,28 @@ Function OutputPublishingSettings
 				Line 0 ""
 
 				Line 2 "Display"
-				Line 3 "Inherit default settings`t`t`t`t: " $PubItem.InheritDisplayDefaultSettings.ToString()
+				Line 3 "Inherit default settings`t`t`t`t`t`t`t`t: " $PubItem.InheritDisplayDefaultSettings.ToString()
 
 				If($PubItem.InheritDisplayDefaultSettings)
 				{
-					Line 3 "Wait until all RAS Universal Printers are redirected "
-					Line 3 "before showing the application`t`t`t`t: " $DefaultWaitForPrinters
-					Line 3 "Maximum time to wait is`t`t`t`t`t: " "$($DefaultWaitForPrintersTimeout) seconds"
-					Line 3 "Color Depth`t`t`t`t`t`t: " $DefaultColorDepth
-					Line 3 "Start the application as maximized "
-					Line 3 "when using mobile clients`t`t`t`t: " $DefaultStartMaximized
+					Line 3 "Wait until all RAS Universal Printers are redirected before showing the application`t: " $DefaultWaitForPrinters
+					Line 3 "Maximum time to wait is`t`t`t`t`t`t`t`t`t: " "$($DefaultWaitForPrintersTimeout) seconds"
+					Line 3 "Color Depth`t`t`t`t`t`t`t`t`t`t: " $DefaultColorDepth
+					#Line 3 "Resolution`t`t`t`t`t`t`t`t`t`t: " $DefaultResolution
+					Line 3 "Start the application as maximized when using mobile clients`t`t`t`t: " $DefaultStartMaximized
+					Line 3 "Start in fullscreen mode for Wyse ThinOS clients`t`t`t`t`t: " $DefaultStartFullscreen
 				}
 				Else
 				{
-					Line 3 "Wait until all RAS Universal Printers are redirected "
-					Line 3 "before showing the application`t`t`t`t: " $PubItem.WaitForPrinters.ToString()
+					Line 3 "Wait until all RAS Universal Printers are redirected before showing the application`t: " $PubItem.WaitForPrinters.ToString()
 					Line 3 "Maximum time to wait is`t`t`t`t`t: " "$($PubItem.WaitForPrintersTimeout.ToString()) seconds"
-					Line 3 "Color Depth`t`t`t`t`t`t: " $ColorDepth
-					Line 3 "Start the application as maximized "
-					Line 3 "when using mobile clients`t`t`t`t: " $PubItem.StartMaximized.ToString()
+					Line 3 "Color Depth`t`t`t`t`t`t`t`t`t`t: " $ColorDepth
+					#Line 3 "Resolution`t`t`t`t`t`t`t`t`t`t: " $Resolution
+					Line 3 "Start the application as maximized when using mobile clients`t`t`t`t`t`t`t`t: " $PubItem.StartMaximized.ToString()
+					Line 3 "Start in fullscreen mode for Wyse ThinOS clients`t`t`t`t`t`t`t`t`t`t: " $PubItem.StartFullscreen.ToString()
 				}
 
-				Line 3 "Settings are replicated to all Sites`t`t`t: " $PubItem.ReplicateDisplaySettings.ToString()
+				Line 3 "Settings are replicated to all Sites`t`t`t`t`t`t`t: " $PubItem.ReplicateDisplaySettings.ToString()
 				Line 0 ""
 			}
 			If($HTML)
@@ -45273,7 +45291,10 @@ Function OutputPublishingSettings
 				$rowdata = @()
 
 				$columnHeaders = @("Application",($Script:htmlsb),"#$($PubItem.Id): $($PubItem.Name)",$htmlwhite)
-				$rowdata += @(,("Description",($Script:htmlsb),$PubItem.Description,$htmlwhite))
+				If(![String]::IsNullOrEmpty($PubItem.Description))
+				{
+					$rowdata += @(,("Description",($Script:htmlsb),$PubItem.Description,$htmlwhite))
+				}
 				$rowdata += @(,("Last modification by",($Script:htmlsb), $PubItem.AdminLastMod,$htmlwhite))
 				$rowdata += @(,("Modified on",($Script:htmlsb), (Get-Date -UFormat "%c" $PubItem.TimeLastMod),$htmlwhite))
 				$rowdata += @(,("Created by",($Script:htmlsb), $PubItem.AdminCreate,$htmlwhite))
@@ -45282,7 +45303,6 @@ Function OutputPublishingSettings
 				$rowdata += @(,("Status",($Script:htmlsb),$PubItemStatus,$htmlwhite))
 				$rowdata += @(,("Target",($Script:htmlsb),$PubItem.Target,$htmlwhite))
 				$rowdata += @(,("Start In",($Script:htmlsb),$PubItem.StartIn,$htmlwhite))
-				$rowdata += @(,("Start automatically when user logs on",($Script:htmlsb),$PubItem.StartOnLogon.ToString(),$htmlwhite))
 				
 				If(![String]::IsNullOrEmpty($PubItem.Parameters))
 				{
@@ -45300,30 +45320,12 @@ Function OutputPublishingSettings
 				
 				If($PubItem.InheritLicenseDefaultSettings)
 				{
-					If($DefaultOneInstancePerUser)
-					{
-						$rowdata += @(,("Allow users to start only 1 instance of this application",($Script:htmlsb),"True",$htmlwhite))
-					}
-					Else
-					{
-						$rowdata += @(,("Allow users to start only 1 instance of this application",($Script:htmlsb),"False",$htmlwhite))
-					}
 					$rowdata += @(,("Concurrent licenses",($Script:htmlsb),$DefaultConCurrentLicenses,$htmlwhite))
-					$rowdata += @(,("If limit is exceeded",($Script:htmlsb),$DefaultLicenseLimitNotify,$htmlwhite))
-					$rowdata += @(,("Session Sharing",($Script:htmlsb),$DefaultDisableSessionSharing,$htmlwhite))
+					$rowdata += @(,("Session Sharing",($Script:htmlsb),$DefaultSessionSharing,$htmlwhite))
 				}
 				Else
 				{
-					If($PubItem.OneInstancePerUser)
-					{
-						$rowdata += @(,("Allow users to start only 1 instance of this application",($Script:htmlsb),"True",$htmlwhite))
-					}
-					Else
-					{
-						$rowdata += @(,("Allow users to start only 1 instance of this application",($Script:htmlsb),"False",$htmlwhite))
-					}
 					$rowdata += @(,("Concurrent licenses",($Script:htmlsb),$ConCurrentLicenses,$htmlwhite))
-					$rowdata += @(,("If limit is exceeded",($Script:htmlsb),$LicenseLimitNotify,$htmlwhite))
 					$rowdata += @(,("Session Sharing",($Script:htmlsb),$SessionSharing,$htmlwhite))
 				}
 
@@ -45367,7 +45369,7 @@ Function OutputPublishingSettings
 					}
 					Else
 					{
-						$rowdata += @(,("Published from",($Script:htmlsb),"All Servers in Site",$htmlwhite))
+						$rowdata += @(,("Published from",($Script:htmlsb),"All Hosts in Site",$htmlwhite))
 					}
 				}
 				Else
@@ -45496,26 +45498,21 @@ Function OutputPublishingSettings
 				WriteHTMLLine 3 0 "Application"
 				$rowdata = @()
 
-				$columnHeaders = @("Name",($Script:htmlsb),$PubItem.Name,$htmlwhite)
-				$rowdata += @(,("Description",($Script:htmlsb),$PubItem.Description,$htmlwhite))
-				$rowdata += @(,("Run",($Script:htmlsb),$WinType,$htmlwhite))
-				$rowdata += @(,("Status",($Script:htmlsb),$PubItemStatus,$htmlwhite))
-				$rowdata += @(,("Start automatically when user logs on",($Script:htmlsb),$PubItem.StartOnLogon.ToString(),$htmlwhite))
-				$rowdata += @(,("Exclude from session prelaunch",($Script:htmlsb),$PubItem.ExcludePrelaunch.ToString(),$htmlwhite))
+				$columnHeaders = @("Application",($Script:htmlsb),"",$htmlwhite)
+				$rowdata += @(,("     Name",($Script:htmlsb),$PubItem.Name,$htmlwhite))
+				$rowdata += @(,("     Description",($Script:htmlsb),$PubItem.Description,$htmlwhite))
+				$rowdata += @(,("     Run",($Script:htmlsb),$WinType,$htmlwhite))
+				$rowdata += @(,("     Status",($Script:htmlsb),$PubItemStatus,$htmlwhite))
+				$rowdata += @(,("     Start automatically when user logs on",($Script:htmlsb),$PubItem.StartOnLogon.ToString(),$htmlwhite))
+				$rowdata += @(,("     Exclude from session prelaunch",($Script:htmlsb),$PubItem.ExcludePrelaunch.ToString(),$htmlwhite))
+				$rowdata += @(,("Host settings",($Script:htmlsb),"",$htmlwhite))
+				$rowdata += @(,("     Host(s)",($Script:htmlsb),"Default settings",$htmlwhite))
+				$rowdata += @(,("     Target",($Script:htmlsb),$PubItem.Target,$htmlwhite))
+				$rowdata += @(,("     Start in",($Script:htmlsb),$PubItem.StartIn,$htmlwhite))
+				$rowdata += @(,("     Parameters",($Script:htmlsb),$PubItem.Parameters,$htmlwhite))
 
 				$msg = "Application"
 				$columnWidths = @("300","300")
-				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-				WriteHTMLLine 0 0 ""
-				
-				$rowdata = @()
-				$columnHeaders = @("Host(s)",($Script:htmlsb),"Default settings",$htmlwhite)
-				$rowdata += @(,("Target",($Script:htmlsb),$PubItem.Target,$htmlwhite))
-				$rowdata += @(,("Start in",($Script:htmlsb),$PubItem.StartIn,$htmlwhite))
-				$rowdata += @(,("Parameters",($Script:htmlsb),$PubItem.Parameters,$htmlwhite))
-
-				$msg = "Host settings"
-				$columnWidths = @("200","300")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 
@@ -45607,7 +45604,7 @@ Function OutputPublishingSettings
 
 				If($PubItem.InheritLicenseDefaultSettings)
 				{
-					$rowdata += @(,("Session Sharing",($Script:htmlsb),$DefaultDisableSessionSharing,$htmlwhite))
+					$rowdata += @(,("Disable session sharing",($Script:htmlsb),$DefaultDisableSessionSharing,$htmlwhite))
 					If($DefaultOneInstancePerUser)
 					{
 						$rowdata += @(,("Allow users to start only 1 instance of this application",($Script:htmlsb),"True",$htmlwhite))
@@ -45621,7 +45618,7 @@ Function OutputPublishingSettings
 				}
 				Else
 				{
-					$rowdata += @(,("Session Sharing",($Script:htmlsb),$SessionSharing,$htmlwhite))
+					$rowdata += @(,("Disable session sharing",($Script:htmlsb),$PubItem.DisableSessionSharing,$htmlwhite))
 					If($PubItem.OneInstancePerUser)
 					{
 						$rowdata += @(,("Allow users to start only 1 instance of this application",($Script:htmlsb),"True",$htmlwhite))
@@ -45643,7 +45640,7 @@ Function OutputPublishingSettings
 				}
 
 				$msg = ""
-				$columnWidths = @("200","300")
+				$columnWidths = @("300","300")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 
@@ -45656,19 +45653,23 @@ Function OutputPublishingSettings
 					$rowdata += @(,("Wait until all RAS Universal Printers are redirected before showing the application",($Script:htmlsb),$DefaultWaitForPrinters,$htmlwhite))
 					$rowdata += @(,("Maximum time to wait is",($Script:htmlsb),"$($DefaultWaitForPrintersTimeout) seconds",$htmlwhite))
 					$rowdata += @(,("Color Depth",($Script:htmlsb),$DefaultColorDepth,$htmlwhite))
+					#$rowdata += @(,("Resolution",($Script:htmlsb),$DefaultResolution,$htmlwhite))
 					$rowdata += @(,("Start the application as maximized when using mobile clients",($Script:htmlsb),$DefaultStartMaximized,$htmlwhite))
+					$rowdata += @(,("Start in fullscreen mode for Wyse ThinOS clients",($Script:htmlsb),$DefaultStartFullscreen,$htmlwhite))
 				}
 				Else
 				{
 					$rowdata += @(,("Wait until all RAS Universal Printers are redirected before showing the application",($Script:htmlsb),$PubItem.WaitForPrinters.ToString(),$htmlwhite))
 					$rowdata += @(,("Maximum time to wait is",($Script:htmlsb),"$($PubItem.WaitForPrintersTimeout.ToString()) seconds",$htmlwhite))
 					$rowdata += @(,("Color Depth",($Script:htmlsb),$ColorDepth,$htmlwhite))
+					#$rowdata += @(,("Resolution",($Script:htmlsb),$Resolution,$htmlwhite))
 					$rowdata += @(,("Start the application as maximized when using mobile clients",($Script:htmlsb),$PubItem.StartMaximized.ToString(),$htmlwhite))
+					$rowdata += @(,("Start in fullscreen mode for Wyse ThinOS clients",($Script:htmlsb),$PubItem.StartFullscreen.ToString(),$htmlwhite))
 				}
 				$rowdata += @(,("Settings are replicated to all Sites: ",($Script:htmlsb),$PubItem.ReplicateDisplaySettings.ToString(),$htmlwhite))
 
 				$msg = ""
-				$columnWidths = @("200","300")
+				$columnWidths = @("500","200")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 
 				WriteHTMLLine 0 0 ""
@@ -45721,7 +45722,10 @@ Function OutputPublishingSettings
 				WriteWordLine 3 0 "Information"
 				$ScriptInformation = New-Object System.Collections.ArrayList
 				$ScriptInformation.Add(@{Data = "RD Session Host Desktop"; Value = "#$($PubItem.Id): $($PubItem.Name)"; }) > $Null
-				$ScriptInformation.Add(@{Data = "Description"; Value = $PubItem.Description; }) > $Null
+				If(![String]::IsNullOrEmpty($PubItem.Description))
+				{
+					$ScriptInformation.Add(@{Data = "Description"; Value = $PubItem.Description; }) > $Null
+				}
 				$ScriptInformation.Add(@{Data = "Last modification by"; Value = $PubItem.AdminLastMod; }) > $Null
 				$ScriptInformation.Add(@{Data = "Modified on"; Value = (Get-Date -UFormat "%c" $PubItem.TimeLastMod); }) > $Null
 				$ScriptInformation.Add(@{Data = "Created by"; Value = $PubItem.AdminCreate; }) > $Null
@@ -45730,7 +45734,7 @@ Function OutputPublishingSettings
 				$ScriptInformation.Add(@{Data = "Status"; Value = $PubItemStatus; }) > $Null
 				If(validObject $PubItem ConnectToConsole)
 				{
-					$ScriptInformation.Add(@{Data = "Connect to administrative session"; Value = $PubItem.ConnectToConsole.ToString(); }) > $Null
+					$ScriptInformation.Add(@{Data = "Connect to administrative session"; Value = $ConnectToConsole; }) > $Null
 				}
 				$ScriptInformation.Add(@{Data = "Desktop Size"; Value = $DesktopSize; }) > $Null
 				
@@ -45773,7 +45777,7 @@ Function OutputPublishingSettings
 					}
 					Else
 					{
-						$ScriptInformation.Add(@{Data = "Published from"; Value = "All Servers in Site"; }) > $Null
+						$ScriptInformation.Add(@{Data = "Published from"; Value = "All Hosts in Site"; }) > $Null
 					}
 				}
 				Else
@@ -45936,7 +45940,7 @@ Function OutputPublishingSettings
 				$ScriptInformation.Add(@{Data = "     Status"; Value = $PubItemStatus; }) > $Null
 				If(validObject $PubItem ConnectToConsole)
 				{
-					$ScriptInformation.Add(@{Data = "     Connect to administrative session"; Value = $PubItem.ConnectToConsole.ToString(); }) > $Null
+					$ScriptInformation.Add(@{Data = "     Connect to administrative session"; Value = $ConnectToConsole; }) > $Null
 				}
 				$ScriptInformation.Add(@{Data = "     Start automatically when user logs on"; Value = $PubItem.StartOnLogon.ToString(); }) > $Null
 				$ScriptInformation.Add(@{Data = "     Exclude from session prelaunch"; Value = $PubItem.ExcludePrelaunch.ToString(); }) > $Null
@@ -45953,8 +45957,8 @@ Function OutputPublishingSettings
 				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 300;
-				$Table.Columns.Item(2).Width = 300;
+				$Table.Columns.Item(1).Width = 250;
+				$Table.Columns.Item(2).Width = 250;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -46032,7 +46036,10 @@ Function OutputPublishingSettings
 			{
 				Line 2 "Information"
 				Line 3 "RD Session Host Desktop`t`t`t`t`t: " "#$($PubItem.Id): $($PubItem.Name)"
-				Line 3 "Description`t`t`t`t`t`t: " $PubItem.Description
+				If(![String]::IsNullOrEmpty($PubItem.Description))
+				{
+					Line 3 "Description`t`t`t`t`t`t: " $PubItem.Description
+				}
 				Line 3 "Last modification by`t`t`t`t`t: " $PubItem.AdminLastMod
 				Line 3 "Modified on`t`t`t`t`t`t: " (Get-Date -UFormat "%c" $PubItem.TimeLastMod)
 				Line 3 "Created by`t`t`t`t`t`t: " $PubItem.AdminCreate
@@ -46041,7 +46048,7 @@ Function OutputPublishingSettings
 				Line 3 "Status`t`t`t`t`t`t`t: " $PubItemStatus
 				If(validObject $PubItem ConnectToConsole)
 				{
-					Line 3 "Connect to administrative session`t`t`t: " $PubItem.ConnectToConsole.ToString()
+					Line 3 "Connect to administrative session`t`t`t: " $ConnectToConsole
 				}
 				Line 3 "Desktop Size`t`t`t`t`t`t: " $DesktopSize
 				
@@ -46083,7 +46090,7 @@ Function OutputPublishingSettings
 					}
 					Else
 					{
-						Line 3 "Published from`t`t`t`t`t`t: " "All Servers in Site"
+						Line 3 "Published from`t`t`t`t`t`t: " "All Hosts in Site"
 					}
 				}
 				Else
@@ -46185,7 +46192,7 @@ Function OutputPublishingSettings
 				Line 4 "Status`t`t`t`t`t`t: " $PubItemStatus
 				If(validObject $PubItem ConnectToConsole)
 				{
-					Line 4 "Connect to administrative session`t`t: " $PubItem.ConnectToConsole.ToString()
+					Line 4 "Connect to administrative session`t`t: " $ConnectToConsole
 				}
 				Line 4 "Start automatically when user logs on`t`t: " $PubItem.StartOnLogon.ToString()
 				Line 4 "Exclude from session prelaunch`t`t`t: " $PubItem.ExcludePrelaunch.ToString()
@@ -46247,7 +46254,10 @@ Function OutputPublishingSettings
 				WriteHTMLLine 3 0 "Information"
 				$rowdata = @()
 				$columnHeaders = @("RD Session Host Desktop",($Script:htmlsb),"#$($PubItem.Id): $($PubItem.Name)",$htmlwhite)
-				$rowdata += @(,("Description",($Script:htmlsb),$PubItem.Description,$htmlwhite))
+				If(![String]::IsNullOrEmpty($PubItem.Description))
+				{
+					$rowdata += @(,("Description",($Script:htmlsb),$PubItem.Description,$htmlwhite))
+				}
 				$rowdata += @(,("Last modification by",($Script:htmlsb), $PubItem.AdminLastMod,$htmlwhite))
 				$rowdata += @(,("Modified on",($Script:htmlsb), (Get-Date -UFormat "%c" $PubItem.TimeLastMod),$htmlwhite))
 				$rowdata += @(,("Created by",($Script:htmlsb), $PubItem.AdminCreate,$htmlwhite))
@@ -46256,7 +46266,7 @@ Function OutputPublishingSettings
 				$rowdata += @(,("Status",($Script:htmlsb),$PubItemStatus,$htmlwhite))
 				If(validObject $PubItem ConnectToConsole)
 				{
-					$rowdata += @(,("Connect to administrative session",($Script:htmlsb),$PubItem.ConnectToConsole.ToString(),$htmlwhite))
+					$rowdata += @(,("Connect to administrative session",($Script:htmlsb),$ConnectToConsole,$htmlwhite))
 				}
 				$rowdata += @(,("Desktop Size",($Script:htmlsb),$DesktopSize,$htmlwhite))
 				
@@ -46298,7 +46308,7 @@ Function OutputPublishingSettings
 					}
 					Else
 					{
-						$rowdata += @(,("Published from",($Script:htmlsb),"All Servers in Site",$htmlwhite))
+						$rowdata += @(,("Published from",($Script:htmlsb),"All Hosts in Site",$htmlwhite))
 					}
 				}
 				Else
@@ -46433,7 +46443,7 @@ Function OutputPublishingSettings
 				$rowdata += @(,("     Status",($Script:htmlsb),$PubItemStatus,$htmlwhite))
 				If(validObject $PubItem ConnectToConsole)
 				{
-					$rowdata += @(,("     Connect to administrative session",($Script:htmlsb),$PubItem.ConnectToConsole.ToString(),$htmlwhite))
+					$rowdata += @(,("     Connect to administrative session",($Script:htmlsb),$ConnectToConsole,$htmlwhite))
 				}
 				$rowdata += @(,("     Start automatically when user logs on",($Script:htmlsb),$PubItem.StartOnLogon.ToString(),$htmlwhite))
 				$rowdata += @(,("     Exclude from session prelaunch",($Script:htmlsb),$PubItem.ExcludePrelaunch.ToString(),$htmlwhite))
@@ -46529,7 +46539,10 @@ Function OutputPublishingSettings
 				WriteWordLine 3 0 "Information"
 				$ScriptInformation = New-Object System.Collections.ArrayList
 				$ScriptInformation.Add(@{Data = "Virtual Desktop Application"; Value = "#$($PubItem.Id): $($PubItem.Name)"; }) > $Null
-				$ScriptInformation.Add(@{Data = "Description"; Value = $PubItem.Description; }) > $Null
+				If(![String]::IsNullOrEmpty($PubItem.Description))
+				{
+					$ScriptInformation.Add(@{Data = "Description"; Value = $PubItem.Description; }) > $Null
+				}
 				$ScriptInformation.Add(@{Data = "Last modification by"; Value = $PubItem.AdminLastMod; }) > $Null
 				$ScriptInformation.Add(@{Data = "Modified on"; Value = (Get-Date -UFormat "%c" $PubItem.TimeLastMod); }) > $Null
 				$ScriptInformation.Add(@{Data = "Created by"; Value = $PubItem.AdminCreate; }) > $Null
@@ -46616,8 +46629,8 @@ Function OutputPublishingSettings
 				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 300;
-				$Table.Columns.Item(2).Width = 300;
+				$Table.Columns.Item(1).Width = 250;
+				$Table.Columns.Item(2).Width = 250;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -46752,8 +46765,8 @@ Function OutputPublishingSettings
 				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 300;
-				$Table.Columns.Item(2).Width = 300;
+				$Table.Columns.Item(1).Width = 250;
+				$Table.Columns.Item(2).Width = 250;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -46855,7 +46868,10 @@ Function OutputPublishingSettings
 			{
 				Line 2 "Information"
 				Line 3 "Virtual Desktop Application`t`t`t`t: " "#$($PubItem.Id): $($PubItem.Name)"
-				Line 3 "Description`t`t`t`t`t`t: " $PubItem.Description
+				If(![String]::IsNullOrEmpty($PubItem.Description))
+				{
+					Line 3 "Description`t`t`t`t`t`t: " $PubItem.Description
+				}
 				Line 3 "Last modification by`t`t`t`t`t: " $PubItem.AdminLastMod
 				Line 3 "Modified on`t`t`t`t`t`t: " (Get-Date -UFormat "%c" $PubItem.TimeLastMod)
 				Line 3 "Created by`t`t`t`t`t`t: " $PubItem.AdminCreate
@@ -47074,7 +47090,10 @@ Function OutputPublishingSettings
 				$rowdata = @()
 
 				$columnHeaders = @("Virtual Desktop Application",($Script:htmlsb),"#$($PubItem.Id): $($PubItem.Name)",$htmlwhite)
-				$rowdata += @(,("Description",($Script:htmlsb),$PubItem.Description,$htmlwhite))
+				If(![String]::IsNullOrEmpty($PubItem.Description))
+				{
+					$rowdata += @(,("Description",($Script:htmlsb),$PubItem.Description,$htmlwhite))
+				}
 				$rowdata += @(,("Last modification by",($Script:htmlsb), $PubItem.AdminLastMod,$htmlwhite))
 				$rowdata += @(,("Modified on",($Script:htmlsb), (Get-Date -UFormat "%c" $PubItem.TimeLastMod),$htmlwhite))
 				$rowdata += @(,("Created by",($Script:htmlsb), $PubItem.AdminCreate,$htmlwhite))
@@ -47354,7 +47373,10 @@ Function OutputPublishingSettings
 				WriteWordLine 3 0 "Information"
 				$ScriptInformation = New-Object System.Collections.ArrayList
 				$ScriptInformation.Add(@{Data = "Virtual Desktop"; Value = "#$($PubItem.Id): $($PubItem.Name)"; }) > $Null
-				$ScriptInformation.Add(@{Data = "Description"; Value = $PubItem.Description; }) > $Null
+				If(![String]::IsNullOrEmpty($PubItem.Description))
+				{
+					$ScriptInformation.Add(@{Data = "Description"; Value = $PubItem.Description; }) > $Null
+				}
 				$ScriptInformation.Add(@{Data = "Last modification by"; Value = $PubItem.AdminLastMod; }) > $Null
 				$ScriptInformation.Add(@{Data = "Modified on"; Value = (Get-Date -UFormat "%c" $PubItem.TimeLastMod); }) > $Null
 				$ScriptInformation.Add(@{Data = "Created by"; Value = $PubItem.AdminCreate; }) > $Null
@@ -47555,7 +47577,7 @@ Function OutputPublishingSettings
 				WriteWordLine 0 0 ""
 
 				WriteWordLine 3 0 "Desktop"
-				WriteWordLIune 4 0 "Desktop"
+				WriteWordLine 4 0 "Desktop"
 				$ScriptInformation = New-Object System.Collections.ArrayList
 
 				$ScriptInformation.Add(@{Data = "Name"; Value = $PubItem.Name; }) > $Null
@@ -47571,8 +47593,8 @@ Function OutputPublishingSettings
 				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 300;
-				$Table.Columns.Item(2).Width = 300;
+				$Table.Columns.Item(1).Width = 250;
+				$Table.Columns.Item(2).Width = 250;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -47675,7 +47697,10 @@ Function OutputPublishingSettings
 			{
 				Line 2 "Information"
 				Line 3 "Virtual Desktop`t`t`t`t`t`t: " "#$($PubItem.Id): $($PubItem.Name)"
-				Line 3 "Description`t`t`t`t`t`t: " $PubItem.Description
+				If(![String]::IsNullOrEmpty($PubItem.Description))
+				{
+					Line 3 "Description`t`t`t`t`t`t: " $PubItem.Description
+				}
 				Line 3 "Last modification by`t`t`t`t`t: " $PubItem.AdminLastMod
 				Line 3 "Modified on`t`t`t`t`t`t: " (Get-Date -UFormat "%c" $PubItem.TimeLastMod)
 				Line 3 "Created by`t`t`t`t`t`t: " $PubItem.AdminCreate
@@ -47865,7 +47890,10 @@ Function OutputPublishingSettings
 				$rowdata = @()
 
 				$columnHeaders = @("Virtual Desktop",($Script:htmlsb),"#$($PubItem.Id): $($PubItem.Name)",$htmlwhite)
-				$rowdata += @(,("Description",($Script:htmlsb),$PubItem.Description,$htmlwhite))
+				If(![String]::IsNullOrEmpty($PubItem.Description))
+				{
+					$rowdata += @(,("Description",($Script:htmlsb),$PubItem.Description,$htmlwhite))
+				}
 				$rowdata += @(,("Last modification by",($Script:htmlsb), $PubItem.AdminLastMod,$htmlwhite))
 				$rowdata += @(,("Modified on",($Script:htmlsb), (Get-Date -UFormat "%c" $PubItem.TimeLastMod),$htmlwhite))
 				$rowdata += @(,("Created by",($Script:htmlsb), $PubItem.AdminCreate,$htmlwhite))
@@ -48159,7 +48187,10 @@ Function OutputPublishingSettings
 				WriteWordLine 3 0 "Information"
 				$ScriptInformation = New-Object System.Collections.ArrayList
 				$ScriptInformation.Add(@{Data = "Azure Virtual Desktop"; Value = "#$($PubItem.Id): $($PubItem.Name)"; }) > $Null
-				$ScriptInformation.Add(@{Data = "Description"; Value = $PubItem.Description; }) > $Null
+				If(![String]::IsNullOrEmpty($PubItem.Description))
+				{
+					$ScriptInformation.Add(@{Data = "Description"; Value = $PubItem.Description; }) > $Null
+				}
 				$ScriptInformation.Add(@{Data = "Last modification by"; Value = $PubItem.AdminLastMod; }) > $Null
 				$ScriptInformation.Add(@{Data = "Modified on"; Value = (Get-Date -UFormat "%c" $PubItem.TimeLastMod); }) > $Null
 				$ScriptInformation.Add(@{Data = "Created by"; Value = $PubItem.AdminCreate; }) > $Null
@@ -48208,7 +48239,7 @@ Function OutputPublishingSettings
 					}
 					Else
 					{
-						$ScriptInformation.Add(@{Data = "Published from"; Value = "All Servers in Site"; }) > $Null
+						$ScriptInformation.Add(@{Data = "Published from"; Value = "All Hosts in Site"; }) > $Null
 					}
 				}
 				Else
@@ -48373,8 +48404,8 @@ Function OutputPublishingSettings
 				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 300;
-				$Table.Columns.Item(2).Width = 300;
+				$Table.Columns.Item(1).Width = 250;
+				$Table.Columns.Item(2).Width = 250;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -48459,7 +48490,7 @@ Function OutputPublishingSettings
 
 				If($PubItem.InheritLicenseDefaultSettings)
 				{
-					$ScriptInformation.Add(@{Data = "Session Sharing"; Value = $DefaultDisableSessionSharing ; }) > $Null
+					$ScriptInformation.Add(@{Data = "Session Sharing"; Value = $DefaultSessionSharing ; }) > $Null
 					If($DefaultOneInstancePerUser)
 					{
 						$ScriptInformation.Add(@{Data = "Allow users to start only 1 instance of this application"; Value = "True"; }) > $Null
@@ -48601,7 +48632,10 @@ Function OutputPublishingSettings
 			{
 				Line 2 "Information"
 				Line 3 "Azure Virtual Desktop`t`t`t`t`t: " "#$($PubItem.Id): $($PubItem.Name)"
-				Line 3 "Description`t`t`t`t`t`t: " $PubItem.Description
+				If(![String]::IsNullOrEmpty($PubItem.Description))
+				{
+					Line 3 "Description`t`t`t`t`t`t: " $PubItem.Description
+				}
 				Line 3 "Last modification by`t`t`t`t`t: " $PubItem.AdminLastMod
 				Line 3 "Modified on`t`t`t`t`t`t: " (Get-Date -UFormat "%c" $PubItem.TimeLastMod)
 				Line 3 "Created by`t`t`t`t`t`t: " $PubItem.AdminCreate
@@ -48648,7 +48682,7 @@ Function OutputPublishingSettings
 					}
 					Else
 					{
-						Line 3 "Published from`t`t`t`t`t`t: " "All Servers in Site"
+						Line 3 "Published from`t`t`t`t`t`t: " "All Hosts in Site"
 					}
 				}
 				Else
@@ -48781,7 +48815,7 @@ Function OutputPublishingSettings
 
 				If($PubItem.InheritLicenseDefaultSettings)
 				{
-					Line 3 "Session Sharing`t`t`t`t`t`t: " $DefaultDisableSessionSharing
+					Line 3 "Session Sharing`t`t`t`t`t`t: " $DefaultSessionSharing
 					Line 3 "Allow users to start only 1 instance of this application: " $DefaultOneInstancePerUser.ToString()
 					Line 3 "Concurrent licenses`t`t`t`t`t: " $DefaultConCurrentLicenses
 					Line 3 "If limit is exceeded`t`t`t`t`t: " $DefaultLicenseLimitNotify
@@ -48835,7 +48869,10 @@ Function OutputPublishingSettings
 				$rowdata = @()
 
 				$columnHeaders = @("Azure Virtual Desktop",($Script:htmlsb),"#$($PubItem.Id): $($PubItem.Name)",$htmlwhite)
-				$rowdata += @(,("Description",($Script:htmlsb),$PubItem.Description,$htmlwhite))
+				If(![String]::IsNullOrEmpty($PubItem.Description))
+				{
+					$rowdata += @(,("Description",($Script:htmlsb),$PubItem.Description,$htmlwhite))
+				}
 				$rowdata += @(,("Last modification by",($Script:htmlsb), $PubItem.AdminLastMod,$htmlwhite))
 				$rowdata += @(,("Modified on",($Script:htmlsb), (Get-Date -UFormat "%c" $PubItem.TimeLastMod),$htmlwhite))
 				$rowdata += @(,("Created by",($Script:htmlsb), $PubItem.AdminCreate,$htmlwhite))
@@ -48883,7 +48920,7 @@ Function OutputPublishingSettings
 					}
 					Else
 					{
-						$rowdata += @(,("Published from",($Script:htmlsb),"All Servers in Site",$htmlwhite))
+						$rowdata += @(,("Published from",($Script:htmlsb),"All Hosts in Site",$htmlwhite))
 					}
 				}
 				Else
@@ -49068,7 +49105,7 @@ Function OutputPublishingSettings
 
 				If($PubItem.InheritLicenseDefaultSettings)
 				{
-					$rowdata += @(,("Session Sharing",($Script:htmlsb),$DefaultDisableSessionSharing,$htmlwhite))
+					$rowdata += @(,("Session Sharing",($Script:htmlsb),$DefaultSessionSharing,$htmlwhite))
 					If($DefaultOneInstancePerUser)
 					{
 						$rowdata += @(,("Allow users to start only 1 instance of this application",($Script:htmlsb),"True",$htmlwhite))
@@ -49195,7 +49232,10 @@ Function OutputPublishingSettings
 				WriteWordLine 3 0 "Information"
 				$ScriptInformation = New-Object System.Collections.ArrayList
 				$ScriptInformation.Add(@{Data = "Azure Virtual Desktop"; Value = "#$($PubItem.Id): $($PubItem.Name)"; }) > $Null
-				$ScriptInformation.Add(@{Data = "Description"; Value = $PubItem.Description; }) > $Null
+				If(![String]::IsNullOrEmpty($PubItem.Description))
+				{
+					$ScriptInformation.Add(@{Data = "Description"; Value = $PubItem.Description; }) > $Null
+				}
 				$ScriptInformation.Add(@{Data = "Last modification by"; Value = $PubItem.AdminLastMod; }) > $Null
 				$ScriptInformation.Add(@{Data = "Modified on"; Value = (Get-Date -UFormat "%c" $PubItem.TimeLastMod); }) > $Null
 				$ScriptInformation.Add(@{Data = "Created by"; Value = $PubItem.AdminCreate; }) > $Null
@@ -49243,7 +49283,7 @@ Function OutputPublishingSettings
 					}
 					Else
 					{
-						$ScriptInformation.Add(@{Data = "Published from"; Value = "All Servers in Site"; }) > $Null
+						$ScriptInformation.Add(@{Data = "Published from"; Value = "All Hosts in Site"; }) > $Null
 					}
 				}
 				Else
@@ -49394,7 +49434,7 @@ Function OutputPublishingSettings
 				$ScriptInformation.Add(@{Data = "Description"; Value = $PubItem.Description; }) > $Null
 				If(validObject $PubItem ConnectToConsole)
 				{
-					$ScriptInformation.Add(@{Data = "Connect to administrative session"; Value = $PubItem.ConnectToConsole.ToString(); }) > $Null
+					$ScriptInformation.Add(@{Data = "Connect to administrative session"; Value = $ConnectToConsole; }) > $Null
 				}
 				$ScriptInformation.Add(@{Data = "Start automatically when user logs on"; Value = $PubItem.StartOnLogon.ToString(); }) > $Null
 				$ScriptInformation.Add(@{Data = "Exclude from session prelaunch"; Value = $PubItem.ExcludePrelaunch.ToString(); }) > $Null
@@ -49408,8 +49448,8 @@ Function OutputPublishingSettings
 				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 300;
-				$Table.Columns.Item(2).Width = 300;
+				$Table.Columns.Item(1).Width = 250;
+				$Table.Columns.Item(2).Width = 250;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -49454,7 +49494,10 @@ Function OutputPublishingSettings
 			{
 				Line 2 "Information"
 				Line 3 "Azure Virtual Desktop`t`t`t`t`t: " "#$($PubItem.Id): $($PubItem.Name)"
-				Line 3 "Description`t`t`t`t`t`t: " $PubItem.Description
+				If(![String]::IsNullOrEmpty($PubItem.Description))
+				{
+					Line 3 "Description`t`t`t`t`t`t: " $PubItem.Description
+				}
 				Line 3 "Last modification by`t`t`t`t`t: " $PubItem.AdminLastMod
 				Line 3 "Modified on`t`t`t`t`t`t: " (Get-Date -UFormat "%c" $PubItem.TimeLastMod)
 				Line 3 "Created by`t`t`t`t`t`t: " $PubItem.AdminCreate
@@ -49501,7 +49544,7 @@ Function OutputPublishingSettings
 					}
 					Else
 					{
-						Line 3 "Published from`t`t`t`t`t`t: " "All Servers in Site"
+						Line 3 "Published from`t`t`t`t`t`t: " "All Hosts in Site"
 					}
 				}
 				Else
@@ -49575,7 +49618,7 @@ Function OutputPublishingSettings
 				Line 4 "Description`t`t`t`t`t: " $PubItem.Description
 				If(validObject $PubItem ConnectToConsole)
 				{
-					Line 4 "Connect to administrative session`t`t: " $PubItem.ConnectToConsole.ToString()
+					Line 4 "Connect to administrative session`t`t: " $ConnectToConsole
 				}
 				Line 4 "Start automatically when user logs on`t`t: " $PubItem.StartOnLogon.ToString()
 				Line 4 "Exclude from session prelaunch`t`t`t: " $PubItem.ExcludePrelaunch.ToString()
@@ -49601,7 +49644,10 @@ Function OutputPublishingSettings
 				WriteHTMLLine 3 0 "Information"
 				$rowdata = @()
 				$columnHeaders = @("Azure Virtual Desktop",($Script:htmlsb),"#$($PubItem.Id): $($PubItem.Name)",$htmlwhite)
-				$rowdata += @(,("Description",($Script:htmlsb),$PubItem.Description,$htmlwhite))
+				If(![String]::IsNullOrEmpty($PubItem.Description))
+				{
+					$rowdata += @(,("Description",($Script:htmlsb),$PubItem.Description,$htmlwhite))
+				}
 				$rowdata += @(,("Last modification by",($Script:htmlsb), $PubItem.AdminLastMod,$htmlwhite))
 				$rowdata += @(,("Modified on",($Script:htmlsb), (Get-Date -UFormat "%c" $PubItem.TimeLastMod),$htmlwhite))
 				$rowdata += @(,("Created by",($Script:htmlsb), $PubItem.AdminCreate,$htmlwhite))
@@ -49648,7 +49694,7 @@ Function OutputPublishingSettings
 					}
 					Else
 					{
-						$rowdata += @(,("Published from",($Script:htmlsb),"All Servers in Site",$htmlwhite))
+						$rowdata += @(,("Published from",($Script:htmlsb),"All Hosts in Site",$htmlwhite))
 					}
 				}
 				Else
@@ -49772,7 +49818,7 @@ Function OutputPublishingSettings
 				$rowdata += @(,("Description",($Script:htmlsb),$PubItem.Description,$htmlwhite))
 				If(validObject $PubItem ConnectToConsole)
 				{
-					$rowdata += @(,("Connect to administrative session",($Script:htmlsb),$PubItem.ConnectToConsole.ToString(),$htmlwhite))
+					$rowdata += @(,("Connect to administrative session",($Script:htmlsb),$ConnectToConsole,$htmlwhite))
 				}
 				$rowdata += @(,("Start automatically when user logs on",($Script:htmlsb),$PubItem.StartOnLogon.ToString(),$htmlwhite))
 				$rowdata += @(,("Exclude from session prelaunch",($Script:htmlsb),$PubItem.ExcludePrelaunch.ToString(),$htmlwhite))
@@ -49899,7 +49945,10 @@ Function OutputPublishingSettings
 				WriteWordLine 3 0 "Information"
 				$ScriptInformation = New-Object System.Collections.ArrayList
 				$ScriptInformation.Add(@{Data = "Local Device Application"; Value = "#$($PubItem.Id): $($PubItem.Name)"; }) > $Null
-				$ScriptInformation.Add(@{Data = "Description"; Value = $PubItem.Description; }) > $Null
+				If(![String]::IsNullOrEmpty($PubItem.Description))
+				{
+					$ScriptInformation.Add(@{Data = "Description"; Value = $PubItem.Description; }) > $Null
+				}
 				$ScriptInformation.Add(@{Data = "Last modification by"; Value = $PubItem.AdminLastMod; }) > $Null
 				$ScriptInformation.Add(@{Data = "Modified on"; Value = (Get-Date -UFormat "%c" $PubItem.TimeLastMod); }) > $Null
 				$ScriptInformation.Add(@{Data = "Created by"; Value = $PubItem.AdminCreate; }) > $Null
@@ -49963,13 +50012,11 @@ Function OutputPublishingSettings
 				{
 					$ScriptInformation.Add(@{Data = ""; Value = "User Portal (Web client)"; }) > $Null
 				}
-				$ScriptInformation.Add(@{Data = "Start automatically when user logs on"; Value = $PubItem.StartOnLogon.ToString(); }) > $Null
 
 				If($PubItem.Windows.Enabled)
 				{
 					$ScriptInformation.Add(@{Data = "Native Application Settings - Windows client"; Value = ""; }) > $Null
 					$ScriptInformation.Add(@{Data = "Target"; Value = $PubItem.Windows.Target; }) > $Null
-					$ScriptInformation.Add(@{Data = "Start In"; Value = $PubItem.Windows.StartIn; }) > $Null
 					If($PubItem.Windows.Parameters -ne "")
 					{
 						$ScriptInformation.Add(@{Data = "Parameters"; Value = $PubItem.Windows.Parameters; }) > $Null
@@ -50034,8 +50081,8 @@ Function OutputPublishingSettings
 				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 300;
-				$Table.Columns.Item(2).Width = 300;
+				$Table.Columns.Item(1).Width = 250;
+				$Table.Columns.Item(2).Width = 250;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -50044,14 +50091,80 @@ Function OutputPublishingSettings
 				WriteWordLine 0 0 ""
 
 				WriteWordLine 3 0 "Application"
-				WriteWordLine 4 0 "Application"
 				$ScriptInformation = New-Object System.Collections.ArrayList
-				$ScriptInformation.Add(@{Data = "Name"; Value = $PubItem.Name; }) > $Null
-				$ScriptInformation.Add(@{Data = "Description"; Value = $PubItem.Description; }) > $Null
-				$ScriptInformation.Add(@{Data = "Status"; Value = $PubItemStatus; }) > $Null
-				$ScriptInformation.Add(@{Data = "Run"; Value = $WinType; }) > $Null
-				$ScriptInformation.Add(@{Data = "Target"; Value = $PubItem.Windows.Target; }) > $Null
-				$ScriptInformation.Add(@{Data = "Start automatically when user logs on"; Value = $PubItem.StartOnLogon.ToString(); }) > $Null
+				$ScriptInformation.Add(@{Data = "Application"; Value = ""; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Name"; Value = $PubItem.Name; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Description"; Value = $PubItem.Description; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Status"; Value = $PubItemStatus; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Start automatically when user logs on"; Value = $PubItem.StartOnLogon.ToString(); }) > $Null
+				$ScriptInformation.Add(@{Data = "Local device settings"; Value = ""; }) > $Null
+				$ScriptInformation.Add(@{Data = "     URL"; Value = $PubItem.URL; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Clients"; Value = $PubItem.URL; }) > $Null
+				If($PubItem.Windows.Enabled)
+				{
+					$ScriptInformation.Add(@{Data = "          Windows client"; Value = "Enabled"; }) > $Null
+					$ScriptInformation.Add(@{Data = "               Use the following application if available on local device"; Value = $PubItem.Windows.UseIfAvailable.ToString(); }) > $Null
+					$ScriptInformation.Add(@{Data = "               Target"; Value = $PubItem.Windows.Target; }) > $Null
+					$ScriptInformation.Add(@{Data = "               Start In"; Value = $PubItem.Windows.StartIn; }) > $Null
+					$ScriptInformation.Add(@{Data = "               Parameters"; Value = $PubItem.Windows.Parameters; }) > $Null
+					Switch ($PubItem.Windows.WinType)
+					{
+						"Normal"	{$WinType = "Normal Window"; Break}
+						"Maximized"	{$WinType = "Maximized"; Break}
+						"Minimized"	{$WinType = "Minimized"; Break}
+						Default		{$WinType = "Unable to determine window Run type: $($PubItem.Windows.WinType)"; Break}
+					}
+					$ScriptInformation.Add(@{Data = "               Run"; Value = $WinType; }) > $Null
+				}
+				Else
+				{
+					$ScriptInformation.Add(@{Data = "          Windows client"; Value = "Disabled"; }) > $Null
+				}
+
+				If($PubItem.UserPortal.Enabled)
+				{
+					$ScriptInformation.Add(@{Data = "          User Portal (Web client)"; Value = "Enabled"; }) > $Null
+				}
+				Else
+				{
+					$ScriptInformation.Add(@{Data = "          User Portal (Web client)"; Value = "Disabled"; }) > $Null
+				}
+
+				If($PubItem.Mac.Enabled)
+				{
+					$ScriptInformation.Add(@{Data = "          macOS client"; Value = "Enabled"; }) > $Null
+				}
+				Else
+				{
+					$ScriptInformation.Add(@{Data = "          macOS client"; Value = "Disabled"; }) > $Null
+				}
+
+				If($PubItem.Linux.Enabled)
+				{
+					$ScriptInformation.Add(@{Data = "          Linux client"; Value = "Enabled"; }) > $Null
+				}
+				Else
+				{
+					$ScriptInformation.Add(@{Data = "          Linux client"; Value = "Disabled"; }) > $Null
+				}
+
+				If($PubItem.iOS.Enabled)
+				{
+					$ScriptInformation.Add(@{Data = "          iOS/iPadOS client"; Value = "Enabled"; }) > $Null
+				}
+				Else
+				{
+					$ScriptInformation.Add(@{Data = "          iOS/iPadOS client"; Value = "Disabled"; }) > $Null
+				}
+
+				If($PubItem.Android.Enabled)
+				{
+					$ScriptInformation.Add(@{Data = "          Android client"; Value = "Enabled"; }) > $Null
+				}
+				Else
+				{
+					$ScriptInformation.Add(@{Data = "          Android client"; Value = "Disabled"; }) > $Null
+				}
 
 				$Table = AddWordTable -Hashtable $ScriptInformation `
 				-Columns Data,Value `
@@ -50062,128 +50175,8 @@ Function OutputPublishingSettings
 				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 300;
-				$Table.Columns.Item(2).Width = 300;
-
-				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-				FindWordDocumentEnd
-				$Table = $Null
-				WriteWordLine 0 0 ""
-
-				WriteWordLine 4 0 "Local device settings"
-				$ScriptInformation = New-Object System.Collections.ArrayList
-				$ScriptInformation.Add(@{Data = "URL"; Value = $PubItem.URL; }) > $Null
-
-				$Table = AddWordTable -Hashtable $ScriptInformation `
-				-Columns Data,Value `
-				-List `
-				-Format $wdTableGrid `
-				-AutoFit $wdAutoFitFixed;
-
-				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
-				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
-				$Table.Columns.Item(1).Width = 200;
-				$Table.Columns.Item(2).Width = 300;
-
-				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-				FindWordDocumentEnd
-				$Table = $Null
-				WriteWordLine 0 0 ""
-
-				$ScriptInformation = New-Object System.Collections.ArrayList
-				$ScriptInformation.Add(@{Data = "Clients"; Value = $PubItem.URL; }) > $Null
-				$ScriptInformation.Add(@{Data = "Enabled"; Value = $PubItem.URL; }) > $Null
-				$ScriptInformation.Add(@{Data = "Device specific target"; Value = $PubItem.URL; }) > $Null
-
-				$ScriptInformation.Add(@{Data = "Clients"; Value = "Windows client"; }) > $Null
-				If($PubItem.Windows.Enabled)
-				{
-					$ScriptInformation.Add(@{Data = ""; Value = "Enabled"; }) > $Null
-					$ScriptInformation.Add(@{Data = "Use the following application if available on local device"; Value = $PubItem.Windows.UseIfAvailable.ToString(); }) > $Null
-					$ScriptInformation.Add(@{Data = "Target"; Value = $PubItem.Windows.Target; }) > $Null
-					$ScriptInformation.Add(@{Data = "Start In"; Value = $PubItem.Windows.StartIn; }) > $Null
-					If($PubItem.Windows.Parameters -ne "")
-					{
-						$ScriptInformation.Add(@{Data = "Parameters"; Value = $PubItem.Windows.Parameters; }) > $Null
-					}
-					Switch ($PubItem.Windows.WinType)
-					{
-						"Normal"	{$WinType = "Normal Window"; Break}
-						"Maximized"	{$WinType = "Maximized"; Break}
-						"Minimized"	{$WinType = "Minimized"; Break}
-						Default		{$WinType = "Unable to determine window Run type: $($PubItem.Windows.WinType)"; Break}
-					}
-					$ScriptInformation.Add(@{Data = "Run"; Value = $WinType; }) > $Null
-				}
-				Else
-				{
-					$ScriptInformation.Add(@{Data = ""; Value = "Disabled"; }) > $Null
-				}
-
-				$ScriptInformation.Add(@{Data = "Clients"; Value = "macOS client"; }) > $Null
-				If($PubItem.Mac.Enabled)
-				{
-					$ScriptInformation.Add(@{Data = ""; Value = "Enabled"; }) > $Null
-				}
-				Else
-				{
-					$ScriptInformation.Add(@{Data = ""; Value = "Disabled"; }) > $Null
-				}
-
-				$ScriptInformation.Add(@{Data = "Clients"; Value = "Linux client"; }) > $Null
-				If($PubItem.Linux.Enabled)
-				{
-					$ScriptInformation.Add(@{Data = ""; Value = "Enabled"; }) > $Null
-				}
-				Else
-				{
-					$ScriptInformation.Add(@{Data = ""; Value = "Disabled"; }) > $Null
-				}
-
-				$ScriptInformation.Add(@{Data = "Clients"; Value = "iOS/iPadOS client"; }) > $Null
-				If($PubItem.iOS.Enabled)
-				{
-					$ScriptInformation.Add(@{Data = ""; Value = "Enabled"; }) > $Null
-				}
-				Else
-				{
-					$ScriptInformation.Add(@{Data = ""; Value = "Disabled"; }) > $Null
-				}
-
-				$ScriptInformation.Add(@{Data = "Clients"; Value = "Android client"; }) > $Null
-				If($PubItem.Android.Enabled)
-				{
-					$ScriptInformation.Add(@{Data = ""; Value = "Enabled"; }) > $Null
-				}
-				Else
-				{
-					$ScriptInformation.Add(@{Data = ""; Value = "Disabled"; }) > $Null
-				}
-
-				$ScriptInformation.Add(@{Data = "Clients"; Value = "User Portal (Web client)"; }) > $Null
-				If($PubItem.UserPortal.Enabled)
-				{
-					$ScriptInformation.Add(@{Data = ""; Value = "Enabled"; }) > $Null
-				}
-				Else
-				{
-					$ScriptInformation.Add(@{Data = ""; Value = "Disabled"; }) > $Null
-				}
-
-				$Table = AddWordTable -Hashtable $ScriptInformation `
-				-Columns Data,Value `
-				-List `
-				-Format $wdTableGrid `
-				-AutoFit $wdAutoFitFixed;
-
-				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
-				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
-				$Table.Columns.Item(1).Width = 200;
-				$Table.Columns.Item(2).Width = 300;
+				$Table.Columns.Item(1).Width = 250;
+				$Table.Columns.Item(2).Width = 250;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -50205,13 +50198,17 @@ Function OutputPublishingSettings
 			{
 				Line 2 "Information"
 				Line 3 "Local Device Application`t`t`t: " "#$($PubItem.Id): $($PubItem.Name)"
-				Line 3 "Description`t`t`t`t`t: " $PubItem.Description
+				If(![String]::IsNullOrEmpty($PubItem.Description))
+				{
+					Line 3 "Description`t`t`t`t`t: " $PubItem.Description
+				}
 				Line 3 "Last modification by`t`t`t`t: " $PubItem.AdminLastMod
 				Line 3 "Modified on`t`t`t`t`t: " (Get-Date -UFormat "%c" $PubItem.TimeLastMod)
 				Line 3 "Created by`t`t`t`t`t: " $PubItem.AdminCreate
 				Line 3 "Created on`t`t`t`t`t: " (Get-Date -UFormat "%c" $PubItem.TimeCreate)
 				Line 3 "Type`t`t`t`t`t`t: " $PubItem.Type
 				Line 3 "Status`t`t`t`t`t`t: " $PubItemStatus
+				Line 3 "URL`t`t`t`t`t`t: " $PubItem.URL
 				
 				$WeHaveAClient = $False
 				If(!$WeHaveAClient -and $PubItem.Windows.Enabled)
@@ -50268,13 +50265,11 @@ Function OutputPublishingSettings
 				{
 					Line 9 "  " "User Portal (Web client)"
 				}
-				Line 3 "Start automatically when user logs on`t`t: " $PubItem.StartOnLogon.ToString()
 
 				If($PubItem.Windows.Enabled)
 				{
 					Line 3 "Native Application Settings - Windows client" ""
 					Line 3 "Target`t`t`t`t`t`t: " $PubItem.Windows.Target
-					Line 3 "Start In`t`t`t`t`t: " $PubItem.Windows.StartIn
 					If($PubItem.Windows.Parameters -ne "")
 					{
 						Line 3 "Parameters`t`t`t`t`t: " $PubItem.Windows.Parameters
@@ -50336,27 +50331,17 @@ Function OutputPublishingSettings
 				Line 4 "Name`t`t`t`t`t: " $PubItem.Name
 				Line 4 "Description`t`t`t`t: " $PubItem.Description
 				Line 4 "Status`t`t`t`t`t: " $PubItemStatus
-				Line 4 "Run`t`t`t`t`t: " $WinType
-				Line 4 "Target`t`t`t`t`t: " $PubItem.Windows.Target
 				Line 4 "Start automatically when user logs on`t`: " $PubItem.StartOnLogon.ToString()
-				Line 0 ""
-
 				Line 3 "Local device settings"
 				Line 4 "URL`t`t`t`t`t: " $PubItem.URL
-				Line 0 ""
-
-				Line 3 "Clients: " "Windows client"
+				Line 4 "Clients:"
 				If($PubItem.Windows.Enabled)
 				{
-					Line 4 " Enabled"
-					Line 4 " Use the following application if"
-					Line 4 " available on local device`t`t: " $PubItem.Windows.UseIfAvailable.ToString()
-					Line 4 " Target`t`t`t`t`t: " $PubItem.Windows.Target
-					Line 4 " Start In`t`t`t`t: " $PubItem.Windows.StartIn
-					If($PubItem.Windows.Parameters -ne "")
-					{
-						Line 4 " Parameters`t`t`t`t: " $PubItem.Windows.Parameters
-					}
+					Line 5 "Windows Client`t`t: " "Enabled"
+					Line 6 "Use the following application if available on local device: " $PubItem.Windows.UseIfAvailable.ToString()
+					Line 6 "Target`t`t`t`t`t`t`t  : " $PubItem.Windows.Target
+					Line 6 "Start In`t`t`t`t`t`t  : " $PubItem.Windows.StartIn
+					Line 6 "Parameters`t`t`t`t`t`t  : " $PubItem.Windows.Parameters
 					Switch ($PubItem.Windows.WinType)
 					{
 						"Normal"	{$WinType = "Normal Window"; Break}
@@ -50364,66 +50349,56 @@ Function OutputPublishingSettings
 						"Minimized"	{$WinType = "Minimized"; Break}
 						Default		{$WinType = "Unable to determine window Run type: $($PubItem.Windows.WinType)"; Break}
 					}
-					Line 4 " Run`t`t`t`t`t: " $WinType
+					Line 6 "Run`t`t`t`t`t`t`t  : " $WinType
 				}
 				Else
 				{
-					Line 4 " Disabled"
+					Line 5 "Windows Client`t`t: " "Disabled"
 				}
-				Line 0 ""
 
-				Line 3 "Clients: " "macOS client"
-				If($PubItem.Mac.Enabled)
-				{
-					Line 4 " " "Enabled"
-				}
-				Else
-				{
-					Line 4 " " "Disabled"
-				}
-				Line 0 ""
-
-				Line 3 "Clients: " "Linux client"
-				If($PubItem.Linux.Enabled)
-				{
-					Line 4 " " "Enabled"
-				}
-				Else
-				{
-					Line 4 " " "Disabled"
-				}
-				Line 0 ""
-
-				Line 3 "Clients: " "iOS/iPadOS client"
-				If($PubItem.iOS.Enabled)
-				{
-					Line 4 " " "Enabled"
-				}
-				Else
-				{
-					Line 4 " " "Disabled"
-				}
-				Line 0 ""
-
-				Line 3 "Clients: " "Android client"
-				If($PubItem.Android.Enabled)
-				{
-					Line 4 " " "Enabled"
-				}
-				Else
-				{
-					Line 4 " " "Disabled"
-				}
-				Line 0 ""
-
-				Line 3 "Clients: " "User Portal (Web client)"
 				If($PubItem.UserPortal.Enabled)
 				{
-					Line 4 " " "Enabled"
+					Line 5 "User Portal (Web client): " "Enabled"
 				}
 				Else
 				{
-					Line 4 " " "Disabled"
+					Line 5 "User Portal (Web client): " "Disabled"
+				}
+
+				If($PubItem.Mac.Enabled)
+				{
+					Line 5 "macOS client`t`t: " "Enabled"
+				}
+				Else
+				{
+					Line 5 "macOS client`t`t: " "Disabled"
+				}
+
+				If($PubItem.Linux.Enabled)
+				{
+					Line 5 "Linux client`t`t: " "Enabled"
+				}
+				Else
+				{
+					Line 5 "Linux client`t`t: " "Disabled"
+				}
+
+				If($PubItem.iOS.Enabled)
+				{
+					Line 5 "iOS/iPadOS client`t: " "Enabled"
+				}
+				Else
+				{
+					Line 5 "iOS/iPadOS client`t: " "Disabled"
+				}
+
+				If($PubItem.Android.Enabled)
+				{
+					Line 5 "Android client`t`t: " "Enabled"
+				}
+				Else
+				{
+					Line 5 "Android client`t`t: " "Disabled"
 				}
 				Line 0 ""
 				
@@ -50442,13 +50417,17 @@ Function OutputPublishingSettings
 				WriteHTMLLine 3 0 "Information"
 				$rowdata = @()
 				$columnHeaders = @("Local Device Application",($Script:htmlsb),"#$($PubItem.Id): $($PubItem.Name)",$htmlwhite)
-				$rowdata += @(,("Description",($Script:htmlsb),$PubItem.Description,$htmlwhite))
+				If(![String]::IsNullOrEmpty($PubItem.Description))
+				{
+					$rowdata += @(,("Description",($Script:htmlsb),$PubItem.Description,$htmlwhite))
+				}
 				$rowdata += @(,("Last modification by",($Script:htmlsb),$PubItem.AdminLastMod,$htmlwhite))
 				$rowdata += @(,("Modified on",($Script:htmlsb),(Get-Date -UFormat "%c" $PubItem.TimeLastMod),$htmlwhite))
 				$rowdata += @(,("Created by",($Script:htmlsb),$PubItem.AdminCreate,$htmlwhite))
 				$rowdata += @(,("Created on",($Script:htmlsb),(Get-Date -UFormat "%c" $PubItem.TimeCreate),$htmlwhite))
 				$rowdata += @(,("Type",($Script:htmlsb),$PubItem.Type,$htmlwhite))
 				$rowdata += @(,("Status",($Script:htmlsb),$PubItemStatus,$htmlwhite))
+				$rowdata += @(,("URL",($Script:htmlsb),$PubItem.URL,$htmlwhite))
 				
 				$WeHaveAClient = $False
 				If(!$WeHaveAClient -and $PubItem.Windows.Enabled)
@@ -50505,13 +50484,11 @@ Function OutputPublishingSettings
 				{
 					$rowdata += @(,("",($Script:htmlsb),"User Portal (Web client)",$htmlwhite))
 				}
-				$rowdata += @(,("Start automatically when user logs on",($Script:htmlsb),$PubItem.StartOnLogon.ToString(),$htmlwhite))
 
 				If($PubItem.Windows.Enabled)
 				{
 					$rowdata += @(,("Native Application Settings - Windows client",($Script:htmlsb),"",$htmlwhite))
 					$rowdata += @(,("Target",($Script:htmlsb),$PubItem.Windows.Target,$htmlwhite))
-					$rowdata += @(,("Start In",($Script:htmlsb),$PubItem.Windows.StartIn,$htmlwhite))
 					If($PubItem.Windows.Parameters -ne "")
 					{
 						$rowdata += @(,("Parameters",($Script:htmlsb),$PubItem.Windows.Parameters,$htmlwhite))
@@ -50549,7 +50526,7 @@ Function OutputPublishingSettings
 					}
 				}
 
-				OutputPubItemFilterSummary $PubItem
+				OutputPubItemFilterSummary $PubItem ([ref]$rowdata)
 
 				$cnt =-1
 				ForEach($Site in $PubItem.PublishToSite)
@@ -50574,42 +50551,22 @@ Function OutputPublishingSettings
 
 				WriteHTMLLine 3 0 "Application"
 				$rowdata = @()
-				$columnHeaders = @("Name",($Script:htmlsb),$PubItem.Name,$htmlwhite)
-				$rowdata += @(,("Description",($Script:htmlsb),$PubItem.Description,$htmlwhite))
-				$rowdata += @(,("Status",($Script:htmlsb),$PubItemStatus,$htmlwhite))
-				$rowdata += @(,("Run",($Script:htmlsb),$WinType,$htmlwhite))
-				$rowdata += @(,("Target",($Script:htmlsb),$PubItem.Windows.Target,$htmlwhite))
-				$rowdata += @(,("Start automatically when user logs on",($Script:htmlsb),$PubItem.StartOnLogon.ToString(),$htmlwhite))
+				$columnHeaders = @("Application",($Script:htmlsb),"",$htmlwhite)
+				$rowdata += @(,("     Name",($Script:htmlsb),$PubItem.Name,$htmlwhite))
+				$rowdata += @(,("     Description",($Script:htmlsb),$PubItem.Description,$htmlwhite))
+				$rowdata += @(,("     Status",($Script:htmlsb),$PubItemStatus,$htmlwhite))
+				$rowdata += @(,("     Start automatically when user logs on",($Script:htmlsb),$PubItem.StartOnLogon.ToString(),$htmlwhite))
+				$rowdata += @(,("Local device settings",($Script:htmlsb),"",$htmlwhite))
+				$rowdata += @(,("     URL",($Script:htmlsb),$PubItem.URL,$htmlwhite))
+				$rowdata += @(,("     Clients",($Script:htmlsb),"",$htmlwhite))
 
-				$msg = ""
-				$columnWidths = @("300","300")
-				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-				WriteHTMLLine 0 0 ""
-
-				$rowdata = @()
-				$columnHeaders = @("URL",($Script:htmlsb),$PubItem.URL,$htmlwhite)
-
-				$msg = "Local device settings"
-				$columnWidths = @("200","300")
-				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-				WriteHTMLLine 0 0 ""
-
-				$rowdata = @()
-				$columnHeaders = @("Clients",($Script:htmlsb),$PubItem.URL,$htmlwhite)
-				$rowdata += @(,("Enabled",($Script:htmlsb),$PubItem.URL,$htmlwhite))
-				$rowdata += @(,("Device specific target",($Script:htmlsb),$PubItem.URL,$htmlwhite))
-
-				$rowdata += @(,("Clients",($Script:htmlsb),"Windows client",$htmlwhite))
 				If($PubItem.Windows.Enabled)
 				{
-					$rowdata += @(,("",($Script:htmlsb),"Enabled",$htmlwhite))
-					$rowdata += @(,("Use the following application if available on local device",($Script:htmlsb),$PubItem.Windows.UseIfAvailable.ToString(),$htmlwhite))
-					$rowdata += @(,("Target",($Script:htmlsb),$PubItem.Windows.Target,$htmlwhite))
-					$rowdata += @(,("Start In",($Script:htmlsb),$PubItem.Windows.StartIn,$htmlwhite))
-					If($PubItem.Windows.Parameters -ne "")
-					{
-						$rowdata += @(,("Parameters",($Script:htmlsb),$PubItem.Windows.Parameters,$htmlwhite))
-					}
+					$rowdata += @(,("          Windows client",($Script:htmlsb),"Enabled",$htmlwhite))
+					$rowdata += @(,("               Use the following application if available on local device",($Script:htmlsb),$PubItem.Windows.UseIfAvailable.ToString(),$htmlwhite))
+					$rowdata += @(,("               Target",($Script:htmlsb),$PubItem.Windows.Target,$htmlwhite))
+					$rowdata += @(,("               Start In",($Script:htmlsb),$PubItem.Windows.StartIn,$htmlwhite))
+					$rowdata += @(,("               Parameters",($Script:htmlsb),$PubItem.Windows.Parameters,$htmlwhite))
 					Switch ($PubItem.Windows.WinType)
 					{
 						"Normal"	{$WinType = "Normal Window"; Break}
@@ -50617,65 +50574,60 @@ Function OutputPublishingSettings
 						"Minimized"	{$WinType = "Minimized"; Break}
 						Default		{$WinType = "Unable to determine window Run type: $($PubItem.Windows.WinType)"; Break}
 					}
-					$rowdata += @(,("Run",($Script:htmlsb),$WinType,$htmlwhite))
+					$rowdata += @(,("               Run",($Script:htmlsb),$WinType,$htmlwhite))
 				}
 				Else
 				{
-					$rowdata += @(,("",($Script:htmlsb),"Disabled",$htmlwhite))
+					$rowdata += @(,("          Windows client",($Script:htmlsb),"Disabled",$htmlwhite))
 				}
 
-				$rowdata += @(,("Clients",($Script:htmlsb),"macOS client",$htmlwhite))
-				If($PubItem.Mac.Enabled)
-				{
-					$rowdata += @(,("",($Script:htmlsb),"Enabled",$htmlwhite))
-				}
-				Else
-				{
-					$rowdata += @(,("",($Script:htmlsb),"Disabled",$htmlwhite))
-				}
-
-				$rowdata += @(,("Clients",($Script:htmlsb),"Linux client",$htmlwhite))
-				If($PubItem.Linux.Enabled)
-				{
-					$rowdata += @(,("",($Script:htmlsb),"Enabled",$htmlwhite))
-				}
-				Else
-				{
-					$rowdata += @(,("",($Script:htmlsb),"Disabled",$htmlwhite))
-				}
-
-				$rowdata += @(,("Clients",($Script:htmlsb),"iOS/iPadOS client",$htmlwhite))
-				If($PubItem.iOS.Enabled)
-				{
-					$rowdata += @(,("",($Script:htmlsb),"Enabled",$htmlwhite))
-				}
-				Else
-				{
-					$rowdata += @(,("",($Script:htmlsb),"Disabled",$htmlwhite))
-				}
-
-				$rowdata += @(,("Clients",($Script:htmlsb),"Android client",$htmlwhite))
-				If($PubItem.Android.Enabled)
-				{
-					$rowdata += @(,("",($Script:htmlsb),"Enabled",$htmlwhite))
-				}
-				Else
-				{
-					$rowdata += @(,("",($Script:htmlsb),"Disabled",$htmlwhite))
-				}
-
-				$rowdata += @(,("Clients",($Script:htmlsb),"User Portal (Web client)",$htmlwhite))
 				If($PubItem.UserPortal.Enabled)
 				{
-					$rowdata += @(,("",($Script:htmlsb),"Enabled",$htmlwhite))
+					$rowdata += @(,("          User Portal (Web client)",($Script:htmlsb),"Enabled",$htmlwhite))
 				}
 				Else
 				{
-					$rowdata += @(,("",($Script:htmlsb),"Disabled",$htmlwhite))
+					$rowdata += @(,("          User Portal (Web client)",($Script:htmlsb),"Disabled",$htmlwhite))
 				}
 			
+				If($PubItem.Mac.Enabled)
+				{
+					$rowdata += @(,("          macOS client",($Script:htmlsb),"Enabled",$htmlwhite))
+				}
+				Else
+				{
+					$rowdata += @(,("          macOS client",($Script:htmlsb),"Disabled",$htmlwhite))
+				}
+
+				If($PubItem.Linux.Enabled)
+				{
+					$rowdata += @(,("          Linux client",($Script:htmlsb),"Enabled",$htmlwhite))
+				}
+				Else
+				{
+					$rowdata += @(,("          Linux client",($Script:htmlsb),"Disabled",$htmlwhite))
+				}
+
+				If($PubItem.iOS.Enabled)
+				{
+					$rowdata += @(,("          iOS/iPadOS client",($Script:htmlsb),"Enabled",$htmlwhite))
+				}
+				Else
+				{
+					$rowdata += @(,("          iOS/iPadOS client",($Script:htmlsb),"Disabled",$htmlwhite))
+				}
+
+				If($PubItem.Android.Enabled)
+				{
+					$rowdata += @(,("          Android client",($Script:htmlsb),"Enabled",$htmlwhite))
+				}
+				Else
+				{
+					$rowdata += @(,("          Android client",($Script:htmlsb),"Disabled",$htmlwhite))
+				}
+
 				$msg = ""
-				$columnWidths = @("200","300")
+				$columnWidths = @("365","300")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 
@@ -51765,7 +51717,14 @@ Function OutputPubItemFilters
 {
 	Param([object] $PubItem, [string] $OutputType)
 	
-	$RuleName = $PubItem.Filter.Rules.Name
+	If($PubItem.Filter.Rules.Count -eq 0)
+	{
+		$RuleName = "Default *"
+	}
+	Else
+	{
+		$RuleName = $PubItem.Filter.Rules.Name
+	}
 	
 	If($OutputType -eq "MSWordPDF")
 	{
@@ -52370,9 +52329,11 @@ Function OutputPubItemFilters
 	{
 		WriteHTMLLine 3 0 "Filtering"
 		$rowdata = @()
+		$cnt = -1
 
 		ForEach($FilterItem in $PubItem.filter.rules)
 		{
+			$cnt++
 			$columnHeaders = @("Enable rule",($Script:htmlsb),$FilterItem.Enabled.ToString(),$htmlwhite)
 			$rowdata += @(,("General",($Script:htmlsb),"",$htmlwhite))
 			$rowdata += @(,("     Name",($Script:htmlsb),$FilterItem.Name,$htmlwhite))
@@ -52634,13 +52595,27 @@ Function OutputPubItemFilters
 		
 		#general stuff
 
-		If($Pubitem.Filter.Default -eq "Allow")
+		If($cnt -eq -1)
 		{
-			$rowdata += @(,("Default Rule * (Enabled)",($Script:htmlsb),"Allow if no other rule matches",$htmlwhite))
+			If($Pubitem.Filter.Default -eq "Allow")
+			{
+				$columnHeaders = @("Default Rule * (Enabled)",($Script:htmlsb),"Allow if no other rule matches",$htmlwhite)
+			}
+			Else
+			{
+				$columnHeaders = @("Default Rule * (Enabled)",($Script:htmlsb),"Deny if no other rule matches",$htmlwhite)
+			}
 		}
 		Else
 		{
-			$rowdata += @(,("Default Rule * (Enabled)",($Script:htmlsb),"Deny if no other rule matches",$htmlwhite))
+			If($Pubitem.Filter.Default -eq "Allow")
+			{
+				$rowdata += @(,("Default Rule * (Enabled)",($Script:htmlsb),"Allow if no other rule matches",$htmlwhite))
+			}
+			Else
+			{
+				$rowdata += @(,("Default Rule * (Enabled)",($Script:htmlsb),"Deny if no other rule matches",$htmlwhite))
+			}
 		}
 
 		$msg = "$RuleName Properties"
@@ -69829,8 +69804,8 @@ ProcessScriptEnd
 # SIG # Begin signature block
 # MIIthQYJKoZIhvcNAQcCoIItdjCCLXICAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUawUxsco2gE7fK4lJfvMFbKer
-# NKGggibfMIIFjTCCBHWgAwIBAgIQDpsYjvnQLefv21DiCEAYWjANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUbN5twRNfY+20cRwyfS6wXHTP
+# 2nSggibfMIIFjTCCBHWgAwIBAgIQDpsYjvnQLefv21DiCEAYWjANBgkqhkiG9w0B
 # AQwFADBlMQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYD
 # VQQLExB3d3cuZGlnaWNlcnQuY29tMSQwIgYDVQQDExtEaWdpQ2VydCBBc3N1cmVk
 # IElEIFJvb3QgQ0EwHhcNMjIwODAxMDAwMDAwWhcNMzExMTA5MjM1OTU5WjBiMQsw
@@ -70041,33 +70016,33 @@ ProcessScriptEnd
 # UzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/BgNVBAMTOERpZ2lDZXJ0IFRy
 # dXN0ZWQgRzQgQ29kZSBTaWduaW5nIFJTQTQwOTYgU0hBMzg0IDIwMjEgQ0ExAhAL
 # bN+2Z4EOKufLWhG6HUlwMAkGBSsOAwIaBQCgQDAZBgkqhkiG9w0BCQMxDAYKKwYB
-# BAGCNwIBBDAjBgkqhkiG9w0BCQQxFgQUlnIprXtDGbYVu7XecLVGinzB4D8wDQYJ
-# KoZIhvcNAQEBBQAEggIAfG0rieYdm2TfAIpY/h32fz0nrjlvvUZR//oRWi6ip4OH
-# phBr8MKZsqQuzQvk9cKNtbsbWlH1+8T2o4bmnjkGhUlQNZvyg9cJhpX/kaF/5xNf
-# qWlOrGw3wn5QuIRGSPROlqG2wUxxafGMUh0M8C7mnmRQgtUN9XIiLHj6MjNyIkgU
-# GDu3JTRC/chnzLcVIA4qkiOM/Yz6b0+3P6U4gW16pSYssEznOdmGDvABJpYF/YqD
-# tqo3KG8IGGjroqnW5MEGMc+Sz/4GPyRS8nKcDGGBmfBtXfEC6uen5KlGhMD2kI4w
-# bbmXDFnyr6B9VLElY7TdRb7/5cnm7dDHlNjrf9vcIzKvFrQhi1eYDlUmU7S3rrTS
-# zEvPyofodRGxXwHShzHbhzGKB0Qk6TL5Fqoa0tUbk6NmXz3pjJ7LG8rlLJrntCUY
-# Lpcg3V1QgQjfqDGKg/RkRXYaUgZyrF15qtvgvvgGVu0AxLZprIW1iGCXex71aV32
-# fmVyeCZfc27F25jPVKoSPUTHDLJSZAUjy3JUO2uDR4sAK2mOJ77Hf7Adr4LHBC5U
-# 3IHHMRcBXKu24oDtJpptfxVca6vgVl7uAgg5ovRZEgmVouSi3Ztk+y8f+mQB/bZb
-# KGXjFSAGZdCUfyOu8hex9OD+t5KuQuZDqvnotLHVPFH4UuFaWGcBbrU8k6X3voOh
+# BAGCNwIBBDAjBgkqhkiG9w0BCQQxFgQUsfnVTbzGVIJRV+rqjAkiS58cK6UwDQYJ
+# KoZIhvcNAQEBBQAEggIApo+iAypg56e6fucDBbUFuZRtGuCH2COfdePBXtsmpLKd
+# kcPODLexqeZjuHvwJDp5s9ZW2tKXnz1/GjZo+txssgSLRncL6WkFTT8xpgS3hOlX
+# YtcouheqgTL60PmpQXLrJ5Osqz1jzw+i/Vk6PokXyCy7IECu+cxH0Bswv1KrwaX1
+# UMTc4CLAzvcgl+G+J69bPRWtjJrIxJSTtxa0n0WtWRNVLR+e1t8owJvuZMZksW3o
+# PWPbSrYEoH27HJR10XBYqt8PjY/Djjxox+XpjDAHLZeKmDxJv60fGK9Sj7pW3XqX
+# hH7mFXez9yf6NDAG0qSVT0TwREtpyQEhAdDSa9+AxeuD7ChBjFaQTmRp90OJMZRU
+# XBtQ7lS5be01MYpS2evUtO1sk6A8mSz+hEvw8J6zJgojIcLRKtZnBZR7+kG7v3Vw
+# jVNvMpfq2wTMRt4Hu6fKjZNLLbYDsbhDMlE4btqMHrkkZgFb53zxJtlEycZunwLZ
+# KfvGx7/bkFslNYSSgE8fButdfIG5a3fUdOZQZ+zEB06z/7a1OOCnk+wNVpdsCCXV
+# bew3Q35AzaVWZPo9zxuLysbjBnIzjHwW8RDp3OUCkbELAK2ec36uQAx5mpRWi8sl
+# /MgT7TI2r0vhHr0sj+DywB/f9VIZhndcoJWdUOZnhs7miVN03XftWRpfXXwX3+eh
 # ggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8CAQEwfTBpMQswCQYDVQQGEwJVUzEX
 # MBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/BgNVBAMTOERpZ2lDZXJ0IFRydXN0
 # ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYgU0hBMjU2IDIwMjUgQ0ExAhAKgO8Y
 # S43xBYLRxHanlXRoMA0GCWCGSAFlAwQCAQUAoGkwGAYJKoZIhvcNAQkDMQsGCSqG
-# SIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjYwMTE0MTg0MzA1WjAvBgkqhkiG9w0B
-# CQQxIgQgkaCpdAkEQgWEMp+VGLr/tiiSXTGBMJYkcBxnPQdRozUwDQYJKoZIhvcN
-# AQEBBQAEggIACz/udxx41O1RKwys1K+BLA7NKa/NCy+t2zqgn2wqFaSFkVXVecTr
-# hu02X9dgJTbuO1TggSut3QxaW/51vUKDj7a5xkvu0mKuuApcQvH0toe3Y5epAFHv
-# CMBRn31s3h9RG+6OM9SxjJ92KckFngnjt9Do5gs3gfhSt78+XrLbB77k+5zyDZgV
-# oAtlEuowVw9HhBFDkPPXLtVP1MnzSztwKRJpOZe0XwNKRSjvx/B/NTxI6yG9wffM
-# wkaNQQQxPkmsZ76MU4j91DzH4r1mDEee56hPT63hcK5lRCmPRS1Uc6JBzRRoANSk
-# PJYW1RITe0CHRafrRUQ6yYFtYDVFvgZmuWUM2nQhcRh7xAkcEzOj4JoOAJEnE65/
-# /N4YmLn91mZ1ZLUIb/EdjmyvmY7Nel4ZXyMlijO4B8BxuxSFwlMXaGZbw8ZlOHhk
-# JlOQgNQorZRgU5LIC83IrWfWKjZER0SOdIcJdw9csw8SHePSWEgDKkYH3aFEsGUN
-# wxrfo2Aaftz+ju03dZ2ScvGcnSoCPup5u0UhbtrPlwnMLIRkItZRoSwcnISwixH4
-# 2uydU+wztEvRamA9d+OiBNxbFhDRXAt4QJJdO/2Kuh8egYJy+hUhNEZCvFzPg0yM
-# OOqynAMTh5BMsQMaNJCz4m4aCjRDoja5cLBsH36QOoY3asx/ArSgFiw=
+# SIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjYwMTE2MjAyMDI0WjAvBgkqhkiG9w0B
+# CQQxIgQgu01o6yzS7YAu7ZWM/kipq1/7Da3VTlH49b9IAuxRCIkwDQYJKoZIhvcN
+# AQEBBQAEggIABRrvfzBcfLeeJcOat32V/Zi8+shHVw+o+IeLCgr8DlIVZcdVFxO4
+# q3rPVpNrWAMRex/y7dOvLro+W7QNum32JcGrOKT+zp90egfTn9rnHBvpxmPfsTuu
+# /AKYg256m0DFvne6cd1aImUP6PnevpKN8Rssi4htoPZ4n7CCork7XWlC7oJ9xSLG
+# 4TJVuUcsrYhJRjQSE88wy2eHeRweIog/kaw83EYW3Zv+a04TQ3xs7QhjzZ5QMQ8b
+# RdakCgzy2OnufZsabXViaviYzv9kcUGQobSeMmO8KBPdDhroM22u0yep0UbSUCuP
+# sW22AQAh4r+WVaudNOmoDbPZEHWmGeNND2f72/PNaN0pGtPJXZ/bycMWLHxoGLa/
+# yTLw7bv7D1RIHHwlYIHZmUf0x0WZ3QYgi+Rig748tUZeKVPb0148oI7gTp4CxOO8
+# NkP11MCmTssxX9BVnaeUYVzikeYW4J727/ekASsEf+l4SrCOZPVs/jdTlB40EcFL
+# yD2MeedJHquIbKR73EDeiW9pvV4AyE9dj/uM/dmVgZT9MnxFcgnSVwDLhIXbhArc
+# 5kY3WoF8e1KFDtCeoaWuZu589DFb1HoQTqks0GkIz/JhN/pd0KAilnlOk7sqXX0c
+# Zq25QvurBgUJ3+k30mVMie3Vgm8PmO4xYbt+zOkgRKkc/0FmXtcOb1g=
 # SIG # End signature block
