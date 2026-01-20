@@ -450,7 +450,7 @@
 	text document.
 .NOTES
 	NAME: RAS_Inventory_V4_0.ps1
-	VERSION: 4.00 Beta 46
+	VERSION: 4.00 Beta 47
 	AUTHOR: Carl Webster
 	LASTEDIT: January 20, 2026
 #>
@@ -946,7 +946,7 @@ $ErrorActionPreference    = 'SilentlyContinue'
 $Error.Clear()
 
 $Script:emailCredentials  = $Null
-$script:MyVersion         = '4.00 Beta 46'
+$script:MyVersion         = '4.00 Beta 47'
 $Script:ScriptName        = "RAS_Inventory_V4_0.ps1"
 $tmpdate                  = [datetime] "01/20/2026"
 $Script:ReleaseDate       = $tmpdate.ToUniversalTime().ToShortDateString()
@@ -47339,7 +47339,7 @@ Function OutputPublishingSettings
 		{
 			Switch($PubItem.ConnectTo)
 			{
-				"AnyGuest"				{$ConnectTo = "Any Guest VM"; Break}
+				"AnyGuest"				{$ConnectTo = "Any VDI Host"; Break}
 				"SpecificRASTemplate"	{$ConnectTo = "Specific Template ($($PubItem.SelectedGuests[0].VDIGuestName))"; Break}
 				Default					{$ConnectTo = "Unable to determine Connect To: $($PubItem.ConnectTo)"; Break}
 			}
@@ -47367,6 +47367,18 @@ Function OutputPublishingSettings
 				$AllowMultiMonitor = $PubItem.AllowMultiMonitor.ToString()
 			}
 			
+			$VDIHostPool = "Unable to determine"
+			If($PubItem.VDIHostPoolId -ne 0)
+			{
+				$VDIHostPool = Get-RASVDIHostPool -Id $PubItem.VDIHostPoolId -EA 0 4>$Null
+				
+				If($Null -ne $VDIHostPool)
+				{
+					$VDIHostPoolName = $VDIHostPool.Name
+					$VDIHostPoolDesc = $VDIHostPool.Description
+				}
+			}
+			
 			If($MSWord -or $PDF)
 			{
 				WriteWordLine 3 0 "Information"
@@ -47382,16 +47394,16 @@ Function OutputPublishingSettings
 				$ScriptInformation.Add(@{Data = "Created on"; Value = (Get-Date -UFormat "%c" $PubItem.TimeCreate); }) > $Null
 				$ScriptInformation.Add(@{Data = "Type"; Value = $PubItem.Type; }) > $Null
 				$ScriptInformation.Add(@{Data = "Status"; Value = $PubItemStatus; }) > $Null
+				$ScriptInformation.Add(@{Data = "Desktop Size"; Value = $DesktopSize; }) > $Null
 				$ScriptInformation.Add(@{Data = "Settings for Site $xSiteName"; Value = ""; }) > $Null
 				$ScriptInformation.Add(@{Data = "Connect to"; Value = $ConnectTo; }) > $Null
+				$ScriptInformation.Add(@{Data = "From VDI Host Pool"; Value = $VDIHostPoolName; }) > $Null
 				
 				If($PubItem.Persistent)
 				{
 					$ScriptInformation.Add(@{Data = "Published item is persistent"; Value = ""; }) > $Null
 				}
 				
-				$ScriptInformation.Add(@{Data = "Desktop Size"; Value = $DesktopSize; }) > $Null
-
 				If($PubItem.InheritShortcutDefaultSettings)
 				{
 					If($DefaultCreateShortcutOnDesktop -eq "True")
@@ -47433,11 +47445,11 @@ Function OutputPublishingSettings
 					
 					If($cnt -eq 0)
 					{
-						$ScriptInformation.Add(@{Data = "Available in Site(s)"; Value = ""; }) > $Null
+						$ScriptInformation.Add(@{Data = "Available in Site(s)"; Value = $SiteName; }) > $Null
 					}
 					Else
 					{
-						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+						$ScriptInformation.Add(@{Data = ""; Value = $SiteName; }) > $Null
 					}
 				}
 			
@@ -47468,94 +47480,10 @@ Function OutputPublishingSettings
 				$Table = $Null
 				WriteWordLine 0 0 ""
 
-				WriteWordLine 3 0 "Sites"
-				$ScriptInformation = New-Object System.Collections.ArrayList
-
-				$cnt =-1
-				ForEach($Site in $PubItem.PublishToSite)
-				{
-					$cnt++
-					$SiteName = @(Get-RASSite -Id $Site -EA 0 4>$Null).Name
-					
-					If($cnt -eq 0)
-					{
-						$ScriptInformation.Add(@{Data = "This published item will be available from the following Sites"; Value = $SiteName; }) > $Null
-					}
-					Else
-					{
-						$ScriptInformation.Add(@{Data = ""; Value = $SiteName; }) > $Null
-					}
-				}
-
-				$Table = AddWordTable -Hashtable $ScriptInformation `
-				-Columns Data,Value `
-				-List `
-				-Format $wdTableGrid `
-				-AutoFit $wdAutoFitFixed;
-
-				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
-				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
-				$Table.Columns.Item(1).Width = 200;
-				$Table.Columns.Item(2).Width = 300;
-
-				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-				FindWordDocumentEnd
-				$Table = $Null
-				WriteWordLine 0 0 ""
-
 				WriteWordLine 3 0 "Publish from"
 				$ScriptInformation = New-Object System.Collections.ArrayList
-				If(validObject $PubItem PublishFrom)
-				{
-					If($PubItem.PublishFrom -eq "Server")
-					{
-						$cnt = -1
-						ForEach($Item in $PubItem.PublishFromServer)
-						{
-							$cnt++
-							
-							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
-							
-							If($cnt -eq 0)
-							{
-								$ScriptInformation.Add(@{Data = "$PublishedFrom"; Value = $ItemName; }) > $Null
-							}
-							Else
-							{
-								$ScriptInformation.Add(@{Data = ""; Value = $ItemName; }) > $Null
-							}
-						}
-					}
-					ElseIf($PubItem.PublishFrom -eq "Group")
-					{
-						$cnt = -1
-						ForEach($Item in $PubItem.PublishFromHostPool)
-						{
-							$cnt++
-							
-							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
-							
-							If($cnt -eq 0)
-							{
-								$ScriptInformation.Add(@{Data = "$PublishedFrom"; Value = $ItemName; }) > $Null
-							}
-							Else
-							{
-								$ScriptInformation.Add(@{Data = ""; Value = $ItemName; }) > $Null
-							}
-						}
-					}
-					Else
-					{
-						$ScriptInformation.Add(@{Data = "$PublishedFrom"; Value = ""; }) > $Null
-					}
-				}
-				Else
-				{
-					$ScriptInformation.Add(@{Data = "$PublishedFrom"; Value = "N/A"; }) > $Null
-				}
+				$ScriptInformation.Add(@{Data = "Name"; Value = $VDIHostPoolName; }) > $Null
+				$ScriptInformation.Add(@{Data = "Description"; Value = $VDIHostPoolDesc; }) > $Null
 
 				$Table = AddWordTable -Hashtable $ScriptInformation `
 				-Columns Data,Value `
@@ -47567,7 +47495,7 @@ Function OutputPublishingSettings
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 				$Table.Columns.Item(1).Width = 200;
-				$Table.Columns.Item(2).Width = 300;
+				$Table.Columns.Item(2).Width = 200;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -47576,12 +47504,18 @@ Function OutputPublishingSettings
 				WriteWordLine 0 0 ""
 
 				WriteWordLine 3 0 "Desktop"
-				WriteWordLine 4 0 "Desktop"
 				$ScriptInformation = New-Object System.Collections.ArrayList
 
-				$ScriptInformation.Add(@{Data = "Name"; Value = $PubItem.Name; }) > $Null
-				$ScriptInformation.Add(@{Data = "Description"; Value = $PubItem.Description; }) > $Null
-				$ScriptInformation.Add(@{Data = "Start automatically when user logs on"; Value = $PubItem.StartOnLogon.ToString(); }) > $Null
+				$ScriptInformation.Add(@{Data = "Desktop"; Value = ""; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Name"; Value = $PubItem.Name; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Description"; Value = $PubItem.Description; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Status"; Value = $PubItemStatus; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Start automatically when user logs on"; Value = $PubItem.StartOnLogon.ToString(); }) > $Null
+				$ScriptInformation.Add(@{Data = "     Exclude from session prelaunch"; Value = $PubItem.ExcludePrelaunch.ToString(); }) > $Null
+				$ScriptInformation.Add(@{Data = "Properties"; Value = ""; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Desktop size"; Value = $DesktopSize; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Multi-Monitor"; Value = $AllowMultiMonitor; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Enable static assignment to host"; Value = $PubItem.Persistent.ToString(); }) > $Null
 
 				$Table = AddWordTable -Hashtable $ScriptInformation `
 				-Columns Data,Value `
@@ -47601,31 +47535,6 @@ Function OutputPublishingSettings
 				$Table = $Null
 				WriteWordLine 0 0 ""
 				
-				WriteWordLine 4 0 "Properties"
-				$ScriptInformation = New-Object System.Collections.ArrayList
-				$ScriptInformation.Add(@{Data = "Connect to"; Value = $ConnectTo; }) > $Null
-				$ScriptInformation.Add(@{Data = "Desktop size"; Value = $DesktopSize; }) > $Null
-				$ScriptInformation.Add(@{Data = "Multi-Monitor"; Value = $AllowMultiMonitor; }) > $Null
-				$ScriptInformation.Add(@{Data = "Persistent"; Value = $PubItem.Persistent.ToString(); }) > $Null
-
-				$Table = AddWordTable -Hashtable $ScriptInformation `
-				-Columns Data,Value `
-				-List `
-				-Format $wdTableGrid `
-				-AutoFit $wdAutoFitFixed;
-
-				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
-				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
-				$Table.Columns.Item(1).Width = 200;
-				$Table.Columns.Item(2).Width = 300;
-
-				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-				FindWordDocumentEnd
-				$Table = $Null
-				WriteWordLine 0 0 ""
-
 				OutputPubItemFilters $PubItem "MSWordPDF"
 				
 				WriteWordLine 3 0 "Routing"
@@ -47706,16 +47615,16 @@ Function OutputPublishingSettings
 				Line 3 "Created on`t`t`t`t`t`t: " (Get-Date -UFormat "%c" $PubItem.TimeCreate)
 				Line 3 "Type`t`t`t`t`t`t`t: " $PubItem.Type
 				Line 3 "Status`t`t`t`t`t`t`t: " $PubItemStatus
+				Line 3 "Desktop Size`t`t`t`t`t`t: " $DesktopSize
 				Line 3 "Settings for Site $xSiteName"
 				Line 3 "Connect to`t`t`t`t`t`t: " $ConnectTo
+				Line 3 "From VDI Host Pool`t`t`t`t`t: " $VDIHostPoolName
 				
 				If($PubItem.Persistent)
 				{
 					Line 3 "Published item is persistent"
 				}
 				
-				Line 3 "Desktop Size`t`t`t`t`t`t: " $DesktopSize
-
 				If($PubItem.InheritShortcutDefaultSettings)
 				{
 					If($DefaultCreateShortcutOnDesktop -eq "True")
@@ -47764,25 +47673,6 @@ Function OutputPublishingSettings
 						Line 10 $SiteName
 					}
 				}
-				Line 0 ""
-
-				Line 2 Sites
-				$cnt =-1
-				ForEach($Site in $PubItem.PublishToSite)
-				{
-					$cnt++
-					$SiteName = @(Get-RASSite -Id $Site -EA 0 4>$Null).Name
-					
-					If($cnt -eq 0)
-					{
-						Line 3 "This published item will be available"
-						Line 3 "from the following Sites`t`t`t`t: " $SiteName
-					}
-					Else
-					{
-						Line 10 "  " $SiteName
-					}
-				}
 
 				If($PubItem.PreferredRoutingEnabled)
 				{
@@ -47795,31 +47685,8 @@ Function OutputPublishingSettings
 				Line 0 ""
 
 				Line 2 "Publish from"
-				If(validObject $PubItem PublishFrom)
-				{
-					Line 3 $PublishedFrom
-					If($PubItem.PublishFrom -eq "Server")
-					{
-						ForEach($Item in $PubItem.PublishFromServer)
-						{
-							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
-							Line 6 $ItemName
-						}
-					}
-					ElseIf($PubItem.PublishFrom -eq "Group")
-					{
-						ForEach($Item in $PubItem.PublishFromHostPool)
-						{
-							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
-							Line 5 $ItemName
-						}
-					}
-				}
-				Else
-				{
-					Line 3 "N/A"
-				}
-				
+				Line 3 "Name`t`t: " $VDIHostPoolName
+				Line 3 "Description`t: " $VDIHostPoolDesc
 				Line 0 ""
 
 				Line 2 "Desktop"
@@ -47827,12 +47694,12 @@ Function OutputPublishingSettings
 				Line 4 "Name`t`t`t`t`t`t: " $PubItem.Name
 				Line 4 "Description`t`t`t`t`t: " $PubItem.Description
 				Line 4 "Start automatically when user logs on`t`t: " $PubItem.StartOnLogon.ToString()
+				Line 4 "Exclude from session prelaunch`t`t`t: " $PubItem.ExcludePrelaunch.ToString()
 				Line 0 ""
 				Line 3 "Properties"
-				Line 4 "Connect to`t`t`t`t`t: " $ConnectTo
 				Line 4 "Desktop Size`t`t`t`t`t: " $DesktopSize
 				Line 4 "Multi-Monitor`t`t`t`t`t: " $AllowMultiMonitor
-				Line 4 "Persistent`t`t`t`t`t: " $PubItem.Persistent.ToString()
+				Line 4 "Enable static assignment to host`t`t: " $PubItem.Persistent.ToString()
 				Line 0 ""
 
 				OutputPubItemFilters $PubItem "Text"
@@ -47899,16 +47766,16 @@ Function OutputPublishingSettings
 				$rowdata += @(,("Created on",($Script:htmlsb), (Get-Date -UFormat "%c" $PubItem.TimeCreate),$htmlwhite))
 				$rowdata += @(,("Type",($Script:htmlsb),$PubItem.Type,$htmlwhite))
 				$rowdata += @(,("Status",($Script:htmlsb),$PubItemStatus,$htmlwhite))
+				$rowdata += @(,("Desktop Size",($Script:htmlsb),$DesktopSize,$htmlwhite))
 				$rowdata += @(,("Settings for Site $xSiteName",($Script:htmlsb),"",$htmlwhite))
 				$rowdata += @(,("Connect to",($Script:htmlsb),$ConnectTo,$htmlwhite))
+				$rowdata += @(,("From VDI Host Pool",($Script:htmlsb),$VDIHostPoolName,$htmlwhite))
 				
 				If($PubItem.Persistent)
 				{
 					$rowdata += @(,("Published item is persistent",($Script:htmlsb),"",$htmlwhite))
 				}
 				
-				$rowdata += @(,("Desktop Size",($Script:htmlsb),$DesktopSize,$htmlwhite))
-
 				If($PubItem.InheritShortcutDefaultSettings)
 				{
 					If($DefaultCreateShortcutOnDesktop -eq "True")
@@ -47972,105 +47839,31 @@ Function OutputPublishingSettings
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 
-				WriteHTMLLine 3 0 "Sites"
-				$rowdata = @()
-
-				$cnt =-1
-				ForEach($Site in $PubItem.PublishToSite)
-				{
-					$cnt++
-					$SiteName = @(Get-RASSite -Id $Site -EA 0 4>$Null).Name
-					
-					If($cnt -eq 0)
-					{
-						$columnHeaders = @("This published item will be available from the following Sites",($Script:htmlsb),$SiteName,$htmlwhite)
-					}
-					Else
-					{
-						$rowdata += @(,("",($Script:htmlsb),$SiteName,$htmlwhite))
-					}
-				}
-
-				$msg = ""
-				$columnWidths = @("200","300")
-				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-				WriteHTMLLine 0 0 ""
-
 				WriteHTMLLine 3 0 "Publish from"
 				$rowdata = @()
-				If(validObject $PubItem PublishFrom)
-				{
-					If($PubItem.PublishFrom -eq "Server")
-					{
-						$cnt = -1
-						ForEach($Item in $PubItem.PublishFromServer)
-						{
-							$cnt++
-							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
-							
-							If($cnt -eq 0)
-							{
-								$columnHeaders = @("$PublishedFrom",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite)
-							}
-							Else
-							{
-								$rowdata += @(,("",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite))
-							}
-						}
-					}
-					ElseIf($PubItem.PublishFrom -eq "Group")
-					{
-						$cnt = -1
-						ForEach($Item in $PubItem.PublishFromHostPool)
-						{
-							$cnt++
-							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
-							
-							If($cnt -eq 0)
-							{
-								$columnHeaders = @("$PublishedFrom",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite)
-							}
-							Else
-							{
-								$rowdata += @(,("",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite))
-							}
-						}
-					}
-					Else
-					{
-						$columnHeaders = @("$PublishedFrom",($Script:htmlsb),"",$htmlwhite)
-					}
-				}
-				Else
-				{
-					$columnHeaders = @("$PublishedFrom",($Script:htmlsb),"N/A",$htmlwhite)
-				}
+				$columnHeaders = @("Name",($Script:htmlsb),$VDIHostPoolName,$htmlwhite)
+				$rowdata += @(,("Description",($Script:htmlsb),$VDIHostPoolDesc,$htmlwhite))
 
 				$msg = ""
-				$columnWidths = @("200","300")
+				$columnWidths = @("200","200")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 
 				WriteHTMLLine 3 0 "Desktop"
 				$rowdata = @()
 
-				$columnHeaders = @("Name",($Script:htmlsb),$PubItem.Name,$htmlwhite)
-				$rowdata += @(,("Description",($Script:htmlsb),$PubItem.Description,$htmlwhite))
-				$rowdata += @(,("Start automatically when user logs on",($Script:htmlsb),$PubItem.StartOnLogon.ToString(),$htmlwhite))
+				$columnHeaders = @("Desktop",($Script:htmlsb),"",$htmlwhite)
+				$rowdata += @(,("     Name",($Script:htmlsb),$PubItem.Name,$htmlwhite))
+				$rowdata += @(,("     Description",($Script:htmlsb),$PubItem.Description,$htmlwhite))
+				$rowdata += @(,("     Start automatically when user logs on",($Script:htmlsb),$PubItem.StartOnLogon.ToString(),$htmlwhite))
+				$rowdata += @(,("     Exclude from session prelaunch",($Script:htmlsb),$PubItem.ExcludePrelaunch.ToString(),$htmlwhite))
+				$rowdata += @(,("Properties",($Script:htmlsb),$PubItem.Name,$htmlwhite))
+				$rowdata += @(,("     Desktop size",($Script:htmlsb),$DesktopSize,$htmlwhite))
+				$rowdata += @(,("     Multi-Monitor",($Script:htmlsb),$AllowMultiMonitor,$htmlwhite))
+				$rowdata += @(,("     Enable static assignment to host",($Script:htmlsb),$PubItem.Persistent.ToString(),$htmlwhite))
 
-				$msg = "Desktop"
+				$msg = ""
 				$columnWidths = @("300","300")
-				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-				WriteHTMLLine 0 0 ""
-				
-				$rowdata = @()
-				$columnHeaders = @("Connect to",($Script:htmlsb),$ConnectTo,$htmlwhite)
-				$rowdata += @(,("Desktop size",($Script:htmlsb),$DesktopSize,$htmlwhite))
-				$rowdata += @(,("Multi-Monitor",($Script:htmlsb),$AllowMultiMonitor,$htmlwhite))
-				$rowdata += @(,("Persistent",($Script:htmlsb),$PubItem.Persistent.ToString(),$htmlwhite))
-
-				$msg = "Properties"
-				$columnWidths = @("200","300")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 
@@ -48384,15 +48177,17 @@ Function OutputPublishingSettings
 				WriteWordLine 0 0 ""
 
 				WriteWordLine 3 0 "Application"
-				WriteWordLine 4 0 "Application"
 				$ScriptInformation = New-Object System.Collections.ArrayList
-				$ScriptInformation.Add(@{Data = "Name"; Value = $PubItem.Name; }) > $Null
-				$ScriptInformation.Add(@{Data = "Description"; Value = $PubItem.Description; }) > $Null
-				$ScriptInformation.Add(@{Data = "Run"; Value = $WinType; }) > $Null
-				$ScriptInformation.Add(@{Data = "Target"; Value = $PubItem.Target; }) > $Null
-				$ScriptInformation.Add(@{Data = "Start in"; Value = $PubItem.StartIn; }) > $Null
-				$ScriptInformation.Add(@{Data = "Start automatically when user logs on"; Value = $PubItem.StartOnLogon.ToString(); }) > $Null
-				$ScriptInformation.Add(@{Data = "Exclude from session prelaunch"; Value = $PubItem.ExcludePrelaunch.ToString(); }) > $Null
+				$ScriptInformation.Add(@{Data = "Application"; Value = ""; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Name"; Value = $PubItem.Name; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Description"; Value = $PubItem.Description; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Status"; Value = $PubItemStatus; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Run"; Value = $WinType; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Target"; Value = $PubItem.Target; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Start in"; Value = $PubItem.StartIn; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Parameters"; Value = $PubItem.Parameters; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Start automatically when user logs on"; Value = $PubItem.StartOnLogon.ToString(); }) > $Null
+				$ScriptInformation.Add(@{Data = "     Exclude from session prelaunch"; Value = $PubItem.ExcludePrelaunch.ToString(); }) > $Null
 
 				$Table = AddWordTable -Hashtable $ScriptInformation `
 				-Columns Data,Value `
@@ -48525,8 +48320,8 @@ Function OutputPublishingSettings
 				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 200;
-				$Table.Columns.Item(2).Width = 300;
+				$Table.Columns.Item(1).Width = 275;
+				$Table.Columns.Item(2).Width = 225;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -48571,14 +48366,18 @@ Function OutputPublishingSettings
 					$ScriptInformation.Add(@{Data = "Wait until all RAS Universal Printers are redirected before showing the application"; Value = $DefaultWaitForPrinters; }) > $Null
 					$ScriptInformation.Add(@{Data = "Maximum time to wait is"; Value = "$($DefaultWaitForPrintersTimeout) seconds"; }) > $Null
 					$ScriptInformation.Add(@{Data = "Color Depth"; Value = $DefaultColorDepth; }) > $Null
+					#$ScriptInformation.Add(@{Data = "Resolution"; Value = $DefaultResolution; }) > $Null
 					$ScriptInformation.Add(@{Data = "Start the application as maximized when using mobile clients"; Value = $DefaultStartMaximized; }) > $Null
+					$ScriptInformation.Add(@{Data = "Start in fullscreen mode for Wyse ThinOS clients"; Value = $DefaultStartFullscreen; }) > $Null
 				}
 				Else
 				{
 					$ScriptInformation.Add(@{Data = "Wait until all RAS Universal Printers are redirected before showing the application"; Value = $PubItem.WaitForPrinters.ToString(); }) > $Null
 					$ScriptInformation.Add(@{Data = "Maximum time to wait is"; Value = "$($PubItem.WaitForPrintersTimeout.ToString()) seconds"; }) > $Null
 					$ScriptInformation.Add(@{Data = "Color Depth"; Value = $ColorDepth; }) > $Null
+					#$ScriptInformation.Add(@{Data = "Resolution"; Value = $Resolution; }) > $Null
 					$ScriptInformation.Add(@{Data = "Start the application as maximized when using mobile clients"; Value = $PubItem.StartMaximized.ToString(); }) > $Null
+					$ScriptInformation.Add(@{Data = "Start in fullscreen mode for Wyse ThinOS clients"; Value = $PubItem.StartFullscreen.ToString(); }) > $Null
 				}
 
 				$Table = AddWordTable -Hashtable $ScriptInformation `
@@ -48767,8 +48566,9 @@ Function OutputPublishingSettings
 
 				Line 2 "Application"
 				Line 3 "Application"
-				Line 4 "Name`t`t`t`t`t`t":  $PubItem.Name
+				Line 4 "Name`t`t`t`t`t`t: "  $PubItem.Name
 				Line 4 "Description`t`t`t`t`t: " $PubItem.Description
+				Line 4 "Status`t`t`t`t`t`t: " $PubItemStatus
 				Line 4 "Run`t`t`t`t`t`t: " $WinType
 				Line 4 "Target`t`t`t`t`t`t: " $PubItem.Target
 				Line 4 "Start in`t`t`t`t`t: " $PubItem.StartIn
@@ -48838,25 +48638,25 @@ Function OutputPublishingSettings
 				Line 0 ""
 
 				Line 2 "Display"
-				Line 3 "Inherit default settings`t`t`t`t: " $PubItem.InheritDisplayDefaultSettings.ToString()
+				Line 3 "Inherit default settings`t`t`t`t`t`t`t`t: " $PubItem.InheritDisplayDefaultSettings.ToString()
 
 				If($PubItem.InheritDisplayDefaultSettings)
 				{
-					Line 3 "Wait until all RAS Universal Printers are redirected "
-					Line 3 "before showing the application`t`t`t`t: " $DefaultWaitForPrinters
-					Line 3 "Maximum time to wait is`t`t`t`t`t: " "$($DefaultWaitForPrintersTimeout) seconds"
-					Line 3 "Color Depth`t`t`t`t`t`t: " $DefaultColorDepth
-					Line 3 "Start the application as maximized "
-					Line 3 "when using mobile clients`t`t`t`t: " $DefaultStartMaximized
+					Line 3 "Wait until all RAS Universal Printers are redirected before showing the application`t: " $DefaultWaitForPrinters
+					Line 3 "Maximum time to wait is`t`t`t`t`t`t`t`t`t: " "$($DefaultWaitForPrintersTimeout) seconds"
+					Line 3 "Color Depth`t`t`t`t`t`t`t`t`t`t: " $DefaultColorDepth
+					#Line 3 "Resolution`t`t`t`t`t`t`t`t`t`t: " $DefaultResolution
+					Line 3 "Start the application as maximized when using mobile clients`t`t`t`t: " $DefaultStartMaximized
+					Line 3 "Start in fullscreen mode for Wyse ThinOS clients`t`t`t`t`t: " $DefaultStartFullscreen
 				}
 				Else
 				{
-					Line 3 "Wait until all RAS Universal Printers are redirected "
-					Line 3 "before showing the application`t`t`t`t: " $PubItem.WaitForPrinters.ToString()
+					Line 3 "Wait until all RAS Universal Printers are redirected before showing the application`t: " $PubItem.WaitForPrinters.ToString()
 					Line 3 "Maximum time to wait is`t`t`t`t`t: " "$($PubItem.WaitForPrintersTimeout.ToString()) seconds"
-					Line 3 "Color Depth`t`t`t`t`t`t: " $ColorDepth
-					Line 3 "Start the application as maximized "
-					Line 3 "when using mobile clients`t`t`t`t: " $PubItem.StartMaximized.ToString()
+					Line 3 "Color Depth`t`t`t`t`t`t`t`t`t`t: " $ColorDepth
+					#Line 3 "Resolution`t`t`t`t`t`t`t`t`t`t: " $Resolution
+					Line 3 "Start the application as maximized when using mobile clients`t`t`t`t`t`t`t`t: " $PubItem.StartMaximized.ToString()
+					Line 3 "Start in fullscreen mode for Wyse ThinOS clients`t`t`t`t`t`t`t`t`t`t: " $PubItem.StartFullscreen.ToString()
 				}
 
 				Line 3 "Settings are replicated to all Sites: " $PubItem.ReplicateDisplaySettings.ToString()
@@ -49039,16 +48839,18 @@ Function OutputPublishingSettings
 				WriteHTMLLine 3 0 "Application"
 				$rowdata = @()
 
-				$columnHeaders = @("Name",($Script:htmlsb),$PubItem.Name,$htmlwhite)
-				$rowdata += @(,("Description",($Script:htmlsb),$PubItem.Description,$htmlwhite))
-				$rowdata += @(,("Run",($Script:htmlsb),$WinType,$htmlwhite))
-				$rowdata += @(,("Target",($Script:htmlsb),$PubItem.Target,$htmlwhite))
-				$rowdata += @(,("Start in",($Script:htmlsb),$PubItem.StartIn,$htmlwhite))
-				$rowdata += @(,("Parameters",($Script:htmlsb),$PubItem.Parameters,$htmlwhite))
-				$rowdata += @(,("Start automatically when user logs on",($Script:htmlsb),$PubItem.StartOnLogon.ToString(),$htmlwhite))
-				$rowdata += @(,("Exclude from session prelaunch",($Script:htmlsb),$PubItem.ExcludePrelaunch.ToString(),$htmlwhite))
+				$columnHeaders = @("Application",($Script:htmlsb),"",$htmlwhite)
+				$rowdata += @(,("     Name",($Script:htmlsb),$PubItem.Name,$htmlwhite))
+				$rowdata += @(,("     Description",($Script:htmlsb),$PubItem.Description,$htmlwhite))
+				$rowdata += @(,("     Status",($Script:htmlsb),$PubItemStatus,$htmlwhite))
+				$rowdata += @(,("     Run",($Script:htmlsb),$WinType,$htmlwhite))
+				$rowdata += @(,("     Target",($Script:htmlsb),$PubItem.Target,$htmlwhite))
+				$rowdata += @(,("     Start in",($Script:htmlsb),$PubItem.StartIn,$htmlwhite))
+				$rowdata += @(,("     Parameters",($Script:htmlsb),$PubItem.Parameters,$htmlwhite))
+				$rowdata += @(,("     Start automatically when user logs on",($Script:htmlsb),$PubItem.StartOnLogon.ToString(),$htmlwhite))
+				$rowdata += @(,("     Exclude from session prelaunch",($Script:htmlsb),$PubItem.ExcludePrelaunch.ToString(),$htmlwhite))
 
-				$msg = "Application"
+				$msg = ""
 				$columnWidths = @("300","300")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
@@ -49160,14 +48962,18 @@ Function OutputPublishingSettings
 					$rowdata += @(,("Wait until all RAS Universal Printers are redirected before showing the application",($Script:htmlsb),$DefaultWaitForPrinters,$htmlwhite))
 					$rowdata += @(,("Maximum time to wait is",($Script:htmlsb),"$($DefaultWaitForPrintersTimeout) seconds",$htmlwhite))
 					$rowdata += @(,("Color Depth",($Script:htmlsb),$DefaultColorDepth,$htmlwhite))
+					#$rowdata += @(,("Resolution",($Script:htmlsb),$DefaultResolution,$htmlwhite))
 					$rowdata += @(,("Start the application as maximized when using mobile clients",($Script:htmlsb),$DefaultStartMaximized,$htmlwhite))
+					$rowdata += @(,("Start in fullscreen mode for Wyse ThinOS clients",($Script:htmlsb),$DefaultStartFullscreen,$htmlwhite))
 				}
 				Else
 				{
 					$rowdata += @(,("Wait until all RAS Universal Printers are redirected before showing the application",($Script:htmlsb),$PubItem.WaitForPrinters.ToString(),$htmlwhite))
 					$rowdata += @(,("Maximum time to wait is",($Script:htmlsb),"$($PubItem.WaitForPrintersTimeout.ToString()) seconds",$htmlwhite))
 					$rowdata += @(,("Color Depth",($Script:htmlsb),$ColorDepth,$htmlwhite))
+					#$rowdata += @(,("Resolution",($Script:htmlsb),$Resolution,$htmlwhite))
 					$rowdata += @(,("Start the application as maximized when using mobile clients",($Script:htmlsb),$PubItem.StartMaximized.ToString(),$htmlwhite))
+					$rowdata += @(,("Start in fullscreen mode for Wyse ThinOS clients",($Script:htmlsb),$PubItem.StartFullscreen.ToString(),$htmlwhite))
 				}
 
 				$msg = ""
@@ -49200,21 +49006,16 @@ Function OutputPublishingSettings
 				$DesktopSize = "$($PubItem.Width.ToString())x$($PubItem.Height.ToString())"
 			}
 			
-			If(validObject $PubItem PublishFrom)
+			$AVDHostPool = "Unable to determine"
+			If($PubItem.AVDHostPoolId -ne 0)
 			{
-				Switch ($PubItem.PublishFrom)
+				$AVDHostPool = Get-RASAVDHostPool -Id $PubItem.AVDHostPoolId -EA 0 4>$Null
+				
+				If($Null -ne $AVDHostPool)
 				{
-					"All"		{$PublishedFrom = "All Hosts in Site"; Break}
-					"HostPools"	{$PublishedFrom = "RD Session Host Pools:"; Break}
-					"Group"		{$PublishedFrom = "RD Session Host Pools:"; Break}
-					"Host"		{$PublishedFrom = "Individual Hosts:"; Break}
-					"Server"	{$PublishedFrom = "Individual Hosts:"; Break}
-					Default		{$PublishedFrom = "Unable to determine Published From: $($PubItem.PublishFrom)"; Break}
+					$AVDHostPoolName = $AVDHostPool.Name
+					$AVDHostPoolDesc = $AVDHostPool.Description
 				}
-			}
-			Else
-			{
-				$PublishedFrom = "N/A"
 			}
 			
 			If($PubItem.AllowMultiMonitor -eq "UseClientSettings")
@@ -49242,53 +49043,7 @@ Function OutputPublishingSettings
 				$ScriptInformation.Add(@{Data = "Type"; Value = $PubItem.Type; }) > $Null
 				$ScriptInformation.Add(@{Data = "Status"; Value = $PubItemStatus; }) > $Null
 				$ScriptInformation.Add(@{Data = "Desktop Size"; Value = $DesktopSize; }) > $Null
-				
-				If(validObject $PubItem PublishFrom)
-				{
-					If($PubItem.PublishFrom -eq "Server")
-					{
-						$cnt = -1
-						ForEach($Item in $PubItem.PublishFromServer)
-						{
-							$cnt++
-							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
-							
-							If($cnt -eq 0)
-							{
-								$ScriptInformation.Add(@{Data = "Published from"; Value = $ItemName; }) > $Null
-							}
-							Else
-							{
-								$ScriptInformation.Add(@{Data = ""; Value = $ItemName; }) > $Null
-							}
-						}
-					}
-					ElseIf($PubItem.PublishFrom -eq "Group")
-					{
-						$cnt = -1
-						ForEach($Item in $PubItem.PublishFromHostPool)
-						{
-							$cnt++
-							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
-							If($cnt -eq 0)
-							{
-								$ScriptInformation.Add(@{Data = "Published from"; Value = $ItemName; }) > $Null
-							}
-							Else
-							{
-								$ScriptInformation.Add(@{Data = ""; Value = $ItemName; }) > $Null
-							}
-						}
-					}
-					Else
-					{
-						$ScriptInformation.Add(@{Data = "Published from"; Value = "All Hosts in Site"; }) > $Null
-					}
-				}
-				Else
-				{
-					$ScriptInformation.Add(@{Data = "Published from"; Value = "N/A"; }) > $Null
-				}
+				$ScriptInformation.Add(@{Data = "Published from"; Value = $AVDHostPoolName; }) > $Null
 
 				If($PubItem.InheritShortcutDefaultSettings)
 				{
@@ -49358,54 +49113,31 @@ Function OutputPublishingSettings
 
 				WriteWordLine 3 0 "Publish from"
 				$ScriptInformation = New-Object System.Collections.ArrayList
-				If(validObject $PubItem PublishFrom)
+				
+				$AVDHostPools = Get-RASAVDHostPool -EA 0 4>$Null | Where-Object {$_.LinkedDesktopApplicationGroup -ne ""}
+				
+				If($Null -eq $AVDHostPools)
 				{
-					If($PubItem.PublishFrom -eq "Server")
-					{
-						$cnt = -1
-						ForEach($Item in $PubItem.PublishFromServer)
-						{
-							$cnt++
-							
-							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
-							
-							If($cnt -eq 0)
-							{
-								$ScriptInformation.Add(@{Data = "$PublishedFrom"; Value = $ItemName; }) > $Null
-							}
-							Else
-							{
-								$ScriptInformation.Add(@{Data = ""; Value = $ItemName; }) > $Null
-							}
-						}
-					}
-					ElseIf($PubItem.PublishFrom -eq "Group")
-					{
-						$cnt = -1
-						ForEach($Item in $PubItem.PublishFromHostPool)
-						{
-							$cnt++
-							
-							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
-							
-							If($cnt -eq 0)
-							{
-								$ScriptInformation.Add(@{Data = "$PublishedFrom"; Value = $ItemName; }) > $Null
-							}
-							Else
-							{
-								$ScriptInformation.Add(@{Data = ""; Value = $ItemName; }) > $Null
-							}
-						}
-					}
-					Else
-					{
-						$ScriptInformation.Add(@{Data = "$PublishedFrom"; Value = ""; }) > $Null
-					}
+					$ScriptInformation.Add(@{Data = "Published From"; Value = "Unable to determine"; }) > $Null
 				}
 				Else
 				{
-					$ScriptInformation.Add(@{Data = "$PublishedFrom"; Value = "N/A"; }) > $Null
+					ForEach($AVDHostPool in $AVDHostPools)
+					{
+						$Location = GetRASLocation $AVDHostPool.Location
+						
+						If($AVDHostPool.Name -eq $AVDHostPoolName)
+						{
+							$ScriptInformation.Add(@{Data = "Enabled"; Value = "True"; }) > $Null
+						}
+						Else
+						{
+							$ScriptInformation.Add(@{Data = "Enabled"; Value = "False"; }) > $Null
+						}
+						$ScriptInformation.Add(@{Data = "Name"; Value = $AVDHostPool.Name; }) > $Null
+						$ScriptInformation.Add(@{Data = "Location"; Value = $Location; }) > $Null
+						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+					}
 				}
 
 				$Table = AddWordTable -Hashtable $ScriptInformation `
@@ -49482,52 +49214,7 @@ Function OutputPublishingSettings
 				Line 3 "Type`t`t`t`t`t`t`t: " $PubItem.Type
 				Line 3 "Status`t`t`t`t`t`t`t: " $PubItemStatus
 				Line 3 "Desktop Size`t`t`t`t`t`t: " $DesktopSize
-				
-				If(validObject $PubItem PublishFrom)
-				{
-					If($PubItem.PublishFrom -eq "Server")
-					{
-						$cnt = -1
-						ForEach($Item in $PubItem.PublishFromServer)
-						{
-							$cnt++
-							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
-							If($cnt -eq 0)
-							{
-								Line 3 "Published from`t`t`t`t`t`t: " ItemName
-							}
-							Else
-							{
-								Line 10 $ItemName
-							}
-						}
-					}
-					ElseIf($PubItem.PublishFrom -eq "Group")
-					{
-						$cnt = -1
-						ForEach($Item in $PubItem.PublishFromHostPool)
-						{
-							$cnt++
-							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
-							If($cnt -eq 0)
-							{
-								Line 3 "Published from`t`t`t`t`t`t: " ItemName
-							}
-							Else
-							{
-								Line 10 $ItemName
-							}
-						}
-					}
-					Else
-					{
-						Line 3 "Published from`t`t`t`t`t`t: " "All Hosts in Site"
-					}
-				}
-				Else
-				{
-					Line 3 "Published from`t`t`t`t`t`t: " "N/A"
-				}
+				Line 3 "Published from`t`t`t`t`t`t: " $AVDHostPoolName
 
 				If($PubItem.InheritShortcutDefaultSettings)
 				{
@@ -49563,29 +49250,30 @@ Function OutputPublishingSettings
 				OutputPubItemFilterSummary $PubItem
 
 				Line 2 "Publish from"
-				If(validObject $PubItem PublishFrom)
+				$AVDHostPools = Get-RASAVDHostPool -EA 0 4>$Null | Where-Object {$_.LinkedDesktopApplicationGroup -ne ""}
+				
+				If($Null -eq $AVDHostPools)
 				{
-					Line 3 $PublishedFrom
-					If($PubItem.PublishFrom -eq "Server")
-					{
-						ForEach($Item in $PubItem.PublishFromServer)
-						{
-							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
-							Line 6 $ItemName
-						}
-					}
-					ElseIf($PubItem.PublishFrom -eq "Group")
-					{
-						ForEach($Item in $PubItem.PublishFromHostPool)
-						{
-							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
-							Line 5 $ItemName
-						}
-					}
+					Line 3 "Published From: Unable to determine"
 				}
 				Else
 				{
-					Line 3 "N/A"
+					ForEach($AVDHostPool in $AVDHostPools)
+					{
+						$Location = GetRASLocation $AVDHostPool.Location
+						
+						If($AVDHostPool.Name -eq $AVDHostPoolName)
+						{
+							Line 3 "Enabled: True"
+						}
+						Else
+						{
+							Line 3 "Enabled: False"
+						}
+						Line 3 "Name: " $AVDHostPool.Name
+						Line 3 "Location: " $Location
+						Line 0 ""
+					}
 				}
 				Line 0 ""
 				
@@ -49628,52 +49316,7 @@ Function OutputPublishingSettings
 				$rowdata += @(,("Type",($Script:htmlsb),$PubItem.Type,$htmlwhite))
 				$rowdata += @(,("Status",($Script:htmlsb),$PubItemStatus,$htmlwhite))
 				$rowdata += @(,("Desktop Size",($Script:htmlsb),$DesktopSize,$htmlwhite))
-				
-				If(validObject $PubItem PublishFrom)
-				{
-					If($PubItem.PublishFrom -eq "Server")
-					{
-						$cnt = -1
-						ForEach($Item in $PubItem.PublishFromServer)
-						{
-							$cnt++
-							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
-							If($cnt -eq 0)
-							{
-								$rowdata += @(,("Published from",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite))
-							}
-							Else
-							{
-								$rowdata += @(,("",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite))
-							}
-						}
-					}
-					ElseIf($PubItem.PublishFrom -eq "Group")
-					{
-						$cnt = -1
-						ForEach($Item in $PubItem.PublishFromHostPool)
-						{
-							$cnt++
-							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
-							If($cnt -eq 0)
-							{
-								$rowdata += @(,("Published from",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite))
-							}
-							Else
-							{
-								$rowdata += @(,("",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite))
-							}
-						}
-					}
-					Else
-					{
-						$rowdata += @(,("Published from",($Script:htmlsb),"All Hosts in Site",$htmlwhite))
-					}
-				}
-				Else
-				{
-					$rowdata += @(,("Published from",($Script:htmlsb),"N/A",$htmlwhite))
-				}
+				$rowdata += @(,("Published from",($Script:htmlsb),$AVDHostPoolName,$htmlwhite))
 
 				If($PubItem.InheritShortcutDefaultSettings)
 				{
@@ -49731,52 +49374,46 @@ Function OutputPublishingSettings
 
 				WriteHTMLLine 3 0 "Publish from"
 				$rowdata = @()
-				If(validObject $PubItem PublishFrom)
+				$AVDHostPools = Get-RASAVDHostPool -EA 0 4>$Null | Where-Object {$_.LinkedDesktopApplicationGroup -ne ""}
+				
+				If($Null -eq $AVDHostPools)
 				{
-					If($PubItem.PublishFrom -eq "Server")
-					{
-						$cnt = -1
-						ForEach($Item in $PubItem.PublishFromServer)
-						{
-							$cnt++
-							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
-							
-							If($cnt -eq 0)
-							{
-								$columnHeaders = @("$PublishedFrom",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite)
-							}
-							Else
-							{
-								$rowdata += @(,("",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite))
-							}
-						}
-					}
-					ElseIf($PubItem.PublishFrom -eq "Group")
-					{
-						$cnt = -1
-						ForEach($Item in $PubItem.PublishFromHostPool)
-						{
-							$cnt++
-							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
-							
-							If($cnt -eq 0)
-							{
-								$columnHeaders = @("$PublishedFrom",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite)
-							}
-							Else
-							{
-								$rowdata += @(,("",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite))
-							}
-						}
-					}
-					Else
-					{
-						$columnHeaders = @("$PublishedFrom",($Script:htmlsb),"",$htmlwhite)
-					}
+					$columnHeaders = @("Published From",($Script:htmlsb),"Unable to determine",$htmlwhite)
 				}
 				Else
 				{
-					$columnHeaders = @("$PublishedFrom",($Script:htmlsb),"N/A",$htmlwhite)
+					$cnt = -1
+					ForEach($AVDHostPool in $AVDHostPools)
+					{
+						$cnt++
+						$Location = GetRASLocation $AVDHostPool.Location
+						
+						If($AVDHostPool.Name -eq $AVDHostPoolName)
+						{
+							If($cnt -eq 0)
+							{
+								$columnHeaders = @("Enabled",($Script:htmlsb),"True",$htmlwhite)
+							}
+							Else
+							{
+								$rowdata += @(,("Enabled",($Script:htmlsb),"True",$htmlwhite))
+							}
+						}
+						Else
+						{
+							If($cnt -eq 0)
+							{
+								$columnHeaders = @("Enabled",($Script:htmlsb),"False",$htmlwhite)
+							}
+							Else
+							{
+								$rowdata += @(,("Enabled",($Script:htmlsb),"False",$htmlwhite))
+							}
+						}
+						$rowdata += @(,("Name",($Script:htmlsb),$AVDHostPool.Name,$htmlwhite))
+						$rowdata += @(,("Location",($Script:htmlsb),$Location,$htmlwhite))
+						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+					}
 				}
 
 				$msg = ""
