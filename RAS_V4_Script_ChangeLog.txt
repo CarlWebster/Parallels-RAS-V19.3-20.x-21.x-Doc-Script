@@ -41,7 +41,6 @@
 #
 #	In Function GetRASStatus:
 #		Added a String parameter to tell who or what is checking the status
-#
 #		Updated all calls to GetRASStatus to add the new second parameter
 #
 #	In Function OutputFarmSite, 

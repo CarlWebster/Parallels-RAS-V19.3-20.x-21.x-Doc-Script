@@ -450,9 +450,9 @@
 	text document.
 .NOTES
 	NAME: RAS_Inventory_V4_0.ps1
-	VERSION: 4.00 Beta 45
+	VERSION: 4.00 Beta 46
 	AUTHOR: Carl Webster
-	LASTEDIT: January 16, 2026
+	LASTEDIT: January 20, 2026
 #>
 
 
@@ -603,7 +603,6 @@ Param(
 #
 #	In Function GetRASStatus:
 #		Added a String parameter to tell who or what is checking the status
-#
 #		Updated all calls to GetRASStatus to add the new second parameter
 #
 #	In Function OutputFarmSite, 
@@ -947,9 +946,9 @@ $ErrorActionPreference    = 'SilentlyContinue'
 $Error.Clear()
 
 $Script:emailCredentials  = $Null
-$script:MyVersion         = '4.00 Beta 45'
+$script:MyVersion         = '4.00 Beta 46'
 $Script:ScriptName        = "RAS_Inventory_V4_0.ps1"
-$tmpdate                  = [datetime] "01/16/2026"
+$tmpdate                  = [datetime] "01/20/2026"
 $Script:ReleaseDate       = $tmpdate.ToUniversalTime().ToShortDateString()
 
 If($MSWord -eq $False -and $PDF -eq $False -and $Text -eq $False -and $HTML -eq $False)
@@ -49428,16 +49427,17 @@ Function OutputPublishingSettings
 				WriteWordLine 0 0 ""
 
 				WriteWordLine 3 0 "Desktop"
-				WriteWordLine 4 0 "Desktop"
 				$ScriptInformation = New-Object System.Collections.ArrayList
-				$ScriptInformation.Add(@{Data = "Name"; Value = $PubItem.Name; }) > $Null
-				$ScriptInformation.Add(@{Data = "Description"; Value = $PubItem.Description; }) > $Null
-				If(validObject $PubItem ConnectToConsole)
-				{
-					$ScriptInformation.Add(@{Data = "Connect to administrative session"; Value = $ConnectToConsole; }) > $Null
-				}
-				$ScriptInformation.Add(@{Data = "Start automatically when user logs on"; Value = $PubItem.StartOnLogon.ToString(); }) > $Null
-				$ScriptInformation.Add(@{Data = "Exclude from session prelaunch"; Value = $PubItem.ExcludePrelaunch.ToString(); }) > $Null
+				$ScriptInformation.Add(@{Data = "Desktop"; Value = ""; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Name"; Value = $PubItem.Name; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Description"; Value = $PubItem.Description; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Status"; Value = $PubItemStatus; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Start automatically when user logs on"; Value = $PubItem.StartOnLogon.ToString(); }) > $Null
+				$ScriptInformation.Add(@{Data = "     Exclude from session prelaunch"; Value = $PubItem.ExcludePrelaunch.ToString(); }) > $Null
+				$ScriptInformation.Add(@{Data = "Properties"; Value = ""; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Desktop size"; Value = $DesktopSize; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Multi-Monitor"; Value = $AllowMultiMonitor; }) > $Null
+				#$ScriptInformation.Add(@{Data = "     Enable static assignment to host"; Value = ""; }) > $Null
 
 				$Table = AddWordTable -Hashtable $ScriptInformation `
 				-Columns Data,Value `
@@ -49450,29 +49450,6 @@ Function OutputPublishingSettings
 
 				$Table.Columns.Item(1).Width = 250;
 				$Table.Columns.Item(2).Width = 250;
-
-				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-				FindWordDocumentEnd
-				$Table = $Null
-				WriteWordLine 0 0 ""
-				
-				WriteWordLine 4 0 "Properties"
-				$ScriptInformation = New-Object System.Collections.ArrayList
-				$ScriptInformation.Add(@{Data = "Desktop size"; Value = $DesktopSize; }) > $Null
-				$ScriptInformation.Add(@{Data = "Multi-Monitor"; Value = $AllowMultiMonitor; }) > $Null
-
-				$Table = AddWordTable -Hashtable $ScriptInformation `
-				-Columns Data,Value `
-				-List `
-				-Format $wdTableGrid `
-				-AutoFit $wdAutoFitFixed;
-
-				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
-				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
-				$Table.Columns.Item(1).Width = 200;
-				$Table.Columns.Item(2).Width = 300;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -49616,17 +49593,13 @@ Function OutputPublishingSettings
 				Line 3 "Desktop"
 				Line 4 "Name`t`t`t`t`t`t: " $PubItem.Name
 				Line 4 "Description`t`t`t`t`t: " $PubItem.Description
-				If(validObject $PubItem ConnectToConsole)
-				{
-					Line 4 "Connect to administrative session`t`t: " $ConnectToConsole
-				}
+				Line 4 "Status`t`t`t`t`t`t`t: " $PubItemStatus
 				Line 4 "Start automatically when user logs on`t`t: " $PubItem.StartOnLogon.ToString()
 				Line 4 "Exclude from session prelaunch`t`t`t: " $PubItem.ExcludePrelaunch.ToString()
-				Line 0 ""
-				
 				Line 3 "Properties"
 				Line 4 "Desktop size`t`t`t`t`t: " $DesktopSize
 				Line 4 "Multi-Monitor`t`t`t`t`t: " $AllowMultiMonitor
+				#Line 4 "Enable static assignment to host`t`t`t: " ""
 				Line 0 ""
 
 				OutputPubItemFilters $PubItem "Text"
@@ -49814,26 +49787,19 @@ Function OutputPublishingSettings
 				WriteHTMLLine 3 0 "Desktop"
 				$rowdata = @()
 
-				$columnHeaders = @("Name",($Script:htmlsb),$PubItem.Name,$htmlwhite)
-				$rowdata += @(,("Description",($Script:htmlsb),$PubItem.Description,$htmlwhite))
-				If(validObject $PubItem ConnectToConsole)
-				{
-					$rowdata += @(,("Connect to administrative session",($Script:htmlsb),$ConnectToConsole,$htmlwhite))
-				}
-				$rowdata += @(,("Start automatically when user logs on",($Script:htmlsb),$PubItem.StartOnLogon.ToString(),$htmlwhite))
-				$rowdata += @(,("Exclude from session prelaunch",($Script:htmlsb),$PubItem.ExcludePrelaunch.ToString(),$htmlwhite))
+				$columnHeaders = @("Desktop",($Script:htmlsb),"",$htmlwhite)
+				$rowdata += @(,("     Name",($Script:htmlsb),$PubItem.Name,$htmlwhite))
+				$rowdata += @(,("     Description",($Script:htmlsb),$PubItem.Description,$htmlwhite))
+				$rowdata += @(,("     Status",($Script:htmlsb),$PubItemStatus,$htmlwhite))
+				$rowdata += @(,("     Start automatically when user logs on",($Script:htmlsb),$PubItem.StartOnLogon.ToString(),$htmlwhite))
+				$rowdata += @(,("     Exclude from session prelaunch",($Script:htmlsb),$PubItem.ExcludePrelaunch.ToString(),$htmlwhite))
+				$rowdata += @(,("Properties",($Script:htmlsb),"",$htmlwhite))
+				$rowdata += @(,("     Desktop size",($Script:htmlsb),$DesktopSize,$htmlwhite))
+				$rowdata += @(,("     Multi-Monitor",($Script:htmlsb),$AllowMultiMonitor,$htmlwhite))
+				#$rowdata += @(,("     Enable static assignment to host",($Script:htmlsb),"",$htmlwhite))
 
 				$msg = "Desktop"
 				$columnWidths = @("300","300")
-				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-				WriteHTMLLine 0 0 ""
-				
-				$rowdata = @()
-				$columnHeaders = @("Desktop size",($Script:htmlsb),$DesktopSize,$htmlwhite)
-				$rowdata += @(,("Multi-Monitor",($Script:htmlsb),$AllowMultiMonitor,$htmlwhite))
-
-				$msg = "Properties"
-				$columnWidths = @("200","300")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 
@@ -50099,7 +50065,7 @@ Function OutputPublishingSettings
 				$ScriptInformation.Add(@{Data = "     Start automatically when user logs on"; Value = $PubItem.StartOnLogon.ToString(); }) > $Null
 				$ScriptInformation.Add(@{Data = "Local device settings"; Value = ""; }) > $Null
 				$ScriptInformation.Add(@{Data = "     URL"; Value = $PubItem.URL; }) > $Null
-				$ScriptInformation.Add(@{Data = "     Clients"; Value = $PubItem.URL; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Clients"; Value = ""; }) > $Null
 				If($PubItem.Windows.Enabled)
 				{
 					$ScriptInformation.Add(@{Data = "          Windows client"; Value = "Enabled"; }) > $Null
@@ -50175,8 +50141,8 @@ Function OutputPublishingSettings
 				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 250;
-				$Table.Columns.Item(2).Width = 250;
+				$Table.Columns.Item(1).Width = 275;
+				$Table.Columns.Item(2).Width = 225;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -50992,11 +50958,11 @@ Function OutputPubItemFilterSummary
 		
 		If($Pubitem.Filter.Default -eq "Allow")
 		{
-			$ScriptInformation.Add(@{Data = "Summary"; Value = "Allow if no other rule matches"; }) > $Null
+			$ScriptInformation.Add(@{Data = "Allow if no other rule matches"; Value = ""; }) > $Null
 		}
 		Else
 		{
-			$ScriptInformation.Add(@{Data = "Summary"; Value = "Deny if no other rule matches"; }) > $Null
+			$ScriptInformation.Add(@{Data = "Deny if no other rule matches"; Value = ""; }) > $Null
 		}
 		$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
 	}
@@ -51344,11 +51310,11 @@ Function OutputPubItemFilterSummary
 		
 		If($Pubitem.Filter.Default -eq "Allow")
 		{
-			Line 3 "Summary: " "Allow if no other rule matches"
+			Line 3 "Allow if no other rule matches"
 		}
 		Else
 		{
-			Line 3 "Summary: " "Deny if no other rule matches"
+			Line 3 "Deny if no other rule matches"
 		}
 		Line 0 ""
 	}
@@ -51703,11 +51669,11 @@ Function OutputPubItemFilterSummary
 		#general stuff
 		If($Pubitem.Filter.Default -eq "Allow")
 		{
-			$rowdata.value += @(,("Summary",($Script:htmlsb),"Allow if no other rule matches",$htmlwhite))
+			$rowdata.value += @(,("Allow if no other rule matches",($Script:htmlsb),"",$htmlwhite))
 		}
 		Else
 		{
-			$rowdata.value += @(,("Summary",($Script:htmlsb),"Deny if no other rule matches",$htmlwhite))
+			$rowdata.value += @(,("Deny if no other rule matches",($Script:htmlsb),"",$htmlwhite))
 		}
 		$rowdata.value += @(,("",($Script:htmlsb),"",$htmlwhite))
 	}
@@ -52313,15 +52279,13 @@ Function OutputPubItemFilters
 			Line 0 ""
 		}
 		
-		Line 3 "Default Rule * (Enabled)"
-
 		If($Pubitem.Filter.Default -eq "Allow")
 		{
-			Line 4 "Allow if no other rule matches"
+			Line 3 "Default Rule * (Enabled): Allow if no other rule matches"
 		}
 		Else
 		{
-			Line 4 "Deny if no other rule matches"
+			Line 3 "Default Rule * (Enabled): Deny if no other rule matches"
 		}
 		Line 0 ""
 	}

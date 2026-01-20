@@ -450,9 +450,9 @@
 	text document.
 .NOTES
 	NAME: RAS_Inventory_V4_0.ps1
-	VERSION: 4.00 Beta 45
+	VERSION: 4.00 Beta 46
 	AUTHOR: Carl Webster
-	LASTEDIT: January 16, 2026
+	LASTEDIT: January 20, 2026
 #>
 
 
@@ -603,7 +603,6 @@ Param(
 #
 #	In Function GetRASStatus:
 #		Added a String parameter to tell who or what is checking the status
-#
 #		Updated all calls to GetRASStatus to add the new second parameter
 #
 #	In Function OutputFarmSite, 
@@ -947,9 +946,9 @@ $ErrorActionPreference    = 'SilentlyContinue'
 $Error.Clear()
 
 $Script:emailCredentials  = $Null
-$script:MyVersion         = '4.00 Beta 45'
+$script:MyVersion         = '4.00 Beta 46'
 $Script:ScriptName        = "RAS_Inventory_V4_0.ps1"
-$tmpdate                  = [datetime] "01/16/2026"
+$tmpdate                  = [datetime] "01/20/2026"
 $Script:ReleaseDate       = $tmpdate.ToUniversalTime().ToShortDateString()
 
 If($MSWord -eq $False -and $PDF -eq $False -and $Text -eq $False -and $HTML -eq $False)
@@ -49428,16 +49427,17 @@ Function OutputPublishingSettings
 				WriteWordLine 0 0 ""
 
 				WriteWordLine 3 0 "Desktop"
-				WriteWordLine 4 0 "Desktop"
 				$ScriptInformation = New-Object System.Collections.ArrayList
-				$ScriptInformation.Add(@{Data = "Name"; Value = $PubItem.Name; }) > $Null
-				$ScriptInformation.Add(@{Data = "Description"; Value = $PubItem.Description; }) > $Null
-				If(validObject $PubItem ConnectToConsole)
-				{
-					$ScriptInformation.Add(@{Data = "Connect to administrative session"; Value = $ConnectToConsole; }) > $Null
-				}
-				$ScriptInformation.Add(@{Data = "Start automatically when user logs on"; Value = $PubItem.StartOnLogon.ToString(); }) > $Null
-				$ScriptInformation.Add(@{Data = "Exclude from session prelaunch"; Value = $PubItem.ExcludePrelaunch.ToString(); }) > $Null
+				$ScriptInformation.Add(@{Data = "Desktop"; Value = ""; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Name"; Value = $PubItem.Name; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Description"; Value = $PubItem.Description; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Status"; Value = $PubItemStatus; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Start automatically when user logs on"; Value = $PubItem.StartOnLogon.ToString(); }) > $Null
+				$ScriptInformation.Add(@{Data = "     Exclude from session prelaunch"; Value = $PubItem.ExcludePrelaunch.ToString(); }) > $Null
+				$ScriptInformation.Add(@{Data = "Properties"; Value = ""; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Desktop size"; Value = $DesktopSize; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Multi-Monitor"; Value = $AllowMultiMonitor; }) > $Null
+				#$ScriptInformation.Add(@{Data = "     Enable static assignment to host"; Value = ""; }) > $Null
 
 				$Table = AddWordTable -Hashtable $ScriptInformation `
 				-Columns Data,Value `
@@ -49450,29 +49450,6 @@ Function OutputPublishingSettings
 
 				$Table.Columns.Item(1).Width = 250;
 				$Table.Columns.Item(2).Width = 250;
-
-				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-				FindWordDocumentEnd
-				$Table = $Null
-				WriteWordLine 0 0 ""
-				
-				WriteWordLine 4 0 "Properties"
-				$ScriptInformation = New-Object System.Collections.ArrayList
-				$ScriptInformation.Add(@{Data = "Desktop size"; Value = $DesktopSize; }) > $Null
-				$ScriptInformation.Add(@{Data = "Multi-Monitor"; Value = $AllowMultiMonitor; }) > $Null
-
-				$Table = AddWordTable -Hashtable $ScriptInformation `
-				-Columns Data,Value `
-				-List `
-				-Format $wdTableGrid `
-				-AutoFit $wdAutoFitFixed;
-
-				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
-				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
-				$Table.Columns.Item(1).Width = 200;
-				$Table.Columns.Item(2).Width = 300;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -49616,17 +49593,13 @@ Function OutputPublishingSettings
 				Line 3 "Desktop"
 				Line 4 "Name`t`t`t`t`t`t: " $PubItem.Name
 				Line 4 "Description`t`t`t`t`t: " $PubItem.Description
-				If(validObject $PubItem ConnectToConsole)
-				{
-					Line 4 "Connect to administrative session`t`t: " $ConnectToConsole
-				}
+				Line 4 "Status`t`t`t`t`t`t`t: " $PubItemStatus
 				Line 4 "Start automatically when user logs on`t`t: " $PubItem.StartOnLogon.ToString()
 				Line 4 "Exclude from session prelaunch`t`t`t: " $PubItem.ExcludePrelaunch.ToString()
-				Line 0 ""
-				
 				Line 3 "Properties"
 				Line 4 "Desktop size`t`t`t`t`t: " $DesktopSize
 				Line 4 "Multi-Monitor`t`t`t`t`t: " $AllowMultiMonitor
+				#Line 4 "Enable static assignment to host`t`t`t: " ""
 				Line 0 ""
 
 				OutputPubItemFilters $PubItem "Text"
@@ -49814,26 +49787,19 @@ Function OutputPublishingSettings
 				WriteHTMLLine 3 0 "Desktop"
 				$rowdata = @()
 
-				$columnHeaders = @("Name",($Script:htmlsb),$PubItem.Name,$htmlwhite)
-				$rowdata += @(,("Description",($Script:htmlsb),$PubItem.Description,$htmlwhite))
-				If(validObject $PubItem ConnectToConsole)
-				{
-					$rowdata += @(,("Connect to administrative session",($Script:htmlsb),$ConnectToConsole,$htmlwhite))
-				}
-				$rowdata += @(,("Start automatically when user logs on",($Script:htmlsb),$PubItem.StartOnLogon.ToString(),$htmlwhite))
-				$rowdata += @(,("Exclude from session prelaunch",($Script:htmlsb),$PubItem.ExcludePrelaunch.ToString(),$htmlwhite))
+				$columnHeaders = @("Desktop",($Script:htmlsb),"",$htmlwhite)
+				$rowdata += @(,("     Name",($Script:htmlsb),$PubItem.Name,$htmlwhite))
+				$rowdata += @(,("     Description",($Script:htmlsb),$PubItem.Description,$htmlwhite))
+				$rowdata += @(,("     Status",($Script:htmlsb),$PubItemStatus,$htmlwhite))
+				$rowdata += @(,("     Start automatically when user logs on",($Script:htmlsb),$PubItem.StartOnLogon.ToString(),$htmlwhite))
+				$rowdata += @(,("     Exclude from session prelaunch",($Script:htmlsb),$PubItem.ExcludePrelaunch.ToString(),$htmlwhite))
+				$rowdata += @(,("Properties",($Script:htmlsb),"",$htmlwhite))
+				$rowdata += @(,("     Desktop size",($Script:htmlsb),$DesktopSize,$htmlwhite))
+				$rowdata += @(,("     Multi-Monitor",($Script:htmlsb),$AllowMultiMonitor,$htmlwhite))
+				#$rowdata += @(,("     Enable static assignment to host",($Script:htmlsb),"",$htmlwhite))
 
 				$msg = "Desktop"
 				$columnWidths = @("300","300")
-				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-				WriteHTMLLine 0 0 ""
-				
-				$rowdata = @()
-				$columnHeaders = @("Desktop size",($Script:htmlsb),$DesktopSize,$htmlwhite)
-				$rowdata += @(,("Multi-Monitor",($Script:htmlsb),$AllowMultiMonitor,$htmlwhite))
-
-				$msg = "Properties"
-				$columnWidths = @("200","300")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 
@@ -50099,7 +50065,7 @@ Function OutputPublishingSettings
 				$ScriptInformation.Add(@{Data = "     Start automatically when user logs on"; Value = $PubItem.StartOnLogon.ToString(); }) > $Null
 				$ScriptInformation.Add(@{Data = "Local device settings"; Value = ""; }) > $Null
 				$ScriptInformation.Add(@{Data = "     URL"; Value = $PubItem.URL; }) > $Null
-				$ScriptInformation.Add(@{Data = "     Clients"; Value = $PubItem.URL; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Clients"; Value = ""; }) > $Null
 				If($PubItem.Windows.Enabled)
 				{
 					$ScriptInformation.Add(@{Data = "          Windows client"; Value = "Enabled"; }) > $Null
@@ -50175,8 +50141,8 @@ Function OutputPublishingSettings
 				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 250;
-				$Table.Columns.Item(2).Width = 250;
+				$Table.Columns.Item(1).Width = 275;
+				$Table.Columns.Item(2).Width = 225;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -50992,11 +50958,11 @@ Function OutputPubItemFilterSummary
 		
 		If($Pubitem.Filter.Default -eq "Allow")
 		{
-			$ScriptInformation.Add(@{Data = "Summary"; Value = "Allow if no other rule matches"; }) > $Null
+			$ScriptInformation.Add(@{Data = "Allow if no other rule matches"; Value = ""; }) > $Null
 		}
 		Else
 		{
-			$ScriptInformation.Add(@{Data = "Summary"; Value = "Deny if no other rule matches"; }) > $Null
+			$ScriptInformation.Add(@{Data = "Deny if no other rule matches"; Value = ""; }) > $Null
 		}
 		$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
 	}
@@ -51344,11 +51310,11 @@ Function OutputPubItemFilterSummary
 		
 		If($Pubitem.Filter.Default -eq "Allow")
 		{
-			Line 3 "Summary: " "Allow if no other rule matches"
+			Line 3 "Allow if no other rule matches"
 		}
 		Else
 		{
-			Line 3 "Summary: " "Deny if no other rule matches"
+			Line 3 "Deny if no other rule matches"
 		}
 		Line 0 ""
 	}
@@ -51703,11 +51669,11 @@ Function OutputPubItemFilterSummary
 		#general stuff
 		If($Pubitem.Filter.Default -eq "Allow")
 		{
-			$rowdata.value += @(,("Summary",($Script:htmlsb),"Allow if no other rule matches",$htmlwhite))
+			$rowdata.value += @(,("Allow if no other rule matches",($Script:htmlsb),"",$htmlwhite))
 		}
 		Else
 		{
-			$rowdata.value += @(,("Summary",($Script:htmlsb),"Deny if no other rule matches",$htmlwhite))
+			$rowdata.value += @(,("Deny if no other rule matches",($Script:htmlsb),"",$htmlwhite))
 		}
 		$rowdata.value += @(,("",($Script:htmlsb),"",$htmlwhite))
 	}
@@ -52313,15 +52279,13 @@ Function OutputPubItemFilters
 			Line 0 ""
 		}
 		
-		Line 3 "Default Rule * (Enabled)"
-
 		If($Pubitem.Filter.Default -eq "Allow")
 		{
-			Line 4 "Allow if no other rule matches"
+			Line 3 "Default Rule * (Enabled): Allow if no other rule matches"
 		}
 		Else
 		{
-			Line 4 "Deny if no other rule matches"
+			Line 3 "Default Rule * (Enabled): Deny if no other rule matches"
 		}
 		Line 0 ""
 	}
@@ -69804,8 +69768,8 @@ ProcessScriptEnd
 # SIG # Begin signature block
 # MIIthQYJKoZIhvcNAQcCoIItdjCCLXICAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUbN5twRNfY+20cRwyfS6wXHTP
-# 2nSggibfMIIFjTCCBHWgAwIBAgIQDpsYjvnQLefv21DiCEAYWjANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUJ8yR0Zd8GArUtY8HRnhYNIRe
+# iFiggibfMIIFjTCCBHWgAwIBAgIQDpsYjvnQLefv21DiCEAYWjANBgkqhkiG9w0B
 # AQwFADBlMQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYD
 # VQQLExB3d3cuZGlnaWNlcnQuY29tMSQwIgYDVQQDExtEaWdpQ2VydCBBc3N1cmVk
 # IElEIFJvb3QgQ0EwHhcNMjIwODAxMDAwMDAwWhcNMzExMTA5MjM1OTU5WjBiMQsw
@@ -70016,33 +69980,33 @@ ProcessScriptEnd
 # UzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/BgNVBAMTOERpZ2lDZXJ0IFRy
 # dXN0ZWQgRzQgQ29kZSBTaWduaW5nIFJTQTQwOTYgU0hBMzg0IDIwMjEgQ0ExAhAL
 # bN+2Z4EOKufLWhG6HUlwMAkGBSsOAwIaBQCgQDAZBgkqhkiG9w0BCQMxDAYKKwYB
-# BAGCNwIBBDAjBgkqhkiG9w0BCQQxFgQUsfnVTbzGVIJRV+rqjAkiS58cK6UwDQYJ
-# KoZIhvcNAQEBBQAEggIApo+iAypg56e6fucDBbUFuZRtGuCH2COfdePBXtsmpLKd
-# kcPODLexqeZjuHvwJDp5s9ZW2tKXnz1/GjZo+txssgSLRncL6WkFTT8xpgS3hOlX
-# YtcouheqgTL60PmpQXLrJ5Osqz1jzw+i/Vk6PokXyCy7IECu+cxH0Bswv1KrwaX1
-# UMTc4CLAzvcgl+G+J69bPRWtjJrIxJSTtxa0n0WtWRNVLR+e1t8owJvuZMZksW3o
-# PWPbSrYEoH27HJR10XBYqt8PjY/Djjxox+XpjDAHLZeKmDxJv60fGK9Sj7pW3XqX
-# hH7mFXez9yf6NDAG0qSVT0TwREtpyQEhAdDSa9+AxeuD7ChBjFaQTmRp90OJMZRU
-# XBtQ7lS5be01MYpS2evUtO1sk6A8mSz+hEvw8J6zJgojIcLRKtZnBZR7+kG7v3Vw
-# jVNvMpfq2wTMRt4Hu6fKjZNLLbYDsbhDMlE4btqMHrkkZgFb53zxJtlEycZunwLZ
-# KfvGx7/bkFslNYSSgE8fButdfIG5a3fUdOZQZ+zEB06z/7a1OOCnk+wNVpdsCCXV
-# bew3Q35AzaVWZPo9zxuLysbjBnIzjHwW8RDp3OUCkbELAK2ec36uQAx5mpRWi8sl
-# /MgT7TI2r0vhHr0sj+DywB/f9VIZhndcoJWdUOZnhs7miVN03XftWRpfXXwX3+eh
+# BAGCNwIBBDAjBgkqhkiG9w0BCQQxFgQUsNGUgd/X1CmwzWi1HfjBm9NvMeYwDQYJ
+# KoZIhvcNAQEBBQAEggIArz+dxM01uRBgTqQnPmC1h5YFceOia/aZEQhzfwMqT6fn
+# t8OCIeXQp7VWeUZtUAm6YTNPhktY6W4Wg8hvP9Aktd4A0+WAu2DFL1B2EiyO8SN8
+# lWaobCImRJxRatWBTiE7/HHgm+YUKX9w6M2O55ZtUWb4XdonU4ytFx/hdc7e8xX/
+# P7uyeL7Gp+ZMPooyAvxcQDFYGqoqMrrUGlG/ZpdyTzQyXNou/h1fnyaFT3z6GOvw
+# Bogm+tIs6ctU2hMhqyC8H5I6RRGNwK4vu9uTAYyCU8YbXrDRdMVTrVsmqLkzmftY
+# cB8KvGJd1qIzrICugWxGl/sqJKk6kn10Y+UXcS3TG+AQdrF26CSfY/zDQeR7C1uT
+# 8KmgiqjXun5uYfJv0E9KgPmCTy+7wVXfClm5XukvX3kMYPx/8veEIZOceoEhVddg
+# siMO6/gWj5Tglc5jupT2uFbC+uAv2OpykktCue4fFwDRyYaTv7hPPicDy3t0qPGc
+# qeoPPZN28fSUSnAJQVdyZP1FRpLn9CfL+cCKlagWO38j8ZCp31qLYnU+81wnVkdu
+# KgO01vnlLSSPJWVt/ktDpySDifugCa+xnY5q46sz3nL4ERYzNJM19Bjs9TKhexMi
+# akDKnN94YwkFyx5rRmNNQ8oT5uvRBiXERmWVH44yFdogYnwv5yH63Fy5ARAhe42h
 # ggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8CAQEwfTBpMQswCQYDVQQGEwJVUzEX
 # MBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/BgNVBAMTOERpZ2lDZXJ0IFRydXN0
 # ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYgU0hBMjU2IDIwMjUgQ0ExAhAKgO8Y
 # S43xBYLRxHanlXRoMA0GCWCGSAFlAwQCAQUAoGkwGAYJKoZIhvcNAQkDMQsGCSqG
-# SIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjYwMTE2MjAyMDI0WjAvBgkqhkiG9w0B
-# CQQxIgQgu01o6yzS7YAu7ZWM/kipq1/7Da3VTlH49b9IAuxRCIkwDQYJKoZIhvcN
-# AQEBBQAEggIABRrvfzBcfLeeJcOat32V/Zi8+shHVw+o+IeLCgr8DlIVZcdVFxO4
-# q3rPVpNrWAMRex/y7dOvLro+W7QNum32JcGrOKT+zp90egfTn9rnHBvpxmPfsTuu
-# /AKYg256m0DFvne6cd1aImUP6PnevpKN8Rssi4htoPZ4n7CCork7XWlC7oJ9xSLG
-# 4TJVuUcsrYhJRjQSE88wy2eHeRweIog/kaw83EYW3Zv+a04TQ3xs7QhjzZ5QMQ8b
-# RdakCgzy2OnufZsabXViaviYzv9kcUGQobSeMmO8KBPdDhroM22u0yep0UbSUCuP
-# sW22AQAh4r+WVaudNOmoDbPZEHWmGeNND2f72/PNaN0pGtPJXZ/bycMWLHxoGLa/
-# yTLw7bv7D1RIHHwlYIHZmUf0x0WZ3QYgi+Rig748tUZeKVPb0148oI7gTp4CxOO8
-# NkP11MCmTssxX9BVnaeUYVzikeYW4J727/ekASsEf+l4SrCOZPVs/jdTlB40EcFL
-# yD2MeedJHquIbKR73EDeiW9pvV4AyE9dj/uM/dmVgZT9MnxFcgnSVwDLhIXbhArc
-# 5kY3WoF8e1KFDtCeoaWuZu589DFb1HoQTqks0GkIz/JhN/pd0KAilnlOk7sqXX0c
-# Zq25QvurBgUJ3+k30mVMie3Vgm8PmO4xYbt+zOkgRKkc/0FmXtcOb1g=
+# SIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjYwMTIwMTM0NDQ4WjAvBgkqhkiG9w0B
+# CQQxIgQg123CoAAE3YM0Qre3UVmeDqv+BbK6QzpsjXd4zJta3uswDQYJKoZIhvcN
+# AQEBBQAEggIAJHdDtwg0QvsvTxJUDxOVh7+2QURZjoWg8REIZBZjbnyN3kHB6KBH
+# FM3Vc4z/ZjveQxCvjvBhfg7A1SW5/1DqP6cWeWAlsCTWdYot2iMuHEok1WsbbiER
+# M1FKkVyhMK+8uElUSon/k9FpaIfAXP18v5p/2iYm57Vpx5F2Vpzh+auAOzZZwkud
+# SSEeFE0HSurhVubsyZWwvQ4yJwApIArtM+843vKO6rDUT7Nvx11VZLBKsLofti/A
+# QcGHkdkNR3f8mtf3jTLWsdrqriupEKkbKcerpl2HpGRrriXGL/Q5yyxai2pWhv/9
+# KGXk2FWm3Kx33HxwZ9xH4yVM6+umVGSiqEIqMMUWoqDpQjKwtQ4glFpyHfz0lUes
+# FyD79cRrn1k/9fX5LZMOkq1AF1CQugzmdrK+jZa62Cj7jTfGE24a/neRDHcRC2RX
+# O2NHXy5A0+FZ9LWO57LSQX3bzZ2cL3CEPwvpqjYbDDHjv3tflwiKMFypow/cSOV5
+# mKGNB55g2ywMbBbaL53rgv0qIW/Ym0n6vHnFxuX4vvnNv8xKr7k+l7r37Kxygx7p
+# yq1Z93o3MRTJEzdj6wqdPMxx8UJ8YULA+uGaG+PQuydlbMDLgglHpu5oxsvWDQqJ
+# RqgwnPj7dtudiOjnWtqz1HKdEiVyLJols9ZStLB4mjYXKIVY0WprD/w=
 # SIG # End signature block
