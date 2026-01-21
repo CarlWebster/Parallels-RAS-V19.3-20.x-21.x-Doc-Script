@@ -450,9 +450,9 @@
 	text document.
 .NOTES
 	NAME: RAS_Inventory_V4_0.ps1
-	VERSION: 4.00 Beta 47
+	VERSION: 4.00 Beta 48
 	AUTHOR: Carl Webster
-	LASTEDIT: January 20, 2026
+	LASTEDIT: January 21, 2026
 #>
 
 
@@ -687,7 +687,9 @@ Param(
 #			In the Routing section, the handling of no preferred routes configured was not handled properly
 #				Moved the "
 #		For Published Item type of "VDIDesktop", add Published from
-#		For Published Item type of AVDApp and AVDDesktop, change the name from "Windows Virtual Desktop" to "Azure Virtual Desktop"
+#		For Published Item type of AVDApp and AVDDesktop:
+#			Change the name from "Windows Virtual Desktop" to "Azure Virtual Desktop"
+#			Change Published from to match what is in the console
 #		For Published Item type of AVDApp, remove the following items from the Information section because they are not shown in the RAS 20 or 21 console:
 #			Start In
 #			Start automatically when user logs on
@@ -946,9 +948,9 @@ $ErrorActionPreference    = 'SilentlyContinue'
 $Error.Clear()
 
 $Script:emailCredentials  = $Null
-$script:MyVersion         = '4.00 Beta 47'
+$script:MyVersion         = '4.00 Beta 48'
 $Script:ScriptName        = "RAS_Inventory_V4_0.ps1"
-$tmpdate                  = [datetime] "01/20/2026"
+$tmpdate                  = [datetime] "01/21/2026"
 $Script:ReleaseDate       = $tmpdate.ToUniversalTime().ToShortDateString()
 
 If($MSWord -eq $False -and $PDF -eq $False -and $Text -eq $False -and $HTML -eq $False)
@@ -47936,21 +47938,16 @@ Function OutputPublishingSettings
 				Default	{$SessionSharing = "Unable to determine Session Sharing state: $($PubItem.DisableSessionSharing)"; Break}
 			}
 			
-			If(validObject $PubItem PublishFrom)
+			$AVDHostPool = "Unable to determine"
+			If($PubItem.AVDHostPoolId -ne 0)
 			{
-				Switch ($PubItem.PublishFrom)
+				$AVDHostPool = Get-RASAVDHostPool -Id $PubItem.AVDHostPoolId -EA 0 4>$Null
+				
+				If($Null -ne $AVDHostPool)
 				{
-					"All"		{$PublishedFrom = "All Hosts in Site"; Break}
-					"HostPools"	{$PublishedFrom = "RD Session Host Pools:"; Break}
-					"Group"		{$PublishedFrom = "RD Session Host Pools:"; Break}
-					"Host"		{$PublishedFrom = "Individual Hosts:"; Break}
-					"Server"	{$PublishedFrom = "Individual Hosts:"; Break}
-					Default		{$PublishedFrom = "Unable to determine Published From: $($PubItem.PublishFrom)"; Break}
+					$AVDHostPoolName = $AVDHostPool.Name
+					$AVDHostPoolDesc = $AVDHostPool.Description
 				}
-			}
-			Else
-			{
-				$PublishedFrom = "N/A"
 			}
 			
 			Switch ($PubItem.LicenseLimitNotify)
@@ -47991,53 +47988,7 @@ Function OutputPublishingSettings
 				$ScriptInformation.Add(@{Data = "Status"; Value = $PubItemStatus; }) > $Null
 				$ScriptInformation.Add(@{Data = "Target"; Value = $PubItem.Target; }) > $Null
 				$ScriptInformation.Add(@{Data = "Start In"; Value = $PubItem.StartIn; }) > $Null
-
-				If(validObject $PubItem PublishFrom)
-				{
-					If($PubItem.PublishFrom -eq "Server")
-					{
-						$cnt = -1
-						ForEach($Item in $PubItem.PublishFromServer)
-						{
-							$cnt++
-							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
-							
-							If($cnt -eq 0)
-							{
-								$ScriptInformation.Add(@{Data = "Published from"; Value = $ItemName; }) > $Null
-							}
-							Else
-							{
-								$ScriptInformation.Add(@{Data = ""; Value = $ItemName; }) > $Null
-							}
-						}
-					}
-					ElseIf($PubItem.PublishFrom -eq "Group")
-					{
-						$cnt = -1
-						ForEach($Item in $PubItem.PublishFromHostPool)
-						{
-							$cnt++
-							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
-							If($cnt -eq 0)
-							{
-								$ScriptInformation.Add(@{Data = "Published from"; Value = $ItemName; }) > $Null
-							}
-							Else
-							{
-								$ScriptInformation.Add(@{Data = ""; Value = $ItemName; }) > $Null
-							}
-						}
-					}
-					Else
-					{
-						$ScriptInformation.Add(@{Data = "Published from"; Value = "All Hosts in Site"; }) > $Null
-					}
-				}
-				Else
-				{
-					$ScriptInformation.Add(@{Data = "Published from"; Value = "N/A"; }) > $Null
-				}
+				$ScriptInformation.Add(@{Data = "Published from"; Value = $AVDHostPoolName; }) > $Null
 
 				If($PubItem.InheritShortcutDefaultSettings)
 				{
@@ -48108,54 +48059,32 @@ Function OutputPublishingSettings
 
 				WriteWordLine 3 0 "Publish from"
 				$ScriptInformation = New-Object System.Collections.ArrayList
-				If(validObject $PubItem PublishFrom)
+
+				$AVDHostPools = Get-RASAVDHostPool -EA 0 4>$Null | Where-Object {$_.LinkedRemoteApplicationGroup -ne ""}
+				
+				If($Null -eq $AVDHostPools)
 				{
-					If($PubItem.PublishFrom -eq "Server")
-					{
-						$cnt = -1
-						ForEach($Item in $PubItem.PublishFromServer)
-						{
-							$cnt++
-							
-							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
-							
-							If($cnt -eq 0)
-							{
-								$ScriptInformation.Add(@{Data = "$PublishedFrom"; Value = $ItemName; }) > $Null
-							}
-							Else
-							{
-								$ScriptInformation.Add(@{Data = ""; Value = $ItemName; }) > $Null
-							}
-						}
-					}
-					ElseIf($PubItem.PublishFrom -eq "Group")
-					{
-						$cnt = -1
-						ForEach($Item in $PubItem.PublishFromHostPool)
-						{
-							$cnt++
-							
-							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
-							
-							If($cnt -eq 0)
-							{
-								$ScriptInformation.Add(@{Data = "$PublishedFrom"; Value = $ItemName; }) > $Null
-							}
-							Else
-							{
-								$ScriptInformation.Add(@{Data = ""; Value = $ItemName; }) > $Null
-							}
-						}
-					}
-					Else
-					{
-						$ScriptInformation.Add(@{Data = "$PublishedFrom"; Value = ""; }) > $Null
-					}
+					$ScriptInformation.Add(@{Data = "Published From"; Value = "Unable to determine"; }) > $Null
 				}
 				Else
 				{
-					$ScriptInformation.Add(@{Data = "$PublishedFrom"; Value = "N/A"; }) > $Null
+					ForEach($AVDHostPool in $AVDHostPools)
+					{
+						$Location = GetRASLocation $AVDHostPool.Location
+						
+						If($AVDHostPool.Name -eq $AVDHostPoolName)
+						{
+							$ScriptInformation.Add(@{Data = "Enabled"; Value = "True"; }) > $Null
+						}
+						Else
+						{
+							$ScriptInformation.Add(@{Data = "Enabled"; Value = "False"; }) > $Null
+						}
+						$ScriptInformation.Add(@{Data = "Host pools"; Value = $AVDHostPool.Name; }) > $Null
+						$ScriptInformation.Add(@{Data = "Description"; Value = $AVDHostPool.Description; }) > $Null
+						$ScriptInformation.Add(@{Data = "Location"; Value = $Location; }) > $Null
+						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+					}
 				}
 
 				$Table = AddWordTable -Hashtable $ScriptInformation `
@@ -48441,52 +48370,8 @@ Function OutputPublishingSettings
 				Line 3 "Type`t`t`t`t`t`t`t: " $PubItem.Type
 				Line 3 "Status`t`t`t`t`t`t`t: " $PubItemStatus
 				Line 3 "Target`t`t`t`t`t`t`t: " $PubItem.Target
-
-				If(validObject $PubItem PublishFrom)
-				{
-					If($PubItem.PublishFrom -eq "Server")
-					{
-						$cnt = -1
-						ForEach($Item in $PubItem.PublishFromServer)
-						{
-							$cnt++
-							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
-							If($cnt -eq 0)
-							{
-								Line 3 "Published from`t`t`t`t`t`t: " ItemName
-							}
-							Else
-							{
-								Line 10 $ItemName
-							}
-						}
-					}
-					ElseIf($PubItem.PublishFrom -eq "Group")
-					{
-						$cnt = -1
-						ForEach($Item in $PubItem.PublishFromHostPool)
-						{
-							$cnt++
-							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
-							If($cnt -eq 0)
-							{
-								Line 3 "Published from`t`t`t`t`t`t: " ItemName
-							}
-							Else
-							{
-								Line 10 $ItemName
-							}
-						}
-					}
-					Else
-					{
-						Line 3 "Published from`t`t`t`t`t`t: " "All Hosts in Site"
-					}
-				}
-				Else
-				{
-					Line 3 "Published from`t`t`t`t`t`t: " "N/A"
-				}
+				Line 3 "Start In`t`t`t`t`t`t: " $PubItem.StartIn
+				Line 3 "Published from`t`t`t`t`t`t: " $AVDHostPoolName
 
 				If($PubItem.InheritShortcutDefaultSettings)
 				{
@@ -48536,31 +48421,34 @@ Function OutputPublishingSettings
 						Line 10 $SiteName
 					}
 				}
+				Line 0 ""
 
 				Line 2 "Publish from"
-				If(validObject $PubItem PublishFrom)
+				$AVDHostPools = Get-RASAVDHostPool -EA 0 4>$Null | Where-Object {$_.LinkedRemoteApplicationGroup -ne ""}
+				
+				If($Null -eq $AVDHostPools)
 				{
-					Line 3 $PublishedFrom
-					If($PubItem.PublishFrom -eq "Server")
-					{
-						ForEach($Item in $PubItem.PublishFromServer)
-						{
-							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
-							Line 6 $ItemName
-						}
-					}
-					ElseIf($PubItem.PublishFrom -eq "Group")
-					{
-						ForEach($Item in $PubItem.PublishFromHostPool)
-						{
-							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
-							Line 5 $ItemName
-						}
-					}
+					Line 3 "Published From`t: Unable to determine"
 				}
 				Else
 				{
-					Line 3 "N/A"
+					ForEach($AVDHostPool in $AVDHostPools)
+					{
+						$Location = GetRASLocation $AVDHostPool.Location
+						
+						If($AVDHostPool.Name -eq $AVDHostPoolName)
+						{
+							Line 3 "Enabled`t`t: True"
+						}
+						Else
+						{
+							Line 3 "Enabled`t`t: False"
+						}
+						Line 3 "Host pools`t: " $AVDHostPool.Name
+						Line 3 "Description`t: " $AVDHostPool.Description
+						Line 3 "Location`t: " $Location
+						Line 0 ""
+					}
 				}
 				Line 0 ""
 
@@ -48680,52 +48568,7 @@ Function OutputPublishingSettings
 				$rowdata += @(,("Status",($Script:htmlsb),$PubItemStatus,$htmlwhite))
 				$rowdata += @(,("Target",($Script:htmlsb),$PubItem.Target,$htmlwhite))
 				$rowdata += @(,("Start In",($Script:htmlsb),$PubItem.StartIn,$htmlwhite))
-
-				If(validObject $PubItem PublishFrom)
-				{
-					If($PubItem.PublishFrom -eq "Server")
-					{
-						$cnt = -1
-						ForEach($Item in $PubItem.PublishFromServer)
-						{
-							$cnt++
-							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
-							If($cnt -eq 0)
-							{
-								$rowdata += @(,("Published from",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite))
-							}
-							Else
-							{
-								$rowdata += @(,("",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite))
-							}
-						}
-					}
-					ElseIf($PubItem.PublishFrom -eq "Group")
-					{
-						$cnt = -1
-						ForEach($Item in $PubItem.PublishFromHostPool)
-						{
-							$cnt++
-							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
-							If($cnt -eq 0)
-							{
-								$rowdata += @(,("Published from",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite))
-							}
-							Else
-							{
-								$rowdata += @(,("",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite))
-							}
-						}
-					}
-					Else
-					{
-						$rowdata += @(,("Published from",($Script:htmlsb),"All Hosts in Site",$htmlwhite))
-					}
-				}
-				Else
-				{
-					$rowdata += @(,("Published from",($Script:htmlsb),"N/A",$htmlwhite))
-				}
+				$rowdata += @(,("Published from",($Script:htmlsb),$AVDHostPoolName,$htmlwhite))
 
 				If($PubItem.InheritShortcutDefaultSettings)
 				{
@@ -48783,52 +48626,50 @@ Function OutputPublishingSettings
 
 				WriteHTMLLine 3 0 "Publish from"
 				$rowdata = @()
-				If(validObject $PubItem PublishFrom)
+				$columnHeaders = @("$PublishedFrom",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite)
+				$rowdata += @(,("",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite))
+
+				$AVDHostPools = Get-RASAVDHostPool -EA 0 4>$Null | Where-Object {$_.LinkedRemoteApplicationGroup -ne ""}
+				
+				If($Null -eq $AVDHostPools)
 				{
-					If($PubItem.PublishFrom -eq "Server")
-					{
-						$cnt = -1
-						ForEach($Item in $PubItem.PublishFromServer)
-						{
-							$cnt++
-							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
-							
-							If($cnt -eq 0)
-							{
-								$columnHeaders = @("$PublishedFrom",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite)
-							}
-							Else
-							{
-								$rowdata += @(,("",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite))
-							}
-						}
-					}
-					ElseIf($PubItem.PublishFrom -eq "Group")
-					{
-						$cnt = -1
-						ForEach($Item in $PubItem.PublishFromHostPool)
-						{
-							$cnt++
-							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
-							
-							If($cnt -eq 0)
-							{
-								$columnHeaders = @("$PublishedFrom",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite)
-							}
-							Else
-							{
-								$rowdata += @(,("",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite))
-							}
-						}
-					}
-					Else
-					{
-						$columnHeaders = @("$PublishedFrom",($Script:htmlsb),"",$htmlwhite)
-					}
+					$columnHeaders = @("Published From",($Script:htmlsb),"Unable to determine",$htmlwhite)
 				}
 				Else
 				{
-					$columnHeaders = @("$PublishedFrom",($Script:htmlsb),"N/A",$htmlwhite)
+					$cnt = -1
+					ForEach($AVDHostPool in $AVDHostPools)
+					{
+						$cnt++
+						$Location = GetRASLocation $AVDHostPool.Location
+						
+						If($AVDHostPool.Name -eq $AVDHostPoolName)
+						{
+							If($cnt -eq 0)
+							{
+								$columnHeaders = @("Enabled",($Script:htmlsb),"True",$htmlwhite)
+							}
+							Else
+							{
+								$rowdata += @(,("Enabled",($Script:htmlsb),"True",$htmlwhite))
+							}
+						}
+						Else
+						{
+							If($cnt -eq 0)
+							{
+								$columnHeaders = @("Enabled",($Script:htmlsb),"False",$htmlwhite)
+							}
+							Else
+							{
+								$rowdata += @(,("Enabled",($Script:htmlsb),"False",$htmlwhite))
+							}
+						}
+						$rowdata += @(,("Host pools",($Script:htmlsb),$AVDHostPool.Name,$htmlwhite))
+						$rowdata += @(,("Description",($Script:htmlsb),$AVDHostPool.Description,$htmlwhite))
+						$rowdata += @(,("Location",($Script:htmlsb),$Location,$htmlwhite))
+						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+					}
 				}
 
 				$msg = ""

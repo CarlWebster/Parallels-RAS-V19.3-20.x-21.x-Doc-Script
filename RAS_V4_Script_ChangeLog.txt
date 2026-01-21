@@ -125,7 +125,9 @@
 #			In the Routing section, the handling of no preferred routes configured was not handled properly
 #				Moved the "
 #		For Published Item type of "VDIDesktop", add Published from
-#		For Published Item type of AVDApp and AVDDesktop, change the name from "Windows Virtual Desktop" to "Azure Virtual Desktop"
+#		For Published Item type of AVDApp and AVDDesktop:
+#			Change the name from "Windows Virtual Desktop" to "Azure Virtual Desktop"
+#			Change Published from to match what is in the console
 #		For Published Item type of AVDApp, remove the following items from the Information section because they are not shown in the RAS 20 or 21 console:
 #			Start In
 #			Start automatically when user logs on

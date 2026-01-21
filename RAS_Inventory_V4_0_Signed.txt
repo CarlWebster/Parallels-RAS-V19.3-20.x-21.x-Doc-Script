@@ -450,9 +450,9 @@
 	text document.
 .NOTES
 	NAME: RAS_Inventory_V4_0.ps1
-	VERSION: 4.00 Beta 47
+	VERSION: 4.00 Beta 48
 	AUTHOR: Carl Webster
-	LASTEDIT: January 20, 2026
+	LASTEDIT: January 21, 2026
 #>
 
 
@@ -687,7 +687,9 @@ Param(
 #			In the Routing section, the handling of no preferred routes configured was not handled properly
 #				Moved the "
 #		For Published Item type of "VDIDesktop", add Published from
-#		For Published Item type of AVDApp and AVDDesktop, change the name from "Windows Virtual Desktop" to "Azure Virtual Desktop"
+#		For Published Item type of AVDApp and AVDDesktop:
+#			Change the name from "Windows Virtual Desktop" to "Azure Virtual Desktop"
+#			Change Published from to match what is in the console
 #		For Published Item type of AVDApp, remove the following items from the Information section because they are not shown in the RAS 20 or 21 console:
 #			Start In
 #			Start automatically when user logs on
@@ -946,9 +948,9 @@ $ErrorActionPreference    = 'SilentlyContinue'
 $Error.Clear()
 
 $Script:emailCredentials  = $Null
-$script:MyVersion         = '4.00 Beta 47'
+$script:MyVersion         = '4.00 Beta 48'
 $Script:ScriptName        = "RAS_Inventory_V4_0.ps1"
-$tmpdate                  = [datetime] "01/20/2026"
+$tmpdate                  = [datetime] "01/21/2026"
 $Script:ReleaseDate       = $tmpdate.ToUniversalTime().ToShortDateString()
 
 If($MSWord -eq $False -and $PDF -eq $False -and $Text -eq $False -and $HTML -eq $False)
@@ -47936,21 +47938,16 @@ Function OutputPublishingSettings
 				Default	{$SessionSharing = "Unable to determine Session Sharing state: $($PubItem.DisableSessionSharing)"; Break}
 			}
 			
-			If(validObject $PubItem PublishFrom)
+			$AVDHostPool = "Unable to determine"
+			If($PubItem.AVDHostPoolId -ne 0)
 			{
-				Switch ($PubItem.PublishFrom)
+				$AVDHostPool = Get-RASAVDHostPool -Id $PubItem.AVDHostPoolId -EA 0 4>$Null
+				
+				If($Null -ne $AVDHostPool)
 				{
-					"All"		{$PublishedFrom = "All Hosts in Site"; Break}
-					"HostPools"	{$PublishedFrom = "RD Session Host Pools:"; Break}
-					"Group"		{$PublishedFrom = "RD Session Host Pools:"; Break}
-					"Host"		{$PublishedFrom = "Individual Hosts:"; Break}
-					"Server"	{$PublishedFrom = "Individual Hosts:"; Break}
-					Default		{$PublishedFrom = "Unable to determine Published From: $($PubItem.PublishFrom)"; Break}
+					$AVDHostPoolName = $AVDHostPool.Name
+					$AVDHostPoolDesc = $AVDHostPool.Description
 				}
-			}
-			Else
-			{
-				$PublishedFrom = "N/A"
 			}
 			
 			Switch ($PubItem.LicenseLimitNotify)
@@ -47991,53 +47988,7 @@ Function OutputPublishingSettings
 				$ScriptInformation.Add(@{Data = "Status"; Value = $PubItemStatus; }) > $Null
 				$ScriptInformation.Add(@{Data = "Target"; Value = $PubItem.Target; }) > $Null
 				$ScriptInformation.Add(@{Data = "Start In"; Value = $PubItem.StartIn; }) > $Null
-
-				If(validObject $PubItem PublishFrom)
-				{
-					If($PubItem.PublishFrom -eq "Server")
-					{
-						$cnt = -1
-						ForEach($Item in $PubItem.PublishFromServer)
-						{
-							$cnt++
-							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
-							
-							If($cnt -eq 0)
-							{
-								$ScriptInformation.Add(@{Data = "Published from"; Value = $ItemName; }) > $Null
-							}
-							Else
-							{
-								$ScriptInformation.Add(@{Data = ""; Value = $ItemName; }) > $Null
-							}
-						}
-					}
-					ElseIf($PubItem.PublishFrom -eq "Group")
-					{
-						$cnt = -1
-						ForEach($Item in $PubItem.PublishFromHostPool)
-						{
-							$cnt++
-							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
-							If($cnt -eq 0)
-							{
-								$ScriptInformation.Add(@{Data = "Published from"; Value = $ItemName; }) > $Null
-							}
-							Else
-							{
-								$ScriptInformation.Add(@{Data = ""; Value = $ItemName; }) > $Null
-							}
-						}
-					}
-					Else
-					{
-						$ScriptInformation.Add(@{Data = "Published from"; Value = "All Hosts in Site"; }) > $Null
-					}
-				}
-				Else
-				{
-					$ScriptInformation.Add(@{Data = "Published from"; Value = "N/A"; }) > $Null
-				}
+				$ScriptInformation.Add(@{Data = "Published from"; Value = $AVDHostPoolName; }) > $Null
 
 				If($PubItem.InheritShortcutDefaultSettings)
 				{
@@ -48108,54 +48059,32 @@ Function OutputPublishingSettings
 
 				WriteWordLine 3 0 "Publish from"
 				$ScriptInformation = New-Object System.Collections.ArrayList
-				If(validObject $PubItem PublishFrom)
+
+				$AVDHostPools = Get-RASAVDHostPool -EA 0 4>$Null | Where-Object {$_.LinkedRemoteApplicationGroup -ne ""}
+				
+				If($Null -eq $AVDHostPools)
 				{
-					If($PubItem.PublishFrom -eq "Server")
-					{
-						$cnt = -1
-						ForEach($Item in $PubItem.PublishFromServer)
-						{
-							$cnt++
-							
-							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
-							
-							If($cnt -eq 0)
-							{
-								$ScriptInformation.Add(@{Data = "$PublishedFrom"; Value = $ItemName; }) > $Null
-							}
-							Else
-							{
-								$ScriptInformation.Add(@{Data = ""; Value = $ItemName; }) > $Null
-							}
-						}
-					}
-					ElseIf($PubItem.PublishFrom -eq "Group")
-					{
-						$cnt = -1
-						ForEach($Item in $PubItem.PublishFromHostPool)
-						{
-							$cnt++
-							
-							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
-							
-							If($cnt -eq 0)
-							{
-								$ScriptInformation.Add(@{Data = "$PublishedFrom"; Value = $ItemName; }) > $Null
-							}
-							Else
-							{
-								$ScriptInformation.Add(@{Data = ""; Value = $ItemName; }) > $Null
-							}
-						}
-					}
-					Else
-					{
-						$ScriptInformation.Add(@{Data = "$PublishedFrom"; Value = ""; }) > $Null
-					}
+					$ScriptInformation.Add(@{Data = "Published From"; Value = "Unable to determine"; }) > $Null
 				}
 				Else
 				{
-					$ScriptInformation.Add(@{Data = "$PublishedFrom"; Value = "N/A"; }) > $Null
+					ForEach($AVDHostPool in $AVDHostPools)
+					{
+						$Location = GetRASLocation $AVDHostPool.Location
+						
+						If($AVDHostPool.Name -eq $AVDHostPoolName)
+						{
+							$ScriptInformation.Add(@{Data = "Enabled"; Value = "True"; }) > $Null
+						}
+						Else
+						{
+							$ScriptInformation.Add(@{Data = "Enabled"; Value = "False"; }) > $Null
+						}
+						$ScriptInformation.Add(@{Data = "Host pools"; Value = $AVDHostPool.Name; }) > $Null
+						$ScriptInformation.Add(@{Data = "Description"; Value = $AVDHostPool.Description; }) > $Null
+						$ScriptInformation.Add(@{Data = "Location"; Value = $Location; }) > $Null
+						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+					}
 				}
 
 				$Table = AddWordTable -Hashtable $ScriptInformation `
@@ -48441,52 +48370,8 @@ Function OutputPublishingSettings
 				Line 3 "Type`t`t`t`t`t`t`t: " $PubItem.Type
 				Line 3 "Status`t`t`t`t`t`t`t: " $PubItemStatus
 				Line 3 "Target`t`t`t`t`t`t`t: " $PubItem.Target
-
-				If(validObject $PubItem PublishFrom)
-				{
-					If($PubItem.PublishFrom -eq "Server")
-					{
-						$cnt = -1
-						ForEach($Item in $PubItem.PublishFromServer)
-						{
-							$cnt++
-							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
-							If($cnt -eq 0)
-							{
-								Line 3 "Published from`t`t`t`t`t`t: " ItemName
-							}
-							Else
-							{
-								Line 10 $ItemName
-							}
-						}
-					}
-					ElseIf($PubItem.PublishFrom -eq "Group")
-					{
-						$cnt = -1
-						ForEach($Item in $PubItem.PublishFromHostPool)
-						{
-							$cnt++
-							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
-							If($cnt -eq 0)
-							{
-								Line 3 "Published from`t`t`t`t`t`t: " ItemName
-							}
-							Else
-							{
-								Line 10 $ItemName
-							}
-						}
-					}
-					Else
-					{
-						Line 3 "Published from`t`t`t`t`t`t: " "All Hosts in Site"
-					}
-				}
-				Else
-				{
-					Line 3 "Published from`t`t`t`t`t`t: " "N/A"
-				}
+				Line 3 "Start In`t`t`t`t`t`t: " $PubItem.StartIn
+				Line 3 "Published from`t`t`t`t`t`t: " $AVDHostPoolName
 
 				If($PubItem.InheritShortcutDefaultSettings)
 				{
@@ -48536,31 +48421,34 @@ Function OutputPublishingSettings
 						Line 10 $SiteName
 					}
 				}
+				Line 0 ""
 
 				Line 2 "Publish from"
-				If(validObject $PubItem PublishFrom)
+				$AVDHostPools = Get-RASAVDHostPool -EA 0 4>$Null | Where-Object {$_.LinkedRemoteApplicationGroup -ne ""}
+				
+				If($Null -eq $AVDHostPools)
 				{
-					Line 3 $PublishedFrom
-					If($PubItem.PublishFrom -eq "Server")
-					{
-						ForEach($Item in $PubItem.PublishFromServer)
-						{
-							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
-							Line 6 $ItemName
-						}
-					}
-					ElseIf($PubItem.PublishFrom -eq "Group")
-					{
-						ForEach($Item in $PubItem.PublishFromHostPool)
-						{
-							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
-							Line 5 $ItemName
-						}
-					}
+					Line 3 "Published From`t: Unable to determine"
 				}
 				Else
 				{
-					Line 3 "N/A"
+					ForEach($AVDHostPool in $AVDHostPools)
+					{
+						$Location = GetRASLocation $AVDHostPool.Location
+						
+						If($AVDHostPool.Name -eq $AVDHostPoolName)
+						{
+							Line 3 "Enabled`t`t: True"
+						}
+						Else
+						{
+							Line 3 "Enabled`t`t: False"
+						}
+						Line 3 "Host pools`t: " $AVDHostPool.Name
+						Line 3 "Description`t: " $AVDHostPool.Description
+						Line 3 "Location`t: " $Location
+						Line 0 ""
+					}
 				}
 				Line 0 ""
 
@@ -48680,52 +48568,7 @@ Function OutputPublishingSettings
 				$rowdata += @(,("Status",($Script:htmlsb),$PubItemStatus,$htmlwhite))
 				$rowdata += @(,("Target",($Script:htmlsb),$PubItem.Target,$htmlwhite))
 				$rowdata += @(,("Start In",($Script:htmlsb),$PubItem.StartIn,$htmlwhite))
-
-				If(validObject $PubItem PublishFrom)
-				{
-					If($PubItem.PublishFrom -eq "Server")
-					{
-						$cnt = -1
-						ForEach($Item in $PubItem.PublishFromServer)
-						{
-							$cnt++
-							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
-							If($cnt -eq 0)
-							{
-								$rowdata += @(,("Published from",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite))
-							}
-							Else
-							{
-								$rowdata += @(,("",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite))
-							}
-						}
-					}
-					ElseIf($PubItem.PublishFrom -eq "Group")
-					{
-						$cnt = -1
-						ForEach($Item in $PubItem.PublishFromHostPool)
-						{
-							$cnt++
-							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
-							If($cnt -eq 0)
-							{
-								$rowdata += @(,("Published from",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite))
-							}
-							Else
-							{
-								$rowdata += @(,("",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite))
-							}
-						}
-					}
-					Else
-					{
-						$rowdata += @(,("Published from",($Script:htmlsb),"All Hosts in Site",$htmlwhite))
-					}
-				}
-				Else
-				{
-					$rowdata += @(,("Published from",($Script:htmlsb),"N/A",$htmlwhite))
-				}
+				$rowdata += @(,("Published from",($Script:htmlsb),$AVDHostPoolName,$htmlwhite))
 
 				If($PubItem.InheritShortcutDefaultSettings)
 				{
@@ -48783,52 +48626,50 @@ Function OutputPublishingSettings
 
 				WriteHTMLLine 3 0 "Publish from"
 				$rowdata = @()
-				If(validObject $PubItem PublishFrom)
+				$columnHeaders = @("$PublishedFrom",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite)
+				$rowdata += @(,("",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite))
+
+				$AVDHostPools = Get-RASAVDHostPool -EA 0 4>$Null | Where-Object {$_.LinkedRemoteApplicationGroup -ne ""}
+				
+				If($Null -eq $AVDHostPools)
 				{
-					If($PubItem.PublishFrom -eq "Server")
-					{
-						$cnt = -1
-						ForEach($Item in $PubItem.PublishFromServer)
-						{
-							$cnt++
-							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
-							
-							If($cnt -eq 0)
-							{
-								$columnHeaders = @("$PublishedFrom",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite)
-							}
-							Else
-							{
-								$rowdata += @(,("",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite))
-							}
-						}
-					}
-					ElseIf($PubItem.PublishFrom -eq "Group")
-					{
-						$cnt = -1
-						ForEach($Item in $PubItem.PublishFromHostPool)
-						{
-							$cnt++
-							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
-							
-							If($cnt -eq 0)
-							{
-								$columnHeaders = @("$PublishedFrom",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite)
-							}
-							Else
-							{
-								$rowdata += @(,("",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite))
-							}
-						}
-					}
-					Else
-					{
-						$columnHeaders = @("$PublishedFrom",($Script:htmlsb),"",$htmlwhite)
-					}
+					$columnHeaders = @("Published From",($Script:htmlsb),"Unable to determine",$htmlwhite)
 				}
 				Else
 				{
-					$columnHeaders = @("$PublishedFrom",($Script:htmlsb),"N/A",$htmlwhite)
+					$cnt = -1
+					ForEach($AVDHostPool in $AVDHostPools)
+					{
+						$cnt++
+						$Location = GetRASLocation $AVDHostPool.Location
+						
+						If($AVDHostPool.Name -eq $AVDHostPoolName)
+						{
+							If($cnt -eq 0)
+							{
+								$columnHeaders = @("Enabled",($Script:htmlsb),"True",$htmlwhite)
+							}
+							Else
+							{
+								$rowdata += @(,("Enabled",($Script:htmlsb),"True",$htmlwhite))
+							}
+						}
+						Else
+						{
+							If($cnt -eq 0)
+							{
+								$columnHeaders = @("Enabled",($Script:htmlsb),"False",$htmlwhite)
+							}
+							Else
+							{
+								$rowdata += @(,("Enabled",($Script:htmlsb),"False",$htmlwhite))
+							}
+						}
+						$rowdata += @(,("Host pools",($Script:htmlsb),$AVDHostPool.Name,$htmlwhite))
+						$rowdata += @(,("Description",($Script:htmlsb),$AVDHostPool.Description,$htmlwhite))
+						$rowdata += @(,("Location",($Script:htmlsb),$Location,$htmlwhite))
+						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+					}
 				}
 
 				$msg = ""
@@ -69405,8 +69246,8 @@ ProcessScriptEnd
 # SIG # Begin signature block
 # MIIthQYJKoZIhvcNAQcCoIItdjCCLXICAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUDPVzdX0DF3L/6gqfMd2JoeGB
-# Bd6ggibfMIIFjTCCBHWgAwIBAgIQDpsYjvnQLefv21DiCEAYWjANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUkidkweFtt6XS9BK5QXtMWoRi
+# qfCggibfMIIFjTCCBHWgAwIBAgIQDpsYjvnQLefv21DiCEAYWjANBgkqhkiG9w0B
 # AQwFADBlMQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYD
 # VQQLExB3d3cuZGlnaWNlcnQuY29tMSQwIgYDVQQDExtEaWdpQ2VydCBBc3N1cmVk
 # IElEIFJvb3QgQ0EwHhcNMjIwODAxMDAwMDAwWhcNMzExMTA5MjM1OTU5WjBiMQsw
@@ -69617,33 +69458,33 @@ ProcessScriptEnd
 # UzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/BgNVBAMTOERpZ2lDZXJ0IFRy
 # dXN0ZWQgRzQgQ29kZSBTaWduaW5nIFJTQTQwOTYgU0hBMzg0IDIwMjEgQ0ExAhAL
 # bN+2Z4EOKufLWhG6HUlwMAkGBSsOAwIaBQCgQDAZBgkqhkiG9w0BCQMxDAYKKwYB
-# BAGCNwIBBDAjBgkqhkiG9w0BCQQxFgQUVCYpf8tdiHXHNwEXjKHoUoHEOhQwDQYJ
-# KoZIhvcNAQEBBQAEggIAISwxKnUk16i9GbquTMZsw2/XIrMrrJdSrXO3Mv7N1goU
-# YiVVrIJMkcET6RSQ1dkP8I1svMnSWCzool2DQZ2oagI7RfiYO8be5rdVQLJXTChG
-# YyTosSQQuQ/IK1zpRVXslap8AGMjewoEbrqFSu2SgcpHhtsdsKPIenposo8z0jaa
-# 7cnGoAH3fRehCfWPJbsIdQ7yvPjcKMu8dDLJ4Bc6NmKWlY4YtUSeHCdwx4K/TO5P
-# 5kpYSt3yk62W11dO2h6p7qG0IiHothi2iNxCFD0XSOVmAkxLH8IbAB9iQWicQG7Y
-# K//SAKkjYlNoyljUz3vX67hu/O/sSDvfGFxKF78bx879JpfcA9sF8zCp3pgUnkjO
-# O+25WVPGP3Gpr0rUr49VZBInMuLBIrsAWFLIooY6v+G94z6lkqKSOeyx7UN4AMPK
-# 9t9DK+mAELj9aIvny1YQTsiT9oFLxGJ1x77HrHrTWwkichsvt/Ig5FajKOVMAW2A
-# zFYFuxSCm9AHSe3cijjB+sv9HphSZn8SzK62gM1uxD9Mthf70C4erM4eCBff+ABF
-# h3LsTzCHNvf1S906ovAoJVwHOROLxR7GPUvC5iS2K13gsy2HI+z3ns1FARpVWIA7
-# AHFFfRNpEY7xmMCn1aNbGPGSeDD9wVsB8YUIdbclAJTBiE1Qajai9LegKBbDr8ih
+# BAGCNwIBBDAjBgkqhkiG9w0BCQQxFgQUKByRYVYfGYIC2ldjphweboqvRcIwDQYJ
+# KoZIhvcNAQEBBQAEggIAK3l/yuOpzAhxAXMh0HEpJkXfT3EvJ1nXKnrPcZ/KgbvJ
+# LhHmIX42EjAOpilXBtQLxN7Fra1FExOkTmYimnoS/65UZRJ48K340PpQXGBSWYHW
+# unaRPG6QSG3eOzKDvhCmzzlBy+evs2QIHl5V6kr9yFnhfJqpKybNkQDuFJD4tdwj
+# FCTnWaifJkvIeMvmucCy52xMyoptEi8BNlOUUdNGvgT0q+3JttzONERYb9cni5L3
+# su3Gp04Z9N8vnb60NXX7CrIWpcpu/Roo3HhnjlcsQPb/F+JogdsVqUzSB6mrWEZ7
+# 4RsfplrlOFwKjBQScbvGvFGmcRfaOgdLrZ+t0MwqY1aKhgdaTq5ZyUZrNjSaSttJ
+# jNCPKpwFcrVTEYHh7VsTt/aCh90vYKP4vUEN5XgyWV9gjN+C6cjOGmWfgkKJveW1
+# YS210Ca4uxTeuAXAJhwsHkZzXjWARw1o1G6BevTSXUjwToxMl2erO9JLe51d68TG
+# qcuDxW5QWz25ZL1xAuLty+mLVyCOTCldhEvY16uQ/toL0OqRPUyIuuGVjVBzFHqx
+# CY51L8jDu+7KSrwFK6z7BFIKrpIYka7zSymNFmoJJDyqcd2eX68PzsKP9scH1BFx
+# YDEm5HbP3Ihq5Vd56dmt9ErCDZBzaEcim3wYkzDR9fKjIkZzj1KqE2CxW4EeJWKh
 # ggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8CAQEwfTBpMQswCQYDVQQGEwJVUzEX
 # MBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/BgNVBAMTOERpZ2lDZXJ0IFRydXN0
 # ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYgU0hBMjU2IDIwMjUgQ0ExAhAKgO8Y
 # S43xBYLRxHanlXRoMA0GCWCGSAFlAwQCAQUAoGkwGAYJKoZIhvcNAQkDMQsGCSqG
-# SIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjYwMTIwMTk0NzE0WjAvBgkqhkiG9w0B
-# CQQxIgQgTagtPN7dbhrZMUxHLqMVrRjY+qxbWEx01K/JcrSnDdYwDQYJKoZIhvcN
-# AQEBBQAEggIAX/I7r18W5NejvvcPLCzo0dUZvxF4qxpv88ZhIKLvHqfpDDhpTPZy
-# uQZEBMUk6iYFNK+lLRFZ6bmRneFTGzOYSmW4huUIL5nJJ6SCRpj9KZQj1QR0hDlW
-# 5U+nGwZPYlniPJVWeeHjQM7Pu1TKodPiT2919b8LYHjEyvS/Ox1LCJczvQbX9l3p
-# xjzyEVrVtuyyLnc9ehDIAjzy28xjWTHdn4r90/OzU0xF4VlicB3gzSo9EquW0esN
-# J4lnwc3Z64ZwOk0J4HVuRC4ZKHBk4T9cafklieNK/WRFNX+j9UdqU2JAGg6hBPLr
-# v/tFIaLXlxXTthSfokV1ZpJn0bVdEGVz7oO6dY1R1jAx2YieUI1xo/BzRWmLnO51
-# ejjbU7idhHx7Gp/C8d3W2bSDFS0WKsiqzHSea+tVPHFyPSsc8PYZL3+FLPMNKJcu
-# 6T6XZA2J+byMDhrnoo477xTJJ+o7T2INHwaAk8Ob5JbpPedyFPC9mmuTo4zjYY96
-# 9V3AcjmzRUp3+3sOvpHTQOO7klA/CF98oUtVkeuhgc7u5JBiJ3JsnCW87EtCKRSK
-# 4sxa9gbo2jdfPUzqdxmVJZ2YCly09ByAxgWPxQ2WRhm4DYzD5DkvKY+3U1YWY6CZ
-# X4uRTXpKwfimWd569qb39Xg30EvxTca/5rNUTu7DiQxAo7tPdalOsug=
+# SIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjYwMTIxMTM0ODQ3WjAvBgkqhkiG9w0B
+# CQQxIgQg2cQkZE9Qy20fNVEAOC6Yqt/TlIFGg2N8Er/y5urOdeEwDQYJKoZIhvcN
+# AQEBBQAEggIAx8tDOGfGFLKAmy6Eehv8vaPEX8nF1ojEWX/0nwWtncDomrMGAtGY
+# 7xCZt2wHSkeB7qN1J2lDmnya5OqXfEBlZ0H/xhpDrPe/aRTqZVn+1IVTf9Y9/L1j
+# ytL6muDcMDAYXkG8pUNIAY4mUe/NpmFkQUxkDxRdsx7HFfCGlRC7XRPj+6Gh9/9T
+# lMvxZMtH442dP2S9OI/xzbyk+e2wsO88OXNjIFX6Nvc90eE55nZtBWFsYSsaV/d3
+# C1zvhc8Qkn0/jFtbkEPInUUFmqLKek4wyfuLPPJpJMZCFxnyku1UoF00ZsjFqev9
+# p4oE6A4HTXV2MNmtf7Jn6oLBRy5XEnfMg4+DW6enSYSJz0RRh+6BgMzD9eYJZtMY
+# rYkZb35F6uCyg0sx/zU3DbT347JqVDjkq+UE+w9LMRolsfMJkfXegjlSHedo2ANs
+# H0+/S+CMsunaMSfstBap6V/WBYh8LcTrhsl9S8dVI2CAOJMJa3aOimBlpvGI9oI3
+# bPDFiXBv4NYzVwYnIqnI16jwWfgZhB1KtQzrJ4VjXaz5U8nS+s07k1pVFzzad2ye
+# euCNkUBd1N/KAlg9YHZJ7bANmmXqul2ri9VARf488S9HmLz7R3W9o/6TniIvy8ou
+# g4RjSuI2qF2Nfq7wEoQBJRSseGWufoKCZXNWInfcLvQtcVECfEllq38=
 # SIG # End signature block
