@@ -450,9 +450,9 @@
 	text document.
 .NOTES
 	NAME: RAS_Inventory_V4_0.ps1
-	VERSION: 4.00 Beta 48
+	VERSION: 4.00 Beta 49
 	AUTHOR: Carl Webster
-	LASTEDIT: January 21, 2026
+	LASTEDIT: January 22, 2026
 #>
 
 
@@ -668,10 +668,14 @@ Param(
 #		Move check for the default filter setting to this function from Function OutputPublishingSettings
 #		Add test for the default filter
 #		For each filter, add Enabled/Disabled
+#		Fixed bug if multiple output formats were used.
+#			Add parameter for $OutputType
+#			In Function OutputPubItemFilters, add the output format type to each function call
 #
 #	In Function OutputPubItemFilters
 #		For the Default Rule, add "Enabled", "Default Rule", and the Allow or Deny text to the output
 #		Rewrite the output for all threee output formats so the output is more readable and formatted better
+#		To fix a bug in Function OutputPubItemFilterSummary, add the output format type to each call to OutputPubItemFilterSummary
 #
 #	In Function OutputPublishingSettings
 #		Add "Routing" to all published item types that have a Routing tab
@@ -948,9 +952,9 @@ $ErrorActionPreference    = 'SilentlyContinue'
 $Error.Clear()
 
 $Script:emailCredentials  = $Null
-$script:MyVersion         = '4.00 Beta 48'
+$script:MyVersion         = '4.00 Beta 49'
 $Script:ScriptName        = "RAS_Inventory_V4_0.ps1"
-$tmpdate                  = [datetime] "01/21/2026"
+$tmpdate                  = [datetime] "01/22/2026"
 $Script:ReleaseDate       = $tmpdate.ToUniversalTime().ToShortDateString()
 
 If($MSWord -eq $False -and $PDF -eq $False -and $Text -eq $False -and $HTML -eq $False)
@@ -42756,7 +42760,7 @@ Function OutputPublishingSettings
 					$ScriptInformation.Add(@{Data = "Use for administrative purposes"; Value = ""; }) > $Null
 				}
 
-				OutputPubItemFilterSummary $PubItem
+				OutputPubItemFilterSummary $PubItem "MSWordPDF"
 				
 				$cnt =-1
 				ForEach($Site in $PubItem.PublishToSite)
@@ -42903,7 +42907,7 @@ Function OutputPublishingSettings
 					Line 3 "Use for administrative purposes"
 				}
 
-				OutputPubItemFilterSummary $PubItem
+				OutputPubItemFilterSummary $PubItem "Text"
 
 				$cnt =-1
 				ForEach($Site in $PubItem.PublishToSite)
@@ -43001,7 +43005,7 @@ Function OutputPublishingSettings
 					$rowdata += @(,("Use for administrative purposes",($Script:htmlsb),"",$htmlwhite))
 				}
 
-				OutputPubItemFilterSummary $PubItem ([ref]$rowdata)
+				OutputPubItemFilterSummary $PubItem "HTML" ([ref]$rowdata)
 
 				$cnt =-1
 				ForEach($Site in $PubItem.PublishToSite)
@@ -43149,7 +43153,7 @@ Function OutputPublishingSettings
 					}
 				}
 
-				OutputPubItemFilterSummary $PubItem
+				OutputPubItemFilterSummary $PubItem "MSWordPDF"
 
 				$cnt =-1
 				ForEach($Site in $PubItem.PublishToSite)
@@ -43415,7 +43419,7 @@ Function OutputPublishingSettings
 					}
 				}
 
-				OutputPubItemFilterSummary $PubItem
+				OutputPubItemFilterSummary $PubItem "Text"
 
 				$cnt =-1
 				ForEach($Site in $PubItem.PublishToSite)
@@ -43587,7 +43591,7 @@ Function OutputPublishingSettings
 					}
 				}
 
-				OutputPubItemFilterSummary $PubItem ([ref]$rowdata)
+				OutputPubItemFilterSummary $PubItem "HTML" ([ref]$rowdata)
 
 				$cnt =-1
 				ForEach($Site in $PubItem.PublishToSite)
@@ -43819,7 +43823,7 @@ Function OutputPublishingSettings
 					}
 				}
 
-				OutputPubItemFilterSummary $PubItem
+				OutputPubItemFilterSummary $PubItem "MSWordPDF"
 
 				$cnt =-1
 				ForEach($Site in $PubItem.PublishToSite)
@@ -44097,7 +44101,7 @@ Function OutputPublishingSettings
 					}
 				}
 
-				OutputPubItemFilterSummary $PubItem
+				OutputPubItemFilterSummary $PubItem "Text"
 
 				Line 2 Sites
 				$cnt =-1
@@ -44265,7 +44269,7 @@ Function OutputPublishingSettings
 					}
 				}
 
-				OutputPubItemFilterSummary $PubItem ([ref]$rowdata)
+				OutputPubItemFilterSummary $PubItem "HTML" ([ref]$rowdata)
 
 				$cnt =-1
 				ForEach($Site in $PubItem.PublishToSite)
@@ -44607,7 +44611,7 @@ Function OutputPublishingSettings
 					}
 				}
 
-				OutputPubItemFilterSummary $PubItem
+				OutputPubItemFilterSummary $PubItem "MSWordPDF"
 
 				$cnt =-1
 				ForEach($Site in $PubItem.PublishToSite)
@@ -45092,7 +45096,7 @@ Function OutputPublishingSettings
 					}
 				}
 
-				OutputPubItemFilterSummary $PubItem
+				OutputPubItemFilterSummary $PubItem "Text"
 
 				$cnt =-1
 				ForEach($Site in $PubItem.PublishToSite)
@@ -45409,7 +45413,7 @@ Function OutputPublishingSettings
 					}
 				}
 
-				OutputPubItemFilterSummary $PubItem ([ref]$rowdata)
+				OutputPubItemFilterSummary $PubItem "HTML" ([ref]$rowdata)
 
 				$cnt =-1
 				ForEach($Site in $PubItem.PublishToSite)
@@ -45817,7 +45821,7 @@ Function OutputPublishingSettings
 					}
 				}
 
-				OutputPubItemFilterSummary $PubItem
+				OutputPubItemFilterSummary $PubItem "MSWordPDF"
 
 				$cnt =-1
 				ForEach($Site in $PubItem.PublishToSite)
@@ -46130,7 +46134,7 @@ Function OutputPublishingSettings
 					}
 				}
 
-				OutputPubItemFilterSummary $PubItem
+				OutputPubItemFilterSummary $PubItem "Text"
 
 				$cnt =-1
 				ForEach($Site in $PubItem.PublishToSite)
@@ -46348,7 +46352,7 @@ Function OutputPublishingSettings
 					}
 				}
 
-				OutputPubItemFilterSummary $PubItem ([ref]$rowdata)
+				OutputPubItemFilterSummary $PubItem "HTML" ([ref]$rowdata)
 
 				$cnt =-1
 				ForEach($Site in $PubItem.PublishToSite)
@@ -46594,7 +46598,7 @@ Function OutputPublishingSettings
 					}
 				}
 
-				OutputPubItemFilterSummary $PubItem
+				OutputPubItemFilterSummary $PubItem "MSWordPDF"
 
 				$cnt =-1
 				ForEach($Site in $PubItem.PublishToSite)
@@ -46923,7 +46927,7 @@ Function OutputPublishingSettings
 					}
 				}
 
-				OutputPubItemFilterSummary $PubItem
+				OutputPubItemFilterSummary $PubItem "Text"
 
 				$cnt =-1
 				ForEach($Site in $PubItem.PublishToSite)
@@ -47145,7 +47149,7 @@ Function OutputPublishingSettings
 					}
 				}
 
-				OutputPubItemFilterSummary $PubItem ([ref]$rowdata)
+				OutputPubItemFilterSummary $PubItem "HTML" ([ref]$rowdata)
 
 				$cnt =-1
 				ForEach($Site in $PubItem.PublishToSite)
@@ -47437,7 +47441,7 @@ Function OutputPublishingSettings
 					}
 				}
 
-				OutputPubItemFilterSummary $PubItem
+				OutputPubItemFilterSummary $PubItem "MSWordPDF"
 
 				$cnt =-1
 				ForEach($Site in $PubItem.PublishToSite)
@@ -47658,7 +47662,7 @@ Function OutputPublishingSettings
 					}
 				}
 
-				OutputPubItemFilterSummary $PubItem
+				OutputPubItemFilterSummary $PubItem "Text"
 
 				$cnt =-1
 				ForEach($Site in $PubItem.PublishToSite)
@@ -47809,7 +47813,7 @@ Function OutputPublishingSettings
 					}
 				}
 
-				OutputPubItemFilterSummary $PubItem ([ref]$rowdata)
+				OutputPubItemFilterSummary $PubItem "HTML" ([ref]$rowdata)
 
 				$cnt =-1
 				ForEach($Site in $PubItem.PublishToSite)
@@ -48021,7 +48025,7 @@ Function OutputPublishingSettings
 					}
 				}
 
-				OutputPubItemFilterSummary $PubItem
+				OutputPubItemFilterSummary $PubItem "MSWordPDF"
 
 				$cnt =-1
 				ForEach($Site in $PubItem.PublishToSite)
@@ -48404,7 +48408,7 @@ Function OutputPublishingSettings
 					}
 				}
 
-				OutputPubItemFilterSummary $PubItem
+				OutputPubItemFilterSummary $PubItem "Text"
 
 				$cnt =-1
 				ForEach($Site in $PubItem.PublishToSite)
@@ -48601,7 +48605,7 @@ Function OutputPublishingSettings
 					}
 				}
 
-				OutputPubItemFilterSummary $PubItem ([ref]$rowdata)
+				OutputPubItemFilterSummary $PubItem "HTML" ([ref]$rowdata)
 
 				$cnt =-1
 				ForEach($Site in $PubItem.PublishToSite)
@@ -48626,8 +48630,6 @@ Function OutputPublishingSettings
 
 				WriteHTMLLine 3 0 "Publish from"
 				$rowdata = @()
-				$columnHeaders = @("$PublishedFrom",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite)
-				$rowdata += @(,("",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite))
 
 				$AVDHostPools = Get-RASAVDHostPool -EA 0 4>$Null | Where-Object {$_.LinkedRemoteApplicationGroup -ne ""}
 				
@@ -48917,7 +48919,7 @@ Function OutputPublishingSettings
 					}
 				}
 
-				OutputPubItemFilterSummary $PubItem
+				OutputPubItemFilterSummary $PubItem "MSWordPDF"
 
 				$cnt =-1
 				ForEach($Site in $PubItem.PublishToSite)
@@ -49088,7 +49090,7 @@ Function OutputPublishingSettings
 					}
 				}
 
-				OutputPubItemFilterSummary $PubItem
+				OutputPubItemFilterSummary $PubItem "Text"
 
 				Line 2 "Publish from"
 				$AVDHostPools = Get-RASAVDHostPool -EA 0 4>$Null | Where-Object {$_.LinkedDesktopApplicationGroup -ne ""}
@@ -49190,7 +49192,7 @@ Function OutputPublishingSettings
 					}
 				}
 
-				OutputPubItemFilterSummary $PubItem ([ref]$rowdata)
+				OutputPubItemFilterSummary $PubItem "HTML" ([ref]$rowdata)
 
 				$cnt =-1
 				ForEach($Site in $PubItem.PublishToSite)
@@ -49498,7 +49500,7 @@ Function OutputPublishingSettings
 					}
 				}
 
-				OutputPubItemFilterSummary $PubItem
+				OutputPubItemFilterSummary $PubItem "MSWordPDF"
 
 				$cnt =-1
 				ForEach($Site in $PubItem.PublishToSite)
@@ -49751,7 +49753,7 @@ Function OutputPublishingSettings
 					}
 				}
 
-				OutputPubItemFilterSummary $PubItem
+				OutputPubItemFilterSummary $PubItem "Text"
 
 				$cnt =-1
 				ForEach($Site in $PubItem.PublishToSite)
@@ -49970,7 +49972,7 @@ Function OutputPublishingSettings
 					}
 				}
 
-				OutputPubItemFilterSummary $PubItem ([ref]$rowdata)
+				OutputPubItemFilterSummary $PubItem "HTML" ([ref]$rowdata)
 
 				$cnt =-1
 				ForEach($Site in $PubItem.PublishToSite)
@@ -50091,9 +50093,9 @@ Function OutputPublishingSettings
 
 Function OutputPubItemFilterSummary
 {
-	Param([object] $PubItem, [ref]$rowdata)
+	Param([object] $PubItem, [string] $OutputType, [ref]$rowdata)
 	
-	If($MSWord -or $PDF)
+	If($OutputType -eq "MSWordPDF")
 	{
 		$ScriptInformation.Add(@{Data = "Own Filters"; Value = ""; }) > $Null
 		$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
@@ -50444,7 +50446,7 @@ Function OutputPubItemFilterSummary
 		}
 		$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
 	}
-	If($Text)
+	If($OutputType -eq "Text")
 	{
 		Line 0 ""
 		Line 2 "Own Filters"
@@ -50796,7 +50798,7 @@ Function OutputPubItemFilterSummary
 		}
 		Line 0 ""
 	}
-	If($HTML)
+	If($OutputType -eq "HTML")
 	{
 		#Thanks to Michael B. Smith for help in getting HTML output working properly		
 		If($Null -eq $rowdata)

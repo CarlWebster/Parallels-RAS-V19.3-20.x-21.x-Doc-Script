@@ -106,10 +106,14 @@
 #		Move check for the default filter setting to this function from Function OutputPublishingSettings
 #		Add test for the default filter
 #		For each filter, add Enabled/Disabled
+#		Fixed bug if multiple output formats were used.
+#			Add parameter for $OutputType
+#			In Function OutputPubItemFilters, add the output format type to each function call
 #
 #	In Function OutputPubItemFilters
 #		For the Default Rule, add "Enabled", "Default Rule", and the Allow or Deny text to the output
 #		Rewrite the output for all threee output formats so the output is more readable and formatted better
+#		To fix a bug in Function OutputPubItemFilterSummary, add the output format type to each call to OutputPubItemFilterSummary
 #
 #	In Function OutputPublishingSettings
 #		Add "Routing" to all published item types that have a Routing tab

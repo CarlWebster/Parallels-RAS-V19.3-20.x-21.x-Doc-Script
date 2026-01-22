@@ -450,9 +450,9 @@
 	text document.
 .NOTES
 	NAME: RAS_Inventory_V4_0.ps1
-	VERSION: 4.00 Beta 48
+	VERSION: 4.00 Beta 49
 	AUTHOR: Carl Webster
-	LASTEDIT: January 21, 2026
+	LASTEDIT: January 22, 2026
 #>
 
 
@@ -668,10 +668,14 @@ Param(
 #		Move check for the default filter setting to this function from Function OutputPublishingSettings
 #		Add test for the default filter
 #		For each filter, add Enabled/Disabled
+#		Fixed bug if multiple output formats were used.
+#			Add parameter for $OutputType
+#			In Function OutputPubItemFilters, add the output format type to each function call
 #
 #	In Function OutputPubItemFilters
 #		For the Default Rule, add "Enabled", "Default Rule", and the Allow or Deny text to the output
 #		Rewrite the output for all threee output formats so the output is more readable and formatted better
+#		To fix a bug in Function OutputPubItemFilterSummary, add the output format type to each call to OutputPubItemFilterSummary
 #
 #	In Function OutputPublishingSettings
 #		Add "Routing" to all published item types that have a Routing tab
@@ -948,9 +952,9 @@ $ErrorActionPreference    = 'SilentlyContinue'
 $Error.Clear()
 
 $Script:emailCredentials  = $Null
-$script:MyVersion         = '4.00 Beta 48'
+$script:MyVersion         = '4.00 Beta 49'
 $Script:ScriptName        = "RAS_Inventory_V4_0.ps1"
-$tmpdate                  = [datetime] "01/21/2026"
+$tmpdate                  = [datetime] "01/22/2026"
 $Script:ReleaseDate       = $tmpdate.ToUniversalTime().ToShortDateString()
 
 If($MSWord -eq $False -and $PDF -eq $False -and $Text -eq $False -and $HTML -eq $False)
@@ -42756,7 +42760,7 @@ Function OutputPublishingSettings
 					$ScriptInformation.Add(@{Data = "Use for administrative purposes"; Value = ""; }) > $Null
 				}
 
-				OutputPubItemFilterSummary $PubItem
+				OutputPubItemFilterSummary $PubItem "MSWordPDF"
 				
 				$cnt =-1
 				ForEach($Site in $PubItem.PublishToSite)
@@ -42903,7 +42907,7 @@ Function OutputPublishingSettings
 					Line 3 "Use for administrative purposes"
 				}
 
-				OutputPubItemFilterSummary $PubItem
+				OutputPubItemFilterSummary $PubItem "Text"
 
 				$cnt =-1
 				ForEach($Site in $PubItem.PublishToSite)
@@ -43001,7 +43005,7 @@ Function OutputPublishingSettings
 					$rowdata += @(,("Use for administrative purposes",($Script:htmlsb),"",$htmlwhite))
 				}
 
-				OutputPubItemFilterSummary $PubItem ([ref]$rowdata)
+				OutputPubItemFilterSummary $PubItem "HTML" ([ref]$rowdata)
 
 				$cnt =-1
 				ForEach($Site in $PubItem.PublishToSite)
@@ -43149,7 +43153,7 @@ Function OutputPublishingSettings
 					}
 				}
 
-				OutputPubItemFilterSummary $PubItem
+				OutputPubItemFilterSummary $PubItem "MSWordPDF"
 
 				$cnt =-1
 				ForEach($Site in $PubItem.PublishToSite)
@@ -43415,7 +43419,7 @@ Function OutputPublishingSettings
 					}
 				}
 
-				OutputPubItemFilterSummary $PubItem
+				OutputPubItemFilterSummary $PubItem "Text"
 
 				$cnt =-1
 				ForEach($Site in $PubItem.PublishToSite)
@@ -43587,7 +43591,7 @@ Function OutputPublishingSettings
 					}
 				}
 
-				OutputPubItemFilterSummary $PubItem ([ref]$rowdata)
+				OutputPubItemFilterSummary $PubItem "HTML" ([ref]$rowdata)
 
 				$cnt =-1
 				ForEach($Site in $PubItem.PublishToSite)
@@ -43819,7 +43823,7 @@ Function OutputPublishingSettings
 					}
 				}
 
-				OutputPubItemFilterSummary $PubItem
+				OutputPubItemFilterSummary $PubItem "MSWordPDF"
 
 				$cnt =-1
 				ForEach($Site in $PubItem.PublishToSite)
@@ -44097,7 +44101,7 @@ Function OutputPublishingSettings
 					}
 				}
 
-				OutputPubItemFilterSummary $PubItem
+				OutputPubItemFilterSummary $PubItem "Text"
 
 				Line 2 Sites
 				$cnt =-1
@@ -44265,7 +44269,7 @@ Function OutputPublishingSettings
 					}
 				}
 
-				OutputPubItemFilterSummary $PubItem ([ref]$rowdata)
+				OutputPubItemFilterSummary $PubItem "HTML" ([ref]$rowdata)
 
 				$cnt =-1
 				ForEach($Site in $PubItem.PublishToSite)
@@ -44607,7 +44611,7 @@ Function OutputPublishingSettings
 					}
 				}
 
-				OutputPubItemFilterSummary $PubItem
+				OutputPubItemFilterSummary $PubItem "MSWordPDF"
 
 				$cnt =-1
 				ForEach($Site in $PubItem.PublishToSite)
@@ -45092,7 +45096,7 @@ Function OutputPublishingSettings
 					}
 				}
 
-				OutputPubItemFilterSummary $PubItem
+				OutputPubItemFilterSummary $PubItem "Text"
 
 				$cnt =-1
 				ForEach($Site in $PubItem.PublishToSite)
@@ -45409,7 +45413,7 @@ Function OutputPublishingSettings
 					}
 				}
 
-				OutputPubItemFilterSummary $PubItem ([ref]$rowdata)
+				OutputPubItemFilterSummary $PubItem "HTML" ([ref]$rowdata)
 
 				$cnt =-1
 				ForEach($Site in $PubItem.PublishToSite)
@@ -45817,7 +45821,7 @@ Function OutputPublishingSettings
 					}
 				}
 
-				OutputPubItemFilterSummary $PubItem
+				OutputPubItemFilterSummary $PubItem "MSWordPDF"
 
 				$cnt =-1
 				ForEach($Site in $PubItem.PublishToSite)
@@ -46130,7 +46134,7 @@ Function OutputPublishingSettings
 					}
 				}
 
-				OutputPubItemFilterSummary $PubItem
+				OutputPubItemFilterSummary $PubItem "Text"
 
 				$cnt =-1
 				ForEach($Site in $PubItem.PublishToSite)
@@ -46348,7 +46352,7 @@ Function OutputPublishingSettings
 					}
 				}
 
-				OutputPubItemFilterSummary $PubItem ([ref]$rowdata)
+				OutputPubItemFilterSummary $PubItem "HTML" ([ref]$rowdata)
 
 				$cnt =-1
 				ForEach($Site in $PubItem.PublishToSite)
@@ -46594,7 +46598,7 @@ Function OutputPublishingSettings
 					}
 				}
 
-				OutputPubItemFilterSummary $PubItem
+				OutputPubItemFilterSummary $PubItem "MSWordPDF"
 
 				$cnt =-1
 				ForEach($Site in $PubItem.PublishToSite)
@@ -46923,7 +46927,7 @@ Function OutputPublishingSettings
 					}
 				}
 
-				OutputPubItemFilterSummary $PubItem
+				OutputPubItemFilterSummary $PubItem "Text"
 
 				$cnt =-1
 				ForEach($Site in $PubItem.PublishToSite)
@@ -47145,7 +47149,7 @@ Function OutputPublishingSettings
 					}
 				}
 
-				OutputPubItemFilterSummary $PubItem ([ref]$rowdata)
+				OutputPubItemFilterSummary $PubItem "HTML" ([ref]$rowdata)
 
 				$cnt =-1
 				ForEach($Site in $PubItem.PublishToSite)
@@ -47437,7 +47441,7 @@ Function OutputPublishingSettings
 					}
 				}
 
-				OutputPubItemFilterSummary $PubItem
+				OutputPubItemFilterSummary $PubItem "MSWordPDF"
 
 				$cnt =-1
 				ForEach($Site in $PubItem.PublishToSite)
@@ -47658,7 +47662,7 @@ Function OutputPublishingSettings
 					}
 				}
 
-				OutputPubItemFilterSummary $PubItem
+				OutputPubItemFilterSummary $PubItem "Text"
 
 				$cnt =-1
 				ForEach($Site in $PubItem.PublishToSite)
@@ -47809,7 +47813,7 @@ Function OutputPublishingSettings
 					}
 				}
 
-				OutputPubItemFilterSummary $PubItem ([ref]$rowdata)
+				OutputPubItemFilterSummary $PubItem "HTML" ([ref]$rowdata)
 
 				$cnt =-1
 				ForEach($Site in $PubItem.PublishToSite)
@@ -48021,7 +48025,7 @@ Function OutputPublishingSettings
 					}
 				}
 
-				OutputPubItemFilterSummary $PubItem
+				OutputPubItemFilterSummary $PubItem "MSWordPDF"
 
 				$cnt =-1
 				ForEach($Site in $PubItem.PublishToSite)
@@ -48404,7 +48408,7 @@ Function OutputPublishingSettings
 					}
 				}
 
-				OutputPubItemFilterSummary $PubItem
+				OutputPubItemFilterSummary $PubItem "Text"
 
 				$cnt =-1
 				ForEach($Site in $PubItem.PublishToSite)
@@ -48601,7 +48605,7 @@ Function OutputPublishingSettings
 					}
 				}
 
-				OutputPubItemFilterSummary $PubItem ([ref]$rowdata)
+				OutputPubItemFilterSummary $PubItem "HTML" ([ref]$rowdata)
 
 				$cnt =-1
 				ForEach($Site in $PubItem.PublishToSite)
@@ -48626,8 +48630,6 @@ Function OutputPublishingSettings
 
 				WriteHTMLLine 3 0 "Publish from"
 				$rowdata = @()
-				$columnHeaders = @("$PublishedFrom",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite)
-				$rowdata += @(,("",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite))
 
 				$AVDHostPools = Get-RASAVDHostPool -EA 0 4>$Null | Where-Object {$_.LinkedRemoteApplicationGroup -ne ""}
 				
@@ -48917,7 +48919,7 @@ Function OutputPublishingSettings
 					}
 				}
 
-				OutputPubItemFilterSummary $PubItem
+				OutputPubItemFilterSummary $PubItem "MSWordPDF"
 
 				$cnt =-1
 				ForEach($Site in $PubItem.PublishToSite)
@@ -49088,7 +49090,7 @@ Function OutputPublishingSettings
 					}
 				}
 
-				OutputPubItemFilterSummary $PubItem
+				OutputPubItemFilterSummary $PubItem "Text"
 
 				Line 2 "Publish from"
 				$AVDHostPools = Get-RASAVDHostPool -EA 0 4>$Null | Where-Object {$_.LinkedDesktopApplicationGroup -ne ""}
@@ -49190,7 +49192,7 @@ Function OutputPublishingSettings
 					}
 				}
 
-				OutputPubItemFilterSummary $PubItem ([ref]$rowdata)
+				OutputPubItemFilterSummary $PubItem "HTML" ([ref]$rowdata)
 
 				$cnt =-1
 				ForEach($Site in $PubItem.PublishToSite)
@@ -49498,7 +49500,7 @@ Function OutputPublishingSettings
 					}
 				}
 
-				OutputPubItemFilterSummary $PubItem
+				OutputPubItemFilterSummary $PubItem "MSWordPDF"
 
 				$cnt =-1
 				ForEach($Site in $PubItem.PublishToSite)
@@ -49751,7 +49753,7 @@ Function OutputPublishingSettings
 					}
 				}
 
-				OutputPubItemFilterSummary $PubItem
+				OutputPubItemFilterSummary $PubItem "Text"
 
 				$cnt =-1
 				ForEach($Site in $PubItem.PublishToSite)
@@ -49970,7 +49972,7 @@ Function OutputPublishingSettings
 					}
 				}
 
-				OutputPubItemFilterSummary $PubItem ([ref]$rowdata)
+				OutputPubItemFilterSummary $PubItem "HTML" ([ref]$rowdata)
 
 				$cnt =-1
 				ForEach($Site in $PubItem.PublishToSite)
@@ -50091,9 +50093,9 @@ Function OutputPublishingSettings
 
 Function OutputPubItemFilterSummary
 {
-	Param([object] $PubItem, [ref]$rowdata)
+	Param([object] $PubItem, [string] $OutputType, [ref]$rowdata)
 	
-	If($MSWord -or $PDF)
+	If($OutputType -eq "MSWordPDF")
 	{
 		$ScriptInformation.Add(@{Data = "Own Filters"; Value = ""; }) > $Null
 		$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
@@ -50444,7 +50446,7 @@ Function OutputPubItemFilterSummary
 		}
 		$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
 	}
-	If($Text)
+	If($OutputType -eq "Text")
 	{
 		Line 0 ""
 		Line 2 "Own Filters"
@@ -50796,7 +50798,7 @@ Function OutputPubItemFilterSummary
 		}
 		Line 0 ""
 	}
-	If($HTML)
+	If($OutputType -eq "HTML")
 	{
 		#Thanks to Michael B. Smith for help in getting HTML output working properly		
 		If($Null -eq $rowdata)
@@ -69246,8 +69248,8 @@ ProcessScriptEnd
 # SIG # Begin signature block
 # MIIthQYJKoZIhvcNAQcCoIItdjCCLXICAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUkidkweFtt6XS9BK5QXtMWoRi
-# qfCggibfMIIFjTCCBHWgAwIBAgIQDpsYjvnQLefv21DiCEAYWjANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQU33UWNMAGuEb2ecAMrPou+X+W
+# qAOggibfMIIFjTCCBHWgAwIBAgIQDpsYjvnQLefv21DiCEAYWjANBgkqhkiG9w0B
 # AQwFADBlMQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYD
 # VQQLExB3d3cuZGlnaWNlcnQuY29tMSQwIgYDVQQDExtEaWdpQ2VydCBBc3N1cmVk
 # IElEIFJvb3QgQ0EwHhcNMjIwODAxMDAwMDAwWhcNMzExMTA5MjM1OTU5WjBiMQsw
@@ -69458,33 +69460,33 @@ ProcessScriptEnd
 # UzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/BgNVBAMTOERpZ2lDZXJ0IFRy
 # dXN0ZWQgRzQgQ29kZSBTaWduaW5nIFJTQTQwOTYgU0hBMzg0IDIwMjEgQ0ExAhAL
 # bN+2Z4EOKufLWhG6HUlwMAkGBSsOAwIaBQCgQDAZBgkqhkiG9w0BCQMxDAYKKwYB
-# BAGCNwIBBDAjBgkqhkiG9w0BCQQxFgQUKByRYVYfGYIC2ldjphweboqvRcIwDQYJ
-# KoZIhvcNAQEBBQAEggIAK3l/yuOpzAhxAXMh0HEpJkXfT3EvJ1nXKnrPcZ/KgbvJ
-# LhHmIX42EjAOpilXBtQLxN7Fra1FExOkTmYimnoS/65UZRJ48K340PpQXGBSWYHW
-# unaRPG6QSG3eOzKDvhCmzzlBy+evs2QIHl5V6kr9yFnhfJqpKybNkQDuFJD4tdwj
-# FCTnWaifJkvIeMvmucCy52xMyoptEi8BNlOUUdNGvgT0q+3JttzONERYb9cni5L3
-# su3Gp04Z9N8vnb60NXX7CrIWpcpu/Roo3HhnjlcsQPb/F+JogdsVqUzSB6mrWEZ7
-# 4RsfplrlOFwKjBQScbvGvFGmcRfaOgdLrZ+t0MwqY1aKhgdaTq5ZyUZrNjSaSttJ
-# jNCPKpwFcrVTEYHh7VsTt/aCh90vYKP4vUEN5XgyWV9gjN+C6cjOGmWfgkKJveW1
-# YS210Ca4uxTeuAXAJhwsHkZzXjWARw1o1G6BevTSXUjwToxMl2erO9JLe51d68TG
-# qcuDxW5QWz25ZL1xAuLty+mLVyCOTCldhEvY16uQ/toL0OqRPUyIuuGVjVBzFHqx
-# CY51L8jDu+7KSrwFK6z7BFIKrpIYka7zSymNFmoJJDyqcd2eX68PzsKP9scH1BFx
-# YDEm5HbP3Ihq5Vd56dmt9ErCDZBzaEcim3wYkzDR9fKjIkZzj1KqE2CxW4EeJWKh
+# BAGCNwIBBDAjBgkqhkiG9w0BCQQxFgQUlwR9v/VRzzjnSlb5QfM39u0lRugwDQYJ
+# KoZIhvcNAQEBBQAEggIAJ3yXn9eCa/4M9keJdoJhBGFSwjPHvGQDXudrUaAfTMkv
+# YIJn46djIn218xwWv4lPk1KzAnVn9D1GHwaKPqCkhpxoq0do0QZx9n7jXPA/V9CE
+# GsfC9dl5Pmp+HfwP5zR3XB/iC03Ho2X1LvrBzRwrV+xfYD/FrGdtigMPmG37CnQ5
+# 8WdH7QGksU8osAcgskoEBlpsQ+mz/OeXcplt9NjDhVXb/PfTgUnpJHb/w8PCBXej
+# xI5dRxYIPkSvhdm4HCy9nmj3NEhXMiqs6piP3Vt/SimK5r6S/c4z/Id3gPknA1M5
+# 70ZQkKiJR59LHoPbonWlY176EdbMU7GqaXFyceUmwK+bHFfkfYcQnSGjoRZCFfbb
+# AQyZ+IavqgnrCbewZ5x35SbGqxA9dHzL+PYzAAk248cR5cW/u7CwdJFrURqwB0Z4
+# EPkuuLF1fIALQf4q/rDt8ec7mMpVwgXSpblVJG7UG6AvAb7KixcSt5Ophz5VJ6m4
+# SIuqJoJYKGoCcC3BFHJoSOOikTgY0InIvAw9826dnq4tXqKTgFP5O0TEuRBGNrVT
+# 884xiXkSgiPZg4sSOU9ZR6tw7VZNQZrE0Cp1ZdqBnOzYUFIZPYw9AxSa/FPxHBhh
+# WJ+25zj30BUywfxVLYnl7J8LeAYbuwimVkaWDz8bdKEUb5dnuvXKsxHqhzGIRQmh
 # ggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8CAQEwfTBpMQswCQYDVQQGEwJVUzEX
 # MBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/BgNVBAMTOERpZ2lDZXJ0IFRydXN0
 # ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYgU0hBMjU2IDIwMjUgQ0ExAhAKgO8Y
 # S43xBYLRxHanlXRoMA0GCWCGSAFlAwQCAQUAoGkwGAYJKoZIhvcNAQkDMQsGCSqG
-# SIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjYwMTIxMTM0ODQ3WjAvBgkqhkiG9w0B
-# CQQxIgQg2cQkZE9Qy20fNVEAOC6Yqt/TlIFGg2N8Er/y5urOdeEwDQYJKoZIhvcN
-# AQEBBQAEggIAx8tDOGfGFLKAmy6Eehv8vaPEX8nF1ojEWX/0nwWtncDomrMGAtGY
-# 7xCZt2wHSkeB7qN1J2lDmnya5OqXfEBlZ0H/xhpDrPe/aRTqZVn+1IVTf9Y9/L1j
-# ytL6muDcMDAYXkG8pUNIAY4mUe/NpmFkQUxkDxRdsx7HFfCGlRC7XRPj+6Gh9/9T
-# lMvxZMtH442dP2S9OI/xzbyk+e2wsO88OXNjIFX6Nvc90eE55nZtBWFsYSsaV/d3
-# C1zvhc8Qkn0/jFtbkEPInUUFmqLKek4wyfuLPPJpJMZCFxnyku1UoF00ZsjFqev9
-# p4oE6A4HTXV2MNmtf7Jn6oLBRy5XEnfMg4+DW6enSYSJz0RRh+6BgMzD9eYJZtMY
-# rYkZb35F6uCyg0sx/zU3DbT347JqVDjkq+UE+w9LMRolsfMJkfXegjlSHedo2ANs
-# H0+/S+CMsunaMSfstBap6V/WBYh8LcTrhsl9S8dVI2CAOJMJa3aOimBlpvGI9oI3
-# bPDFiXBv4NYzVwYnIqnI16jwWfgZhB1KtQzrJ4VjXaz5U8nS+s07k1pVFzzad2ye
-# euCNkUBd1N/KAlg9YHZJ7bANmmXqul2ri9VARf488S9HmLz7R3W9o/6TniIvy8ou
-# g4RjSuI2qF2Nfq7wEoQBJRSseGWufoKCZXNWInfcLvQtcVECfEllq38=
+# SIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjYwMTIyMTM0MTA5WjAvBgkqhkiG9w0B
+# CQQxIgQguVgAxNH6639O7CFmLio/KaSGdXERIpj7SL/g5uAy9jowDQYJKoZIhvcN
+# AQEBBQAEggIAGGAh+32N+N8LWn+m9IRlTqd8uF0Dmrv8q8rPLia7gqdrhkxasYx3
+# PV9w3waRFiP49u/2QojooB8Wo/ao8UYhDirfT7eiqibi4cZz+4u3IWFtM9Vi0yym
+# uoUw26vgX/6KnddpI9xtah8ej7L6Bt7+ziRdEypvG2HUCjjJ5sdamemaITJ/5y0B
+# 2rYEeo4JK13Hbmxw7UZwXrzxmPhVPZJSOmNkLi2E+Nuaa+E5zfcRMaFITCm3PKJE
+# AcU+wagH9BGFgzbyN7k70mCWXdlrGmewBF0x54OJNRTM+LXCg5ZbOl7HBEpC36hD
+# sxREW8/DBgxKRmjF3LWcztDFvpjmB2oQaZYrOef6tzGItaHAx64iqHw6WyZq9T9f
+# Qrk44oP/lvReULzHb4HTdOg8uJ3FCuAMjlzQoMjSFhX17AAqwouRb6/ilBCVz+SY
+# ASmD8sMr3QvZxVqXNO1gKaqO1s95vALm3kSJWU16AcCXFqlRJoRZPBOCAWspP5CS
+# 0BqgjG/FWHhA7ZrH41G5vmEvHe3WwbNrERgU8yT957n3VhPrqcx0u+qIXWVxYKxG
+# GoZhZE3h93ZZm+LcD3a5UFTRxkPNgo/5hWFAPR+tNcM8hfBQMycRViS5z6f+xfEB
+# 8PBmGUoiY2AqNm4dSD54T1MK3LXCed3BTP52m42MP6IftH9Y2wh2z2s=
 # SIG # End signature block
