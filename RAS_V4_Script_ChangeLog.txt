@@ -82,8 +82,6 @@
 #		Add logon hours schedule for Permitted and Denied hours
 #
 #	In Function OutputPoliciesDetails:
-#		Update for the Policy changes in 19.3 and later
-#		Handle multiple criteria
 #		For RAS version 19.4 and later, added 
 #			Session/Printing/Default printer/Set the following printer as default
 #		For RAS version 20.0 and later, added 
@@ -95,20 +93,22 @@
 #		For RAS version 20.2 and later, removed
 #			Client options/Advanced/Printing/Advanced client options - Printing settings/Cache printers hardware information
 #			Client options/Advanced/Printing/Advanced client options - Printing settings/Refresh printer hardware information every 30 days
+#		Handle multiple criteria
+#		Update for the Policy changes in 19.3 and later
 #
 #	In Function OutputProvidersDetails
+#		Add the Advanced section
 #		Remove the Agent settings section
 #		Remove the RDP printer section
-#		Add the Advanced section
 #		Update the General and Credentials sections to match the console
 #
 #	In Function OutputPubItemFilterSummary
-#		Move check for the default filter setting to this function from Function OutputPublishingSettings
 #		Add test for the default filter
-#		For each filter, add Enabled/Disabled
 #		Fixed bug if multiple output formats were used.
 #			Add parameter for $OutputType
 #			In Function OutputPubItemFilters, add the output format type to each function call
+#		For each filter, add Enabled/Disabled
+#		Move check for the default filter setting to this function from Function OutputPublishingSettings
 #
 #	In Function OutputPubItemFilters
 #		For the Default Rule, add "Enabled", "Default Rule", and the Allow or Deny text to the output
@@ -119,6 +119,7 @@
 #		Add "Routing" to all published item types that have a Routing tab
 #		Add "Status" of Enabled, Disabled, or In Maintenance to all published item types
 #		Add LocalApp published item type
+#		Add new variable $ConnectToConsole to show "Connect to administrative session" as Enabled or Disabled instead of True/False
 #		Add the published item type to all published items
 #		Ensure the output for all sections for all published item types matches the RAS V20.x and 21.x consoles
 #		Fix bug where "Allow if no other rule matches" was always the default filter setting. Move this check to Function OutputPubItemFilterSummary
@@ -128,6 +129,9 @@
 #			In the Information section, only need to show whether preferred routing is enabled or disabled
 #			In the Routing section, the handling of no preferred routes configured was not handled properly
 #				Moved the "
+#		For all calls to OutputPubItemShortCuts, add parameter for $DefaultInheritShortcutSettings
+#		For all Word/PDF or HTML tables where "Settings are replicated to all Sites" was a separate table from the parent table, merge the two tables
+#		For HTML output for individual hosts, and RD Session Host pools, add .Replace("<","").Replace(">","") to remove "<" and ">" since that messes up the HTML output
 #		For Published Item type of "VDIDesktop", add Published from
 #		For Published Item type of AVDApp and AVDDesktop:
 #			Change the name from "Windows Virtual Desktop" to "Azure Virtual Desktop"
@@ -143,19 +147,13 @@
 #			Session Sharing 
 #			Settings for Site
 #		Remove the Site section from the published item types that no longer have that tab in the console
-#		For HTML output for individual hosts, and RD Session Host pools, add .Replace("<","").Replace(">","") to remove "<" and ">" since that messes up the HTML output
 #		Update output to match the changes made in the console
-#		For all calls to OutputPubItemShortCuts, add parameter for $DefaultInheritShortcutSettings
-#		Add new variable $ConnectToConsole to show "Connect to administrative session" as Enabled or Disabled instead of True/False
 #
 #	In Function OutputPubItemShortCuts
-#		Add parameter for $DefaultInheritShortcutSettings
 #		Add code for "Inherit default settings"
+#		Add parameter for $DefaultInheritShortcutSettings
 #
 #	In Function OutputRASAccounts
-#		Add the Enabled property
-#		Changed "Group or user names" to "Name"
-#		Removed "Receive system notifications"
 #		Add new sub-section "Account Properties"
 #			Enable account
 #			Name
@@ -164,13 +162,16 @@
 #			Group
 #			Permissions
 #			Receive system notifications
+#		Add the Enabled property
+#		Changed "Group or user names" to "Name"
+#		Removed "Receive system notifications"
 #
 #	In Function OutputRASAdminFeatures
-#		Rename function from Function OutputRASFeatures to OutputRASAdminFeatures to separate it from the Site Features
-#		Rename variable $RASFeatures to $RASHelpdesk
+#		Add output for "Overwrite support actions with the following URL"
 #		Add variable $RASSupport
 #		Change function to use two parameters: $RASHelpdesk and $RASSupport
-#		Add output for "Overwrite support actions with the following URL"
+#		Rename function from Function OutputRASFeatures to OutputRASAdminFeatures to separate it from the Site Features
+#		Rename variable $RASFeatures to $RASHelpdesk
 #
 #	In Function OutputRASClientSettings
 #		Add Enum for Published application icons
@@ -211,14 +212,6 @@
 #		Add Auto-upgrade
 #		Changed Get-RASVDIHostStatus -Name $VDIPool.Name to Get-RASVDIHostPoolStatus -Name $VDIPool.Name -SiteId $Site.Id
 #		Fixed bug in processing the variable $AppPackagesAssigned.ApplicationPackagesAssigned with the help of Guy Leech
-#		For the Scheduler section, fixed many missing items and numerous other bugs
-#		For RDS Hosts details, rename "Agent settings" to "Settings, and move to after Desktop access
-#		In Optimization, for Windows Services, 
-#			Add a call to Get-Service to get the Display Name
-#				The Display Name is retrieved from the computer running the script.
-#				That means a Server OS will not find a service named "Fax"
-#			Make the code consistent with all three output formats
-#		Only output optimization data if optimization is enabled
 #		For Hosts:
 #			Rename Server to Host
 #			Rearrange columns to match the layout in the consosle
@@ -235,6 +228,14 @@
 #			Add Application packages
 #			Add Session readiness timeout
 #			In RDP Printers, add the missing "Remove client name from printer name"
+#		For the Scheduler section, fixed many missing items and numerous other bugs
+#		For RDS Hosts details, rename "Agent settings" to "Settings, and move to after Desktop access
+#		In Optimization, for Windows Services, 
+#			Add a call to Get-Service to get the Display Name
+#				The Display Name is retrieved from the computer running the script.
+#				That means a Server OS will not find a service named "Fax"
+#			Make the code consistent with all three output formats
+#		Only output optimization data if optimization is enabled
 #
 #	In Function OutputSAMLSetting, handle multiple SAML items
 #
@@ -264,11 +265,13 @@
 #
 #	In Function OutputThemesDetails
 #		Change HTML5 URL to User Portal URL
+#		Fixed numerous output formatting issues
 #		Update several ENUMs
 #		Update to reflect the additions, deletions, and changes in the console
-#		Fixed numerous output formatting issues
 #
 #	In Function OutputVDIDetails:
+#		Added Hosts
+#		Added Scheduler
 #		For Host pools, add:
 #			Status
 #			Template
@@ -293,14 +296,12 @@
 #		For Templates:
 #			Update the Advanced and Preparation sections to match the console
 #			Remove the Settings and Security sections as those no longer exist
-#		Added Hosts
-#		Added Scheduler
 #
 #	In Function ProcessAdministration
-#		Rename variable $RASFeatures to $RASHelpdesk
 #		Add variable $RASSupport
 #		Add retrieving Get-RASOverwriteSupportActions
 #		Change call to OutputRASAdminFeatures to use two parameters: $RASHelpdesk and $RASSupport
+#		Rename variable $RASFeatures to $RASHelpdesk
 #
 #	In Function ProcessConnection, add call to new LogonHours function
 #

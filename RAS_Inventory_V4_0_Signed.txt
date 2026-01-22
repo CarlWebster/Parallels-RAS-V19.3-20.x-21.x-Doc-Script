@@ -450,7 +450,7 @@
 	text document.
 .NOTES
 	NAME: RAS_Inventory_V4_0.ps1
-	VERSION: 4.00 Beta 49
+	VERSION: 4.00 Beta 50
 	AUTHOR: Carl Webster
 	LASTEDIT: January 22, 2026
 #>
@@ -644,8 +644,6 @@ Param(
 #		Add logon hours schedule for Permitted and Denied hours
 #
 #	In Function OutputPoliciesDetails:
-#		Update for the Policy changes in 19.3 and later
-#		Handle multiple criteria
 #		For RAS version 19.4 and later, added 
 #			Session/Printing/Default printer/Set the following printer as default
 #		For RAS version 20.0 and later, added 
@@ -657,20 +655,22 @@ Param(
 #		For RAS version 20.2 and later, removed
 #			Client options/Advanced/Printing/Advanced client options - Printing settings/Cache printers hardware information
 #			Client options/Advanced/Printing/Advanced client options - Printing settings/Refresh printer hardware information every 30 days
+#		Handle multiple criteria
+#		Update for the Policy changes in 19.3 and later
 #
 #	In Function OutputProvidersDetails
+#		Add the Advanced section
 #		Remove the Agent settings section
 #		Remove the RDP printer section
-#		Add the Advanced section
 #		Update the General and Credentials sections to match the console
 #
 #	In Function OutputPubItemFilterSummary
-#		Move check for the default filter setting to this function from Function OutputPublishingSettings
 #		Add test for the default filter
-#		For each filter, add Enabled/Disabled
 #		Fixed bug if multiple output formats were used.
 #			Add parameter for $OutputType
 #			In Function OutputPubItemFilters, add the output format type to each function call
+#		For each filter, add Enabled/Disabled
+#		Move check for the default filter setting to this function from Function OutputPublishingSettings
 #
 #	In Function OutputPubItemFilters
 #		For the Default Rule, add "Enabled", "Default Rule", and the Allow or Deny text to the output
@@ -681,6 +681,7 @@ Param(
 #		Add "Routing" to all published item types that have a Routing tab
 #		Add "Status" of Enabled, Disabled, or In Maintenance to all published item types
 #		Add LocalApp published item type
+#		Add new variable $ConnectToConsole to show "Connect to administrative session" as Enabled or Disabled instead of True/False
 #		Add the published item type to all published items
 #		Ensure the output for all sections for all published item types matches the RAS V20.x and 21.x consoles
 #		Fix bug where "Allow if no other rule matches" was always the default filter setting. Move this check to Function OutputPubItemFilterSummary
@@ -690,6 +691,9 @@ Param(
 #			In the Information section, only need to show whether preferred routing is enabled or disabled
 #			In the Routing section, the handling of no preferred routes configured was not handled properly
 #				Moved the "
+#		For all calls to OutputPubItemShortCuts, add parameter for $DefaultInheritShortcutSettings
+#		For all Word/PDF or HTML tables where "Settings are replicated to all Sites" was a separate table from the parent table, merge the two tables
+#		For HTML output for individual hosts, and RD Session Host pools, add .Replace("<","").Replace(">","") to remove "<" and ">" since that messes up the HTML output
 #		For Published Item type of "VDIDesktop", add Published from
 #		For Published Item type of AVDApp and AVDDesktop:
 #			Change the name from "Windows Virtual Desktop" to "Azure Virtual Desktop"
@@ -705,19 +709,13 @@ Param(
 #			Session Sharing 
 #			Settings for Site
 #		Remove the Site section from the published item types that no longer have that tab in the console
-#		For HTML output for individual hosts, and RD Session Host pools, add .Replace("<","").Replace(">","") to remove "<" and ">" since that messes up the HTML output
 #		Update output to match the changes made in the console
-#		For all calls to OutputPubItemShortCuts, add parameter for $DefaultInheritShortcutSettings
-#		Add new variable $ConnectToConsole to show "Connect to administrative session" as Enabled or Disabled instead of True/False
 #
 #	In Function OutputPubItemShortCuts
-#		Add parameter for $DefaultInheritShortcutSettings
 #		Add code for "Inherit default settings"
+#		Add parameter for $DefaultInheritShortcutSettings
 #
 #	In Function OutputRASAccounts
-#		Add the Enabled property
-#		Changed "Group or user names" to "Name"
-#		Removed "Receive system notifications"
 #		Add new sub-section "Account Properties"
 #			Enable account
 #			Name
@@ -726,13 +724,16 @@ Param(
 #			Group
 #			Permissions
 #			Receive system notifications
+#		Add the Enabled property
+#		Changed "Group or user names" to "Name"
+#		Removed "Receive system notifications"
 #
 #	In Function OutputRASAdminFeatures
-#		Rename function from Function OutputRASFeatures to OutputRASAdminFeatures to separate it from the Site Features
-#		Rename variable $RASFeatures to $RASHelpdesk
+#		Add output for "Overwrite support actions with the following URL"
 #		Add variable $RASSupport
 #		Change function to use two parameters: $RASHelpdesk and $RASSupport
-#		Add output for "Overwrite support actions with the following URL"
+#		Rename function from Function OutputRASFeatures to OutputRASAdminFeatures to separate it from the Site Features
+#		Rename variable $RASFeatures to $RASHelpdesk
 #
 #	In Function OutputRASClientSettings
 #		Add Enum for Published application icons
@@ -773,14 +774,6 @@ Param(
 #		Add Auto-upgrade
 #		Changed Get-RASVDIHostStatus -Name $VDIPool.Name to Get-RASVDIHostPoolStatus -Name $VDIPool.Name -SiteId $Site.Id
 #		Fixed bug in processing the variable $AppPackagesAssigned.ApplicationPackagesAssigned with the help of Guy Leech
-#		For the Scheduler section, fixed many missing items and numerous other bugs
-#		For RDS Hosts details, rename "Agent settings" to "Settings, and move to after Desktop access
-#		In Optimization, for Windows Services, 
-#			Add a call to Get-Service to get the Display Name
-#				The Display Name is retrieved from the computer running the script.
-#				That means a Server OS will not find a service named "Fax"
-#			Make the code consistent with all three output formats
-#		Only output optimization data if optimization is enabled
 #		For Hosts:
 #			Rename Server to Host
 #			Rearrange columns to match the layout in the consosle
@@ -797,6 +790,14 @@ Param(
 #			Add Application packages
 #			Add Session readiness timeout
 #			In RDP Printers, add the missing "Remove client name from printer name"
+#		For the Scheduler section, fixed many missing items and numerous other bugs
+#		For RDS Hosts details, rename "Agent settings" to "Settings, and move to after Desktop access
+#		In Optimization, for Windows Services, 
+#			Add a call to Get-Service to get the Display Name
+#				The Display Name is retrieved from the computer running the script.
+#				That means a Server OS will not find a service named "Fax"
+#			Make the code consistent with all three output formats
+#		Only output optimization data if optimization is enabled
 #
 #	In Function OutputSAMLSetting, handle multiple SAML items
 #
@@ -826,11 +827,13 @@ Param(
 #
 #	In Function OutputThemesDetails
 #		Change HTML5 URL to User Portal URL
+#		Fixed numerous output formatting issues
 #		Update several ENUMs
 #		Update to reflect the additions, deletions, and changes in the console
-#		Fixed numerous output formatting issues
 #
 #	In Function OutputVDIDetails:
+#		Added Hosts
+#		Added Scheduler
 #		For Host pools, add:
 #			Status
 #			Template
@@ -855,14 +858,12 @@ Param(
 #		For Templates:
 #			Update the Advanced and Preparation sections to match the console
 #			Remove the Settings and Security sections as those no longer exist
-#		Added Hosts
-#		Added Scheduler
 #
 #	In Function ProcessAdministration
-#		Rename variable $RASFeatures to $RASHelpdesk
 #		Add variable $RASSupport
 #		Add retrieving Get-RASOverwriteSupportActions
 #		Change call to OutputRASAdminFeatures to use two parameters: $RASHelpdesk and $RASSupport
+#		Rename variable $RASFeatures to $RASHelpdesk
 #
 #	In Function ProcessConnection, add call to new LogonHours function
 #
@@ -952,7 +953,7 @@ $ErrorActionPreference    = 'SilentlyContinue'
 $Error.Clear()
 
 $Script:emailCredentials  = $Null
-$script:MyVersion         = '4.00 Beta 49'
+$script:MyVersion         = '4.00 Beta 50'
 $Script:ScriptName        = "RAS_Inventory_V4_0.ps1"
 $tmpdate                  = [datetime] "01/22/2026"
 $Script:ReleaseDate       = $tmpdate.ToUniversalTime().ToShortDateString()
@@ -43290,8 +43291,8 @@ Function OutputPublishingSettings
 				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 250;
-				$Table.Columns.Item(2).Width = 250;
+				$Table.Columns.Item(1).Width = 200;
+				$Table.Columns.Item(2).Width = 300;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -43956,8 +43957,8 @@ Function OutputPublishingSettings
 				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 250;
-				$Table.Columns.Item(2).Width = 250;
+				$Table.Columns.Item(1).Width = 200;
+				$Table.Columns.Item(2).Width = 300;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -44647,8 +44648,8 @@ Function OutputPublishingSettings
 				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 250;
-				$Table.Columns.Item(2).Width = 250;
+				$Table.Columns.Item(1).Width = 200;
+				$Table.Columns.Item(2).Width = 300;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -44750,8 +44751,8 @@ Function OutputPublishingSettings
 				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 250;
-				$Table.Columns.Item(2).Width = 250;
+				$Table.Columns.Item(1).Width = 200;
+				$Table.Columns.Item(2).Width = 300;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -44846,6 +44847,7 @@ Function OutputPublishingSettings
 						}
 					}
 				}
+				$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
 				$ScriptInformation.Add(@{Data = "Settings are replicated to all Sites"; Value = $PubItem.ReplicateFileExtensionSettings.ToString(); }) > $Null
 
 				$Table = AddWordTable -Hashtable $ScriptInformation `
@@ -44898,6 +44900,7 @@ Function OutputPublishingSettings
 					$ScriptInformation.Add(@{Data = "Concurrent licenses"; Value = $ConCurrentLicenses; }) > $Null
 					$ScriptInformation.Add(@{Data = "If limit is exceeded"; Value = $LicenseLimitNotify; }) > $Null
 				}
+				$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
 				If($PubItem.InheritLicenseDefaultSettings)
 				{
 					$ScriptInformation.Add(@{Data = "Settings are replicated to all Sites"; Value = $DefaultReplicateLicenseSettings.ToString(); }) > $Null
@@ -44916,8 +44919,8 @@ Function OutputPublishingSettings
 				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 200;
-				$Table.Columns.Item(2).Width = 300;
+				$Table.Columns.Item(1).Width = 275;
+				$Table.Columns.Item(2).Width = 225;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -44947,6 +44950,7 @@ Function OutputPublishingSettings
 					$ScriptInformation.Add(@{Data = "Start the application as maximized when using mobile clients"; Value = $PubItem.StartMaximized.ToString(); }) > $Null
 					$ScriptInformation.Add(@{Data = "Start in fullscreen mode for Wyse ThinOS clients"; Value = $PubItem.StartFullscreen.ToString(); }) > $Null
 				}
+				$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
 				If($PubItem.InheritDisplayDefaultSettings)
 				{
 					$ScriptInformation.Add(@{Data = "Settings are replicated to all Sites"; Value = $DefaultReplicateDisplaySettings.ToString(); }) > $Null
@@ -44962,11 +44966,11 @@ Function OutputPublishingSettings
 				-Format $wdTableGrid `
 				-AutoFit $wdAutoFitFixed;
 
-				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 200;
-				$Table.Columns.Item(2).Width = 300;
+				$Table.Columns.Item(1).Width = 350;
+				$Table.Columns.Item(2).Width = 150;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -45595,7 +45599,8 @@ Function OutputPublishingSettings
 						}
 					}
 				}
-				$rowdata += @(,("Settings are replicated to all Sites: ",($Script:htmlsb),$PubItem.ReplicateFileExtensionSettings.ToString(),$htmlwhite))
+				$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+				$rowdata += @(,("Settings are replicated to all Sites",($Script:htmlsb),$PubItem.ReplicateFileExtensionSettings.ToString(),$htmlwhite))
 
 				$msg = ""
 				$columnWidths = @("200","300")
@@ -45635,6 +45640,7 @@ Function OutputPublishingSettings
 					$rowdata += @(,("Concurrent licenses",($Script:htmlsb),$ConCurrentLicenses,$htmlwhite))
 					$rowdata += @(,("If limit is exceeded",($Script:htmlsb),$LicenseLimitNotify,$htmlwhite))
 				}
+				$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 				If($PubItem.InheritLicenseDefaultSettings)
 				{
 					$rowdata += @(,("Settings are replicated to all Sites: ",($Script:htmlsb),$DefaultReplicateLicenseSettings.ToString(),$htmlwhite))
@@ -45671,6 +45677,7 @@ Function OutputPublishingSettings
 					$rowdata += @(,("Start the application as maximized when using mobile clients",($Script:htmlsb),$PubItem.StartMaximized.ToString(),$htmlwhite))
 					$rowdata += @(,("Start in fullscreen mode for Wyse ThinOS clients",($Script:htmlsb),$PubItem.StartFullscreen.ToString(),$htmlwhite))
 				}
+				$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 				$rowdata += @(,("Settings are replicated to all Sites: ",($Script:htmlsb),$PubItem.ReplicateDisplaySettings.ToString(),$htmlwhite))
 
 				$msg = ""
@@ -45962,8 +45969,8 @@ Function OutputPublishingSettings
 				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 250;
-				$Table.Columns.Item(2).Width = 250;
+				$Table.Columns.Item(1).Width = 200;
+				$Table.Columns.Item(2).Width = 300;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -46020,8 +46027,8 @@ Function OutputPublishingSettings
 				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 225;
-				$Table.Columns.Item(2).Width = 275;
+				$Table.Columns.Item(1).Width = 200;
+				$Table.Columns.Item(2).Width = 300;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -46634,43 +46641,6 @@ Function OutputPublishingSettings
 				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 250;
-				$Table.Columns.Item(2).Width = 250;
-
-				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-				FindWordDocumentEnd
-				$Table = $Null
-				WriteWordLine 0 0 ""
-
-				WriteWordLine 3 0 "Sites"
-				$ScriptInformation = New-Object System.Collections.ArrayList
-
-				$cnt =-1
-				ForEach($Site in $PubItem.PublishToSite)
-				{
-					$cnt++
-					$SiteName = @(Get-RASSite -Id $Site -EA 0 4>$Null).Name
-					
-					If($cnt -eq 0)
-					{
-						$ScriptInformation.Add(@{Data = "This published item will be available from the following Sites"; Value = $SiteName; }) > $Null
-					}
-					Else
-					{
-						$ScriptInformation.Add(@{Data = ""; Value = $SiteName; }) > $Null
-					}
-				}
-
-				$Table = AddWordTable -Hashtable $ScriptInformation `
-				-Columns Data,Value `
-				-List `
-				-Format $wdTableGrid `
-				-AutoFit $wdAutoFitFixed;
-
-				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
-				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
 				$Table.Columns.Item(1).Width = 200;
 				$Table.Columns.Item(2).Width = 300;
 
@@ -46770,8 +46740,8 @@ Function OutputPublishingSettings
 				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 250;
-				$Table.Columns.Item(2).Width = 250;
+				$Table.Columns.Item(1).Width = 200;
+				$Table.Columns.Item(2).Width = 300;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -46952,25 +46922,6 @@ Function OutputPublishingSettings
 				Else
 				{
 					Line 3 "Preferred routing is disabled"
-				}
-				Line 0 ""
-
-				Line 2 "Sites"
-
-				$cnt =-1
-				ForEach($Site in $PubItem.PublishToSite)
-				{
-					$cnt++
-					$SiteName = @(Get-RASSite -Id $Site -EA 0 4>$Null).Name
-					
-					If($cnt -eq 0)
-					{
-						Line 3 "This published item will be available from the following Sites: " $SiteName
-					}
-					Else
-					{
-						Line 7 " " $SiteName
-					}
 				}
 				Line 0 ""
 
@@ -47178,30 +47129,6 @@ Function OutputPublishingSettings
 
 				$msg = ""
 				$columnWidths = @("300","300")
-				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-				WriteHTMLLine 0 0 ""
-
-				WriteHTMLLine 3 0 "Sites"
-				$rowdata = @()
-
-				$cnt =-1
-				ForEach($Site in $PubItem.PublishToSite)
-				{
-					$cnt++
-					$SiteName = @(Get-RASSite -Id $Site -EA 0 4>$Null).Name
-					
-					If($cnt -eq 0)
-					{
-						$columnHeaders = @("This published item will be available from the following Sites",($Script:htmlsb),$SiteName,$htmlwhite)
-					}
-					Else
-					{
-						$rowdata += @(,("",($Script:htmlsb),$SiteName,$htmlwhite))
-					}
-				}
-
-				$msg = ""
-				$columnWidths = @("200","300")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 
@@ -47532,8 +47459,8 @@ Function OutputPublishingSettings
 				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 250;
-				$Table.Columns.Item(2).Width = 250;
+				$Table.Columns.Item(1).Width = 200;
+				$Table.Columns.Item(2).Width = 300;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -48131,8 +48058,8 @@ Function OutputPublishingSettings
 				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 250;
-				$Table.Columns.Item(2).Width = 250;
+				$Table.Columns.Item(1).Width = 200;
+				$Table.Columns.Item(2).Width = 300;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -48171,26 +48098,7 @@ Function OutputPublishingSettings
 						}
 					}
 				}
-
-				$Table = AddWordTable -Hashtable $ScriptInformation `
-				-Columns Data,Value `
-				-List `
-				-Format $wdTableGrid `
-				-AutoFit $wdAutoFitFixed;
-
-				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
-				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
-				$Table.Columns.Item(1).Width = 200;
-				$Table.Columns.Item(2).Width = 300;
-
-				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-				FindWordDocumentEnd
-				$Table = $Null
-				WriteWordLine 0 0 ""
-
-				$ScriptInformation = New-Object System.Collections.ArrayList
+				$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
 				$ScriptInformation.Add(@{Data = "Settings are replicated to all Sites"; Value = $PubItem.ReplicateFileExtensionSettings.ToString(); }) > $Null
 
 				$Table = AddWordTable -Hashtable $ScriptInformation `
@@ -48203,7 +48111,7 @@ Function OutputPublishingSettings
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 				$Table.Columns.Item(1).Width = 200;
-				$Table.Columns.Item(2).Width = 100;
+				$Table.Columns.Item(2).Width = 300;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -48243,26 +48151,7 @@ Function OutputPublishingSettings
 					$ScriptInformation.Add(@{Data = "Concurrent licenses"; Value = $ConCurrentLicenses; }) > $Null
 					$ScriptInformation.Add(@{Data = "If limit is exceeded"; Value = $LicenseLimitNotify; }) > $Null
 				}
-
-				$Table = AddWordTable -Hashtable $ScriptInformation `
-				-Columns Data,Value `
-				-List `
-				-Format $wdTableGrid `
-				-AutoFit $wdAutoFitFixed;
-
-				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
-				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
-				$Table.Columns.Item(1).Width = 275;
-				$Table.Columns.Item(2).Width = 225;
-
-				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-				FindWordDocumentEnd
-				$Table = $Null
-				WriteWordLine 0 0 ""
-
-				$ScriptInformation = New-Object System.Collections.ArrayList
+				$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
 				If($PubItem.InheritLicenseDefaultSettings)
 				{
 					$ScriptInformation.Add(@{Data = "Settings are replicated to all Sites"; Value = $DefaultReplicateLicenseSettings.ToString(); }) > $Null
@@ -48278,11 +48167,11 @@ Function OutputPublishingSettings
 				-Format $wdTableGrid `
 				-AutoFit $wdAutoFitFixed;
 
-				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 200;
-				$Table.Columns.Item(2).Width = 100;
+				$Table.Columns.Item(1).Width = 275;
+				$Table.Columns.Item(2).Width = 225;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -48312,26 +48201,7 @@ Function OutputPublishingSettings
 					$ScriptInformation.Add(@{Data = "Start the application as maximized when using mobile clients"; Value = $PubItem.StartMaximized.ToString(); }) > $Null
 					$ScriptInformation.Add(@{Data = "Start in fullscreen mode for Wyse ThinOS clients"; Value = $PubItem.StartFullscreen.ToString(); }) > $Null
 				}
-
-				$Table = AddWordTable -Hashtable $ScriptInformation `
-				-Columns Data,Value `
-				-List `
-				-Format $wdTableGrid `
-				-AutoFit $wdAutoFitFixed;
-
-				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
-				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
-				$Table.Columns.Item(1).Width = 200;
-				$Table.Columns.Item(2).Width = 300;
-
-				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-				FindWordDocumentEnd
-				$Table = $Null
-				WriteWordLine 0 0 ""
-				
-				$ScriptInformation = New-Object System.Collections.ArrayList
+				$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
 				If($PubItem.InheritDisplayDefaultSettings)
 				{
 					$ScriptInformation.Add(@{Data = "Settings are replicated to all Sites"; Value = $DefaultReplicateDisplaySettings.ToString(); }) > $Null
@@ -48347,11 +48217,11 @@ Function OutputPublishingSettings
 				-Format $wdTableGrid `
 				-AutoFit $wdAutoFitFixed;
 
-				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 200;
-				$Table.Columns.Item(2).Width = 100;
+				$Table.Columns.Item(1).Width = 350;
+				$Table.Columns.Item(2).Width = 150;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -48729,17 +48599,11 @@ Function OutputPublishingSettings
 						}
 					}
 				}
+				$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+				$rowdata += @(,("",($Script:htmlsb),$PubItem.ReplicateFileExtensionSettings.ToString(),$htmlwhite))
 
 				$msg = ""
 				$columnWidths = @("200","300")
-				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-				WriteHTMLLine 0 0 ""
-
-				$rowdata = @()
-				$columnHeaders = @("Settings are replicated to all Sites",($Script:htmlsb),$PubItem.ReplicateFileExtensionSettings.ToString(),$htmlwhite)
-
-				$msg = ""
-				$columnWidths = @("183","100")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 
@@ -48775,24 +48639,18 @@ Function OutputPublishingSettings
 					$rowdata += @(,("Concurrent licenses",($Script:htmlsb),$ConCurrentLicenses,$htmlwhite))
 					$rowdata += @(,("If limit is exceeded",($Script:htmlsb),$LicenseLimitNotify,$htmlwhite))
 				}
-
-				$msg = ""
-				$columnWidths = @("200","300")
-				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-				WriteHTMLLine 0 0 ""
-
-				$rowdata = @()
+				$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 				If($PubItem.InheritLicenseDefaultSettings)
 				{
-					$columnHeaders = @("Settings are replicated to all Sites",($Script:htmlsb),$DefaultReplicateLicenseSettings.ToString(),$htmlwhite)
+					$rowdata += @(,("Settings are replicated to all Sites",($Script:htmlsb),$DefaultReplicateLicenseSettings.ToString(),$htmlwhite))
 				}
 				Else
 				{
-					$columnHeaders = @("Settings are replicated to all Sites",($Script:htmlsb),$PubItem.ReplicateLicenseSettings.ToString(),$htmlwhite)
+					$rowdata += @(,("Settings are replicated to all Sites",($Script:htmlsb),$PubItem.ReplicateLicenseSettings.ToString(),$htmlwhite))
 				}
 
 				$msg = ""
-				$columnWidths = @("183","100")
+				$columnWidths = @("200","300")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 
@@ -48818,17 +48676,11 @@ Function OutputPublishingSettings
 					$rowdata += @(,("Start the application as maximized when using mobile clients",($Script:htmlsb),$PubItem.StartMaximized.ToString(),$htmlwhite))
 					$rowdata += @(,("Start in fullscreen mode for Wyse ThinOS clients",($Script:htmlsb),$PubItem.StartFullscreen.ToString(),$htmlwhite))
 				}
+				$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+				$rowdata += @(,("Settings are replicated to all Sites",($Script:htmlsb),$PubItem.ReplicateDisplaySettings.ToString(),$htmlwhite))
 
 				$msg = ""
-				$columnWidths = @("200","300")
-				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-				WriteHTMLLine 0 0 ""
-
-				$rowdata = @()
-				$columnHeaders = @("Settings are replicated to all Sites",($Script:htmlsb),$PubItem.ReplicateDisplaySettings.ToString(),$htmlwhite)
-
-				$msg = ""
-				$columnWidths = @("183","100")
+				$columnWidths = @("500","200")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 			}
@@ -49124,7 +48976,7 @@ Function OutputPublishingSettings
 				Line 3 "Desktop"
 				Line 4 "Name`t`t`t`t`t`t: " $PubItem.Name
 				Line 4 "Description`t`t`t`t`t: " $PubItem.Description
-				Line 4 "Status`t`t`t`t`t`t`t: " $PubItemStatus
+				Line 4 "Status`t`t`t`t`t`t: " $PubItemStatus
 				Line 4 "Start automatically when user logs on`t`t: " $PubItem.StartOnLogon.ToString()
 				Line 4 "Exclude from session prelaunch`t`t`t: " $PubItem.ExcludePrelaunch.ToString()
 				Line 3 "Properties"
@@ -52049,6 +51901,7 @@ Function OutputPubItemFilters
 			{
 				$columnHeaders = @("Default Rule * (Enabled)",($Script:htmlsb),"Deny if no other rule matches",$htmlwhite)
 			}
+			$columnWidths = @("200","300")
 		}
 		Else
 		{
@@ -52060,10 +51913,10 @@ Function OutputPubItemFilters
 			{
 				$rowdata += @(,("Default Rule * (Enabled)",($Script:htmlsb),"Deny if no other rule matches",$htmlwhite))
 			}
+			$columnWidths = @("300","400")
 		}
 
 		$msg = "$RuleName Properties"
-		$columnWidths = @("300","400")
 		FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 		WriteHTMLLine 0 0 ""
 	}
@@ -52096,6 +51949,7 @@ Function OutputPubItemShortCuts
 				$ScriptInformation.Add(@{Data = ""; Value = $DefaultStartPath; }) > $Null
 			}
 			$ScriptInformation.Add(@{Data = "Create shortcut in Auto Start Folder"; Value = $DefaultCreateShortcutInStartUpFolder; }) > $Null
+			$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
 			$ScriptInformation.Add(@{Data = "Settings are replicated to all Sites"; Value = $DefaultReplicateShortcutSettings.ToString(); }) > $Null
 
 			$Table = AddWordTable -Hashtable $ScriptInformation `
@@ -52106,6 +51960,9 @@ Function OutputPubItemShortCuts
 
 			SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 			SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+			$Table.Columns.Item(1).Width = 200;
+			$Table.Columns.Item(2).Width = 300;
 
 			$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -52122,6 +51979,7 @@ Function OutputPubItemShortCuts
 				$ScriptInformation.Add(@{Data = ""; Value = $PubItem.StartPath; }) > $Null
 			}
 			$ScriptInformation.Add(@{Data = "Create shortcut in Auto Start Folder"; Value = $PubItem.CreateShortcutInStartUpFolder; }) > $Null
+			$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
 			$ScriptInformation.Add(@{Data = "Settings are replicated to all Sites"; Value = $PubItem.ReplicateShortcutSettings.ToString(); }) > $Null
 
 			$Table = AddWordTable -Hashtable $ScriptInformation `
@@ -52132,6 +51990,9 @@ Function OutputPubItemShortCuts
 
 			SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 			SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+			$Table.Columns.Item(1).Width = 200;
+			$Table.Columns.Item(2).Width = 300;
 
 			$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -52185,6 +52046,7 @@ Function OutputPubItemShortCuts
 				$rowdata += @(,("",($Script:htmlsb),$DefaultStartPath,$htmlwhite))
 			}
 			$rowdata += @(,("Create shortcut in Auto Start Folder",($Script:htmlsb),$DefaultCreateShortcutInStartUpFolder.ToString(),$htmlwhite))
+			$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 			$rowdata += @(,("Settings are replicated to all Sites",($Script:htmlsb),$DefaultReplicateShortcutSettings.ToString(),$htmlwhite))
 
 			$msg = ""
@@ -52200,6 +52062,7 @@ Function OutputPubItemShortCuts
 				$rowdata += @(,("",($Script:htmlsb),$PubItem.StartPath,$htmlwhite))
 			}
 			$rowdata += @(,("Create shortcut in Auto Start Folder",($Script:htmlsb),$PubItem.CreateShortcutInStartUpFolder.ToString(),$htmlwhite))
+			$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 			$rowdata += @(,("Settings are replicated to all Sites",($Script:htmlsb),$PubItem.ReplicateShortcutSettings.ToString(),$htmlwhite))
 
 			$msg = ""
@@ -69248,8 +69111,8 @@ ProcessScriptEnd
 # SIG # Begin signature block
 # MIIthQYJKoZIhvcNAQcCoIItdjCCLXICAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQU33UWNMAGuEb2ecAMrPou+X+W
-# qAOggibfMIIFjTCCBHWgAwIBAgIQDpsYjvnQLefv21DiCEAYWjANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUXhmcsUoidSI+IGFHldV7bd3Y
+# 5cWggibfMIIFjTCCBHWgAwIBAgIQDpsYjvnQLefv21DiCEAYWjANBgkqhkiG9w0B
 # AQwFADBlMQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYD
 # VQQLExB3d3cuZGlnaWNlcnQuY29tMSQwIgYDVQQDExtEaWdpQ2VydCBBc3N1cmVk
 # IElEIFJvb3QgQ0EwHhcNMjIwODAxMDAwMDAwWhcNMzExMTA5MjM1OTU5WjBiMQsw
@@ -69460,33 +69323,33 @@ ProcessScriptEnd
 # UzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/BgNVBAMTOERpZ2lDZXJ0IFRy
 # dXN0ZWQgRzQgQ29kZSBTaWduaW5nIFJTQTQwOTYgU0hBMzg0IDIwMjEgQ0ExAhAL
 # bN+2Z4EOKufLWhG6HUlwMAkGBSsOAwIaBQCgQDAZBgkqhkiG9w0BCQMxDAYKKwYB
-# BAGCNwIBBDAjBgkqhkiG9w0BCQQxFgQUlwR9v/VRzzjnSlb5QfM39u0lRugwDQYJ
-# KoZIhvcNAQEBBQAEggIAJ3yXn9eCa/4M9keJdoJhBGFSwjPHvGQDXudrUaAfTMkv
-# YIJn46djIn218xwWv4lPk1KzAnVn9D1GHwaKPqCkhpxoq0do0QZx9n7jXPA/V9CE
-# GsfC9dl5Pmp+HfwP5zR3XB/iC03Ho2X1LvrBzRwrV+xfYD/FrGdtigMPmG37CnQ5
-# 8WdH7QGksU8osAcgskoEBlpsQ+mz/OeXcplt9NjDhVXb/PfTgUnpJHb/w8PCBXej
-# xI5dRxYIPkSvhdm4HCy9nmj3NEhXMiqs6piP3Vt/SimK5r6S/c4z/Id3gPknA1M5
-# 70ZQkKiJR59LHoPbonWlY176EdbMU7GqaXFyceUmwK+bHFfkfYcQnSGjoRZCFfbb
-# AQyZ+IavqgnrCbewZ5x35SbGqxA9dHzL+PYzAAk248cR5cW/u7CwdJFrURqwB0Z4
-# EPkuuLF1fIALQf4q/rDt8ec7mMpVwgXSpblVJG7UG6AvAb7KixcSt5Ophz5VJ6m4
-# SIuqJoJYKGoCcC3BFHJoSOOikTgY0InIvAw9826dnq4tXqKTgFP5O0TEuRBGNrVT
-# 884xiXkSgiPZg4sSOU9ZR6tw7VZNQZrE0Cp1ZdqBnOzYUFIZPYw9AxSa/FPxHBhh
-# WJ+25zj30BUywfxVLYnl7J8LeAYbuwimVkaWDz8bdKEUb5dnuvXKsxHqhzGIRQmh
+# BAGCNwIBBDAjBgkqhkiG9w0BCQQxFgQUuJTvi2l5bnqr1BwFAJdd7NcWKX0wDQYJ
+# KoZIhvcNAQEBBQAEggIAsYATGWx0sgC8Yh/kXovHCVCH1j4Nv+LBTv1DQs+v/IHG
+# 7XfYvyW+SVKekWtc/oc0kBjuatby9kCNrmyGkYmlypiw0msP5oBnxYHs8arYuxLd
+# yENzJNjzrFYl7y3C3Gk7aKdr9BA+OBDvF1pBsB2Sa1KQFrzPJ7mL+sbm7mOMH6NP
+# /XXV4fBMQyWCsMOmVsvsKQX+bfAl4jrLrSQYjr7+8k8gcHAJnL5c7oujZLdp6lKX
+# 4gC7k+iOG7GYjgZExM/zyIH6Hp2sI2/5AZIbcNclUpUW5ST888UQWrAYHZL65xu2
+# 8cbdP1UQlVesY6M8KmdxUDNucEo0go5mTDetMNRpsn3sS2bc52bcsYRSGUW2g8bl
+# q1k7dReIgi81UwucBfhtKAZWWng7GoOZJ5GEd0Q9MVXIUDGsX2abLgNeouCgCY/3
+# SmKB+E9sZGYKgGEA3ocF+5tAtPA5d+dXzQeaVvR3neit7A1NnuSpF+7nmkvFw+ml
+# UciFndoI3TWxIprlifBLZGwaRgpGJ7DSXCMFU/LQG91xwi2Pp5iUiT4ZaGuDtTJ/
+# w9Shhxoqs11vlNRKXS7eX0ELOucpUtcGr3JVfmhjJuNNx3I3na7RIKpCN5gT7Szx
+# wzrqW3ty3XoFBERhkpMb4Ln0oG3nd6s2MrHxG+Qzw1/WpRj+4YaNpBkyIWIQhBah
 # ggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8CAQEwfTBpMQswCQYDVQQGEwJVUzEX
 # MBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/BgNVBAMTOERpZ2lDZXJ0IFRydXN0
 # ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYgU0hBMjU2IDIwMjUgQ0ExAhAKgO8Y
 # S43xBYLRxHanlXRoMA0GCWCGSAFlAwQCAQUAoGkwGAYJKoZIhvcNAQkDMQsGCSqG
-# SIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjYwMTIyMTM0MTA5WjAvBgkqhkiG9w0B
-# CQQxIgQguVgAxNH6639O7CFmLio/KaSGdXERIpj7SL/g5uAy9jowDQYJKoZIhvcN
-# AQEBBQAEggIAGGAh+32N+N8LWn+m9IRlTqd8uF0Dmrv8q8rPLia7gqdrhkxasYx3
-# PV9w3waRFiP49u/2QojooB8Wo/ao8UYhDirfT7eiqibi4cZz+4u3IWFtM9Vi0yym
-# uoUw26vgX/6KnddpI9xtah8ej7L6Bt7+ziRdEypvG2HUCjjJ5sdamemaITJ/5y0B
-# 2rYEeo4JK13Hbmxw7UZwXrzxmPhVPZJSOmNkLi2E+Nuaa+E5zfcRMaFITCm3PKJE
-# AcU+wagH9BGFgzbyN7k70mCWXdlrGmewBF0x54OJNRTM+LXCg5ZbOl7HBEpC36hD
-# sxREW8/DBgxKRmjF3LWcztDFvpjmB2oQaZYrOef6tzGItaHAx64iqHw6WyZq9T9f
-# Qrk44oP/lvReULzHb4HTdOg8uJ3FCuAMjlzQoMjSFhX17AAqwouRb6/ilBCVz+SY
-# ASmD8sMr3QvZxVqXNO1gKaqO1s95vALm3kSJWU16AcCXFqlRJoRZPBOCAWspP5CS
-# 0BqgjG/FWHhA7ZrH41G5vmEvHe3WwbNrERgU8yT957n3VhPrqcx0u+qIXWVxYKxG
-# GoZhZE3h93ZZm+LcD3a5UFTRxkPNgo/5hWFAPR+tNcM8hfBQMycRViS5z6f+xfEB
-# 8PBmGUoiY2AqNm4dSD54T1MK3LXCed3BTP52m42MP6IftH9Y2wh2z2s=
+# SIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjYwMTIyMTczMjA0WjAvBgkqhkiG9w0B
+# CQQxIgQgVpsfvbhnqtVKlHLrROqXR1JieUSBGj21YgtY5w6L+5gwDQYJKoZIhvcN
+# AQEBBQAEggIAuqLC7GBWbwBh0Sr0wW1LVdmUuxJhcsYv38LCrZEH78XmGNM+GTTm
+# BRkVLFfaO/6n0wz2HmMglmu7G1QIpfegA3VQDhyIxeR6gs6qncmSfaYEcT6JljqV
+# B36Z4wqyiK5uikDV9/tpfRH5JYR8Y+2seojxaGU2NMTzZsaogd1Hvmy2/pIkh5O0
+# qh3MDi5b4Kj5x7hOSMG0X4PKZqP0x48iOrEwAlBE+L3gUlXnfdSYM1LVuOn+2bu8
+# fewNNkL3E1X6dzWYhGcKB9vuCKkiDGNQgTieFEz4w7EIlSRjYZTO9tyCB27WiSfD
+# 0+tsxrp2gmjnZJwUc9wzT85h4i+vwWlAPAB8clLmk7FKg3bLnIQS2bcTVFXx1h9J
+# vgXFpralJnSoox7CaHp7nq5tUL/DIEh1VT9ZXn4tf2WI7BBTE0aXN/BI/+eeIVC9
+# nSHMwUXykWQN0eJcNmGmNlR8aucGEXNw0DzWWrjZDtxTUGUCfhthEJOxvptsA8nI
+# mcdSjeLx41cYX387TypzOYEZGhj3Y2LT6GRRuoNv+tP6Kyk4kikfTM9eOY0Kwa5n
+# oUZiZi1CQVOTok76JcID5qTkUbdoL13Mus0QJRaz2LUDkxPsV6Qp72XrQuFZW6VS
+# NRQWWwa1k53siKIM6xPXUGFcQVNd9G7Stji9NhjVqGc7fDcIdO6rrZg=
 # SIG # End signature block
