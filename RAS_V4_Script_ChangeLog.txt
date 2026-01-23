@@ -307,6 +307,16 @@
 #
 #	In Function ProcessScriptSetup, change how the RAS version is retrieved and put into variables
 #
+#	In Function ProcessUniversalPrinting
+#		For $RDSObjects and $VDIObjects, if the search for RDS and VDI hosts returns $Null, create $Null objects
+#
+#	In Function OutputUniversalPrintingSettings, handle the $Null objects created in Function ProcessUniversalPrinting
+#
+#	In Function ProcessUniversalScanning
+#		For $RDSObjects and $VDIObjects, if the search for RDS and VDI hosts returns $Null, create $Null properties
+#
+#	In Function OutputUniversalScanningSettings, handle the $Null properties created in Function ProcessUniversalScanning
+#
 #	Merged functions OutputRASProxySettings and OutputRASMiscSettings into OutputRASSettings
 #
 #	Rename Function OutputRASNotifications to OutputRASNotificationHandlers
@@ -328,3 +338,7 @@
 #
 #	Working on updating Function OutputMFASetting
 #		Fixed issues with RADIUS output
+#		Update AzureRadius:
+#			To match the console
+#			Added summary data
+#			Added Advanced and Restrictions

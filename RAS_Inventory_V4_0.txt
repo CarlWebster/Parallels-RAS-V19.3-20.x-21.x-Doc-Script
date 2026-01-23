@@ -450,9 +450,9 @@
 	text document.
 .NOTES
 	NAME: RAS_Inventory_V4_0.ps1
-	VERSION: 4.00 Beta 50
+	VERSION: 4.00 Beta 51
 	AUTHOR: Carl Webster
-	LASTEDIT: January 22, 2026
+	LASTEDIT: January 23, 2026
 #>
 
 
@@ -869,6 +869,16 @@ Param(
 #
 #	In Function ProcessScriptSetup, change how the RAS version is retrieved and put into variables
 #
+#	In Function ProcessUniversalPrinting
+#		For $RDSObjects and $VDIObjects, if the search for RDS and VDI hosts returns $Null, create $Null objects
+#
+#	In Function OutputUniversalPrintingSettings, handle the $Null objects created in Function ProcessUniversalPrinting
+#
+#	In Function ProcessUniversalScanning
+#		For $RDSObjects and $VDIObjects, if the search for RDS and VDI hosts returns $Null, create $Null properties
+#
+#	In Function OutputUniversalScanningSettings, handle the $Null properties created in Function ProcessUniversalScanning
+#
 #	Merged functions OutputRASProxySettings and OutputRASMiscSettings into OutputRASSettings
 #
 #	Rename Function OutputRASNotifications to OutputRASNotificationHandlers
@@ -890,6 +900,10 @@ Param(
 #
 #	Working on updating Function OutputMFASetting
 #		Fixed issues with RADIUS output
+#		Update AzureRadius:
+#			To match the console
+#			Added summary data
+#			Added Advanced and Restrictions
 #
 
 Function AbortScript
@@ -953,9 +967,9 @@ $ErrorActionPreference    = 'SilentlyContinue'
 $Error.Clear()
 
 $Script:emailCredentials  = $Null
-$script:MyVersion         = '4.00 Beta 50'
+$script:MyVersion         = '4.00 Beta 51'
 $Script:ScriptName        = "RAS_Inventory_V4_0.ps1"
-$tmpdate                  = [datetime] "01/22/2026"
+$tmpdate                  = [datetime] "01/23/2026"
 $Script:ReleaseDate       = $tmpdate.ToUniversalTime().ToShortDateString()
 
 If($MSWord -eq $False -and $PDF -eq $False -and $Text -eq $False -and $HTML -eq $False)
@@ -52152,7 +52166,7 @@ Function ProcessUniversalPrinting
 			Unable to retrieve RDS Printing information
 			"
 			$RDSobjects = [PSCustomObject] @{
-				Server        = "None found"
+				Server        = "Unable to retrieve"
 				Type          = "N/A"
 				PrintingState = "N/A"
 			}
@@ -52162,11 +52176,12 @@ Function ProcessUniversalPrinting
 		Write-Host "
 		No RDS Printing information was found
 		" -ForegroundColor White
-			$RDSobjects = [PSCustomObject] @{
-				Server        = "None found"
-				Type          = "N/A"
-				PrintingState = "N/A"
-			}
+			#$RDSobjects = [PSCustomObject] @{
+			#	Server        = "None found"
+			#	Type          = "N/A"
+			#	PrintingState = "N/A"
+			#}
+			$RDSobjects = $Null
 		}
 		Else
 		{
@@ -52210,11 +52225,12 @@ Function ProcessUniversalPrinting
 		Write-Host "
 		No VDI Hosts Printing information was found
 		" -ForegroundColor White
-			$VDIHostobjects = [PSCustomObject] @{
-				Server        = "None found"
-				Type          = "N/A"
-				PrintingState = "N/A"
-			}
+			#$VDIHostobjects = [PSCustomObject] @{
+			#	Server        = "None found"
+			#	Type          = "N/A"
+			#	PrintingState = "N/A"
+			#}
+			$VDIHostobjects = $Null
 		}
 		Else
 		{
@@ -52409,13 +52425,13 @@ Function OutputUniversalPrintingSettings
 	}
 	If($Text)
 	{
-		Line 3 "Server                         Type                 State   "
-		Line 3 "============================================================"
-		#       123456789012345678901234567890S12345678901234567890S12345678
+		Line 3 "Server                          Type                 State   "
+		Line 3 "============================================================="
+		#       1234567890123456789012345678901S123456789012345678901S12345678
 
 		ForEach($obj in $RDSobj)
 		{
-			Line 3 ( "{0,-30} {1,-20} {2,-8}" -f 
+			Line 3 ( "{0,-31} {1,-21} {2,-8}" -f 
 				$obj.Server, 
 				$obj.Type, 
 				$obj.PrintingState
@@ -52424,7 +52440,7 @@ Function OutputUniversalPrintingSettings
 	
 		ForEach($obj in $VDIHostsobj)
 		{
-			Line 3 ( "{0,-30} {1,-20} {2,-8}" -f 
+			Line 3 ( "{0,-31} {1,-21} {2,-8}" -f 
 				$obj.Server, 
 				$obj.Type, 
 				$obj.PrintingState
@@ -52997,10 +53013,10 @@ Function ProcessUniversalScanning
 		No RDS Scanning information was found
 		" -ForegroundColor White
 			$RDSobj = [PSCustomObject] @{
-				Server = "Not found"
-				Type = "Not found"
-				WIAState = "Disabled"
-				TWAINState = "Disabled"
+				Server = $Null
+				Type = $Null
+				WIAState = $Null
+				TWAINState = $Null
 			}
 			$Null = $RDSObjects.Add($RDSobj)
 		}
@@ -53072,10 +53088,10 @@ Function ProcessUniversalScanning
 		No VDI Hosts Scanning information was found
 		" -ForegroundColor White
 			$VDIHostsobj = [PSCustomObject] @{
-				Server = "None found"
-				Type = "Unknown"
-				WIAState = "Disabled"
-				TWAINState = "Disabled"
+				Server = $Null
+				Type = $Null
+				WIAState = $Null
+				TWAINState = $Null
 			}
 			$Null = $VDIHostObjects.Add($VDIHostsobj)
 		}
@@ -53246,19 +53262,25 @@ Function OutputUniversalScanningSettings
 		
 		ForEach($obj in $RDSObj)
 		{
-			$ServersInSiteTable += @{
-				Server = $obj.Server
-				Type   = $obj.Type
-				State  = $obj.WIAState
+			If($Null -ne $obj.Server)
+			{
+				$ServersInSiteTable += @{
+					Server = $obj.Server
+					Type   = $obj.Type
+					State  = $obj.WIAState
+				}
 			}
 		}
 		
 		ForEach($obj in $VDIHostsobj)
 		{
-			$ServersInSiteTable += @{
-				Server = $obj.Server
-				Type   = $obj.Type
-				State  = $obj.WIAState
+			If($Null -ne $obj.Server)
+			{
+				$ServersInSiteTable += @{
+					Server = $obj.Server
+					Type   = $obj.Type
+					State  = $obj.WIAState
+				}
 			}
 		}
 
@@ -53292,20 +53314,26 @@ Function OutputUniversalScanningSettings
 
 		ForEach($obj in $RDSobj)
 		{
-			Line 3 ( "{0,-31} {1,-20} {2,-8}" -f 
-				$obj.Server, 
-				$obj.Type, 
-				$obj.WIAState
-			)
+			If($Null -ne $obj.Server)
+			{
+				Line 3 ( "{0,-31} {1,-20} {2,-8}" -f 
+					$obj.Server, 
+					$obj.Type, 
+					$obj.WIAState
+				)
+			}
 		}
 		
 		ForEach($obj in $VDIHostsobj)
 		{
-			Line 3 ( "{0,-31} {1,-20} {2,-8}" -f 
-				$obj.Server, 
-				$obj.Type, 
-				$obj.WIAState
-			)
+			If($Null -ne $obj.Server)
+			{
+				Line 3 ( "{0,-31} {1,-20} {2,-8}" -f 
+					$obj.Server, 
+					$obj.Type, 
+					$obj.WIAState
+				)
+			}
 		}
 
 		Line 0 ""
@@ -53316,20 +53344,26 @@ Function OutputUniversalScanningSettings
 
 		ForEach($obj in $RDSobj)
 		{
-			$rowdata += @(,(
-				$obj.Server,$htmlwhite,
-				$obj.Type,$htmlwhite,
-				$obj.WIAState,$htmlwhite)
-			)
+			If($Null -ne $obj.Server)
+			{
+				$rowdata += @(,(
+					$obj.Server,$htmlwhite,
+					$obj.Type,$htmlwhite,
+					$obj.WIAState,$htmlwhite)
+				)
+			}
 		}
 	
 		ForEach($obj in $VDIHostsobj)
 		{
-			$rowdata += @(,(
-				$obj.Server,$htmlwhite,
-				$obj.Type,$htmlwhite,
-				$obj.WIAState,$htmlwhite)
-			)
+			If($Null -ne $obj.Server)
+			{
+				$rowdata += @(,(
+					$obj.Server,$htmlwhite,
+					$obj.Type,$htmlwhite,
+					$obj.WIAState,$htmlwhite)
+				)
+			}
 		}
 
 		$columnHeaders = @(
@@ -53440,19 +53474,25 @@ Function OutputUniversalScanningSettings
 		
 		ForEach($obj in $RDSobj)
 		{
-			$ServersInSiteTable += @{
-				Server = $obj.Server
-				Type   = $obj.Type
-				State  = $obj.TwainState
+			If($Null -ne $obj.Server)
+			{
+				$ServersInSiteTable += @{
+					Server = $obj.Server
+					Type   = $obj.Type
+					State  = $obj.TwainState
+				}
 			}
 		}
 		
 		ForEach($obj in $VDIHostsobj)
 		{
-			$ServersInSiteTable += @{
-				Server = $obj.Server
-				Type   = $obj.Type
-				State  = $obj.TwainState
+			If($Null -ne $obj.Server)
+			{
+				$ServersInSiteTable += @{
+					Server = $obj.Server
+					Type   = $obj.Type
+					State  = $obj.TwainState
+				}
 			}
 		}
 
@@ -53486,20 +53526,26 @@ Function OutputUniversalScanningSettings
 
 		ForEach($obj in $RDSobj)
 		{
-			Line 3 ( "{0,-31} {1,-20} {2,-8}" -f 
-				$obj.Server, 
-				$obj.Type, 
-				$obj.TwainState
-			)
+			If($Null -ne $obj.Server)
+			{
+				Line 3 ( "{0,-31} {1,-20} {2,-8}" -f 
+					$obj.Server, 
+					$obj.Type, 
+					$obj.TwainState
+				)
+			}
 		}
 		
 		ForEach($obj in $VDIHostsobj)
 		{
-			Line 3 ( "{0,-31} {1,-20} {2,-8}" -f 
-				$obj.Server, 
-				$obj.Type, 
-				$obj.TwainState
-			)
+			If($Null -ne $obj.Server)
+			{
+				Line 3 ( "{0,-31} {1,-20} {2,-8}" -f 
+					$obj.Server, 
+					$obj.Type, 
+					$obj.TwainState
+				)
+			}
 		}
 
 		Line 0 ""
@@ -53510,20 +53556,26 @@ Function OutputUniversalScanningSettings
 
 		ForEach($obj in $RDSobj)
 		{
-			$rowdata += @(,(
-				$obj.Server,$htmlwhite,
-				$obj.Type,$htmlwhite,
-				$obj.TwainState,$htmlwhite)
-			)
+			If($Null -ne $obj.Server)
+			{
+				$rowdata += @(,(
+					$obj.Server,$htmlwhite,
+					$obj.Type,$htmlwhite,
+					$obj.TwainState,$htmlwhite)
+				)
+			}
 		}
 		
 		ForEach($obj in $VDIHostsobj)
 		{
-			$rowdata += @(,(
-				$obj.Server,$htmlwhite,
-				$obj.Type,$htmlwhite,
-				$obj.TwainState,$htmlwhite)
-			)
+			If($Null -ne $obj.Server)
+			{
+				$rowdata += @(,(
+					$obj.Server,$htmlwhite,
+					$obj.Type,$htmlwhite,
+					$obj.TwainState,$htmlwhite)
+				)
+			}
 		}
 		
 		$columnHeaders = @(
@@ -60076,11 +60128,21 @@ Function OutputMFASetting
 				
 				If($RASMFASetting.Type -eq "AzureRadius")
 				{
+					$ScriptInformation.Add(@{Data = "Name"; Value = $RASMFASetting.Name; }) > $Null
+					$ScriptInformation.Add(@{Data = "Enabled"; Value = $RASMFASetting.Enabled.ToString(); }) > $Null
+					$ScriptInformation.Add(@{Data = "Description"; Value = $RASMFASetting.Description; }) > $Null
+					$ScriptInformation.Add(@{Data = "Display name"; Value = $RASMFASetting.DisplayName; }) > $Null
+					$ScriptInformation.Add(@{Data = "Type"; Value = $RASMFASettingProvider; }) > $Null
+					$ScriptInformation.Add(@{Data = "Last modification by"; Value = $RASMFASetting.AdminLastMod; }) > $Null
+					$ScriptInformation.Add(@{Data = "Modified on"; Value = (Get-Date -UFormat "%c" $RASMFASetting.TimeLastMod); }) > $Null
+					$ScriptInformation.Add(@{Data = "Created by"; Value = $RASMFASetting.AdminCreate; }) > $Null
+					$ScriptInformation.Add(@{Data = "Created on"; Value = (Get-Date -UFormat "%c" $RASMFASetting.TimeCreate); }) > $Null
+					$ScriptInformation.Add(@{Data = "ID"; Value = $RASMFASetting.ID.ToString(); }) > $Null
 					$ScriptInformation.Add(@{Data = "     General"; Value = ""; }) > $Null
 					$ScriptInformation.Add(@{Data = "          Enable MFA provider in site"; Value = $RASMFASetting.Enabled.ToString(); }) > $Null
 					$ScriptInformation.Add(@{Data = "          Name"; Value = $RASMFASetting.Name; }) > $Null
 					$ScriptInformation.Add(@{Data = "          Description"; Value = $RASMFASetting.Description; }) > $Null
-					$ScriptInformation.Add(@{Data = "          Type"; Value = $RASMFASetting.DisplayName; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Type"; Value = $RASMFASettingProvider; }) > $Null
 					$ScriptInformation.Add(@{Data = "          Themes"; Value = ""; }) > $Null
 					If($Null -ne $MFAThemes)
 					{
@@ -60117,6 +60179,7 @@ Function OutputMFASetting
 					$ScriptInformation.Add(@{Data = "          Timeout (seconds)"; Value = $RASMFASetting.Timeout; }) > $Null
 					$ScriptInformation.Add(@{Data = "          Retries"; Value = $RASMFASetting.Retries; }) > $Null
 					$ScriptInformation.Add(@{Data = "          Password Encoding"; Value = $RASMFASetting.PasswordEncoding; }) > $Null
+					$ScriptInformation.Add(@{Data = "          User Prompt"; Value = $RASMFASetting.UserMessagePrompt; }) > $Null
 					$ScriptInformation.Add(@{Data = "          Forward username only to Radius Server"; Value = $RASMFASetting.UsernameOnly.ToString(); }) > $Null
 					$ScriptInformation.Add(@{Data = "          Forward the first password to Windows authentication provider"; Value = $RASMFASetting.ForwardFirstPwdToAD.ToString(); }) > $Null
 					$ScriptInformation.Add(@{Data = "     Attributes"; Value = ""; }) > $Null
@@ -60126,7 +60189,7 @@ Function OutputMFASetting
 						$cnt++
 						$ScriptInformation.Add(@{Data = ""; Value = "Attribute $cnt"; }) > $Null
 						$ScriptInformation.Add(@{Data = ""; Value = "     Name: $($Item.RadiusAttrName)"; }) > $Null
-						$ScriptInformation.Add(@{Data = ""; Value = "     Vendor: $($Item.VendorID)"; }) > $Null
+						$ScriptInformation.Add(@{Data = ""; Value = "     Vendor: $($Item.Vendor)"; }) > $Null
 						$ScriptInformation.Add(@{Data = ""; Value = "     Type: $($Item.AttributeType)"; }) > $Null
 						$ScriptInformation.Add(@{Data = ""; Value = "     Value: $($Item.Value)"; }) > $Null
 						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null #blank separator line
@@ -60146,10 +60209,51 @@ Function OutputMFASetting
 						$ScriptInformation.Add(@{Data = ""; Value = "     Autosend: $($Item.AutoSend.ToString())"; }) > $Null
 						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null #blank separator line
 					}
+					$ScriptInformation.Add(@{Data = "     Advanced"; Value = ""; }) > $Null
+					If($RASMFASetting.IgnoreErrors.Count -gt 0)
+					{
+						$cnt = -1
+						ForEach($Message in $RASMFASetting.IgnoreErrors)
+						{
+							$cnt++
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "          Message"; Value = $Message; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = $Message; }) > $Null
+							}
+						}
+					}
+					Else
+					{
+						$ScriptInformation.Add(@{Data = "          Message"; Value = ""; }) > $Null
+					}
+					$ScriptInformation.Add(@{Data = "     Restrictions"; Value = ""; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Disable MFA if"; Value = ""; }) > $Null
+					If($RASMFASetting.Criteria.SecurityPrincipals.Enabled)
+					{
+						$cnt = -1
+						
+						ForEach($Item in $RASMFASetting.Criteria.SecurityPrincipals.members)
+						{
+							$cnt++
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "          User or group is "; Value = "$($Item.Account)"; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "$($Item.Account)"; }) > $Null
+							}
+						}
+						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+					}
 				}
 				ElseIf($RASMFASetting.Type -eq "DuoRadius")
 				{
-					$ScriptInformation.Add(@{Data = "          Type"; Value = $RASMFASetting.DisplayName; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Type"; Value = $RASMFASettingProvider; }) > $Null
 					$ScriptInformation.Add(@{Data = "          Primary Server"; Value = $RASMFASetting.Server; }) > $Null
 					$ScriptInformation.Add(@{Data = "          Secondary Server"; Value = $RASMFASetting.BackupServer; }) > $Null
 					If($RASMFASetting.HAMode -eq "Parallel")
@@ -60194,7 +60298,7 @@ Function OutputMFASetting
 				}
 				ElseIf($RASMFASetting.Type -eq "FortiRadius")
 				{
-					$ScriptInformation.Add(@{Data = "          Type Name"; Value = $RASMFASetting.DisplayName; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Type Name"; Value = $RASMFASettingProvider; }) > $Null
 					$ScriptInformation.Add(@{Data = "          Primary server"; Value = $RASMFASetting.Server; }) > $Null
 					$ScriptInformation.Add(@{Data = "          Secondary server"; Value = $RASMFASetting.BackupServer; }) > $Null
 					If($RASMFASetting.HAMode -eq "Parallel")
@@ -60239,7 +60343,7 @@ Function OutputMFASetting
 				}
 				ElseIf($RASMFASetting.Type -eq "TekRadius")
 				{
-					$ScriptInformation.Add(@{Data = "          Type Name"; Value = $RASMFASetting.DisplayName; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Type Name"; Value = $RASMFASettingProvider; }) > $Null
 					$ScriptInformation.Add(@{Data = "          Primary server"; Value = $RASMFASetting.Server; }) > $Null
 					$ScriptInformation.Add(@{Data = "          Secondary server"; Value = $RASMFASetting.BackupServer; }) > $Null
 					If($RASMFASetting.HAMode -eq "Parallel")
@@ -60433,15 +60537,43 @@ Function OutputMFASetting
 			Line 3 "Provider: " $RASMFASettingProvider
 			If($RASMFASettingProvider -ne "None")
 			{
-				Line 3 "Settings"
-				
 				If($RASMFASetting.Type -eq "AzureRadius")
 				{
+					Line 3 "Name`t`t`t: " $RASMFASetting.Name
+					Line 3 "Enabled`t`t`t: " $RASMFASetting.Enabled.ToString()
+					Line 3 "Description`t`t: " $RASMFASetting.Description
+					Line 3 "Display name`t`t: " $RASMFASetting.DisplayName
+					Line 3 "Type`t`t`t: " $RASMFASettingProvider
+					Line 3 "Last modification by`t: "  $RASMFASetting.AdminLastMod
+					Line 3 "Modified on`t`t: "  (Get-Date -UFormat "%c" $RASMFASetting.TimeLastMod)
+					Line 3 "Created by`t`t: "  $RASMFASetting.AdminCreate
+					Line 3 "Created on`t`t: "  (Get-Date -UFormat "%c" $RASMFASetting.TimeCreate)
+					Line 3 "ID`t`t`t: " $RASMFASetting.ID.ToString()
 					Line 4 "General"
 					Line 5 "Enable MFA provider in site`t: " $RASMFASetting.Enabled.ToString()
 					Line 5 "Name`t`t`t`t: " $RASMFASetting.Name
 					Line 5 "Description`t`t`t: " $RASMFASetting.Description
-					Line 5 "Type`t`t`t`t: " $RASMFASetting.DisplayName
+					Line 5 "Type`t`t`t`t: " $RASMFASettingProvider
+					Line 5 "Themes"
+					If($Null -ne $MFAThemes)
+					{
+						ForEach($MFATheme in $MFAThemes)
+						{
+							$ThemeMFAName = (Get-RASMFA -Id $MFATheme.MFAId -ea 0).Name 4>$Null
+							
+							If(!($?) -or $Null -eq $ThemeMFAName)
+							{
+								$ThemeMFAName = "Unable to retrieve the MFA Name"
+							}
+							Line 6 "Theme`t`t: $($MFATheme.Name)"
+							Line 6 "MFA provider`t: $($ThemeMFAName)"
+							Line 6 "Description`t: $($MFATheme.Description)"
+						}
+					}
+					Else
+					{
+						Line 6 "No theme is selected"
+					}
 					Line 4 "Connection"
 					Line 5 "Display Name`t`t`t: " $RASMFASetting.DisplayName
 					Line 5 "Primary server`t`t`t: " $RASMFASetting.Server
@@ -60469,12 +60601,12 @@ Function OutputMFASetting
 						$cnt++
 						Line 5 "Attribute $cnt"
 						Line 6 "Name`t: $($Item.RadiusAttrName)"
-						Line 6 "Vendor`t: $($Item.VendorID)"
+						Line 6 "Vendor`t: $($Item.Vendor)"
 						Line 6 "Type`t: $($Item.AttributeType)"
 						Line 6 "Value`t: $($Item.Value)"
 						Line 5 "" #blank separator line
 					}
-					Line 5 "Automation"
+					Line 4 "Automation"
 					$cnt=0
 					ForEach($Item in $RASMFASetting.AutomationInfoList)
 					{
@@ -60489,12 +60621,46 @@ Function OutputMFASetting
 						Line 6 "Autosend`t: $($Item.AutoSend.ToString())"
 						Line 6 "" #blank separator line
 					}
+					Line 4 "Advanced"
+					Line 5 "Message"
+					If($RASMFASetting.IgnoreErrors.Count -gt 0)
+					{
+						ForEach($Message in $RASMFASetting.IgnoreErrors)
+						{
+							Line 6 $Message
+						}
+					}
+					Else
+					{
+						Line 6 ""
+					}
+					Line 4 "Restrictions"
+					Line 5 "Disable MFA if"
+					If($RASMFASetting.Criteria.SecurityPrincipals.Enabled)
+					{
+						$cnt = -1
+						
+						ForEach($Item in $RASMFASetting.Criteria.SecurityPrincipals.members)
+						{
+							$cnt++
+							If($cnt -eq 0)
+							{
+								Line 5 "User or group is: $($Item.Account)"
+							}
+							Else
+							{
+								Line 7 "  $($Item.Account)"
+							}
+						}
+						Line 5 ""
+					}
+					
 					Line 0 ""
 				}
 				ElseIf($RASMFASetting.Type -eq "DuoRadius")
 				{
 					Line 4 "Connection"
-					Line 5 "Type Name`t`t`t`t: " $RASMFASetting.DisplayName
+					Line 5 "Type Name`t`t`t`t: " $RASMFASettingProvider
 					Line 5 "Primary Server`t`t`t`t: " $RASMFASetting.Server
 					Line 5 "Secondary server`t`t`t: " $RASMFASetting.BackupServer
 					If($RASMFASetting.HAMode -eq "Parallel")
@@ -60544,7 +60710,7 @@ Function OutputMFASetting
 				ElseIf($RASMFASetting.Type -eq "FortiRadius")
 				{
 					Line 4 "Connection"
-					Line 5 "Type Name`t`t`t`t: " $RASMFASetting.DisplayName
+					Line 5 "Type Name`t`t`t`t: " $RASMFASettingProvider
 					Line 5 "Primary Server`t`t`t`t: " $RASMFASetting.Server
 					Line 5 "Secondary server`t`t`t: " $RASMFASetting.BackupServer
 					If($RASMFASetting.HAMode -eq "Parallel")
@@ -60592,7 +60758,7 @@ Function OutputMFASetting
 				ElseIf($RASMFASetting.Type -eq "TekRadius")
 				{
 					Line 4 "Connection"
-					Line 5 "Type Name`t`t`t`t: " $RASMFASetting.DisplayName
+					Line 5 "Type Name`t`t`t`t: " $RASMFASettingProvider
 					Line 5 "Primary Server`t`t`t`t: " $RASMFASetting.Server
 					Line 5 "Secondary server`t`t`t: " $RASMFASetting.BackupServer
 					If($RASMFASetting.HAMode -eq "Parallel")
@@ -60739,7 +60905,7 @@ Function OutputMFASetting
 						Default	{$TOTPTolerance = "TOTP tolerence not found: $()"; Break}
 					}
 					
-					Line 4 "Type Name: " $RASMFASetting.Type
+					Line 4 "Type Name: " $RASMFASettingProvider
 					Line 4 "User Enrollment"
 					Line 5 $GAuthAllow
 					If($GAuthAllow -eq "Allow until")
@@ -60758,18 +60924,49 @@ Function OutputMFASetting
 		}
 		If($HTML)
 		{
+			WriteHTMLLine 3 0 "Provider settings ($RASMFASettingProvider)"
 			$rowdata = @()
 			$columnHeaders = @("Provider",($Script:htmlsb),$RASMFASettingProvider,$htmlwhite)
 			If($RASMFASettingProvider -ne "None")
 			{
 				If($RASMFASetting.Type -eq "AzureRadius")
 				{
-					$rowdata += @(,( "     General",($Script:htmlsb),"",$htmlwhite))
+					$rowdata += @(,("Name",($Script:htmlsb),$RASMFASetting.Name,$htmlwhite))
+					$rowdata += @(,("Enabled",($Script:htmlsb),$RASMFASetting.Enabled.ToString(),$htmlwhite))
+					$rowdata += @(,("Description",($Script:htmlsb),$RASMFASetting.Description,$htmlwhite))
+					$rowdata += @(,("Display name",($Script:htmlsb),$RASMFASetting.DisplayName,$htmlwhite))
+					$rowdata += @(,("Type",($Script:htmlsb),$RASMFASettingProvider,$htmlwhite))
+					$rowdata += @(,("Last modification by",($Script:htmlsb),$RASMFASetting.AdminLastMod,$htmlwhite))
+					$rowdata += @(,("Modified on",($Script:htmlsb),(Get-Date -UFormat "%c" $RASMFASetting.TimeLastMod),$htmlwhite))
+					$rowdata += @(,("Created by",($Script:htmlsb),$RASMFASetting.AdminCreate,$htmlwhite))
+					$rowdata += @(,("Created on",($Script:htmlsb),(Get-Date -UFormat "%c" $RASMFASetting.TimeCreate),$htmlwhite))
+					$rowdata += @(,("ID",($Script:htmlsb),$RASMFASetting.ID.ToString(),$htmlwhite))
+					$rowdata += @(,("     General",($Script:htmlsb),"",$htmlwhite))
 					$rowdata += @(,("          Enable MFA provider in site",($Script:htmlsb),$RASMFASetting.Enabled.ToString(),$htmlwhite))
 					$rowdata += @(,("          Name",($Script:htmlsb),$RASMFASetting.Name,$htmlwhite))
-					$rowdata += @(,("          Description",($Script:htmlsb), $RASMFASetting.Description,$htmlwhite))
-					$rowdata += @(,("          Type",($Script:htmlsb), $RASMFASetting.DisplayName,$htmlwhite))
-					$rowdata += @(,( "     Connection",($Script:htmlsb),"",$htmlwhite))
+					$rowdata += @(,("          Description",($Script:htmlsb),$RASMFASetting.Description,$htmlwhite))
+					$rowdata += @(,("          Type",($Script:htmlsb),$RASMFASetting.DisplayName,$htmlwhite))
+					$rowdata += @(,("          Themes",($Script:htmlsb),"",$htmlwhite))
+					If($Null -ne $MFAThemes)
+					{
+						ForEach($MFATheme in $MFAThemes)
+						{
+							$ThemeMFAName = (Get-RASMFA -Id $MFATheme.MFAId -ea 0).Name 4>$Null
+							
+							If(!($?) -or $Null -eq $ThemeMFAName)
+							{
+								$ThemeMFAName = "Unable to retrieve the MFA Name"
+							}
+							$rowdata += @(,("",($Script:htmlsb),"Theme: $($MFATheme.Name)",$htmlwhite))
+							$rowdata += @(,("",($Script:htmlsb),"MFA provider: $($ThemeMFAName)",$htmlwhite))
+							$rowdata += @(,("",($Script:htmlsb),"Description: $($MFATheme.Description)",$htmlwhite))
+						}
+					}
+					Else
+					{
+						$rowdata += @(,("",($Script:htmlsb),"No theme is selected",$htmlwhite))
+					}
+					$rowdata += @(,("     Connection",($Script:htmlsb),"",$htmlwhite))
 					$rowdata += @(,("          Display Name",($Script:htmlsb),$RASMFASetting.DisplayName,$htmlwhite))
 					$rowdata += @(,("          Primary Server",($Script:htmlsb),$RASMFASetting.Server,$htmlwhite))
 					$rowdata += @(,("          Secondary server",($Script:htmlsb), $RASMFASetting.BackupServer,$htmlwhite))
@@ -60785,6 +60982,7 @@ Function OutputMFASetting
 					$rowdata += @(,("          Timeout",($Script:htmlsb),$RASMFASetting.Timeout,$htmlwhite))
 					$rowdata += @(,("          Retries",($Script:htmlsb),$RASMFASetting.Retries,$htmlwhite))
 					$rowdata += @(,("          Password Encoding",($Script:htmlsb),$RASMFASetting.PasswordEncoding.ToString(),$htmlwhite))
+					$rowdata += @(,("          User Prompt",($Script:htmlsb),$RASMFASetting.UserMessagePrompt,$htmlwhite))
 					$rowdata += @(,("          Forward username only to Radius Server",($Script:htmlsb),$RASMFASetting.UsernameOnly.ToString(),$htmlwhite))
 					$rowdata += @(,("          Forward the first password to Windows authentication provider",($Script:htmlsb),$RASMFASetting.ForwardFirstPwdToAD.ToString(),$htmlwhite))
 					$rowdata += @(,( "     Attributes",($Script:htmlsb),"",$htmlwhite))
@@ -60794,7 +60992,7 @@ Function OutputMFASetting
 						$cnt++
 						$rowdata += @(,( "",($Script:htmlsb), "Attribute $cnt",$htmlwhite))
 						$rowdata += @(,( "",($Script:htmlsb), "     Name: $($Item.RadiusAttrName)",$htmlwhite))
-						$rowdata += @(,( "",($Script:htmlsb), "     Vendor: $($Item.VendorID)",$htmlwhite))
+						$rowdata += @(,( "",($Script:htmlsb), "     Vendor: $($Item.Vendor)",$htmlwhite))
 						$rowdata += @(,( "",($Script:htmlsb), "     Type: $($Item.AttributeType)",$htmlwhite))
 						$rowdata += @(,( "",($Script:htmlsb), "     Value: $($Item.Value)",$htmlwhite))
 						$rowdata += @(,( "",($Script:htmlsb),"",$htmlwhite)) #blank separator line
@@ -60814,11 +61012,52 @@ Function OutputMFASetting
 						$rowdata += @(,( "",($Script:htmlsb), "     Autosend: $($Item.AutoSend.ToString())",$htmlwhite))
 						$rowdata += @(,( "",($Script:htmlsb),"",$htmlwhite)) #blank separator line
 					}
+					$rowdata += @(,( "     Advanced",($Script:htmlsb),"",$htmlwhite))
+					If($RASMFASetting.IgnoreErrors.Count -gt 0)
+					{
+						$cnt = -1
+						ForEach($Message in $RASMFASetting.IgnoreErrors)
+						{
+							$cnt++
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,( "          Message",($Script:htmlsb),$Message,$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,( "",($Script:htmlsb),$Message,$htmlwhite))
+							}
+						}
+					}
+					Else
+					{
+						$rowdata += @(,( "          Message",($Script:htmlsb),"",$htmlwhite))
+					}
+					$rowdata += @(,( "     Restrictions",($Script:htmlsb),"",$htmlwhite))
+					$rowdata += @(,( "          Disable MFA if",($Script:htmlsb),"",$htmlwhite))
+					If($RASMFASetting.Criteria.SecurityPrincipals.Enabled)
+					{
+						$cnt = -1
+						
+						ForEach($Item in $RASMFASetting.Criteria.SecurityPrincipals.members)
+						{
+							$cnt++
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,("          User or group is ",($Script:htmlsb),"$($Item.Account)",$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb),"$($Item.Account)",$htmlwhite))
+							}
+						}
+						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+					}
 				}
 				ElseIf($RASMFASetting.Type -eq "DuoRadius")
 				{
 					$rowdata += @(,( "     Connection",($Script:htmlsb),"",$htmlwhite))
-					$rowdata += @(,("          Type Name",($Script:htmlsb),$RASMFASetting.DisplayName,$htmlwhite))
+					$rowdata += @(,("          Type Name",($Script:htmlsb),$RASMFASettingProvider,$htmlwhite))
 					$rowdata += @(,("          Primary Server",($Script:htmlsb),$RASMFASetting.Server,$htmlwhite))
 					$rowdata += @(,( "          Secondary server",($Script:htmlsb), $RASMFASetting.BackupServer,$htmlwhite))
 					If($RASMFASetting.HAMode -eq "Parallel")
@@ -60864,7 +61103,7 @@ Function OutputMFASetting
 				ElseIf($RASMFASetting.Type -eq "FortiRadius")
 				{
 					$rowdata += @(,( "     Connection",($Script:htmlsb),"",$htmlwhite))
-					$rowdata += @(,("          Type Name",($Script:htmlsb),$RASMFASetting.DisplayName,$htmlwhite))
+					$rowdata += @(,("          Type Name",($Script:htmlsb),$RASMFASettingProvidere,$htmlwhite))
 					$rowdata += @(,("          Primary Server",($Script:htmlsb),$RASMFASetting.Server,$htmlwhite))
 					$rowdata += @(,( "          Secondary server",($Script:htmlsb), $RASMFASetting.BackupServer,$htmlwhite))
 					If($RASMFASetting.HAMode -eq "Parallel")
@@ -60910,7 +61149,7 @@ Function OutputMFASetting
 				ElseIf($RASMFASetting.Type -eq "TekRadius")
 				{
 					$rowdata += @(,( "     Connection",($Script:htmlsb),"",$htmlwhite))
-					$rowdata += @(,("          Type Name",($Script:htmlsb),$RASMFASetting.DisplayName,$htmlwhite))
+					$rowdata += @(,("          Type Name",($Script:htmlsb),$RASMFASettingProvider,$htmlwhite))
 					$rowdata += @(,("          Primary Server",($Script:htmlsb),$RASMFASetting.Server,$htmlwhite))
 					$rowdata += @(,( "          Secondary server",($Script:htmlsb), $RASMFASetting.BackupServer,$htmlwhite))
 					If($RASMFASetting.HAMode -eq "Parallel")
@@ -61071,8 +61310,8 @@ Function OutputMFASetting
 					$rowdata += @(,( "          TOTP tolerence",($Script:htmlsb), $TOTPTolerance,$htmlwhite))
 				}
 
-				$msg = "Provider settings"
-				$columnWidths = @("425","175")
+				$msg = ""
+				$columnWidths = @("425","275")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 			}
