@@ -450,9 +450,9 @@
 	text document.
 .NOTES
 	NAME: RAS_Inventory_V4_0.ps1
-	VERSION: 4.00 Beta 51
+	VERSION: 4.00 Beta 52
 	AUTHOR: Carl Webster
-	LASTEDIT: January 23, 2026
+	LASTEDIT: January 27, 2026
 #>
 
 
@@ -899,8 +899,24 @@ Param(
 #	Updated the ReadMe file
 #
 #	Working on updating Function OutputMFASetting
-#		Fixed issues with RADIUS output
 #		Update AzureRadius:
+#			To match the console
+#			Added summary data
+#			Added Advanced and Restrictions
+#		Update DuoRadius:
+#			Added to the Text output. Somehow it was left out.
+#			To match the console
+#			Added summary data
+#			Added Advanced and Restrictions
+#		Update FortiRadius:
+#			To match the console
+#			Added summary data
+#			Added Advanced and Restrictions
+#		Update TekRadius:
+#			To match the console
+#			Added summary data
+#			Added Advanced and Restrictions
+#		Update Radius:
 #			To match the console
 #			Added summary data
 #			Added Advanced and Restrictions
@@ -967,9 +983,9 @@ $ErrorActionPreference    = 'SilentlyContinue'
 $Error.Clear()
 
 $Script:emailCredentials  = $Null
-$script:MyVersion         = '4.00 Beta 51'
+$script:MyVersion         = '4.00 Beta 52'
 $Script:ScriptName        = "RAS_Inventory_V4_0.ps1"
-$tmpdate                  = [datetime] "01/23/2026"
+$tmpdate                  = [datetime] "01/27/2026"
 $Script:ReleaseDate       = $tmpdate.ToUniversalTime().ToShortDateString()
 
 If($MSWord -eq $False -and $PDF -eq $False -and $Text -eq $False -and $HTML -eq $False)
@@ -60232,6 +60248,8 @@ Function OutputMFASetting
 					}
 					$ScriptInformation.Add(@{Data = "     Restrictions"; Value = ""; }) > $Null
 					$ScriptInformation.Add(@{Data = "          Disable MFA if"; Value = ""; }) > $Null
+
+					#users and groups
 					If($RASMFASetting.Criteria.SecurityPrincipals.Enabled)
 					{
 						$cnt = -1
@@ -60241,7 +60259,7 @@ Function OutputMFASetting
 							$cnt++
 							If($cnt -eq 0)
 							{
-								$ScriptInformation.Add(@{Data = "          User or group is "; Value = "$($Item.Account)"; }) > $Null
+								$ScriptInformation.Add(@{Data = "          User or group is"; Value = "$($Item.Account)"; }) > $Null
 							}
 							Else
 							{
@@ -60250,144 +60268,289 @@ Function OutputMFASetting
 						}
 						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
 					}
+					
+					#gateways
+					If($RASMFASetting.Criteria.Gateways.Enabled)
+					{
+						$cnt = -1
+						ForEach($item in $RASMFASetting.Criteria.Gateways.Members)
+						{
+							$cnt++
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "               Secure gateway is"; Value = "$($Item.GatewayIP)"; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "$($Item.GatewayIP)"; }) > $Null
+							}
+						}
+						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+					}
+
+					#client device name
+					If($RASMFASetting.Criteria.Devices.Enabled)
+					{
+						$cnt = -1
+						ForEach($item in $RASMFASetting.Criteria.Devices.Members)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "               Device is"; Value = "$($Item.Client)"; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "$($Item.Client)"; }) > $Null
+							}
+						}
+						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+					}
+
+					#client device operating system
+					If($RASMFASetting.Criteria.OSs.Enabled)
+					{
+						$cnt = -1
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Windows)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "               Operating system is"; Value = "Windows"; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "Windows"; }) > $Null
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.WebClient)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "               Operating system is"; Value = "User Portal (Web Client)"; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "User Portal (Web Client)"; }) > $Null
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Mac)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "               Operating system is"; Value = "macOS"; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "macOS"; }) > $Null
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Linux)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "               Operating system is"; Value = "Linux"; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "Linux"; }) > $Null
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.iOS)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "               Operating system is"; Value = "iOS/iPadOS"; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "iOS/iPadOS"; }) > $Null
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Android)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "               Operating system is"; Value = "Android"; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "Android"; }) > $Null
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Chrome)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "               Operating system is"; Value = "Chrome OS"; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "Chrome OS"; }) > $Null
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Wyse)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "               Operating system is"; Value = "Wyse"; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "Wyse"; }) > $Null
+							}
+						}
+						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+					}
+
+					#IPs
+					If( $RASMFASetting.Criteria.IPs.Enabled)
+					{
+						$cnt = -1
+						
+						If($RASMFASetting.Criteria.IPs.AllowedIPs.IPv4s.Count -gt 0)
+						{
+							ForEach($item in $RASMFASetting.Criteria.IPs.AllowedIPs.IPv4s)
+							{
+								$cnt++
+								If($cnt -eq 0)
+								{
+									If(($item.From -eq $item.To) -or ($item.To -eq ""))
+									{
+										$ScriptInformation.Add(@{Data = "               IP is"; Value = $item.From; }) > $Null
+									}
+									Else
+									{
+										$ScriptInformation.Add(@{Data = "               IP is"; Value = "$($item.From) - $($item.To)"; }) > $Null
+									}
+								}
+								Else
+								{
+									If(($item.From -eq $item.To) -or ($item.To -eq ""))
+									{
+										$ScriptInformation.Add(@{Data = ""; Value = $item.From; }) > $Null
+									}
+									Else
+									{
+										$ScriptInformation.Add(@{Data = ""; Value = "$($item.From) - $($item.To)"; }) > $Null
+									}
+								}
+							}
+						}
+
+						If($RASMFASetting.Criteria.IPs.AllowedIPs.IPv6s.Count -gt 0)
+						{
+							ForEach($item in $RASMFASetting.Criteria.IPs.AllowedIPs.IPv6s)
+							{
+								$cnt++
+								If($cnt -eq 0)
+								{
+									If(($item.From -eq $item.To) -or ($item.To -eq ""))
+									{
+										$ScriptInformation.Add(@{Data = "               IP is"; Value = $item.From; }) > $Null
+									}
+									Else
+									{
+										$ScriptInformation.Add(@{Data = "               IP is"; Value = "$($item.From) - $($item.To)"; }) > $Null
+									}
+								}
+								Else
+								{
+									If(($item.From -eq $item.To) -or ($item.To -eq ""))
+									{
+										$ScriptInformation.Add(@{Data = ""; Value = $item.From; }) > $Null
+									}
+									Else
+									{
+										$ScriptInformation.Add(@{Data = ""; Value = "$($item.From) - $($item.To)"; }) > $Null
+									}
+								}
+							}
+						}
+						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+					}
+					
+					#MAC addresses
+					If($RASMFASetting.Criteria.HardwareIDs.Enabled)
+					{
+						$cnt = -1
+						ForEach($item in $RASMFASetting.Criteria.HardwareIDs.Members)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "               Hardware ID is"; Value = "$($Item.HardwareID)"; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "$($Item.HardwareID)"; }) > $Null
+							}
+						}
+						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+					}
 				}
 				ElseIf($RASMFASetting.Type -eq "DuoRadius")
 				{
+					$ScriptInformation.Add(@{Data = "Name"; Value = $RASMFASetting.Name; }) > $Null
+					$ScriptInformation.Add(@{Data = "Enabled"; Value = $RASMFASetting.Enabled.ToString(); }) > $Null
+					$ScriptInformation.Add(@{Data = "Description"; Value = $RASMFASetting.Description; }) > $Null
+					$ScriptInformation.Add(@{Data = "Display name"; Value = $RASMFASetting.DisplayName; }) > $Null
+					$ScriptInformation.Add(@{Data = "Type"; Value = $RASMFASettingProvider; }) > $Null
+					$ScriptInformation.Add(@{Data = "Last modification by"; Value = $RASMFASetting.AdminLastMod; }) > $Null
+					$ScriptInformation.Add(@{Data = "Modified on"; Value = (Get-Date -UFormat "%c" $RASMFASetting.TimeLastMod); }) > $Null
+					$ScriptInformation.Add(@{Data = "Created by"; Value = $RASMFASetting.AdminCreate; }) > $Null
+					$ScriptInformation.Add(@{Data = "Created on"; Value = (Get-Date -UFormat "%c" $RASMFASetting.TimeCreate); }) > $Null
+					$ScriptInformation.Add(@{Data = "ID"; Value = $RASMFASetting.ID.ToString(); }) > $Null
+					$ScriptInformation.Add(@{Data = "     General"; Value = ""; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Enable MFA provider in site"; Value = $RASMFASetting.Enabled.ToString(); }) > $Null
+					$ScriptInformation.Add(@{Data = "          Name"; Value = $RASMFASetting.Name; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Description"; Value = $RASMFASetting.Description; }) > $Null
 					$ScriptInformation.Add(@{Data = "          Type"; Value = $RASMFASettingProvider; }) > $Null
-					$ScriptInformation.Add(@{Data = "          Primary Server"; Value = $RASMFASetting.Server; }) > $Null
-					$ScriptInformation.Add(@{Data = "          Secondary Server"; Value = $RASMFASetting.BackupServer; }) > $Null
-					If($RASMFASetting.HAMode -eq "Parallel")
+					$ScriptInformation.Add(@{Data = "          Themes"; Value = ""; }) > $Null
+					If($Null -ne $MFAThemes)
 					{
-						$ScriptInformation.Add(@{Data = "          HA mode"; Value = "Active - active (parallel)"; }) > $Null
+						ForEach($MFATheme in $MFAThemes)
+						{
+							$ThemeMFAName = (Get-RASMFA -Id $MFATheme.MFAId -ea 0).Name 4>$Null
+							
+							If(!($?) -or $Null -eq $ThemeMFAName)
+							{
+								$ThemeMFAName = "Unable to retrieve the MFA Name"
+							}
+							$ScriptInformation.Add(@{Data = ""; Value = "Theme: $($MFATheme.Name)"; }) > $Null
+							$ScriptInformation.Add(@{Data = ""; Value = "MFA provider: $($ThemeMFAName)"; }) > $Null
+							$ScriptInformation.Add(@{Data = ""; Value = "Description: $($MFATheme.Description)"; }) > $Null
+						}
 					}
 					Else
 					{
-						$ScriptInformation.Add(@{Data = "          HA mode"; Value = "Active - passive (failover)"; }) > $Null
+						$ScriptInformation.Add(@{Data = ""; Value = "No theme is selected"; }) > $Null
 					}
-					$ScriptInformation.Add(@{Data = "          Port"; Value = $RASMFASetting.Port; }) > $Null
-					$ScriptInformation.Add(@{Data = "          Timeout"; Value = $RASMFASetting.Timeout; }) > $Null
-					$ScriptInformation.Add(@{Data = "          Retries"; Value = $RASMFASetting.Retries; }) > $Null
-					$ScriptInformation.Add(@{Data = "          Password Encoding"; Value = $RASMFASetting.PasswordEncoding; }) > $Null
-					$ScriptInformation.Add(@{Data = "          Forward username only to Radius Server"; Value = $RASMFASetting.UsernameOnly.ToString(); }) > $Null
-					$ScriptInformation.Add(@{Data = "          Forward the first password to Windows authentication provider"; Value = $RASMFASetting.ForwardFirstPwdToAD.ToString(); }) > $Null
-					$ScriptInformation.Add(@{Data = "     Attributes"; Value = ""; }) > $Null
-					$cnt=0
-					ForEach($Item in $RASMFASetting.AttributeInfoList)
-					{
-						$cnt++
-						$ScriptInformation.Add(@{Data = ""; Value = "Attribute $cnt"; }) > $Null
-						$ScriptInformation.Add(@{Data = ""; Value = "     Name: $($Item.Name)"; }) > $Null
-						$ScriptInformation.Add(@{Data = ""; Value = "     Vendor: $($Item.Vendor)"; }) > $Null
-						$ScriptInformation.Add(@{Data = ""; Value = "     Type: $($Item.AttributeType)"; }) > $Null
-						$ScriptInformation.Add(@{Data = ""; Value = "     Value: $($Item.Value)"; }) > $Null
-						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null #blank separator line
-					}
-					$ScriptInformation.Add(@{Data = "     Automation"; Value = ""; }) > $Null
-					$cnt=0
-					ForEach($Item in $RASMFASetting.AutomationInfoList)
-					{
-						$cnt++
-						$ScriptInformation.Add(@{Data = ""; Value = "Automation $cnt"; }) > $Null
-						$ScriptInformation.Add(@{Data = ""; Value = "     Enabled: $($Item.Enabled.ToString())"; }) > $Null
-						$ScriptInformation.Add(@{Data = ""; Value = "     Title: $($Item.Title)"; }) > $Null
-						$ScriptInformation.Add(@{Data = ""; Value = "     Command: $($Item.Command)"; }) > $Null
-						$ScriptInformation.Add(@{Data = ""; Value = "     Image: $($Item.Image)"; }) > $Null
-						$ScriptInformation.Add(@{Data = ""; Value = "     Autosend: $($Item.AutoSend.ToString())"; }) > $Null
-						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null #blank separator line
-					}
-				}
-				ElseIf($RASMFASetting.Type -eq "FortiRadius")
-				{
-					$ScriptInformation.Add(@{Data = "          Type Name"; Value = $RASMFASettingProvider; }) > $Null
-					$ScriptInformation.Add(@{Data = "          Primary server"; Value = $RASMFASetting.Server; }) > $Null
-					$ScriptInformation.Add(@{Data = "          Secondary server"; Value = $RASMFASetting.BackupServer; }) > $Null
-					If($RASMFASetting.HAMode -eq "Parallel")
-					{
-						$ScriptInformation.Add(@{Data = "          HA mode"; Value = "Active - active (parallel)"; }) > $Null
-					}
-					Else
-					{
-						$ScriptInformation.Add(@{Data = "          HA mode"; Value = "Active - passive (failover)"; }) > $Null
-					}
-					$ScriptInformation.Add(@{Data = "          Port"; Value = $RASMFASetting.Port; }) > $Null
-					$ScriptInformation.Add(@{Data = "          Timeout"; Value = $RASMFASetting.Timeout; }) > $Null
-					$ScriptInformation.Add(@{Data = "          Retries"; Value = $RASMFASetting.Retries; }) > $Null
-					$ScriptInformation.Add(@{Data = "          Password Encoding"; Value = $RASMFASetting.PasswordEncoding; }) > $Null
-					$ScriptInformation.Add(@{Data = "          Forward username only to Radius Server"; Value = $RASMFASetting.UsernameOnly.ToString(); }) > $Null
-					$ScriptInformation.Add(@{Data = "          Forward the first password to Windows authentication provider"; Value = $RASMFASetting.ForwardFirstPwdToAD.ToString(); }) > $Null
-					$ScriptInformation.Add(@{Data = "     Attributes"; Value = ""; }) > $Null
-					$cnt=0
-					ForEach($Item in $RASMFASetting.AttributeInfoList)
-					{
-						$cnt++
-						$ScriptInformation.Add(@{Data = ""; Value = "Attribute $cnt"; }) > $Null
-						$ScriptInformation.Add(@{Data = ""; Value = "     Name: $($Item.Name)"; }) > $Null
-						$ScriptInformation.Add(@{Data = ""; Value = "     Vendor: $($Item.Vendor)"; }) > $Null
-						$ScriptInformation.Add(@{Data = ""; Value = "     Type: $($Item.AttributeType)"; }) > $Null
-						$ScriptInformation.Add(@{Data = ""; Value = "     Value: $($Item.Value)"; }) > $Null
-						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null #blank separator line
-					}
-					$ScriptInformation.Add(@{Data = "     Automation"; Value = ""; }) > $Null
-					$cnt=0
-					ForEach($Item in $RASMFASetting.AutomationInfoList)
-					{
-						$cnt++
-						$ScriptInformation.Add(@{Data = ""; Value = "Automation $cnt"; }) > $Null
-						$ScriptInformation.Add(@{Data = ""; Value = "     Enabled: $($Item.Enabled.ToString())"; }) > $Null
-						$ScriptInformation.Add(@{Data = ""; Value = "     Title: $($Item.Title)"; }) > $Null
-						$ScriptInformation.Add(@{Data = ""; Value = "     Command: $($Item.Command)"; }) > $Null
-						$ScriptInformation.Add(@{Data = ""; Value = "     Image: $($Item.Image)"; }) > $Null
-						$ScriptInformation.Add(@{Data = ""; Value = "     Autosend: $($Item.AutoSend.ToString())"; }) > $Null
-						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null #blank separator line
-					}
-				}
-				ElseIf($RASMFASetting.Type -eq "TekRadius")
-				{
-					$ScriptInformation.Add(@{Data = "          Type Name"; Value = $RASMFASettingProvider; }) > $Null
-					$ScriptInformation.Add(@{Data = "          Primary server"; Value = $RASMFASetting.Server; }) > $Null
-					$ScriptInformation.Add(@{Data = "          Secondary server"; Value = $RASMFASetting.BackupServer; }) > $Null
-					If($RASMFASetting.HAMode -eq "Parallel")
-					{
-						$ScriptInformation.Add(@{Data = "          HA mode"; Value = "Active - active (parallel)"; }) > $Null
-					}
-					Else
-					{
-						$ScriptInformation.Add(@{Data = "          HA mode"; Value = "Active - passive (failover)"; }) > $Null
-					}
-					$ScriptInformation.Add(@{Data = "          Port"; Value = $RASMFASetting.Port; }) > $Null
-					$ScriptInformation.Add(@{Data = "          Timeout"; Value = $RASMFASetting.Timeout; }) > $Null
-					$ScriptInformation.Add(@{Data = "          Retries"; Value = $RASMFASetting.Retries; }) > $Null
-					$ScriptInformation.Add(@{Data = "          Password Encoding"; Value = $RASMFASetting.PasswordEncoding; }) > $Null
-					$ScriptInformation.Add(@{Data = "          Forward username only to Radius Server"; Value = $RASMFASetting.UsernameOnly.ToString(); }) > $Null
-					$ScriptInformation.Add(@{Data = "          Forward the first password to Windows authentication provider"; Value = $RASMFASetting.ForwardFirstPwdToAD.ToString(); }) > $Null
-					$ScriptInformation.Add(@{Data = "     Attributes"; Value = ""; }) > $Null
-					$cnt=0
-					ForEach($Item in $RASMFASetting.AttributeInfoList)
-					{
-						$cnt++
-						$ScriptInformation.Add(@{Data = ""; Value = "Attribute $cnt"; }) > $Null
-						$ScriptInformation.Add(@{Data = ""; Value = "     Name: $($Item.Name)"; }) > $Null
-						$ScriptInformation.Add(@{Data = ""; Value = "     Vendor: $($Item.Vendor)"; }) > $Null
-						$ScriptInformation.Add(@{Data = ""; Value = "     Type: $($Item.AttributeType)"; }) > $Null
-						$ScriptInformation.Add(@{Data = ""; Value = "     Value: $($Item.Value)"; }) > $Null
-						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null #blank separator line
-					}
-					$ScriptInformation.Add(@{Data = "     Automation"; Value = ""; }) > $Null
-					$cnt=0
-					ForEach($Item in $RASMFASetting.AutomationInfoList)
-					{
-						$cnt++
-						$ScriptInformation.Add(@{Data = ""; Value = "Automation $cnt"; }) > $Null
-						$ScriptInformation.Add(@{Data = ""; Value = "     Enabled: $($Item.Enabled.ToString())"; }) > $Null
-						$ScriptInformation.Add(@{Data = ""; Value = "     Title: $($Item.Title)"; }) > $Null
-						$ScriptInformation.Add(@{Data = ""; Value = "     Command: $($Item.Command)"; }) > $Null
-						$ScriptInformation.Add(@{Data = ""; Value = "     Image: $($Item.Image)"; }) > $Null
-						$ScriptInformation.Add(@{Data = ""; Value = "     Autosend: $($Item.AutoSend.ToString())"; }) > $Null
-						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null #blank separator line
-					}
-				}
-				ElseIf($RASMFASetting.Type -eq "Radius")
-				{
+					$ScriptInformation.Add(@{Data = "     Connection"; Value = ""; }) > $Null
 					$ScriptInformation.Add(@{Data = "          Display Name"; Value = $RASMFASetting.DisplayName; }) > $Null
 					$ScriptInformation.Add(@{Data = "          Primary server"; Value = $RASMFASetting.Server; }) > $Null
 					$ScriptInformation.Add(@{Data = "          Secondary server"; Value = $RASMFASetting.BackupServer; }) > $Null
@@ -60400,9 +60563,10 @@ Function OutputMFASetting
 						$ScriptInformation.Add(@{Data = "          HA mode"; Value = "Active - passive (failover)"; }) > $Null
 					}
 					$ScriptInformation.Add(@{Data = "          Port"; Value = $RASMFASetting.Port; }) > $Null
-					$ScriptInformation.Add(@{Data = "          Timeout"; Value = $RASMFASetting.Timeout; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Timeout (seconds)"; Value = $RASMFASetting.Timeout; }) > $Null
 					$ScriptInformation.Add(@{Data = "          Retries"; Value = $RASMFASetting.Retries; }) > $Null
 					$ScriptInformation.Add(@{Data = "          Password Encoding"; Value = $RASMFASetting.PasswordEncoding; }) > $Null
+					$ScriptInformation.Add(@{Data = "          User Prompt"; Value = $RASMFASetting.UserMessagePrompt; }) > $Null
 					$ScriptInformation.Add(@{Data = "          Forward username only to Radius Server"; Value = $RASMFASetting.UsernameOnly.ToString(); }) > $Null
 					$ScriptInformation.Add(@{Data = "          Forward the first password to Windows authentication provider"; Value = $RASMFASetting.ForwardFirstPwdToAD.ToString(); }) > $Null
 					$ScriptInformation.Add(@{Data = "     Attributes"; Value = ""; }) > $Null
@@ -60411,8 +60575,8 @@ Function OutputMFASetting
 					{
 						$cnt++
 						$ScriptInformation.Add(@{Data = ""; Value = "Attribute $cnt"; }) > $Null
+						$ScriptInformation.Add(@{Data = ""; Value = "     Name: $($Item.RadiusAttrName)"; }) > $Null
 						$ScriptInformation.Add(@{Data = ""; Value = "     Vendor: $($Item.Vendor)"; }) > $Null
-						$ScriptInformation.Add(@{Data = ""; Value = "     Attribute: $($Item.RadiusAttrName)"; }) > $Null
 						$ScriptInformation.Add(@{Data = ""; Value = "     Type: $($Item.AttributeType)"; }) > $Null
 						$ScriptInformation.Add(@{Data = ""; Value = "     Value: $($Item.Value)"; }) > $Null
 						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null #blank separator line
@@ -60423,12 +60587,1414 @@ Function OutputMFASetting
 					{
 						$cnt++
 						$ScriptInformation.Add(@{Data = ""; Value = "Automation $cnt"; }) > $Null
-						$ScriptInformation.Add(@{Data = ""; Value = "     Enabled: $($Item.Enabled.ToString())"; }) > $Null
+						$ScriptInformation.Add(@{Data = ""; Value = "     Enable Action: $($Item.Enabled.ToString())"; }) > $Null
 						$ScriptInformation.Add(@{Data = ""; Value = "     Title: $($Item.Title)"; }) > $Null
 						$ScriptInformation.Add(@{Data = ""; Value = "     Command: $($Item.Command)"; }) > $Null
+						$ScriptInformation.Add(@{Data = ""; Value = "     Description: $($Item.Description)"; }) > $Null
+						$ScriptInformation.Add(@{Data = ""; Value = "     Action message: $($Item.ActionMessage)"; }) > $Null
 						$ScriptInformation.Add(@{Data = ""; Value = "     Image: $($Item.Image)"; }) > $Null
 						$ScriptInformation.Add(@{Data = ""; Value = "     Autosend: $($Item.AutoSend.ToString())"; }) > $Null
 						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null #blank separator line
+					}
+					$ScriptInformation.Add(@{Data = "     Advanced"; Value = ""; }) > $Null
+					If($RASMFASetting.IgnoreErrors.Count -gt 0)
+					{
+						$cnt = -1
+						ForEach($Message in $RASMFASetting.IgnoreErrors)
+						{
+							$cnt++
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "          Message"; Value = $Message; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = $Message; }) > $Null
+							}
+						}
+					}
+					Else
+					{
+						$ScriptInformation.Add(@{Data = "          Message"; Value = ""; }) > $Null
+					}
+					$ScriptInformation.Add(@{Data = "     Restrictions"; Value = ""; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Disable MFA if"; Value = ""; }) > $Null
+
+					#users and groups
+					If($RASMFASetting.Criteria.SecurityPrincipals.Enabled)
+					{
+						$cnt = -1
+						
+						ForEach($Item in $RASMFASetting.Criteria.SecurityPrincipals.members)
+						{
+							$cnt++
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "          User or group is"; Value = "$($Item.Account)"; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "$($Item.Account)"; }) > $Null
+							}
+						}
+						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+					}
+					
+					#gateways
+					If($RASMFASetting.Criteria.Gateways.Enabled)
+					{
+						$cnt = -1
+						ForEach($item in $RASMFASetting.Criteria.Gateways.Members)
+						{
+							$cnt++
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "               Secure gateway is"; Value = "$($Item.GatewayIP)"; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "$($Item.GatewayIP)"; }) > $Null
+							}
+						}
+						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+					}
+
+					#client device name
+					If($RASMFASetting.Criteria.Devices.Enabled)
+					{
+						$cnt = -1
+						ForEach($item in $RASMFASetting.Criteria.Devices.Members)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "               Device is"; Value = "$($Item.Client)"; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "$($Item.Client)"; }) > $Null
+							}
+						}
+						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+					}
+
+					#client device operating system
+					If($RASMFASetting.Criteria.OSs.Enabled)
+					{
+						$cnt = -1
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Windows)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "               Operating system is"; Value = "Windows"; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "Windows"; }) > $Null
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.WebClient)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "               Operating system is"; Value = "User Portal (Web Client)"; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "User Portal (Web Client)"; }) > $Null
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Mac)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "               Operating system is"; Value = "macOS"; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "macOS"; }) > $Null
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Linux)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "               Operating system is"; Value = "Linux"; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "Linux"; }) > $Null
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.iOS)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "               Operating system is"; Value = "iOS/iPadOS"; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "iOS/iPadOS"; }) > $Null
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Android)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "               Operating system is"; Value = "Android"; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "Android"; }) > $Null
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Chrome)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "               Operating system is"; Value = "Chrome OS"; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "Chrome OS"; }) > $Null
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Wyse)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "               Operating system is"; Value = "Wyse"; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "Wyse"; }) > $Null
+							}
+						}
+						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+					}
+
+					#IPs
+					If( $RASMFASetting.Criteria.IPs.Enabled)
+					{
+						$cnt = -1
+						
+						If($RASMFASetting.Criteria.IPs.AllowedIPs.IPv4s.Count -gt 0)
+						{
+							ForEach($item in $RASMFASetting.Criteria.IPs.AllowedIPs.IPv4s)
+							{
+								$cnt++
+								If($cnt -eq 0)
+								{
+									If(($item.From -eq $item.To) -or ($item.To -eq ""))
+									{
+										$ScriptInformation.Add(@{Data = "               IP is"; Value = $item.From; }) > $Null
+									}
+									Else
+									{
+										$ScriptInformation.Add(@{Data = "               IP is"; Value = "$($item.From) - $($item.To)"; }) > $Null
+									}
+								}
+								Else
+								{
+									If(($item.From -eq $item.To) -or ($item.To -eq ""))
+									{
+										$ScriptInformation.Add(@{Data = ""; Value = $item.From; }) > $Null
+									}
+									Else
+									{
+										$ScriptInformation.Add(@{Data = ""; Value = "$($item.From) - $($item.To)"; }) > $Null
+									}
+								}
+							}
+						}
+
+						If($RASMFASetting.Criteria.IPs.AllowedIPs.IPv6s.Count -gt 0)
+						{
+							ForEach($item in $RASMFASetting.Criteria.IPs.AllowedIPs.IPv6s)
+							{
+								$cnt++
+								If($cnt -eq 0)
+								{
+									If(($item.From -eq $item.To) -or ($item.To -eq ""))
+									{
+										$ScriptInformation.Add(@{Data = "               IP is"; Value = $item.From; }) > $Null
+									}
+									Else
+									{
+										$ScriptInformation.Add(@{Data = "               IP is"; Value = "$($item.From) - $($item.To)"; }) > $Null
+									}
+								}
+								Else
+								{
+									If(($item.From -eq $item.To) -or ($item.To -eq ""))
+									{
+										$ScriptInformation.Add(@{Data = ""; Value = $item.From; }) > $Null
+									}
+									Else
+									{
+										$ScriptInformation.Add(@{Data = ""; Value = "$($item.From) - $($item.To)"; }) > $Null
+									}
+								}
+							}
+						}
+						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+					}
+					
+					#MAC addresses
+					If($RASMFASetting.Criteria.HardwareIDs.Enabled)
+					{
+						$cnt = -1
+						ForEach($item in $RASMFASetting.Criteria.HardwareIDs.Members)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "               Hardware ID is"; Value = "$($Item.HardwareID)"; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "$($Item.HardwareID)"; }) > $Null
+							}
+						}
+						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+					}
+				}
+				ElseIf($RASMFASetting.Type -eq "FortiRadius")
+				{
+					$ScriptInformation.Add(@{Data = "Name"; Value = $RASMFASetting.Name; }) > $Null
+					$ScriptInformation.Add(@{Data = "Enabled"; Value = $RASMFASetting.Enabled.ToString(); }) > $Null
+					$ScriptInformation.Add(@{Data = "Description"; Value = $RASMFASetting.Description; }) > $Null
+					$ScriptInformation.Add(@{Data = "Display name"; Value = $RASMFASetting.DisplayName; }) > $Null
+					$ScriptInformation.Add(@{Data = "Type"; Value = $RASMFASettingProvider; }) > $Null
+					$ScriptInformation.Add(@{Data = "Last modification by"; Value = $RASMFASetting.AdminLastMod; }) > $Null
+					$ScriptInformation.Add(@{Data = "Modified on"; Value = (Get-Date -UFormat "%c" $RASMFASetting.TimeLastMod); }) > $Null
+					$ScriptInformation.Add(@{Data = "Created by"; Value = $RASMFASetting.AdminCreate; }) > $Null
+					$ScriptInformation.Add(@{Data = "Created on"; Value = (Get-Date -UFormat "%c" $RASMFASetting.TimeCreate); }) > $Null
+					$ScriptInformation.Add(@{Data = "ID"; Value = $RASMFASetting.ID.ToString(); }) > $Null
+					$ScriptInformation.Add(@{Data = "     General"; Value = ""; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Enable MFA provider in site"; Value = $RASMFASetting.Enabled.ToString(); }) > $Null
+					$ScriptInformation.Add(@{Data = "          Name"; Value = $RASMFASetting.Name; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Description"; Value = $RASMFASetting.Description; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Type"; Value = $RASMFASettingProvider; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Themes"; Value = ""; }) > $Null
+					If($Null -ne $MFAThemes)
+					{
+						ForEach($MFATheme in $MFAThemes)
+						{
+							$ThemeMFAName = (Get-RASMFA -Id $MFATheme.MFAId -ea 0).Name 4>$Null
+							
+							If(!($?) -or $Null -eq $ThemeMFAName)
+							{
+								$ThemeMFAName = "Unable to retrieve the MFA Name"
+							}
+							$ScriptInformation.Add(@{Data = ""; Value = "Theme: $($MFATheme.Name)"; }) > $Null
+							$ScriptInformation.Add(@{Data = ""; Value = "MFA provider: $($ThemeMFAName)"; }) > $Null
+							$ScriptInformation.Add(@{Data = ""; Value = "Description: $($MFATheme.Description)"; }) > $Null
+						}
+					}
+					Else
+					{
+						$ScriptInformation.Add(@{Data = ""; Value = "No theme is selected"; }) > $Null
+					}
+					$ScriptInformation.Add(@{Data = "     Connection"; Value = ""; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Display Name"; Value = $RASMFASetting.DisplayName; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Primary server"; Value = $RASMFASetting.Server; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Secondary server"; Value = $RASMFASetting.BackupServer; }) > $Null
+					If($RASMFASetting.HAMode -eq "Parallel")
+					{
+						$ScriptInformation.Add(@{Data = "          HA mode"; Value = "Active - active (parallel)"; }) > $Null
+					}
+					Else
+					{
+						$ScriptInformation.Add(@{Data = "          HA mode"; Value = "Active - passive (failover)"; }) > $Null
+					}
+					$ScriptInformation.Add(@{Data = "          Port"; Value = $RASMFASetting.Port; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Timeout (seconds)"; Value = $RASMFASetting.Timeout; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Retries"; Value = $RASMFASetting.Retries; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Password Encoding"; Value = $RASMFASetting.PasswordEncoding; }) > $Null
+					$ScriptInformation.Add(@{Data = "          User Prompt"; Value = $RASMFASetting.UserMessagePrompt; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Forward username only to Radius Server"; Value = $RASMFASetting.UsernameOnly.ToString(); }) > $Null
+					$ScriptInformation.Add(@{Data = "          Forward the first password to Windows authentication provider"; Value = $RASMFASetting.ForwardFirstPwdToAD.ToString(); }) > $Null
+					$ScriptInformation.Add(@{Data = "     Attributes"; Value = ""; }) > $Null
+					$cnt=0
+					ForEach($Item in $RASMFASetting.AttributeInfoList)
+					{
+						$cnt++
+						$ScriptInformation.Add(@{Data = ""; Value = "Attribute $cnt"; }) > $Null
+						$ScriptInformation.Add(@{Data = ""; Value = "     Name: $($Item.RadiusAttrName)"; }) > $Null
+						$ScriptInformation.Add(@{Data = ""; Value = "     Vendor: $($Item.Vendor)"; }) > $Null
+						$ScriptInformation.Add(@{Data = ""; Value = "     Type: $($Item.AttributeType)"; }) > $Null
+						$ScriptInformation.Add(@{Data = ""; Value = "     Value: $($Item.Value)"; }) > $Null
+						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null #blank separator line
+					}
+					$ScriptInformation.Add(@{Data = "     Automation"; Value = ""; }) > $Null
+					$cnt=0
+					ForEach($Item in $RASMFASetting.AutomationInfoList)
+					{
+						$cnt++
+						$ScriptInformation.Add(@{Data = ""; Value = "Automation $cnt"; }) > $Null
+						$ScriptInformation.Add(@{Data = ""; Value = "     Enable Action: $($Item.Enabled.ToString())"; }) > $Null
+						$ScriptInformation.Add(@{Data = ""; Value = "     Title: $($Item.Title)"; }) > $Null
+						$ScriptInformation.Add(@{Data = ""; Value = "     Command: $($Item.Command)"; }) > $Null
+						$ScriptInformation.Add(@{Data = ""; Value = "     Description: $($Item.Description)"; }) > $Null
+						$ScriptInformation.Add(@{Data = ""; Value = "     Action message: $($Item.ActionMessage)"; }) > $Null
+						$ScriptInformation.Add(@{Data = ""; Value = "     Image: $($Item.Image)"; }) > $Null
+						$ScriptInformation.Add(@{Data = ""; Value = "     Autosend: $($Item.AutoSend.ToString())"; }) > $Null
+						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null #blank separator line
+					}
+					$ScriptInformation.Add(@{Data = "     Advanced"; Value = ""; }) > $Null
+					If($RASMFASetting.IgnoreErrors.Count -gt 0)
+					{
+						$cnt = -1
+						ForEach($Message in $RASMFASetting.IgnoreErrors)
+						{
+							$cnt++
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "          Message"; Value = $Message; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = $Message; }) > $Null
+							}
+						}
+					}
+					Else
+					{
+						$ScriptInformation.Add(@{Data = "          Message"; Value = ""; }) > $Null
+					}
+					$ScriptInformation.Add(@{Data = "     Restrictions"; Value = ""; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Disable MFA if"; Value = ""; }) > $Null
+
+					#users and groups
+					If($RASMFASetting.Criteria.SecurityPrincipals.Enabled)
+					{
+						$cnt = -1
+						
+						ForEach($Item in $RASMFASetting.Criteria.SecurityPrincipals.members)
+						{
+							$cnt++
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "          User or group is"; Value = "$($Item.Account)"; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "$($Item.Account)"; }) > $Null
+							}
+						}
+						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+					}
+					
+					#gateways
+					If($RASMFASetting.Criteria.Gateways.Enabled)
+					{
+						$cnt = -1
+						ForEach($item in $RASMFASetting.Criteria.Gateways.Members)
+						{
+							$cnt++
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "               Secure gateway is"; Value = "$($Item.GatewayIP)"; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "$($Item.GatewayIP)"; }) > $Null
+							}
+						}
+						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+					}
+
+					#client device name
+					If($RASMFASetting.Criteria.Devices.Enabled)
+					{
+						$cnt = -1
+						ForEach($item in $RASMFASetting.Criteria.Devices.Members)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "               Device is"; Value = "$($Item.Client)"; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "$($Item.Client)"; }) > $Null
+							}
+						}
+						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+					}
+
+					#client device operating system
+					If($RASMFASetting.Criteria.OSs.Enabled)
+					{
+						$cnt = -1
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Windows)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "               Operating system is"; Value = "Windows"; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "Windows"; }) > $Null
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.WebClient)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "               Operating system is"; Value = "User Portal (Web Client)"; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "User Portal (Web Client)"; }) > $Null
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Mac)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "               Operating system is"; Value = "macOS"; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "macOS"; }) > $Null
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Linux)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "               Operating system is"; Value = "Linux"; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "Linux"; }) > $Null
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.iOS)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "               Operating system is"; Value = "iOS/iPadOS"; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "iOS/iPadOS"; }) > $Null
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Android)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "               Operating system is"; Value = "Android"; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "Android"; }) > $Null
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Chrome)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "               Operating system is"; Value = "Chrome OS"; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "Chrome OS"; }) > $Null
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Wyse)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "               Operating system is"; Value = "Wyse"; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "Wyse"; }) > $Null
+							}
+						}
+						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+					}
+
+					#IPs
+					If( $RASMFASetting.Criteria.IPs.Enabled)
+					{
+						$cnt = -1
+						
+						If($RASMFASetting.Criteria.IPs.AllowedIPs.IPv4s.Count -gt 0)
+						{
+							ForEach($item in $RASMFASetting.Criteria.IPs.AllowedIPs.IPv4s)
+							{
+								$cnt++
+								If($cnt -eq 0)
+								{
+									If(($item.From -eq $item.To) -or ($item.To -eq ""))
+									{
+										$ScriptInformation.Add(@{Data = "               IP is"; Value = $item.From; }) > $Null
+									}
+									Else
+									{
+										$ScriptInformation.Add(@{Data = "               IP is"; Value = "$($item.From) - $($item.To)"; }) > $Null
+									}
+								}
+								Else
+								{
+									If(($item.From -eq $item.To) -or ($item.To -eq ""))
+									{
+										$ScriptInformation.Add(@{Data = ""; Value = $item.From; }) > $Null
+									}
+									Else
+									{
+										$ScriptInformation.Add(@{Data = ""; Value = "$($item.From) - $($item.To)"; }) > $Null
+									}
+								}
+							}
+						}
+
+						If($RASMFASetting.Criteria.IPs.AllowedIPs.IPv6s.Count -gt 0)
+						{
+							ForEach($item in $RASMFASetting.Criteria.IPs.AllowedIPs.IPv6s)
+							{
+								$cnt++
+								If($cnt -eq 0)
+								{
+									If(($item.From -eq $item.To) -or ($item.To -eq ""))
+									{
+										$ScriptInformation.Add(@{Data = "               IP is"; Value = $item.From; }) > $Null
+									}
+									Else
+									{
+										$ScriptInformation.Add(@{Data = "               IP is"; Value = "$($item.From) - $($item.To)"; }) > $Null
+									}
+								}
+								Else
+								{
+									If(($item.From -eq $item.To) -or ($item.To -eq ""))
+									{
+										$ScriptInformation.Add(@{Data = ""; Value = $item.From; }) > $Null
+									}
+									Else
+									{
+										$ScriptInformation.Add(@{Data = ""; Value = "$($item.From) - $($item.To)"; }) > $Null
+									}
+								}
+							}
+						}
+						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+					}
+					
+					#MAC addresses
+					If($RASMFASetting.Criteria.HardwareIDs.Enabled)
+					{
+						$cnt = -1
+						ForEach($item in $RASMFASetting.Criteria.HardwareIDs.Members)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "               Hardware ID is"; Value = "$($Item.HardwareID)"; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "$($Item.HardwareID)"; }) > $Null
+							}
+						}
+						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+					}
+				}
+				ElseIf($RASMFASetting.Type -eq "TekRadius")
+				{
+					$ScriptInformation.Add(@{Data = "Name"; Value = $RASMFASetting.Name; }) > $Null
+					$ScriptInformation.Add(@{Data = "Enabled"; Value = $RASMFASetting.Enabled.ToString(); }) > $Null
+					$ScriptInformation.Add(@{Data = "Description"; Value = $RASMFASetting.Description; }) > $Null
+					$ScriptInformation.Add(@{Data = "Display name"; Value = $RASMFASetting.DisplayName; }) > $Null
+					$ScriptInformation.Add(@{Data = "Type"; Value = $RASMFASettingProvider; }) > $Null
+					$ScriptInformation.Add(@{Data = "Last modification by"; Value = $RASMFASetting.AdminLastMod; }) > $Null
+					$ScriptInformation.Add(@{Data = "Modified on"; Value = (Get-Date -UFormat "%c" $RASMFASetting.TimeLastMod); }) > $Null
+					$ScriptInformation.Add(@{Data = "Created by"; Value = $RASMFASetting.AdminCreate; }) > $Null
+					$ScriptInformation.Add(@{Data = "Created on"; Value = (Get-Date -UFormat "%c" $RASMFASetting.TimeCreate); }) > $Null
+					$ScriptInformation.Add(@{Data = "ID"; Value = $RASMFASetting.ID.ToString(); }) > $Null
+					$ScriptInformation.Add(@{Data = "     General"; Value = ""; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Enable MFA provider in site"; Value = $RASMFASetting.Enabled.ToString(); }) > $Null
+					$ScriptInformation.Add(@{Data = "          Name"; Value = $RASMFASetting.Name; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Description"; Value = $RASMFASetting.Description; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Type"; Value = $RASMFASettingProvider; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Themes"; Value = ""; }) > $Null
+					If($Null -ne $MFAThemes)
+					{
+						ForEach($MFATheme in $MFAThemes)
+						{
+							$ThemeMFAName = (Get-RASMFA -Id $MFATheme.MFAId -ea 0).Name 4>$Null
+							
+							If(!($?) -or $Null -eq $ThemeMFAName)
+							{
+								$ThemeMFAName = "Unable to retrieve the MFA Name"
+							}
+							$ScriptInformation.Add(@{Data = ""; Value = "Theme: $($MFATheme.Name)"; }) > $Null
+							$ScriptInformation.Add(@{Data = ""; Value = "MFA provider: $($ThemeMFAName)"; }) > $Null
+							$ScriptInformation.Add(@{Data = ""; Value = "Description: $($MFATheme.Description)"; }) > $Null
+						}
+					}
+					Else
+					{
+						$ScriptInformation.Add(@{Data = ""; Value = "No theme is selected"; }) > $Null
+					}
+					$ScriptInformation.Add(@{Data = "     Connection"; Value = ""; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Display Name"; Value = $RASMFASetting.DisplayName; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Primary server"; Value = $RASMFASetting.Server; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Secondary server"; Value = $RASMFASetting.BackupServer; }) > $Null
+					If($RASMFASetting.HAMode -eq "Parallel")
+					{
+						$ScriptInformation.Add(@{Data = "          HA mode"; Value = "Active - active (parallel)"; }) > $Null
+					}
+					Else
+					{
+						$ScriptInformation.Add(@{Data = "          HA mode"; Value = "Active - passive (failover)"; }) > $Null
+					}
+					$ScriptInformation.Add(@{Data = "          Port"; Value = $RASMFASetting.Port; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Timeout (seconds)"; Value = $RASMFASetting.Timeout; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Retries"; Value = $RASMFASetting.Retries; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Password Encoding"; Value = $RASMFASetting.PasswordEncoding; }) > $Null
+					$ScriptInformation.Add(@{Data = "          User Prompt"; Value = $RASMFASetting.UserMessagePrompt; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Forward username only to Radius Server"; Value = $RASMFASetting.UsernameOnly.ToString(); }) > $Null
+					$ScriptInformation.Add(@{Data = "          Forward the first password to Windows authentication provider"; Value = $RASMFASetting.ForwardFirstPwdToAD.ToString(); }) > $Null
+					$ScriptInformation.Add(@{Data = "     Attributes"; Value = ""; }) > $Null
+					$cnt=0
+					ForEach($Item in $RASMFASetting.AttributeInfoList)
+					{
+						$cnt++
+						$ScriptInformation.Add(@{Data = ""; Value = "Attribute $cnt"; }) > $Null
+						$ScriptInformation.Add(@{Data = ""; Value = "     Name: $($Item.RadiusAttrName)"; }) > $Null
+						$ScriptInformation.Add(@{Data = ""; Value = "     Vendor: $($Item.Vendor)"; }) > $Null
+						$ScriptInformation.Add(@{Data = ""; Value = "     Type: $($Item.AttributeType)"; }) > $Null
+						$ScriptInformation.Add(@{Data = ""; Value = "     Value: $($Item.Value)"; }) > $Null
+						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null #blank separator line
+					}
+					$ScriptInformation.Add(@{Data = "     Automation"; Value = ""; }) > $Null
+					$cnt=0
+					ForEach($Item in $RASMFASetting.AutomationInfoList)
+					{
+						$cnt++
+						$ScriptInformation.Add(@{Data = ""; Value = "Automation $cnt"; }) > $Null
+						$ScriptInformation.Add(@{Data = ""; Value = "     Enable Action: $($Item.Enabled.ToString())"; }) > $Null
+						$ScriptInformation.Add(@{Data = ""; Value = "     Title: $($Item.Title)"; }) > $Null
+						$ScriptInformation.Add(@{Data = ""; Value = "     Command: $($Item.Command)"; }) > $Null
+						$ScriptInformation.Add(@{Data = ""; Value = "     Description: $($Item.Description)"; }) > $Null
+						$ScriptInformation.Add(@{Data = ""; Value = "     Action message: $($Item.ActionMessage)"; }) > $Null
+						$ScriptInformation.Add(@{Data = ""; Value = "     Image: $($Item.Image)"; }) > $Null
+						$ScriptInformation.Add(@{Data = ""; Value = "     Autosend: $($Item.AutoSend.ToString())"; }) > $Null
+						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null #blank separator line
+					}
+					$ScriptInformation.Add(@{Data = "     Advanced"; Value = ""; }) > $Null
+					If($RASMFASetting.IgnoreErrors.Count -gt 0)
+					{
+						$cnt = -1
+						ForEach($Message in $RASMFASetting.IgnoreErrors)
+						{
+							$cnt++
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "          Message"; Value = $Message; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = $Message; }) > $Null
+							}
+						}
+					}
+					Else
+					{
+						$ScriptInformation.Add(@{Data = "          Message"; Value = ""; }) > $Null
+					}
+					$ScriptInformation.Add(@{Data = "     Restrictions"; Value = ""; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Disable MFA if"; Value = ""; }) > $Null
+
+					#users and groups
+					If($RASMFASetting.Criteria.SecurityPrincipals.Enabled)
+					{
+						$cnt = -1
+						
+						ForEach($Item in $RASMFASetting.Criteria.SecurityPrincipals.members)
+						{
+							$cnt++
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "          User or group is"; Value = "$($Item.Account)"; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "$($Item.Account)"; }) > $Null
+							}
+						}
+						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+					}
+					
+					#gateways
+					If($RASMFASetting.Criteria.Gateways.Enabled)
+					{
+						$cnt = -1
+						ForEach($item in $RASMFASetting.Criteria.Gateways.Members)
+						{
+							$cnt++
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "               Secure gateway is"; Value = "$($Item.GatewayIP)"; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "$($Item.GatewayIP)"; }) > $Null
+							}
+						}
+						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+					}
+
+					#client device name
+					If($RASMFASetting.Criteria.Devices.Enabled)
+					{
+						$cnt = -1
+						ForEach($item in $RASMFASetting.Criteria.Devices.Members)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "               Device is"; Value = "$($Item.Client)"; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "$($Item.Client)"; }) > $Null
+							}
+						}
+						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+					}
+
+					#client device operating system
+					If($RASMFASetting.Criteria.OSs.Enabled)
+					{
+						$cnt = -1
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Windows)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "               Operating system is"; Value = "Windows"; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "Windows"; }) > $Null
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.WebClient)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "               Operating system is"; Value = "User Portal (Web Client)"; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "User Portal (Web Client)"; }) > $Null
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Mac)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "               Operating system is"; Value = "macOS"; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "macOS"; }) > $Null
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Linux)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "               Operating system is"; Value = "Linux"; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "Linux"; }) > $Null
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.iOS)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "               Operating system is"; Value = "iOS/iPadOS"; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "iOS/iPadOS"; }) > $Null
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Android)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "               Operating system is"; Value = "Android"; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "Android"; }) > $Null
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Chrome)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "               Operating system is"; Value = "Chrome OS"; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "Chrome OS"; }) > $Null
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Wyse)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "               Operating system is"; Value = "Wyse"; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "Wyse"; }) > $Null
+							}
+						}
+						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+					}
+
+					#IPs
+					If( $RASMFASetting.Criteria.IPs.Enabled)
+					{
+						$cnt = -1
+						
+						If($RASMFASetting.Criteria.IPs.AllowedIPs.IPv4s.Count -gt 0)
+						{
+							ForEach($item in $RASMFASetting.Criteria.IPs.AllowedIPs.IPv4s)
+							{
+								$cnt++
+								If($cnt -eq 0)
+								{
+									If(($item.From -eq $item.To) -or ($item.To -eq ""))
+									{
+										$ScriptInformation.Add(@{Data = "               IP is"; Value = $item.From; }) > $Null
+									}
+									Else
+									{
+										$ScriptInformation.Add(@{Data = "               IP is"; Value = "$($item.From) - $($item.To)"; }) > $Null
+									}
+								}
+								Else
+								{
+									If(($item.From -eq $item.To) -or ($item.To -eq ""))
+									{
+										$ScriptInformation.Add(@{Data = ""; Value = $item.From; }) > $Null
+									}
+									Else
+									{
+										$ScriptInformation.Add(@{Data = ""; Value = "$($item.From) - $($item.To)"; }) > $Null
+									}
+								}
+							}
+						}
+
+						If($RASMFASetting.Criteria.IPs.AllowedIPs.IPv6s.Count -gt 0)
+						{
+							ForEach($item in $RASMFASetting.Criteria.IPs.AllowedIPs.IPv6s)
+							{
+								$cnt++
+								If($cnt -eq 0)
+								{
+									If(($item.From -eq $item.To) -or ($item.To -eq ""))
+									{
+										$ScriptInformation.Add(@{Data = "               IP is"; Value = $item.From; }) > $Null
+									}
+									Else
+									{
+										$ScriptInformation.Add(@{Data = "               IP is"; Value = "$($item.From) - $($item.To)"; }) > $Null
+									}
+								}
+								Else
+								{
+									If(($item.From -eq $item.To) -or ($item.To -eq ""))
+									{
+										$ScriptInformation.Add(@{Data = ""; Value = $item.From; }) > $Null
+									}
+									Else
+									{
+										$ScriptInformation.Add(@{Data = ""; Value = "$($item.From) - $($item.To)"; }) > $Null
+									}
+								}
+							}
+						}
+						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+					}
+					
+					#MAC addresses
+					If($RASMFASetting.Criteria.HardwareIDs.Enabled)
+					{
+						$cnt = -1
+						ForEach($item in $RASMFASetting.Criteria.HardwareIDs.Members)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "               Hardware ID is"; Value = "$($Item.HardwareID)"; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "$($Item.HardwareID)"; }) > $Null
+							}
+						}
+						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+					}
+				}
+				ElseIf($RASMFASetting.Type -eq "Radius")
+				{
+					$ScriptInformation.Add(@{Data = "Name"; Value = $RASMFASetting.Name; }) > $Null
+					$ScriptInformation.Add(@{Data = "Enabled"; Value = $RASMFASetting.Enabled.ToString(); }) > $Null
+					$ScriptInformation.Add(@{Data = "Description"; Value = $RASMFASetting.Description; }) > $Null
+					$ScriptInformation.Add(@{Data = "Display name"; Value = $RASMFASetting.DisplayName; }) > $Null
+					$ScriptInformation.Add(@{Data = "Type"; Value = $RASMFASettingProvider; }) > $Null
+					$ScriptInformation.Add(@{Data = "Last modification by"; Value = $RASMFASetting.AdminLastMod; }) > $Null
+					$ScriptInformation.Add(@{Data = "Modified on"; Value = (Get-Date -UFormat "%c" $RASMFASetting.TimeLastMod); }) > $Null
+					$ScriptInformation.Add(@{Data = "Created by"; Value = $RASMFASetting.AdminCreate; }) > $Null
+					$ScriptInformation.Add(@{Data = "Created on"; Value = (Get-Date -UFormat "%c" $RASMFASetting.TimeCreate); }) > $Null
+					$ScriptInformation.Add(@{Data = "ID"; Value = $RASMFASetting.ID.ToString(); }) > $Null
+					$ScriptInformation.Add(@{Data = "     General"; Value = ""; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Enable MFA provider in site"; Value = $RASMFASetting.Enabled.ToString(); }) > $Null
+					$ScriptInformation.Add(@{Data = "          Name"; Value = $RASMFASetting.Name; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Description"; Value = $RASMFASetting.Description; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Type"; Value = $RASMFASettingProvider; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Themes"; Value = ""; }) > $Null
+					If($Null -ne $MFAThemes)
+					{
+						ForEach($MFATheme in $MFAThemes)
+						{
+							$ThemeMFAName = (Get-RASMFA -Id $MFATheme.MFAId -ea 0).Name 4>$Null
+							
+							If(!($?) -or $Null -eq $ThemeMFAName)
+							{
+								$ThemeMFAName = "Unable to retrieve the MFA Name"
+							}
+							$ScriptInformation.Add(@{Data = ""; Value = "Theme: $($MFATheme.Name)"; }) > $Null
+							$ScriptInformation.Add(@{Data = ""; Value = "MFA provider: $($ThemeMFAName)"; }) > $Null
+							$ScriptInformation.Add(@{Data = ""; Value = "Description: $($MFATheme.Description)"; }) > $Null
+						}
+					}
+					Else
+					{
+						$ScriptInformation.Add(@{Data = ""; Value = "No theme is selected"; }) > $Null
+					}
+					$ScriptInformation.Add(@{Data = "     Connection"; Value = ""; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Display Name"; Value = $RASMFASetting.DisplayName; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Primary server"; Value = $RASMFASetting.Server; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Secondary server"; Value = $RASMFASetting.BackupServer; }) > $Null
+					If($RASMFASetting.HAMode -eq "Parallel")
+					{
+						$ScriptInformation.Add(@{Data = "          HA mode"; Value = "Active - active (parallel)"; }) > $Null
+					}
+					Else
+					{
+						$ScriptInformation.Add(@{Data = "          HA mode"; Value = "Active - passive (failover)"; }) > $Null
+					}
+					$ScriptInformation.Add(@{Data = "          Port"; Value = $RASMFASetting.Port; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Timeout (seconds)"; Value = $RASMFASetting.Timeout; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Retries"; Value = $RASMFASetting.Retries; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Password Encoding"; Value = $RASMFASetting.PasswordEncoding; }) > $Null
+					$ScriptInformation.Add(@{Data = "          User Prompt"; Value = $RASMFASetting.UserMessagePrompt; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Forward username only to Radius Server"; Value = $RASMFASetting.UsernameOnly.ToString(); }) > $Null
+					$ScriptInformation.Add(@{Data = "          Forward the first password to Windows authentication provider"; Value = $RASMFASetting.ForwardFirstPwdToAD.ToString(); }) > $Null
+					$ScriptInformation.Add(@{Data = "     Attributes"; Value = ""; }) > $Null
+					$cnt=0
+					ForEach($Item in $RASMFASetting.AttributeInfoList)
+					{
+						$cnt++
+						$ScriptInformation.Add(@{Data = ""; Value = "Attribute $cnt"; }) > $Null
+						$ScriptInformation.Add(@{Data = ""; Value = "     Name: $($Item.RadiusAttrName)"; }) > $Null
+						$ScriptInformation.Add(@{Data = ""; Value = "     Vendor: $($Item.Vendor)"; }) > $Null
+						$ScriptInformation.Add(@{Data = ""; Value = "     Type: $($Item.AttributeType)"; }) > $Null
+						$ScriptInformation.Add(@{Data = ""; Value = "     Value: $($Item.Value)"; }) > $Null
+						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null #blank separator line
+					}
+					$ScriptInformation.Add(@{Data = "     Automation"; Value = ""; }) > $Null
+					$cnt=0
+					ForEach($Item in $RASMFASetting.AutomationInfoList)
+					{
+						$cnt++
+						$ScriptInformation.Add(@{Data = ""; Value = "Automation $cnt"; }) > $Null
+						$ScriptInformation.Add(@{Data = ""; Value = "     Enable Action: $($Item.Enabled.ToString())"; }) > $Null
+						$ScriptInformation.Add(@{Data = ""; Value = "     Title: $($Item.Title)"; }) > $Null
+						$ScriptInformation.Add(@{Data = ""; Value = "     Command: $($Item.Command)"; }) > $Null
+						$ScriptInformation.Add(@{Data = ""; Value = "     Description: $($Item.Description)"; }) > $Null
+						$ScriptInformation.Add(@{Data = ""; Value = "     Action message: $($Item.ActionMessage)"; }) > $Null
+						$ScriptInformation.Add(@{Data = ""; Value = "     Image: $($Item.Image)"; }) > $Null
+						$ScriptInformation.Add(@{Data = ""; Value = "     Autosend: $($Item.AutoSend.ToString())"; }) > $Null
+						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null #blank separator line
+					}
+					$ScriptInformation.Add(@{Data = "     Advanced"; Value = ""; }) > $Null
+					If($RASMFASetting.IgnoreErrors.Count -gt 0)
+					{
+						$cnt = -1
+						ForEach($Message in $RASMFASetting.IgnoreErrors)
+						{
+							$cnt++
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "          Message"; Value = $Message; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = $Message; }) > $Null
+							}
+						}
+					}
+					Else
+					{
+						$ScriptInformation.Add(@{Data = "          Message"; Value = ""; }) > $Null
+					}
+					$ScriptInformation.Add(@{Data = "     Restrictions"; Value = ""; }) > $Null
+					$ScriptInformation.Add(@{Data = "          Disable MFA if"; Value = ""; }) > $Null
+
+					#users and groups
+					If($RASMFASetting.Criteria.SecurityPrincipals.Enabled)
+					{
+						$cnt = -1
+						
+						ForEach($Item in $RASMFASetting.Criteria.SecurityPrincipals.members)
+						{
+							$cnt++
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "          User or group is"; Value = "$($Item.Account)"; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "$($Item.Account)"; }) > $Null
+							}
+						}
+						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+					}
+					
+					#gateways
+					If($RASMFASetting.Criteria.Gateways.Enabled)
+					{
+						$cnt = -1
+						ForEach($item in $RASMFASetting.Criteria.Gateways.Members)
+						{
+							$cnt++
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "               Secure gateway is"; Value = "$($Item.GatewayIP)"; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "$($Item.GatewayIP)"; }) > $Null
+							}
+						}
+						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+					}
+
+					#client device name
+					If($RASMFASetting.Criteria.Devices.Enabled)
+					{
+						$cnt = -1
+						ForEach($item in $RASMFASetting.Criteria.Devices.Members)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "               Device is"; Value = "$($Item.Client)"; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "$($Item.Client)"; }) > $Null
+							}
+						}
+						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+					}
+
+					#client device operating system
+					If($RASMFASetting.Criteria.OSs.Enabled)
+					{
+						$cnt = -1
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Windows)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "               Operating system is"; Value = "Windows"; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "Windows"; }) > $Null
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.WebClient)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "               Operating system is"; Value = "User Portal (Web Client)"; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "User Portal (Web Client)"; }) > $Null
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Mac)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "               Operating system is"; Value = "macOS"; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "macOS"; }) > $Null
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Linux)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "               Operating system is"; Value = "Linux"; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "Linux"; }) > $Null
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.iOS)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "               Operating system is"; Value = "iOS/iPadOS"; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "iOS/iPadOS"; }) > $Null
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Android)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "               Operating system is"; Value = "Android"; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "Android"; }) > $Null
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Chrome)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "               Operating system is"; Value = "Chrome OS"; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "Chrome OS"; }) > $Null
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Wyse)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "               Operating system is"; Value = "Wyse"; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "Wyse"; }) > $Null
+							}
+						}
+						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+					}
+
+					#IPs
+					If( $RASMFASetting.Criteria.IPs.Enabled)
+					{
+						$cnt = -1
+						
+						If($RASMFASetting.Criteria.IPs.AllowedIPs.IPv4s.Count -gt 0)
+						{
+							ForEach($item in $RASMFASetting.Criteria.IPs.AllowedIPs.IPv4s)
+							{
+								$cnt++
+								If($cnt -eq 0)
+								{
+									If(($item.From -eq $item.To) -or ($item.To -eq ""))
+									{
+										$ScriptInformation.Add(@{Data = "               IP is"; Value = $item.From; }) > $Null
+									}
+									Else
+									{
+										$ScriptInformation.Add(@{Data = "               IP is"; Value = "$($item.From) - $($item.To)"; }) > $Null
+									}
+								}
+								Else
+								{
+									If(($item.From -eq $item.To) -or ($item.To -eq ""))
+									{
+										$ScriptInformation.Add(@{Data = ""; Value = $item.From; }) > $Null
+									}
+									Else
+									{
+										$ScriptInformation.Add(@{Data = ""; Value = "$($item.From) - $($item.To)"; }) > $Null
+									}
+								}
+							}
+						}
+
+						If($RASMFASetting.Criteria.IPs.AllowedIPs.IPv6s.Count -gt 0)
+						{
+							ForEach($item in $RASMFASetting.Criteria.IPs.AllowedIPs.IPv6s)
+							{
+								$cnt++
+								If($cnt -eq 0)
+								{
+									If(($item.From -eq $item.To) -or ($item.To -eq ""))
+									{
+										$ScriptInformation.Add(@{Data = "               IP is"; Value = $item.From; }) > $Null
+									}
+									Else
+									{
+										$ScriptInformation.Add(@{Data = "               IP is"; Value = "$($item.From) - $($item.To)"; }) > $Null
+									}
+								}
+								Else
+								{
+									If(($item.From -eq $item.To) -or ($item.To -eq ""))
+									{
+										$ScriptInformation.Add(@{Data = ""; Value = $item.From; }) > $Null
+									}
+									Else
+									{
+										$ScriptInformation.Add(@{Data = ""; Value = "$($item.From) - $($item.To)"; }) > $Null
+									}
+								}
+							}
+						}
+						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+					}
+					
+					#MAC addresses
+					If($RASMFASetting.Criteria.HardwareIDs.Enabled)
+					{
+						$cnt = -1
+						ForEach($item in $RASMFASetting.Criteria.HardwareIDs.Members)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$ScriptInformation.Add(@{Data = "               Hardware ID is"; Value = "$($Item.HardwareID)"; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "$($Item.HardwareID)"; }) > $Null
+							}
+						}
+						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
 					}
 				}
 				ElseIf($RASMFASetting.Type -eq "Deepnet")
@@ -60636,6 +62202,8 @@ Function OutputMFASetting
 					}
 					Line 4 "Restrictions"
 					Line 5 "Disable MFA if"
+
+					#users and groups
 					If($RASMFASetting.Criteria.SecurityPrincipals.Enabled)
 					{
 						$cnt = -1
@@ -60645,39 +62213,319 @@ Function OutputMFASetting
 							$cnt++
 							If($cnt -eq 0)
 							{
-								Line 5 "User or group is: $($Item.Account)"
+								Line 6 "User or group is: " "$($Item.Account)"
 							}
 							Else
 							{
-								Line 7 "  $($Item.Account)"
+								Line 8 "  $($Item.Account)"
 							}
 						}
-						Line 5 ""
+						Line 0 ""
+					}
+
+					#gateways
+					If($RASMFASetting.Criteria.Gateways.Enabled)
+					{
+						$cnt = -1
+						ForEach($item in $RASMFASetting.Criteria.Gateways.Members)
+						{
+							$cnt++
+							If($cnt -eq 0)
+							{
+								Line 6 "Secure gateway is: " "$($Item.GatewayIP)"
+							}
+							Else
+							{
+								Line 8 "   $($Item.GatewayIP)"
+							}
+						}
+						Line 0 ""
+					}
+
+					#client device name
+					If($RASMFASetting.Criteria.Devices.Enabled)
+					{
+						$cnt = -1
+						ForEach($item in $RASMFASetting.Criteria.Devices.Members)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								Line 6 "Device is: " "$($Item.Client)"
+							}
+							Else
+							{
+								Line 8 "$($Item.Client)"
+							}
+						}
+						Line 0 ""
+					}
+
+					#client device operating system
+					If($RASMFASetting.Criteria.OSs.Enabled)
+					{
+						$cnt = -1
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Windows)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								Line 6 "Operating system is: " "Windows"
+							}
+							Else
+							{
+								Line 8 "     Windows"
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.WebClient)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								Line 6 "Operating system is: " "User Portal (Web Client)"
+							}
+							Else
+							{
+								Line 8 "     User Portal (Web Client)"
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Mac)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								Line 6 "Operating system is: " "macOS"
+							}
+							Else
+							{
+								Line 8 "     macOS"
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Linux)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								Line 6 "Operating system is: " "Linux"
+							}
+							Else
+							{
+								Line 8 "     Linux"
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.iOS)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								Line 6 "Operating system is: " "iOS/iPadOS"
+							}
+							Else
+							{
+								Line 8 "     iOS/iPadOS"
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Android)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								Line 6 "Operating system is: " "Android"
+							}
+							Else
+							{
+								Line 8 "     Android"
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Chrome)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								Line 6 "Operating system is: " "Chrome OS"
+							}
+							Else
+							{
+								Line 8 "     Chrome OS"
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Wyse)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								Line 6 "Operating system is: " "Wyse"
+							}
+							Else
+							{
+								Line 8 "     Wyse"
+							}
+						}
+						Line 0 ""
+					}
+
+					#IPs
+					If( $RASMFASetting.Criteria.IPs.Enabled)
+					{
+						$cnt = -1
+						
+						If($RASMFASetting.Criteria.IPs.AllowedIPs.IPv4s.Count -gt 0)
+						{
+							ForEach($item in $RASMFASetting.Criteria.IPs.AllowedIPs.IPv4s)
+							{
+								$cnt++
+								If($cnt -eq 0)
+								{
+									If(($item.From -eq $item.To) -or ($item.To -eq ""))
+									{
+										Line 6 "IP is: " $item.From
+									}
+									Else
+									{
+										Line 6 "IP is: " "$($item.From) - $($item.To)"
+									}
+								}
+								Else
+								{
+									If(($item.From -eq $item.To) -or ($item.To -eq ""))
+									{
+										Line 6 "       " $item.From
+									}
+									Else
+									{
+										Line 6 "       $($item.From) - $($item.To)"
+									}
+								}
+							}
+						}
+
+						If($RASMFASetting.Criteria.IPs.AllowedIPs.IPv6s.Count -gt 0)
+						{
+							ForEach($item in $RASMFASetting.Criteria.IPs.AllowedIPs.IPv6s)
+							{
+								$cnt++
+								If($cnt -eq 0)
+								{
+									If(($item.From -eq $item.To) -or ($item.To -eq ""))
+									{
+										Line 6 "IP is: " $item.From
+									}
+									Else
+									{
+										Line 6 "IP is: " "$($item.From) - $($item.To)"
+									}
+								}
+								Else
+								{
+									If(($item.From -eq $item.To) -or ($item.To -eq ""))
+									{
+										Line 6 "       " $item.From
+									}
+									Else
+									{
+										Line 6 "       $($item.From) - $($item.To)"
+									}
+								}
+							}
+						}
+						Line 0 ""
+					}
+					
+					#MAC addresses
+					If($RASMFASetting.Criteria.HardwareIDs.Enabled)
+					{
+						$cnt = -1
+						ForEach($item in $RASMFASetting.Criteria.HardwareIDs.Members)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								Line 6 "Hardware ID is: " "$($Item.HardwareID)"
+							}
+							Else
+							{
+								Line 8 "$($Item.HardwareID)"
+							}
+						}
+						Line 0 ""
 					}
 					
 					Line 0 ""
 				}
 				ElseIf($RASMFASetting.Type -eq "DuoRadius")
 				{
-					Line 4 "Connection"
-					Line 5 "Type Name`t`t`t`t: " $RASMFASettingProvider
-					Line 5 "Primary Server`t`t`t`t: " $RASMFASetting.Server
-					Line 5 "Secondary server`t`t`t: " $RASMFASetting.BackupServer
-					If($RASMFASetting.HAMode -eq "Parallel")
+					Line 3 "Name`t`t`t: " $RASMFASetting.Name
+					Line 3 "Enabled`t`t`t: " $RASMFASetting.Enabled.ToString()
+					Line 3 "Description`t`t: " $RASMFASetting.Description
+					Line 3 "Display name`t`t: " $RASMFASetting.DisplayName
+					Line 3 "Type`t`t`t: " $RASMFASettingProvider
+					Line 3 "Last modification by`t: "  $RASMFASetting.AdminLastMod
+					Line 3 "Modified on`t`t: "  (Get-Date -UFormat "%c" $RASMFASetting.TimeLastMod)
+					Line 3 "Created by`t`t: "  $RASMFASetting.AdminCreate
+					Line 3 "Created on`t`t: "  (Get-Date -UFormat "%c" $RASMFASetting.TimeCreate)
+					Line 3 "ID`t`t`t: " $RASMFASetting.ID.ToString()
+					Line 4 "General"
+					Line 5 "Enable MFA provider in site`t: " $RASMFASetting.Enabled.ToString()
+					Line 5 "Name`t`t`t`t: " $RASMFASetting.Name
+					Line 5 "Description`t`t`t: " $RASMFASetting.Description
+					Line 5 "Type`t`t`t`t: " $RASMFASettingProvider
+					Line 5 "Themes"
+					If($Null -ne $MFAThemes)
 					{
-						Line 5 "HA mode`t`t`t`t`t: " "Active - active (parallel)"
+						ForEach($MFATheme in $MFAThemes)
+						{
+							$ThemeMFAName = (Get-RASMFA -Id $MFATheme.MFAId -ea 0).Name 4>$Null
+							
+							If(!($?) -or $Null -eq $ThemeMFAName)
+							{
+								$ThemeMFAName = "Unable to retrieve the MFA Name"
+							}
+							Line 6 "Theme`t`t: $($MFATheme.Name)"
+							Line 6 "MFA provider`t: $($ThemeMFAName)"
+							Line 6 "Description`t: $($MFATheme.Description)"
+						}
 					}
 					Else
 					{
-						Line 5 "HA mode`t`t`t`t`t: " "Active - passive (failover)"
+						Line 6 "No theme is selected"
 					}
-					Line 5 "Port`t`t`t`t`t: " $RASMFASetting.Port
-					Line 5 "Timeout`t`t`t`t`t: " $RASMFASetting.Timeout
-					Line 5 "Retries`t`t`t`t`t: " $RASMFASetting.Retries
-					Line 5 "Password Encoding`t`t`t: " $RASMFASetting.PasswordEncoding
-					Line 5 "Forward username only to Radius Server`t: " $RASMFASetting.UsernameOnly.ToString()
+					Line 4 "Connection"
+					Line 5 "Display Name`t`t`t: " $RASMFASetting.DisplayName
+					Line 5 "Primary server`t`t`t: " $RASMFASetting.Server
+					Line 5 "Secondary server`t`t: " $RASMFASetting.BackupServer
+					If($RASMFASetting.HAMode -eq "Parallel")
+					{
+						Line 5 "HA mode`t`t`t`t: Active - active (parallel)"
+					}
+					Else
+					{
+						Line 5 "HA mode`t`t`t`t: Active - passive (failover)"
+					}
+					Line 5 "Port`t`t`t`t: " $RASMFASetting.Port
+					Line 5 "Timeout (seconds)`t`t: " $RASMFASetting.Timeout
+					Line 5 "Retries`t`t`t`t: " $RASMFASetting.Retries
+					Line 5 "Password Encoding`t`t: " $RASMFASetting.PasswordEncoding
+					Line 5 "Forward username only to "
+					Line 5 "Radius Server`t`t`t: " $RASMFASetting.UsernameOnly.ToString()
 					Line 5 "Forward the first password to "
-					Line 5 "Windows authentication provider`t`t: " $RASMFASetting.ForwardFirstPwdToAD.ToString()
+					Line 5 "Windows authentication provider`t: " $RASMFASetting.ForwardFirstPwdToAD.ToString()
 					Line 4 "Attributes"
 					$cnt=0
 					ForEach($Item in $RASMFASetting.AttributeInfoList)
@@ -60685,7 +62533,7 @@ Function OutputMFASetting
 						$cnt++
 						Line 5 "Attribute $cnt"
 						Line 6 "Name`t: $($Item.RadiusAttrName)"
-						Line 6 "Vendor`t: $($Item.VendorID)"
+						Line 6 "Vendor`t: $($Item.Vendor)"
 						Line 6 "Type`t: $($Item.AttributeType)"
 						Line 6 "Value`t: $($Item.Value)"
 						Line 5 "" #blank separator line
@@ -60695,7 +62543,7 @@ Function OutputMFASetting
 					ForEach($Item in $RASMFASetting.AutomationInfoList)
 					{
 						$cnt++
-						Line 5 "" "Automation $cnt"
+						Line 5 "Automation $cnt"
 						Line 6 "Enable Action`t: $($Item.Enabled.ToString())"
 						Line 6 "Title`t`t: $($Item.Title)"
 						Line 6 "Command`t`t: $($Item.Command)"
@@ -60703,41 +62551,356 @@ Function OutputMFASetting
 						Line 6 "Action message`t: $($Item.ActionMessage)"
 						Line 6 "Image`t`t: $($Item.Image)"
 						Line 6 "Autosend`t: $($Item.AutoSend.ToString())"
-						Line 5 "" "" #blank separator line
+						Line 6 "" #blank separator line
 					}
+					Line 4 "Advanced"
+					Line 5 "Message"
+					If($RASMFASetting.IgnoreErrors.Count -gt 0)
+					{
+						ForEach($Message in $RASMFASetting.IgnoreErrors)
+						{
+							Line 6 $Message
+						}
+					}
+					Else
+					{
+						Line 6 ""
+					}
+					Line 4 "Restrictions"
+					Line 5 "Disable MFA if"
+					#users and groups
+					If($RASMFASetting.Criteria.SecurityPrincipals.Enabled)
+					{
+						$cnt = -1
+						
+						ForEach($Item in $RASMFASetting.Criteria.SecurityPrincipals.members)
+						{
+							$cnt++
+							If($cnt -eq 0)
+							{
+								Line 6 "User or group is: " "$($Item.Account)"
+							}
+							Else
+							{
+								Line 8 "  $($Item.Account)"
+							}
+						}
+						Line 0 ""
+					}
+
+					#gateways
+					If($RASMFASetting.Criteria.Gateways.Enabled)
+					{
+						$cnt = -1
+						ForEach($item in $RASMFASetting.Criteria.Gateways.Members)
+						{
+							$cnt++
+							If($cnt -eq 0)
+							{
+								Line 6 "Secure gateway is: " "$($Item.GatewayIP)"
+							}
+							Else
+							{
+								Line 6 "   $($Item.GatewayIP)"
+							}
+						}
+						Line 0 ""
+					}
+
+					#client device name
+					If($RASMFASetting.Criteria.Devices.Enabled)
+					{
+						$cnt = -1
+						ForEach($item in $RASMFASetting.Criteria.Devices.Members)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								Line 6 "Device is: " "$($Item.Client)"
+							}
+							Else
+							{
+								Line 8 "$($Item.Client)"
+							}
+						}
+						Line 0 ""
+					}
+
+					#client device operating system
+					If($RASMFASetting.Criteria.OSs.Enabled)
+					{
+						$cnt = -1
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Windows)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								Line 6 "Operating system is: " "Windows"
+							}
+							Else
+							{
+								Line 8 "     Windows"
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.WebClient)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								Line 6 "Operating system is: " "User Portal (Web Client)"
+							}
+							Else
+							{
+								Line 8 "     User Portal (Web Client)"
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Mac)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								Line 6 "Operating system is: " "macOS"
+							}
+							Else
+							{
+								Line 8 "     macOS"
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Linux)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								Line 6 "Operating system is: " "Linux"
+							}
+							Else
+							{
+								Line 8 "     Linux"
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.iOS)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								Line 6 "Operating system is: " "iOS/iPadOS"
+							}
+							Else
+							{
+								Line 8 "     iOS/iPadOS"
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Android)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								Line 6 "Operating system is: " "Android"
+							}
+							Else
+							{
+								Line 8 "     Android"
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Chrome)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								Line 6 "Operating system is: " "Chrome OS"
+							}
+							Else
+							{
+								Line 8 "     Chrome OS"
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Wyse)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								Line 6 "Operating system is: " "Wyse"
+							}
+							Else
+							{
+								Line 8 "     Wyse"
+							}
+						}
+						Line 0 ""
+					}
+
+					#IPs
+					If( $RASMFASetting.Criteria.IPs.Enabled)
+					{
+						$cnt = -1
+						
+						If($RASMFASetting.Criteria.IPs.AllowedIPs.IPv4s.Count -gt 0)
+						{
+							ForEach($item in $RASMFASetting.Criteria.IPs.AllowedIPs.IPv4s)
+							{
+								$cnt++
+								If($cnt -eq 0)
+								{
+									If(($item.From -eq $item.To) -or ($item.To -eq ""))
+									{
+										Line 6 "IP is: " $item.From
+									}
+									Else
+									{
+										Line 6 "IP is: " "$($item.From) - $($item.To)"
+									}
+								}
+								Else
+								{
+									If(($item.From -eq $item.To) -or ($item.To -eq ""))
+									{
+										Line 6 "       " $item.From
+									}
+									Else
+									{
+										Line 6 "       $($item.From) - $($item.To)"
+									}
+								}
+							}
+						}
+
+						If($RASMFASetting.Criteria.IPs.AllowedIPs.IPv6s.Count -gt 0)
+						{
+							ForEach($item in $RASMFASetting.Criteria.IPs.AllowedIPs.IPv6s)
+							{
+								$cnt++
+								If($cnt -eq 0)
+								{
+									If(($item.From -eq $item.To) -or ($item.To -eq ""))
+									{
+										Line 6 "IP is: " $item.From
+									}
+									Else
+									{
+										Line 6 "IP is: " "$($item.From) - $($item.To)"
+									}
+								}
+								Else
+								{
+									If(($item.From -eq $item.To) -or ($item.To -eq ""))
+									{
+										Line 6 "       " $item.From
+									}
+									Else
+									{
+										Line 6 "       $($item.From) - $($item.To)"
+									}
+								}
+							}
+						}
+						Line 0 ""
+					}
+					
+					#MAC addresses
+					If($RASMFASetting.Criteria.HardwareIDs.Enabled)
+					{
+						$cnt = -1
+						ForEach($item in $RASMFASetting.Criteria.HardwareIDs.Members)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								Line 6 "Hardware ID is: " "$($Item.HardwareID)"
+							}
+							Else
+							{
+								Line 8 "$($Item.HardwareID)"
+							}
+						}
+						Line 0 ""
+					}
+					
 					Line 0 ""
 				}
 				ElseIf($RASMFASetting.Type -eq "FortiRadius")
 				{
-					Line 4 "Connection"
-					Line 5 "Type Name`t`t`t`t: " $RASMFASettingProvider
-					Line 5 "Primary Server`t`t`t`t: " $RASMFASetting.Server
-					Line 5 "Secondary server`t`t`t: " $RASMFASetting.BackupServer
-					If($RASMFASetting.HAMode -eq "Parallel")
+					Line 3 "Name`t`t`t: " $RASMFASetting.Name
+					Line 3 "Enabled`t`t`t: " $RASMFASetting.Enabled.ToString()
+					Line 3 "Description`t`t: " $RASMFASetting.Description
+					Line 3 "Display name`t`t: " $RASMFASetting.DisplayName
+					Line 3 "Type`t`t`t: " $RASMFASettingProvider
+					Line 3 "Last modification by`t: "  $RASMFASetting.AdminLastMod
+					Line 3 "Modified on`t`t: "  (Get-Date -UFormat "%c" $RASMFASetting.TimeLastMod)
+					Line 3 "Created by`t`t: "  $RASMFASetting.AdminCreate
+					Line 3 "Created on`t`t: "  (Get-Date -UFormat "%c" $RASMFASetting.TimeCreate)
+					Line 3 "ID`t`t`t: " $RASMFASetting.ID.ToString()
+					Line 4 "General"
+					Line 5 "Enable MFA provider in site`t: " $RASMFASetting.Enabled.ToString()
+					Line 5 "Name`t`t`t`t: " $RASMFASetting.Name
+					Line 5 "Description`t`t`t: " $RASMFASetting.Description
+					Line 5 "Type`t`t`t`t: " $RASMFASettingProvider
+					Line 5 "Themes"
+					If($Null -ne $MFAThemes)
 					{
-						Line 5 "HA mode`t`t`t`t`t: " "Active - active (parallel)"
+						ForEach($MFATheme in $MFAThemes)
+						{
+							$ThemeMFAName = (Get-RASMFA -Id $MFATheme.MFAId -ea 0).Name 4>$Null
+							
+							If(!($?) -or $Null -eq $ThemeMFAName)
+							{
+								$ThemeMFAName = "Unable to retrieve the MFA Name"
+							}
+							Line 6 "Theme`t`t: $($MFATheme.Name)"
+							Line 6 "MFA provider`t: $($ThemeMFAName)"
+							Line 6 "Description`t: $($MFATheme.Description)"
+						}
 					}
 					Else
 					{
-						Line 5 "HA mode`t`t`t`t`t: " "Active - passive (failover)"
+						Line 6 "No theme is selected"
 					}
-					Line 5 "Port`t`t`t`t`t: " $RASMFASetting.Port
-					Line 5 "Timeout`t`t`t`t`t: " $RASMFASetting.Timeout
-					Line 5 "Retries`t`t`t`t`t: " $RASMFASetting.Retries
-					Line 5 "Password Encoding`t`t`t: " $RASMFASetting.PasswordEncoding
-					Line 5 "Forward username only to Radius Server`t: " $RASMFASetting.UsernameOnly.ToString()
+					Line 4 "Connection"
+					Line 5 "Display Name`t`t`t: " $RASMFASetting.DisplayName
+					Line 5 "Primary server`t`t`t: " $RASMFASetting.Server
+					Line 5 "Secondary server`t`t: " $RASMFASetting.BackupServer
+					If($RASMFASetting.HAMode -eq "Parallel")
+					{
+						Line 5 "HA mode`t`t`t`t: Active - active (parallel)"
+					}
+					Else
+					{
+						Line 5 "HA mode`t`t`t`t: Active - passive (failover)"
+					}
+					Line 5 "Port`t`t`t`t: " $RASMFASetting.Port
+					Line 5 "Timeout (seconds)`t`t: " $RASMFASetting.Timeout
+					Line 5 "Retries`t`t`t`t: " $RASMFASetting.Retries
+					Line 5 "Password Encoding`t`t: " $RASMFASetting.PasswordEncoding
+					Line 5 "Forward username only to "
+					Line 5 "Radius Server`t`t`t: " $RASMFASetting.UsernameOnly.ToString()
 					Line 5 "Forward the first password to "
-					Line 5 "Windows authentication provider`t`t: " $RASMFASetting.ForwardFirstPwdToAD.ToString()
+					Line 5 "Windows authentication provider`t: " $RASMFASetting.ForwardFirstPwdToAD.ToString()
 					Line 4 "Attributes"
 					$cnt=0
 					ForEach($Item in $RASMFASetting.AttributeInfoList)
 					{
 						$cnt++
 						Line 5 "Attribute $cnt"
-						Line 6 "Name  : $($Item.Name)"
-						Line 6 "Vendor: $($Item.Vendor)"
-						Line 6 "Type  : $($Item.AttributeType)"
-						Line 6 "Value : $($Item.Value)"
+						Line 6 "Name`t: $($Item.RadiusAttrName)"
+						Line 6 "Vendor`t: $($Item.Vendor)"
+						Line 6 "Type`t: $($Item.AttributeType)"
+						Line 6 "Value`t: $($Item.Value)"
 						Line 5 "" #blank separator line
 					}
 					Line 4 "Automation"
@@ -60745,47 +62908,364 @@ Function OutputMFASetting
 					ForEach($Item in $RASMFASetting.AutomationInfoList)
 					{
 						$cnt++
-						Line 5 "" "Automation $cnt"
-						Line 6 "Enabled : $($Item.Enabled.ToString())"
-						Line 6 "Title   : $($Item.Title)"
-						Line 6 "Command : $($Item.Command)"
-						Line 6 "Image   : $($Item.Image)"
-						Line 6 "Autosend: $($Item.AutoSend.ToString())"
-						Line 5 "" "" #blank separator line
+						Line 5 "Automation $cnt"
+						Line 6 "Enable Action`t: $($Item.Enabled.ToString())"
+						Line 6 "Title`t`t: $($Item.Title)"
+						Line 6 "Command`t`t: $($Item.Command)"
+						Line 6 "Description`t: $($Item.Description)"
+						Line 6 "Action message`t: $($Item.ActionMessage)"
+						Line 6 "Image`t`t: $($Item.Image)"
+						Line 6 "Autosend`t: $($Item.AutoSend.ToString())"
+						Line 6 "" #blank separator line
 					}
+					Line 4 "Advanced"
+					Line 5 "Message"
+					If($RASMFASetting.IgnoreErrors.Count -gt 0)
+					{
+						ForEach($Message in $RASMFASetting.IgnoreErrors)
+						{
+							Line 6 $Message
+						}
+					}
+					Else
+					{
+						Line 6 ""
+					}
+					Line 4 "Restrictions"
+					Line 5 "Disable MFA if"
+					#users and groups
+					If($RASMFASetting.Criteria.SecurityPrincipals.Enabled)
+					{
+						$cnt = -1
+						
+						ForEach($Item in $RASMFASetting.Criteria.SecurityPrincipals.members)
+						{
+							$cnt++
+							If($cnt -eq 0)
+							{
+								Line 6 "User or group is: " "$($Item.Account)"
+							}
+							Else
+							{
+								Line 8 "  $($Item.Account)"
+							}
+						}
+						Line 0 ""
+					}
+
+					#gateways
+					If($RASMFASetting.Criteria.Gateways.Enabled)
+					{
+						$cnt = -1
+						ForEach($item in $RASMFASetting.Criteria.Gateways.Members)
+						{
+							$cnt++
+							If($cnt -eq 0)
+							{
+								Line 6 "Secure gateway is: " "$($Item.GatewayIP)"
+							}
+							Else
+							{
+								Line 6 "   $($Item.GatewayIP)"
+							}
+						}
+						Line 0 ""
+					}
+
+					#client device name
+					If($RASMFASetting.Criteria.Devices.Enabled)
+					{
+						$cnt = -1
+						ForEach($item in $RASMFASetting.Criteria.Devices.Members)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								Line 6 "Device is: " "$($Item.Client)"
+							}
+							Else
+							{
+								Line 8 "$($Item.Client)"
+							}
+						}
+						Line 0 ""
+					}
+
+					#client device operating system
+					If($RASMFASetting.Criteria.OSs.Enabled)
+					{
+						$cnt = -1
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Windows)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								Line 6 "Operating system is: " "Windows"
+							}
+							Else
+							{
+								Line 8 "     Windows"
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.WebClient)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								Line 6 "Operating system is: " "User Portal (Web Client)"
+							}
+							Else
+							{
+								Line 8 "     User Portal (Web Client)"
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Mac)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								Line 6 "Operating system is: " "macOS"
+							}
+							Else
+							{
+								Line 8 "     macOS"
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Linux)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								Line 6 "Operating system is: " "Linux"
+							}
+							Else
+							{
+								Line 8 "     Linux"
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.iOS)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								Line 6 "Operating system is: " "iOS/iPadOS"
+							}
+							Else
+							{
+								Line 8 "     iOS/iPadOS"
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Android)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								Line 6 "Operating system is: " "Android"
+							}
+							Else
+							{
+								Line 8 "     Android"
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Chrome)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								Line 6 "Operating system is: " "Chrome OS"
+							}
+							Else
+							{
+								Line 8 "     Chrome OS"
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Wyse)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								Line 6 "Operating system is: " "Wyse"
+							}
+							Else
+							{
+								Line 8 "     Wyse"
+							}
+						}
+						Line 0 ""
+					}
+
+					#IPs
+					If( $RASMFASetting.Criteria.IPs.Enabled)
+					{
+						$cnt = -1
+						
+						If($RASMFASetting.Criteria.IPs.AllowedIPs.IPv4s.Count -gt 0)
+						{
+							ForEach($item in $RASMFASetting.Criteria.IPs.AllowedIPs.IPv4s)
+							{
+								$cnt++
+								If($cnt -eq 0)
+								{
+									If(($item.From -eq $item.To) -or ($item.To -eq ""))
+									{
+										Line 6 "IP is: " $item.From
+									}
+									Else
+									{
+										Line 6 "IP is: " "$($item.From) - $($item.To)"
+									}
+								}
+								Else
+								{
+									If(($item.From -eq $item.To) -or ($item.To -eq ""))
+									{
+										Line 6 "       " $item.From
+									}
+									Else
+									{
+										Line 6 "       $($item.From) - $($item.To)"
+									}
+								}
+							}
+						}
+
+						If($RASMFASetting.Criteria.IPs.AllowedIPs.IPv6s.Count -gt 0)
+						{
+							ForEach($item in $RASMFASetting.Criteria.IPs.AllowedIPs.IPv6s)
+							{
+								$cnt++
+								If($cnt -eq 0)
+								{
+									If(($item.From -eq $item.To) -or ($item.To -eq ""))
+									{
+										Line 6 "IP is: " $item.From
+									}
+									Else
+									{
+										Line 6 "IP is: " "$($item.From) - $($item.To)"
+									}
+								}
+								Else
+								{
+									If(($item.From -eq $item.To) -or ($item.To -eq ""))
+									{
+										Line 6 "       " $item.From
+									}
+									Else
+									{
+										Line 6 "       $($item.From) - $($item.To)"
+									}
+								}
+							}
+						}
+						Line 0 ""
+					}
+					
+					#MAC addresses
+					If($RASMFASetting.Criteria.HardwareIDs.Enabled)
+					{
+						$cnt = -1
+						ForEach($item in $RASMFASetting.Criteria.HardwareIDs.Members)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								Line 6 "Hardware ID is: " "$($Item.HardwareID)"
+							}
+							Else
+							{
+								Line 8 "$($Item.HardwareID)"
+							}
+						}
+						Line 0 ""
+					}
+					
 					Line 0 ""
 				}
 				ElseIf($RASMFASetting.Type -eq "TekRadius")
 				{
-					Line 4 "Connection"
-					Line 5 "Type Name`t`t`t`t: " $RASMFASettingProvider
-					Line 5 "Primary Server`t`t`t`t: " $RASMFASetting.Server
-					Line 5 "Secondary server`t`t`t: " $RASMFASetting.BackupServer
-					If($RASMFASetting.HAMode -eq "Parallel")
+					Line 3 "Name`t`t`t: " $RASMFASetting.Name
+					Line 3 "Enabled`t`t`t: " $RASMFASetting.Enabled.ToString()
+					Line 3 "Description`t`t: " $RASMFASetting.Description
+					Line 3 "Display name`t`t: " $RASMFASetting.DisplayName
+					Line 3 "Type`t`t`t: " $RASMFASettingProvider
+					Line 3 "Last modification by`t: "  $RASMFASetting.AdminLastMod
+					Line 3 "Modified on`t`t: "  (Get-Date -UFormat "%c" $RASMFASetting.TimeLastMod)
+					Line 3 "Created by`t`t: "  $RASMFASetting.AdminCreate
+					Line 3 "Created on`t`t: "  (Get-Date -UFormat "%c" $RASMFASetting.TimeCreate)
+					Line 3 "ID`t`t`t: " $RASMFASetting.ID.ToString()
+					Line 4 "General"
+					Line 5 "Enable MFA provider in site`t: " $RASMFASetting.Enabled.ToString()
+					Line 5 "Name`t`t`t`t: " $RASMFASetting.Name
+					Line 5 "Description`t`t`t: " $RASMFASetting.Description
+					Line 5 "Type`t`t`t`t: " $RASMFASettingProvider
+					Line 5 "Themes"
+					If($Null -ne $MFAThemes)
 					{
-						Line 5 "HA mode`t`t`t`t`t: " "Active - active (parallel)"
+						ForEach($MFATheme in $MFAThemes)
+						{
+							$ThemeMFAName = (Get-RASMFA -Id $MFATheme.MFAId -ea 0).Name 4>$Null
+							
+							If(!($?) -or $Null -eq $ThemeMFAName)
+							{
+								$ThemeMFAName = "Unable to retrieve the MFA Name"
+							}
+							Line 6 "Theme`t`t: $($MFATheme.Name)"
+							Line 6 "MFA provider`t: $($ThemeMFAName)"
+							Line 6 "Description`t: $($MFATheme.Description)"
+						}
 					}
 					Else
 					{
-						Line 5 "HA mode`t`t`t`t`t: " "Active - passive (failover)"
+						Line 6 "No theme is selected"
 					}
-					Line 5 "Port`t`t`t`t`t: " $RASMFASetting.Port
-					Line 5 "Timeout`t`t`t`t`t: " $RASMFASetting.Timeout
-					Line 5 "Retries`t`t`t`t`t: " $RASMFASetting.Retries
-					Line 5 "Password Encoding`t`t`t: " $RASMFASetting.PasswordEncoding
-					Line 5 "Forward username only to Radius Server`t: " $RASMFASetting.UsernameOnly.ToString()
+					Line 4 "Connection"
+					Line 5 "Display Name`t`t`t: " $RASMFASetting.DisplayName
+					Line 5 "Primary server`t`t`t: " $RASMFASetting.Server
+					Line 5 "Secondary server`t`t: " $RASMFASetting.BackupServer
+					If($RASMFASetting.HAMode -eq "Parallel")
+					{
+						Line 5 "HA mode`t`t`t`t: Active - active (parallel)"
+					}
+					Else
+					{
+						Line 5 "HA mode`t`t`t`t: Active - passive (failover)"
+					}
+					Line 5 "Port`t`t`t`t: " $RASMFASetting.Port
+					Line 5 "Timeout (seconds)`t`t: " $RASMFASetting.Timeout
+					Line 5 "Retries`t`t`t`t: " $RASMFASetting.Retries
+					Line 5 "Password Encoding`t`t: " $RASMFASetting.PasswordEncoding
+					Line 5 "Forward username only to "
+					Line 5 "Radius Server`t`t`t: " $RASMFASetting.UsernameOnly.ToString()
 					Line 5 "Forward the first password to "
-					Line 5 "Windows authentication provider`t`t: " $RASMFASetting.ForwardFirstPwdToAD.ToString()
+					Line 5 "Windows authentication provider`t: " $RASMFASetting.ForwardFirstPwdToAD.ToString()
 					Line 4 "Attributes"
 					$cnt=0
 					ForEach($Item in $RASMFASetting.AttributeInfoList)
 					{
 						$cnt++
 						Line 5 "Attribute $cnt"
-						Line 6 "Name  : $($Item.Name)"
-						Line 6 "Vendor: $($Item.Vendor)"
-						Line 6 "Type  : $($Item.AttributeType)"
-						Line 6 "Value : $($Item.Value)"
+						Line 6 "Name`t: $($Item.RadiusAttrName)"
+						Line 6 "Vendor`t: $($Item.Vendor)"
+						Line 6 "Type`t: $($Item.AttributeType)"
+						Line 6 "Value`t: $($Item.Value)"
 						Line 5 "" #blank separator line
 					}
 					Line 4 "Automation"
@@ -60793,47 +63273,364 @@ Function OutputMFASetting
 					ForEach($Item in $RASMFASetting.AutomationInfoList)
 					{
 						$cnt++
-						Line 5 "" "Automation $cnt"
-						Line 6 "Enabled : $($Item.Enabled.ToString())"
-						Line 6 "Title   : $($Item.Title)"
-						Line 6 "Command : $($Item.Command)"
-						Line 6 "Image   : $($Item.Image)"
-						Line 6 "Autosend: $($Item.AutoSend.ToString())"
-						Line 5 "" "" #blank separator line
+						Line 5 "Automation $cnt"
+						Line 6 "Enable Action`t: $($Item.Enabled.ToString())"
+						Line 6 "Title`t`t: $($Item.Title)"
+						Line 6 "Command`t`t: $($Item.Command)"
+						Line 6 "Description`t: $($Item.Description)"
+						Line 6 "Action message`t: $($Item.ActionMessage)"
+						Line 6 "Image`t`t: $($Item.Image)"
+						Line 6 "Autosend`t: $($Item.AutoSend.ToString())"
+						Line 6 "" #blank separator line
 					}
+					Line 4 "Advanced"
+					Line 5 "Message"
+					If($RASMFASetting.IgnoreErrors.Count -gt 0)
+					{
+						ForEach($Message in $RASMFASetting.IgnoreErrors)
+						{
+							Line 6 $Message
+						}
+					}
+					Else
+					{
+						Line 6 ""
+					}
+					Line 4 "Restrictions"
+					Line 5 "Disable MFA if"
+					#users and groups
+					If($RASMFASetting.Criteria.SecurityPrincipals.Enabled)
+					{
+						$cnt = -1
+						
+						ForEach($Item in $RASMFASetting.Criteria.SecurityPrincipals.members)
+						{
+							$cnt++
+							If($cnt -eq 0)
+							{
+								Line 6 "User or group is: " "$($Item.Account)"
+							}
+							Else
+							{
+								Line 8 "  $($Item.Account)"
+							}
+						}
+						Line 0 ""
+					}
+
+					#gateways
+					If($RASMFASetting.Criteria.Gateways.Enabled)
+					{
+						$cnt = -1
+						ForEach($item in $RASMFASetting.Criteria.Gateways.Members)
+						{
+							$cnt++
+							If($cnt -eq 0)
+							{
+								Line 6 "Secure gateway is: " "$($Item.GatewayIP)"
+							}
+							Else
+							{
+								Line 6 "   $($Item.GatewayIP)"
+							}
+						}
+						Line 0 ""
+					}
+
+					#client device name
+					If($RASMFASetting.Criteria.Devices.Enabled)
+					{
+						$cnt = -1
+						ForEach($item in $RASMFASetting.Criteria.Devices.Members)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								Line 6 "Device is: " "$($Item.Client)"
+							}
+							Else
+							{
+								Line 8 "$($Item.Client)"
+							}
+						}
+						Line 0 ""
+					}
+
+					#client device operating system
+					If($RASMFASetting.Criteria.OSs.Enabled)
+					{
+						$cnt = -1
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Windows)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								Line 6 "Operating system is: " "Windows"
+							}
+							Else
+							{
+								Line 8 "     Windows"
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.WebClient)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								Line 6 "Operating system is: " "User Portal (Web Client)"
+							}
+							Else
+							{
+								Line 8 "     User Portal (Web Client)"
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Mac)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								Line 6 "Operating system is: " "macOS"
+							}
+							Else
+							{
+								Line 8 "     macOS"
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Linux)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								Line 6 "Operating system is: " "Linux"
+							}
+							Else
+							{
+								Line 8 "     Linux"
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.iOS)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								Line 6 "Operating system is: " "iOS/iPadOS"
+							}
+							Else
+							{
+								Line 8 "     iOS/iPadOS"
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Android)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								Line 6 "Operating system is: " "Android"
+							}
+							Else
+							{
+								Line 8 "     Android"
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Chrome)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								Line 6 "Operating system is: " "Chrome OS"
+							}
+							Else
+							{
+								Line 8 "     Chrome OS"
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Wyse)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								Line 6 "Operating system is: " "Wyse"
+							}
+							Else
+							{
+								Line 8 "     Wyse"
+							}
+						}
+						Line 0 ""
+					}
+
+					#IPs
+					If( $RASMFASetting.Criteria.IPs.Enabled)
+					{
+						$cnt = -1
+						
+						If($RASMFASetting.Criteria.IPs.AllowedIPs.IPv4s.Count -gt 0)
+						{
+							ForEach($item in $RASMFASetting.Criteria.IPs.AllowedIPs.IPv4s)
+							{
+								$cnt++
+								If($cnt -eq 0)
+								{
+									If(($item.From -eq $item.To) -or ($item.To -eq ""))
+									{
+										Line 6 "IP is: " $item.From
+									}
+									Else
+									{
+										Line 6 "IP is: " "$($item.From) - $($item.To)"
+									}
+								}
+								Else
+								{
+									If(($item.From -eq $item.To) -or ($item.To -eq ""))
+									{
+										Line 6 "       " $item.From
+									}
+									Else
+									{
+										Line 6 "       $($item.From) - $($item.To)"
+									}
+								}
+							}
+						}
+
+						If($RASMFASetting.Criteria.IPs.AllowedIPs.IPv6s.Count -gt 0)
+						{
+							ForEach($item in $RASMFASetting.Criteria.IPs.AllowedIPs.IPv6s)
+							{
+								$cnt++
+								If($cnt -eq 0)
+								{
+									If(($item.From -eq $item.To) -or ($item.To -eq ""))
+									{
+										Line 6 "IP is: " $item.From
+									}
+									Else
+									{
+										Line 6 "IP is: " "$($item.From) - $($item.To)"
+									}
+								}
+								Else
+								{
+									If(($item.From -eq $item.To) -or ($item.To -eq ""))
+									{
+										Line 6 "       " $item.From
+									}
+									Else
+									{
+										Line 6 "       $($item.From) - $($item.To)"
+									}
+								}
+							}
+						}
+						Line 0 ""
+					}
+					
+					#MAC addresses
+					If($RASMFASetting.Criteria.HardwareIDs.Enabled)
+					{
+						$cnt = -1
+						ForEach($item in $RASMFASetting.Criteria.HardwareIDs.Members)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								Line 6 "Hardware ID is: " "$($Item.HardwareID)"
+							}
+							Else
+							{
+								Line 8 "$($Item.HardwareID)"
+							}
+						}
+						Line 0 ""
+					}
+					
 					Line 0 ""
 				}
 				ElseIf($RASMFASetting.Type -eq "Radius")
 				{
-					Line 4 "Connection"
-					Line 5 "Display Name`t`t`t`t: " $RASMFASetting.DisplayName
-					Line 5 "Primary Server`t`t`t`t: " $RASMFASetting.Server
-					Line 5 "Secondary server`t`t`t: " $RASMFASetting.BackupServer
-					If($RASMFASetting.HAMode -eq "Parallel")
+					Line 3 "Name`t`t`t: " $RASMFASetting.Name
+					Line 3 "Enabled`t`t`t: " $RASMFASetting.Enabled.ToString()
+					Line 3 "Description`t`t: " $RASMFASetting.Description
+					Line 3 "Display name`t`t: " $RASMFASetting.DisplayName
+					Line 3 "Type`t`t`t: " $RASMFASettingProvider
+					Line 3 "Last modification by`t: "  $RASMFASetting.AdminLastMod
+					Line 3 "Modified on`t`t: "  (Get-Date -UFormat "%c" $RASMFASetting.TimeLastMod)
+					Line 3 "Created by`t`t: "  $RASMFASetting.AdminCreate
+					Line 3 "Created on`t`t: "  (Get-Date -UFormat "%c" $RASMFASetting.TimeCreate)
+					Line 3 "ID`t`t`t: " $RASMFASetting.ID.ToString()
+					Line 4 "General"
+					Line 5 "Enable MFA provider in site`t: " $RASMFASetting.Enabled.ToString()
+					Line 5 "Name`t`t`t`t: " $RASMFASetting.Name
+					Line 5 "Description`t`t`t: " $RASMFASetting.Description
+					Line 5 "Type`t`t`t`t: " $RASMFASettingProvider
+					Line 5 "Themes"
+					If($Null -ne $MFAThemes)
 					{
-						Line 5 "HA mode`t`t`t`t`t: " "Active - active (parallel)"
+						ForEach($MFATheme in $MFAThemes)
+						{
+							$ThemeMFAName = (Get-RASMFA -Id $MFATheme.MFAId -ea 0).Name 4>$Null
+							
+							If(!($?) -or $Null -eq $ThemeMFAName)
+							{
+								$ThemeMFAName = "Unable to retrieve the MFA Name"
+							}
+							Line 6 "Theme`t`t: $($MFATheme.Name)"
+							Line 6 "MFA provider`t: $($ThemeMFAName)"
+							Line 6 "Description`t: $($MFATheme.Description)"
+						}
 					}
 					Else
 					{
-						Line 5 "HA mode`t`t`t`t`t: " "Active - passive (failover)"
+						Line 6 "No theme is selected"
 					}
-					Line 5 "Port`t`t`t`t`t: " $RASMFASetting.Port
-					Line 5 "Timeout`t`t`t`t`t: " $RASMFASetting.Timeout
-					Line 5 "Retries`t`t`t`t`t: " $RASMFASetting.Retries
-					Line 5 "Password Encoding`t`t`t: " $RASMFASetting.PasswordEncoding
-					Line 5 "Forward username only to Radius Server`t: " $RASMFASetting.UsernameOnly.ToString()
+					Line 4 "Connection"
+					Line 5 "Display Name`t`t`t: " $RASMFASetting.DisplayName
+					Line 5 "Primary server`t`t`t: " $RASMFASetting.Server
+					Line 5 "Secondary server`t`t: " $RASMFASetting.BackupServer
+					If($RASMFASetting.HAMode -eq "Parallel")
+					{
+						Line 5 "HA mode`t`t`t`t: Active - active (parallel)"
+					}
+					Else
+					{
+						Line 5 "HA mode`t`t`t`t: Active - passive (failover)"
+					}
+					Line 5 "Port`t`t`t`t: " $RASMFASetting.Port
+					Line 5 "Timeout (seconds)`t`t: " $RASMFASetting.Timeout
+					Line 5 "Retries`t`t`t`t: " $RASMFASetting.Retries
+					Line 5 "Password Encoding`t`t: " $RASMFASetting.PasswordEncoding
+					Line 5 "Forward username only to "
+					Line 5 "Radius Server`t`t`t: " $RASMFASetting.UsernameOnly.ToString()
 					Line 5 "Forward the first password to "
-					Line 5 "Windows authentication provider`t`t: " $RASMFASetting.ForwardFirstPwdToAD.ToString()
+					Line 5 "Windows authentication provider`t: " $RASMFASetting.ForwardFirstPwdToAD.ToString()
 					Line 4 "Attributes"
 					$cnt=0
 					ForEach($Item in $RASMFASetting.AttributeInfoList)
 					{
 						$cnt++
 						Line 5 "Attribute $cnt"
-						Line 6 "Vendor: $($Item.Vendor)"
-						LIne 6 "Attribute: $($Item.RadiusAttrName)"
-						Line 6 "Type  : $($Item.AttributeType)"
-						Line 6 "Value : $($Item.Value)"
+						Line 6 "Name`t: $($Item.RadiusAttrName)"
+						Line 6 "Vendor`t: $($Item.Vendor)"
+						Line 6 "Type`t: $($Item.AttributeType)"
+						Line 6 "Value`t: $($Item.Value)"
 						Line 5 "" #blank separator line
 					}
 					Line 4 "Automation"
@@ -60841,14 +63638,295 @@ Function OutputMFASetting
 					ForEach($Item in $RASMFASetting.AutomationInfoList)
 					{
 						$cnt++
-						Line 5 "" "Automation $cnt"
-						Line 6 "Enabled : $($Item.Enabled.ToString())"
-						Line 6 "Title   : $($Item.Title)"
-						Line 6 "Command : $($Item.Command)"
-						Line 6 "Image   : $($Item.Image)"
-						Line 6 "Autosend: $($Item.AutoSend.ToString())"
-						Line 5 "" "" #blank separator line
+						Line 5 "Automation $cnt"
+						Line 6 "Enable Action`t: $($Item.Enabled.ToString())"
+						Line 6 "Title`t`t: $($Item.Title)"
+						Line 6 "Command`t`t: $($Item.Command)"
+						Line 6 "Description`t: $($Item.Description)"
+						Line 6 "Action message`t: $($Item.ActionMessage)"
+						Line 6 "Image`t`t: $($Item.Image)"
+						Line 6 "Autosend`t: $($Item.AutoSend.ToString())"
+						Line 6 "" #blank separator line
 					}
+					Line 4 "Advanced"
+					Line 5 "Message"
+					If($RASMFASetting.IgnoreErrors.Count -gt 0)
+					{
+						ForEach($Message in $RASMFASetting.IgnoreErrors)
+						{
+							Line 6 $Message
+						}
+					}
+					Else
+					{
+						Line 6 ""
+					}
+					Line 4 "Restrictions"
+					Line 5 "Disable MFA if"
+					#users and groups
+					If($RASMFASetting.Criteria.SecurityPrincipals.Enabled)
+					{
+						$cnt = -1
+						
+						ForEach($Item in $RASMFASetting.Criteria.SecurityPrincipals.members)
+						{
+							$cnt++
+							If($cnt -eq 0)
+							{
+								Line 6 "User or group is: " "$($Item.Account)"
+							}
+							Else
+							{
+								Line 8 "  $($Item.Account)"
+							}
+						}
+						Line 0 ""
+					}
+
+					#gateways
+					If($RASMFASetting.Criteria.Gateways.Enabled)
+					{
+						$cnt = -1
+						ForEach($item in $RASMFASetting.Criteria.Gateways.Members)
+						{
+							$cnt++
+							If($cnt -eq 0)
+							{
+								Line 6 "Secure gateway is: " "$($Item.GatewayIP)"
+							}
+							Else
+							{
+								Line 6 "   $($Item.GatewayIP)"
+							}
+						}
+						Line 0 ""
+					}
+
+					#client device name
+					If($RASMFASetting.Criteria.Devices.Enabled)
+					{
+						$cnt = -1
+						ForEach($item in $RASMFASetting.Criteria.Devices.Members)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								Line 6 "Device is: " "$($Item.Client)"
+							}
+							Else
+							{
+								Line 8 "$($Item.Client)"
+							}
+						}
+						Line 0 ""
+					}
+
+					#client device operating system
+					If($RASMFASetting.Criteria.OSs.Enabled)
+					{
+						$cnt = -1
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Windows)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								Line 6 "Operating system is: " "Windows"
+							}
+							Else
+							{
+								Line 8 "     Windows"
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.WebClient)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								Line 6 "Operating system is: " "User Portal (Web Client)"
+							}
+							Else
+							{
+								Line 8 "     User Portal (Web Client)"
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Mac)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								Line 6 "Operating system is: " "macOS"
+							}
+							Else
+							{
+								Line 8 "     macOS"
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Linux)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								Line 6 "Operating system is: " "Linux"
+							}
+							Else
+							{
+								Line 8 "     Linux"
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.iOS)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								Line 6 "Operating system is: " "iOS/iPadOS"
+							}
+							Else
+							{
+								Line 8 "     iOS/iPadOS"
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Android)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								Line 6 "Operating system is: " "Android"
+							}
+							Else
+							{
+								Line 8 "     Android"
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Chrome)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								Line 6 "Operating system is: " "Chrome OS"
+							}
+							Else
+							{
+								Line 8 "     Chrome OS"
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Wyse)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								Line 6 "Operating system is: " "Wyse"
+							}
+							Else
+							{
+								Line 8 "     Wyse"
+							}
+						}
+						Line 0 ""
+					}
+
+					#IPs
+					If( $RASMFASetting.Criteria.IPs.Enabled)
+					{
+						$cnt = -1
+						
+						If($RASMFASetting.Criteria.IPs.AllowedIPs.IPv4s.Count -gt 0)
+						{
+							ForEach($item in $RASMFASetting.Criteria.IPs.AllowedIPs.IPv4s)
+							{
+								$cnt++
+								If($cnt -eq 0)
+								{
+									If(($item.From -eq $item.To) -or ($item.To -eq ""))
+									{
+										Line 6 "IP is: " $item.From
+									}
+									Else
+									{
+										Line 6 "IP is: " "$($item.From) - $($item.To)"
+									}
+								}
+								Else
+								{
+									If(($item.From -eq $item.To) -or ($item.To -eq ""))
+									{
+										Line 6 "       " $item.From
+									}
+									Else
+									{
+										Line 6 "       $($item.From) - $($item.To)"
+									}
+								}
+							}
+						}
+
+						If($RASMFASetting.Criteria.IPs.AllowedIPs.IPv6s.Count -gt 0)
+						{
+							ForEach($item in $RASMFASetting.Criteria.IPs.AllowedIPs.IPv6s)
+							{
+								$cnt++
+								If($cnt -eq 0)
+								{
+									If(($item.From -eq $item.To) -or ($item.To -eq ""))
+									{
+										Line 6 "IP is: " $item.From
+									}
+									Else
+									{
+										Line 6 "IP is: " "$($item.From) - $($item.To)"
+									}
+								}
+								Else
+								{
+									If(($item.From -eq $item.To) -or ($item.To -eq ""))
+									{
+										Line 6 "       " $item.From
+									}
+									Else
+									{
+										Line 6 "       $($item.From) - $($item.To)"
+									}
+								}
+							}
+						}
+						Line 0 ""
+					}
+					
+					#MAC addresses
+					If($RASMFASetting.Criteria.HardwareIDs.Enabled)
+					{
+						$cnt = -1
+						ForEach($item in $RASMFASetting.Criteria.HardwareIDs.Members)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								Line 6 "Hardware ID is: " "$($Item.HardwareID)"
+							}
+							Else
+							{
+								Line 8 "$($Item.HardwareID)"
+							}
+						}
+						Line 0 ""
+					}
+					
 					Line 0 ""
 				}
 				ElseIf($RASMFASetting.Type -eq "Deepnet")
@@ -60957,9 +64035,16 @@ Function OutputMFASetting
 							{
 								$ThemeMFAName = "Unable to retrieve the MFA Name"
 							}
-							$rowdata += @(,("",($Script:htmlsb),"Theme: $($MFATheme.Name)",$htmlwhite))
+							Else
+							{
+								$ThemeMFAName = $ThemeMFAName.Replace("<","").Replace(">","")
+							}
+							
+							$MFAThemeName        = $MFATheme.Name.Replace("<","").Replace(">","")
+							$MFAThemeDescription = $MFATheme.Description.Replace("<","").Replace(">","")
+							$rowdata += @(,("",($Script:htmlsb),"Theme: $($MFAThemeName)",$htmlwhite))
 							$rowdata += @(,("",($Script:htmlsb),"MFA provider: $($ThemeMFAName)",$htmlwhite))
-							$rowdata += @(,("",($Script:htmlsb),"Description: $($MFATheme.Description)",$htmlwhite))
+							$rowdata += @(,("",($Script:htmlsb),"Description: $($MFAThemeDescription)",$htmlwhite))
 						}
 					}
 					Else
@@ -61035,6 +64120,8 @@ Function OutputMFASetting
 					}
 					$rowdata += @(,( "     Restrictions",($Script:htmlsb),"",$htmlwhite))
 					$rowdata += @(,( "          Disable MFA if",($Script:htmlsb),"",$htmlwhite))
+
+					#users and groups
 					If($RASMFASetting.Criteria.SecurityPrincipals.Enabled)
 					{
 						$cnt = -1
@@ -61044,11 +64131,255 @@ Function OutputMFASetting
 							$cnt++
 							If($cnt -eq 0)
 							{
-								$rowdata += @(,("          User or group is ",($Script:htmlsb),"$($Item.Account)",$htmlwhite))
+								$rowdata += @(,("               User or group is",($Script:htmlsb), "$($Item.Account)",$htmlwhite))
 							}
 							Else
 							{
-								$rowdata += @(,("",($Script:htmlsb),"$($Item.Account)",$htmlwhite))
+								$rowdata += @(,("",($Script:htmlsb), "$($Item.Account)",$htmlwhite))
+							}
+						}
+						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+					}
+
+					#gateways
+					If($RASMFASetting.Criteria.Gateways.Enabled)
+					{
+						$cnt = -1
+						ForEach($item in $RASMFASetting.Criteria.Gateways.Members)
+						{
+							$cnt++
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,("               Secure gateway is",($Script:htmlsb), "$($Item.GatewayIP)",$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb), "$($Item.GatewayIP)",$htmlwhite))
+							}
+						}
+						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+					}
+
+					#client device name
+					If($RASMFASetting.Criteria.Devices.Enabled)
+					{
+						$cnt = -1
+						ForEach($item in $RASMFASetting.Criteria.Devices.Members)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,("               Device is",($Script:htmlsb), "$($Item.Client)",$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb), "$($Item.Client)",$htmlwhite))
+							}
+						}
+						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+					}
+
+					#client device operating system
+					If($RASMFASetting.Criteria.OSs.Enabled)
+					{
+						$cnt = -1
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Windows)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,("               Operating system is",($Script:htmlsb), "Windows",$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb), "Windows",$htmlwhite))
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.WebClient)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,("               Operating system is",($Script:htmlsb), "User Portal (Web Client)",$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb), "User Portal (Web Client)",$htmlwhite))
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Mac)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,("               Operating system is",($Script:htmlsb), "macOS",$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb), "macOS",$htmlwhite))
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Linux)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,("               Operating system is",($Script:htmlsb), "Linux",$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb), "Linux",$htmlwhite))
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.iOS)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,("               Operating system is",($Script:htmlsb), "iOS/iPadOS",$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb), "iOS/iPadOS",$htmlwhite))
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Android)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,("               Operating system is",($Script:htmlsb), "Android",$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb), "Android",$htmlwhite))
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Chrome)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,("               Operating system is",($Script:htmlsb), "Chrome OS",$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb), "Chrome OS",$htmlwhite))
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Wyse)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,("               Operating system is",($Script:htmlsb), "Wyse",$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb), "Wyse",$htmlwhite))
+							}
+						}
+						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+					}
+
+					#IPs
+					If( $RASMFASetting.Criteria.IPs.Enabled)
+					{
+						$cnt = -1
+						
+						If($RASMFASetting.Criteria.IPs.AllowedIPs.IPv4s.Count -gt 0)
+						{
+							ForEach($item in $RASMFASetting.Criteria.IPs.AllowedIPs.IPv4s)
+							{
+								$cnt++
+								If($cnt -eq 0)
+								{
+									If(($item.From -eq $item.To) -or ($item.To -eq ""))
+									{
+										$rowdata += @(,("               IP is",($Script:htmlsb), $item.From,$htmlwhite))
+									}
+									Else
+									{
+										$rowdata += @(,("               IP is",($Script:htmlsb), "$($item.From) - $($item.To)",$htmlwhite))
+									}
+								}
+								Else
+								{
+									If(($item.From -eq $item.To) -or ($item.To -eq ""))
+									{
+										$rowdata += @(,("",($Script:htmlsb), $item.From,$htmlwhite))
+									}
+									Else
+									{
+										$rowdata += @(,("",($Script:htmlsb), "$($item.From) - $($item.To)",$htmlwhite))
+									}
+								}
+							}
+						}
+
+						If($RASMFASetting.Criteria.IPs.AllowedIPs.IPv6s.Count -gt 0)
+						{
+							ForEach($item in $RASMFASetting.Criteria.IPs.AllowedIPs.IPv6s)
+							{
+								$cnt++
+								If($cnt -eq 0)
+								{
+									If(($item.From -eq $item.To) -or ($item.To -eq ""))
+									{
+										$rowdata += @(,("               IP is",($Script:htmlsb), $item.From,$htmlwhite))
+									}
+									Else
+									{
+										$rowdata += @(,("    IP is",($Script:htmlsb), "$($item.From) - $($item.To)",$htmlwhite))
+									}
+								}
+								Else
+								{
+									If(($item.From -eq $item.To) -or ($item.To -eq ""))
+									{
+										$rowdata += @(,("",($Script:htmlsb), $item.From,$htmlwhite))
+									}
+									Else
+									{
+										$rowdata += @(,("",($Script:htmlsb), "$($item.From) - $($item.To)",$htmlwhite))
+									}
+								}
+							}
+						}
+						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+					}
+					
+					#MAC addresses
+					If($RASMFASetting.Criteria.HardwareIDs.Enabled)
+					{
+						$cnt = -1
+						ForEach($item in $RASMFASetting.Criteria.HardwareIDs.Members)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,("               Hardware ID is",($Script:htmlsb), "$($Item.HardwareID)",$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb), "$($Item.HardwareID)",$htmlwhite))
 							}
 						}
 						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
@@ -61056,22 +64387,65 @@ Function OutputMFASetting
 				}
 				ElseIf($RASMFASetting.Type -eq "DuoRadius")
 				{
-					$rowdata += @(,( "     Connection",($Script:htmlsb),"",$htmlwhite))
-					$rowdata += @(,("          Type Name",($Script:htmlsb),$RASMFASettingProvider,$htmlwhite))
-					$rowdata += @(,("          Primary Server",($Script:htmlsb),$RASMFASetting.Server,$htmlwhite))
-					$rowdata += @(,( "          Secondary server",($Script:htmlsb), $RASMFASetting.BackupServer,$htmlwhite))
-					If($RASMFASetting.HAMode -eq "Parallel")
+					$rowdata += @(,("Name",($Script:htmlsb),$RASMFASetting.Name,$htmlwhite))
+					$rowdata += @(,("Enabled",($Script:htmlsb),$RASMFASetting.Enabled.ToString(),$htmlwhite))
+					$rowdata += @(,("Description",($Script:htmlsb),$RASMFASetting.Description,$htmlwhite))
+					$rowdata += @(,("Display name",($Script:htmlsb),$RASMFASetting.DisplayName,$htmlwhite))
+					$rowdata += @(,("Type",($Script:htmlsb),$RASMFASettingProvider,$htmlwhite))
+					$rowdata += @(,("Last modification by",($Script:htmlsb),$RASMFASetting.AdminLastMod,$htmlwhite))
+					$rowdata += @(,("Modified on",($Script:htmlsb),(Get-Date -UFormat "%c" $RASMFASetting.TimeLastMod),$htmlwhite))
+					$rowdata += @(,("Created by",($Script:htmlsb),$RASMFASetting.AdminCreate,$htmlwhite))
+					$rowdata += @(,("Created on",($Script:htmlsb),(Get-Date -UFormat "%c" $RASMFASetting.TimeCreate),$htmlwhite))
+					$rowdata += @(,("ID",($Script:htmlsb),$RASMFASetting.ID.ToString(),$htmlwhite))
+					$rowdata += @(,("     General",($Script:htmlsb),"",$htmlwhite))
+					$rowdata += @(,("          Enable MFA provider in site",($Script:htmlsb),$RASMFASetting.Enabled.ToString(),$htmlwhite))
+					$rowdata += @(,("          Name",($Script:htmlsb),$RASMFASetting.Name,$htmlwhite))
+					$rowdata += @(,("          Description",($Script:htmlsb),$RASMFASetting.Description,$htmlwhite))
+					$rowdata += @(,("          Type",($Script:htmlsb),$RASMFASetting.DisplayName,$htmlwhite))
+					$rowdata += @(,("          Themes",($Script:htmlsb),"",$htmlwhite))
+					If($Null -ne $MFAThemes)
 					{
-						$rowdata += @(,( "          HA mode",($Script:htmlsb), "Active - active (parallel)",$htmlwhite))
+						ForEach($MFATheme in $MFAThemes)
+						{
+							$ThemeMFAName = (Get-RASMFA -Id $MFATheme.MFAId -ea 0).Name 4>$Null
+							
+							If(!($?) -or $Null -eq $ThemeMFAName)
+							{
+								$ThemeMFAName = "Unable to retrieve the MFA Name"
+							}
+							Else
+							{
+								$ThemeMFAName = $ThemeMFAName.Replace("<","").Replace(">","")
+							}
+							
+							$MFAThemeName        = $MFATheme.Name.Replace("<","").Replace(">","")
+							$MFAThemeDescription = $MFATheme.Description.Replace("<","").Replace(">","")
+							$rowdata += @(,("",($Script:htmlsb),"Theme: $($MFAThemeName)",$htmlwhite))
+							$rowdata += @(,("",($Script:htmlsb),"MFA provider: $($ThemeMFAName)",$htmlwhite))
+							$rowdata += @(,("",($Script:htmlsb),"Description: $($MFAThemeDescription)",$htmlwhite))
+						}
 					}
 					Else
 					{
-						$rowdata += @(,( "          HA mode",($Script:htmlsb), "Active - passive (failover)",$htmlwhite))
+						$rowdata += @(,("",($Script:htmlsb),"No theme is selected",$htmlwhite))
+					}
+					$rowdata += @(,("     Connection",($Script:htmlsb),"",$htmlwhite))
+					$rowdata += @(,("          Display Name",($Script:htmlsb),$RASMFASetting.DisplayName,$htmlwhite))
+					$rowdata += @(,("          Primary Server",($Script:htmlsb),$RASMFASetting.Server,$htmlwhite))
+					$rowdata += @(,("          Secondary server",($Script:htmlsb), $RASMFASetting.BackupServer,$htmlwhite))
+					If($RASMFASetting.HAMode -eq "Parallel")
+					{
+						$rowdata += @(,("          HA mode",($Script:htmlsb), "Active - active (parallel)",$htmlwhite))
+					}
+					Else
+					{
+						$rowdata += @(,("          HA mode",($Script:htmlsb), "Active - passive (failover)",$htmlwhite))
 					}
 					$rowdata += @(,("          Port",($Script:htmlsb),$RASMFASetting.Port,$htmlwhite))
 					$rowdata += @(,("          Timeout",($Script:htmlsb),$RASMFASetting.Timeout,$htmlwhite))
 					$rowdata += @(,("          Retries",($Script:htmlsb),$RASMFASetting.Retries,$htmlwhite))
 					$rowdata += @(,("          Password Encoding",($Script:htmlsb),$RASMFASetting.PasswordEncoding.ToString(),$htmlwhite))
+					$rowdata += @(,("          User Prompt",($Script:htmlsb),$RASMFASetting.UserMessagePrompt,$htmlwhite))
 					$rowdata += @(,("          Forward username only to Radius Server",($Script:htmlsb),$RASMFASetting.UsernameOnly.ToString(),$htmlwhite))
 					$rowdata += @(,("          Forward the first password to Windows authentication provider",($Script:htmlsb),$RASMFASetting.ForwardFirstPwdToAD.ToString(),$htmlwhite))
 					$rowdata += @(,( "     Attributes",($Script:htmlsb),"",$htmlwhite))
@@ -61080,7 +64454,7 @@ Function OutputMFASetting
 					{
 						$cnt++
 						$rowdata += @(,( "",($Script:htmlsb), "Attribute $cnt",$htmlwhite))
-						$rowdata += @(,( "",($Script:htmlsb), "     Name: $($Item.Name)",$htmlwhite))
+						$rowdata += @(,( "",($Script:htmlsb), "     Name: $($Item.RadiusAttrName)",$htmlwhite))
 						$rowdata += @(,( "",($Script:htmlsb), "     Vendor: $($Item.Vendor)",$htmlwhite))
 						$rowdata += @(,( "",($Script:htmlsb), "     Type: $($Item.AttributeType)",$htmlwhite))
 						$rowdata += @(,( "",($Script:htmlsb), "     Value: $($Item.Value)",$htmlwhite))
@@ -61092,32 +64466,364 @@ Function OutputMFASetting
 					{
 						$cnt++
 						$rowdata += @(,( "",($Script:htmlsb), "Automation $cnt",$htmlwhite))
-						$rowdata += @(,( "",($Script:htmlsb), "     Enabled: $($Item.Enabled.ToString())",$htmlwhite))
+						$rowdata += @(,( "",($Script:htmlsb), "     Enabled Action: $($Item.Enabled.ToString())",$htmlwhite))
 						$rowdata += @(,( "",($Script:htmlsb), "     Title: $($Item.Title)",$htmlwhite))
 						$rowdata += @(,( "",($Script:htmlsb), "     Command: $($Item.Command)",$htmlwhite))
+						$rowdata += @(,( "",($Script:htmlsb), "     Description: $($Item.Description)",$htmlwhite))
+						$rowdata += @(,( "",($Script:htmlsb), "     Action message: $($Item.ActionMessage)",$htmlwhite))
 						$rowdata += @(,( "",($Script:htmlsb), "     Image: $($Item.Image)",$htmlwhite))
 						$rowdata += @(,( "",($Script:htmlsb), "     Autosend: $($Item.AutoSend.ToString())",$htmlwhite))
 						$rowdata += @(,( "",($Script:htmlsb),"",$htmlwhite)) #blank separator line
+					}
+					$rowdata += @(,( "     Advanced",($Script:htmlsb),"",$htmlwhite))
+					If($RASMFASetting.IgnoreErrors.Count -gt 0)
+					{
+						$cnt = -1
+						ForEach($Message in $RASMFASetting.IgnoreErrors)
+						{
+							$cnt++
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,( "          Message",($Script:htmlsb),$Message,$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,( "",($Script:htmlsb),$Message,$htmlwhite))
+							}
+						}
+					}
+					Else
+					{
+						$rowdata += @(,( "          Message",($Script:htmlsb),"",$htmlwhite))
+					}
+					$rowdata += @(,( "     Restrictions",($Script:htmlsb),"",$htmlwhite))
+					$rowdata += @(,( "          Disable MFA if",($Script:htmlsb),"",$htmlwhite))
+
+					#users and groups
+					If($RASMFASetting.Criteria.SecurityPrincipals.Enabled)
+					{
+						$cnt = -1
+						
+						ForEach($Item in $RASMFASetting.Criteria.SecurityPrincipals.members)
+						{
+							$cnt++
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,("               User or group is",($Script:htmlsb), "$($Item.Account)",$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb), "$($Item.Account)",$htmlwhite))
+							}
+						}
+						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+					}
+
+					#gateways
+					If($RASMFASetting.Criteria.Gateways.Enabled)
+					{
+						$cnt = -1
+						ForEach($item in $RASMFASetting.Criteria.Gateways.Members)
+						{
+							$cnt++
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,("               Secure gateway is",($Script:htmlsb), "$($Item.GatewayIP)",$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb), "$($Item.GatewayIP)",$htmlwhite))
+							}
+						}
+						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+					}
+
+					#client device name
+					If($RASMFASetting.Criteria.Devices.Enabled)
+					{
+						$cnt = -1
+						ForEach($item in $RASMFASetting.Criteria.Devices.Members)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,("               Device is",($Script:htmlsb), "$($Item.Client)",$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb), "$($Item.Client)",$htmlwhite))
+							}
+						}
+						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+					}
+
+					#client device operating system
+					If($RASMFASetting.Criteria.OSs.Enabled)
+					{
+						$cnt = -1
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Windows)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,("               Operating system is",($Script:htmlsb), "Windows",$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb), "Windows",$htmlwhite))
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.WebClient)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,("               Operating system is",($Script:htmlsb), "User Portal (Web Client)",$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb), "User Portal (Web Client)",$htmlwhite))
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Mac)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,("               Operating system is",($Script:htmlsb), "macOS",$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb), "macOS",$htmlwhite))
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Linux)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,("               Operating system is",($Script:htmlsb), "Linux",$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb), "Linux",$htmlwhite))
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.iOS)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,("               Operating system is",($Script:htmlsb), "iOS/iPadOS",$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb), "iOS/iPadOS",$htmlwhite))
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Android)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,("               Operating system is",($Script:htmlsb), "Android",$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb), "Android",$htmlwhite))
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Chrome)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,("               Operating system is",($Script:htmlsb), "Chrome OS",$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb), "Chrome OS",$htmlwhite))
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Wyse)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,("               Operating system is",($Script:htmlsb), "Wyse",$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb), "Wyse",$htmlwhite))
+							}
+						}
+						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+					}
+
+					#IPs
+					If( $RASMFASetting.Criteria.IPs.Enabled)
+					{
+						$cnt = -1
+						
+						If($RASMFASetting.Criteria.IPs.AllowedIPs.IPv4s.Count -gt 0)
+						{
+							ForEach($item in $RASMFASetting.Criteria.IPs.AllowedIPs.IPv4s)
+							{
+								$cnt++
+								If($cnt -eq 0)
+								{
+									If(($item.From -eq $item.To) -or ($item.To -eq ""))
+									{
+										$rowdata += @(,("               IP is",($Script:htmlsb), $item.From,$htmlwhite))
+									}
+									Else
+									{
+										$rowdata += @(,("               IP is",($Script:htmlsb), "$($item.From) - $($item.To)",$htmlwhite))
+									}
+								}
+								Else
+								{
+									If(($item.From -eq $item.To) -or ($item.To -eq ""))
+									{
+										$rowdata += @(,("",($Script:htmlsb), $item.From,$htmlwhite))
+									}
+									Else
+									{
+										$rowdata += @(,("",($Script:htmlsb), "$($item.From) - $($item.To)",$htmlwhite))
+									}
+								}
+							}
+						}
+
+						If($RASMFASetting.Criteria.IPs.AllowedIPs.IPv6s.Count -gt 0)
+						{
+							ForEach($item in $RASMFASetting.Criteria.IPs.AllowedIPs.IPv6s)
+							{
+								$cnt++
+								If($cnt -eq 0)
+								{
+									If(($item.From -eq $item.To) -or ($item.To -eq ""))
+									{
+										$rowdata += @(,("               IP is",($Script:htmlsb), $item.From,$htmlwhite))
+									}
+									Else
+									{
+										$rowdata += @(,("    IP is",($Script:htmlsb), "$($item.From) - $($item.To)",$htmlwhite))
+									}
+								}
+								Else
+								{
+									If(($item.From -eq $item.To) -or ($item.To -eq ""))
+									{
+										$rowdata += @(,("",($Script:htmlsb), $item.From,$htmlwhite))
+									}
+									Else
+									{
+										$rowdata += @(,("",($Script:htmlsb), "$($item.From) - $($item.To)",$htmlwhite))
+									}
+								}
+							}
+						}
+						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+					}
+					
+					#MAC addresses
+					If($RASMFASetting.Criteria.HardwareIDs.Enabled)
+					{
+						$cnt = -1
+						ForEach($item in $RASMFASetting.Criteria.HardwareIDs.Members)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,("               Hardware ID is",($Script:htmlsb), "$($Item.HardwareID)",$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb), "$($Item.HardwareID)",$htmlwhite))
+							}
+						}
+						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 					}
 				}
 				ElseIf($RASMFASetting.Type -eq "FortiRadius")
 				{
-					$rowdata += @(,( "     Connection",($Script:htmlsb),"",$htmlwhite))
-					$rowdata += @(,("          Type Name",($Script:htmlsb),$RASMFASettingProvidere,$htmlwhite))
-					$rowdata += @(,("          Primary Server",($Script:htmlsb),$RASMFASetting.Server,$htmlwhite))
-					$rowdata += @(,( "          Secondary server",($Script:htmlsb), $RASMFASetting.BackupServer,$htmlwhite))
-					If($RASMFASetting.HAMode -eq "Parallel")
+					$rowdata += @(,("Name",($Script:htmlsb),$RASMFASetting.Name,$htmlwhite))
+					$rowdata += @(,("Enabled",($Script:htmlsb),$RASMFASetting.Enabled.ToString(),$htmlwhite))
+					$rowdata += @(,("Description",($Script:htmlsb),$RASMFASetting.Description,$htmlwhite))
+					$rowdata += @(,("Display name",($Script:htmlsb),$RASMFASetting.DisplayName,$htmlwhite))
+					$rowdata += @(,("Type",($Script:htmlsb),$RASMFASettingProvider,$htmlwhite))
+					$rowdata += @(,("Last modification by",($Script:htmlsb),$RASMFASetting.AdminLastMod,$htmlwhite))
+					$rowdata += @(,("Modified on",($Script:htmlsb),(Get-Date -UFormat "%c" $RASMFASetting.TimeLastMod),$htmlwhite))
+					$rowdata += @(,("Created by",($Script:htmlsb),$RASMFASetting.AdminCreate,$htmlwhite))
+					$rowdata += @(,("Created on",($Script:htmlsb),(Get-Date -UFormat "%c" $RASMFASetting.TimeCreate),$htmlwhite))
+					$rowdata += @(,("ID",($Script:htmlsb),$RASMFASetting.ID.ToString(),$htmlwhite))
+					$rowdata += @(,("     General",($Script:htmlsb),"",$htmlwhite))
+					$rowdata += @(,("          Enable MFA provider in site",($Script:htmlsb),$RASMFASetting.Enabled.ToString(),$htmlwhite))
+					$rowdata += @(,("          Name",($Script:htmlsb),$RASMFASetting.Name,$htmlwhite))
+					$rowdata += @(,("          Description",($Script:htmlsb),$RASMFASetting.Description,$htmlwhite))
+					$rowdata += @(,("          Type",($Script:htmlsb),$RASMFASetting.DisplayName,$htmlwhite))
+					$rowdata += @(,("          Themes",($Script:htmlsb),"",$htmlwhite))
+					If($Null -ne $MFAThemes)
 					{
-						$rowdata += @(,( "          HA mode",($Script:htmlsb), "Active - active (parallel)",$htmlwhite))
+						ForEach($MFATheme in $MFAThemes)
+						{
+							$ThemeMFAName = (Get-RASMFA -Id $MFATheme.MFAId -ea 0).Name 4>$Null
+							
+							If(!($?) -or $Null -eq $ThemeMFAName)
+							{
+								$ThemeMFAName = "Unable to retrieve the MFA Name"
+							}
+							Else
+							{
+								$ThemeMFAName = $ThemeMFAName.Replace("<","").Replace(">","")
+							}
+							
+							$MFAThemeName        = $MFATheme.Name.Replace("<","").Replace(">","")
+							$MFAThemeDescription = $MFATheme.Description.Replace("<","").Replace(">","")
+							$rowdata += @(,("",($Script:htmlsb),"Theme: $($MFAThemeName)",$htmlwhite))
+							$rowdata += @(,("",($Script:htmlsb),"MFA provider: $($ThemeMFAName)",$htmlwhite))
+							$rowdata += @(,("",($Script:htmlsb),"Description: $($MFAThemeDescription)",$htmlwhite))
+						}
 					}
 					Else
 					{
-						$rowdata += @(,( "          HA mode",($Script:htmlsb), "Active - passive (failover)",$htmlwhite))
+						$rowdata += @(,("",($Script:htmlsb),"No theme is selected",$htmlwhite))
+					}
+					$rowdata += @(,("     Connection",($Script:htmlsb),"",$htmlwhite))
+					$rowdata += @(,("          Display Name",($Script:htmlsb),$RASMFASetting.DisplayName,$htmlwhite))
+					$rowdata += @(,("          Primary Server",($Script:htmlsb),$RASMFASetting.Server,$htmlwhite))
+					$rowdata += @(,("          Secondary server",($Script:htmlsb), $RASMFASetting.BackupServer,$htmlwhite))
+					If($RASMFASetting.HAMode -eq "Parallel")
+					{
+						$rowdata += @(,("          HA mode",($Script:htmlsb), "Active - active (parallel)",$htmlwhite))
+					}
+					Else
+					{
+						$rowdata += @(,("          HA mode",($Script:htmlsb), "Active - passive (failover)",$htmlwhite))
 					}
 					$rowdata += @(,("          Port",($Script:htmlsb),$RASMFASetting.Port,$htmlwhite))
 					$rowdata += @(,("          Timeout",($Script:htmlsb),$RASMFASetting.Timeout,$htmlwhite))
 					$rowdata += @(,("          Retries",($Script:htmlsb),$RASMFASetting.Retries,$htmlwhite))
 					$rowdata += @(,("          Password Encoding",($Script:htmlsb),$RASMFASetting.PasswordEncoding.ToString(),$htmlwhite))
+					$rowdata += @(,("          User Prompt",($Script:htmlsb),$RASMFASetting.UserMessagePrompt,$htmlwhite))
 					$rowdata += @(,("          Forward username only to Radius Server",($Script:htmlsb),$RASMFASetting.UsernameOnly.ToString(),$htmlwhite))
 					$rowdata += @(,("          Forward the first password to Windows authentication provider",($Script:htmlsb),$RASMFASetting.ForwardFirstPwdToAD.ToString(),$htmlwhite))
 					$rowdata += @(,( "     Attributes",($Script:htmlsb),"",$htmlwhite))
@@ -61126,7 +64832,7 @@ Function OutputMFASetting
 					{
 						$cnt++
 						$rowdata += @(,( "",($Script:htmlsb), "Attribute $cnt",$htmlwhite))
-						$rowdata += @(,( "",($Script:htmlsb), "     Name: $($Item.Name)",$htmlwhite))
+						$rowdata += @(,( "",($Script:htmlsb), "     Name: $($Item.RadiusAttrName)",$htmlwhite))
 						$rowdata += @(,( "",($Script:htmlsb), "     Vendor: $($Item.Vendor)",$htmlwhite))
 						$rowdata += @(,( "",($Script:htmlsb), "     Type: $($Item.AttributeType)",$htmlwhite))
 						$rowdata += @(,( "",($Script:htmlsb), "     Value: $($Item.Value)",$htmlwhite))
@@ -61138,32 +64844,364 @@ Function OutputMFASetting
 					{
 						$cnt++
 						$rowdata += @(,( "",($Script:htmlsb), "Automation $cnt",$htmlwhite))
-						$rowdata += @(,( "",($Script:htmlsb), "     Enabled: $($Item.Enabled.ToString())",$htmlwhite))
+						$rowdata += @(,( "",($Script:htmlsb), "     Enabled Action: $($Item.Enabled.ToString())",$htmlwhite))
 						$rowdata += @(,( "",($Script:htmlsb), "     Title: $($Item.Title)",$htmlwhite))
 						$rowdata += @(,( "",($Script:htmlsb), "     Command: $($Item.Command)",$htmlwhite))
+						$rowdata += @(,( "",($Script:htmlsb), "     Description: $($Item.Description)",$htmlwhite))
+						$rowdata += @(,( "",($Script:htmlsb), "     Action message: $($Item.ActionMessage)",$htmlwhite))
 						$rowdata += @(,( "",($Script:htmlsb), "     Image: $($Item.Image)",$htmlwhite))
 						$rowdata += @(,( "",($Script:htmlsb), "     Autosend: $($Item.AutoSend.ToString())",$htmlwhite))
 						$rowdata += @(,( "",($Script:htmlsb),"",$htmlwhite)) #blank separator line
+					}
+					$rowdata += @(,( "     Advanced",($Script:htmlsb),"",$htmlwhite))
+					If($RASMFASetting.IgnoreErrors.Count -gt 0)
+					{
+						$cnt = -1
+						ForEach($Message in $RASMFASetting.IgnoreErrors)
+						{
+							$cnt++
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,( "          Message",($Script:htmlsb),$Message,$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,( "",($Script:htmlsb),$Message,$htmlwhite))
+							}
+						}
+					}
+					Else
+					{
+						$rowdata += @(,( "          Message",($Script:htmlsb),"",$htmlwhite))
+					}
+					$rowdata += @(,( "     Restrictions",($Script:htmlsb),"",$htmlwhite))
+					$rowdata += @(,( "          Disable MFA if",($Script:htmlsb),"",$htmlwhite))
+
+					#users and groups
+					If($RASMFASetting.Criteria.SecurityPrincipals.Enabled)
+					{
+						$cnt = -1
+						
+						ForEach($Item in $RASMFASetting.Criteria.SecurityPrincipals.members)
+						{
+							$cnt++
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,("               User or group is",($Script:htmlsb), "$($Item.Account)",$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb), "$($Item.Account)",$htmlwhite))
+							}
+						}
+						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+					}
+
+					#gateways
+					If($RASMFASetting.Criteria.Gateways.Enabled)
+					{
+						$cnt = -1
+						ForEach($item in $RASMFASetting.Criteria.Gateways.Members)
+						{
+							$cnt++
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,("               Secure gateway is",($Script:htmlsb), "$($Item.GatewayIP)",$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb), "$($Item.GatewayIP)",$htmlwhite))
+							}
+						}
+						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+					}
+
+					#client device name
+					If($RASMFASetting.Criteria.Devices.Enabled)
+					{
+						$cnt = -1
+						ForEach($item in $RASMFASetting.Criteria.Devices.Members)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,("               Device is",($Script:htmlsb), "$($Item.Client)",$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb), "$($Item.Client)",$htmlwhite))
+							}
+						}
+						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+					}
+
+					#client device operating system
+					If($RASMFASetting.Criteria.OSs.Enabled)
+					{
+						$cnt = -1
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Windows)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,("               Operating system is",($Script:htmlsb), "Windows",$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb), "Windows",$htmlwhite))
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.WebClient)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,("               Operating system is",($Script:htmlsb), "User Portal (Web Client)",$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb), "User Portal (Web Client)",$htmlwhite))
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Mac)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,("               Operating system is",($Script:htmlsb), "macOS",$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb), "macOS",$htmlwhite))
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Linux)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,("               Operating system is",($Script:htmlsb), "Linux",$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb), "Linux",$htmlwhite))
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.iOS)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,("               Operating system is",($Script:htmlsb), "iOS/iPadOS",$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb), "iOS/iPadOS",$htmlwhite))
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Android)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,("               Operating system is",($Script:htmlsb), "Android",$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb), "Android",$htmlwhite))
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Chrome)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,("               Operating system is",($Script:htmlsb), "Chrome OS",$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb), "Chrome OS",$htmlwhite))
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Wyse)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,("               Operating system is",($Script:htmlsb), "Wyse",$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb), "Wyse",$htmlwhite))
+							}
+						}
+						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+					}
+
+					#IPs
+					If( $RASMFASetting.Criteria.IPs.Enabled)
+					{
+						$cnt = -1
+						
+						If($RASMFASetting.Criteria.IPs.AllowedIPs.IPv4s.Count -gt 0)
+						{
+							ForEach($item in $RASMFASetting.Criteria.IPs.AllowedIPs.IPv4s)
+							{
+								$cnt++
+								If($cnt -eq 0)
+								{
+									If(($item.From -eq $item.To) -or ($item.To -eq ""))
+									{
+										$rowdata += @(,("               IP is",($Script:htmlsb), $item.From,$htmlwhite))
+									}
+									Else
+									{
+										$rowdata += @(,("               IP is",($Script:htmlsb), "$($item.From) - $($item.To)",$htmlwhite))
+									}
+								}
+								Else
+								{
+									If(($item.From -eq $item.To) -or ($item.To -eq ""))
+									{
+										$rowdata += @(,("",($Script:htmlsb), $item.From,$htmlwhite))
+									}
+									Else
+									{
+										$rowdata += @(,("",($Script:htmlsb), "$($item.From) - $($item.To)",$htmlwhite))
+									}
+								}
+							}
+						}
+
+						If($RASMFASetting.Criteria.IPs.AllowedIPs.IPv6s.Count -gt 0)
+						{
+							ForEach($item in $RASMFASetting.Criteria.IPs.AllowedIPs.IPv6s)
+							{
+								$cnt++
+								If($cnt -eq 0)
+								{
+									If(($item.From -eq $item.To) -or ($item.To -eq ""))
+									{
+										$rowdata += @(,("               IP is",($Script:htmlsb), $item.From,$htmlwhite))
+									}
+									Else
+									{
+										$rowdata += @(,("              IP is",($Script:htmlsb), "$($item.From) - $($item.To)",$htmlwhite))
+									}
+								}
+								Else
+								{
+									If(($item.From -eq $item.To) -or ($item.To -eq ""))
+									{
+										$rowdata += @(,("",($Script:htmlsb), $item.From,$htmlwhite))
+									}
+									Else
+									{
+										$rowdata += @(,("",($Script:htmlsb), "$($item.From) - $($item.To)",$htmlwhite))
+									}
+								}
+							}
+						}
+						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+					}
+					
+					#MAC addresses
+					If($RASMFASetting.Criteria.HardwareIDs.Enabled)
+					{
+						$cnt = -1
+						ForEach($item in $RASMFASetting.Criteria.HardwareIDs.Members)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,("               Hardware ID is",($Script:htmlsb), "$($Item.HardwareID)",$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb), "$($Item.HardwareID)",$htmlwhite))
+							}
+						}
+						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 					}
 				}
 				ElseIf($RASMFASetting.Type -eq "TekRadius")
 				{
-					$rowdata += @(,( "     Connection",($Script:htmlsb),"",$htmlwhite))
-					$rowdata += @(,("          Type Name",($Script:htmlsb),$RASMFASettingProvider,$htmlwhite))
-					$rowdata += @(,("          Primary Server",($Script:htmlsb),$RASMFASetting.Server,$htmlwhite))
-					$rowdata += @(,( "          Secondary server",($Script:htmlsb), $RASMFASetting.BackupServer,$htmlwhite))
-					If($RASMFASetting.HAMode -eq "Parallel")
+					$rowdata += @(,("Name",($Script:htmlsb),$RASMFASetting.Name,$htmlwhite))
+					$rowdata += @(,("Enabled",($Script:htmlsb),$RASMFASetting.Enabled.ToString(),$htmlwhite))
+					$rowdata += @(,("Description",($Script:htmlsb),$RASMFASetting.Description,$htmlwhite))
+					$rowdata += @(,("Display name",($Script:htmlsb),$RASMFASetting.DisplayName,$htmlwhite))
+					$rowdata += @(,("Type",($Script:htmlsb),$RASMFASettingProvider,$htmlwhite))
+					$rowdata += @(,("Last modification by",($Script:htmlsb),$RASMFASetting.AdminLastMod,$htmlwhite))
+					$rowdata += @(,("Modified on",($Script:htmlsb),(Get-Date -UFormat "%c" $RASMFASetting.TimeLastMod),$htmlwhite))
+					$rowdata += @(,("Created by",($Script:htmlsb),$RASMFASetting.AdminCreate,$htmlwhite))
+					$rowdata += @(,("Created on",($Script:htmlsb),(Get-Date -UFormat "%c" $RASMFASetting.TimeCreate),$htmlwhite))
+					$rowdata += @(,("ID",($Script:htmlsb),$RASMFASetting.ID.ToString(),$htmlwhite))
+					$rowdata += @(,("     General",($Script:htmlsb),"",$htmlwhite))
+					$rowdata += @(,("          Enable MFA provider in site",($Script:htmlsb),$RASMFASetting.Enabled.ToString(),$htmlwhite))
+					$rowdata += @(,("          Name",($Script:htmlsb),$RASMFASetting.Name,$htmlwhite))
+					$rowdata += @(,("          Description",($Script:htmlsb),$RASMFASetting.Description,$htmlwhite))
+					$rowdata += @(,("          Type",($Script:htmlsb),$RASMFASetting.DisplayName,$htmlwhite))
+					$rowdata += @(,("          Themes",($Script:htmlsb),"",$htmlwhite))
+					If($Null -ne $MFAThemes)
 					{
-						$rowdata += @(,( "          HA mode",($Script:htmlsb), "Active - active (parallel)",$htmlwhite))
+						ForEach($MFATheme in $MFAThemes)
+						{
+							$ThemeMFAName = (Get-RASMFA -Id $MFATheme.MFAId -ea 0).Name 4>$Null
+							
+							If(!($?) -or $Null -eq $ThemeMFAName)
+							{
+								$ThemeMFAName = "Unable to retrieve the MFA Name"
+							}
+							Else
+							{
+								$ThemeMFAName = $ThemeMFAName.Replace("<","").Replace(">","")
+							}
+							
+							$MFAThemeName        = $MFATheme.Name.Replace("<","").Replace(">","")
+							$MFAThemeDescription = $MFATheme.Description.Replace("<","").Replace(">","")
+							$rowdata += @(,("",($Script:htmlsb),"Theme: $($MFAThemeName)",$htmlwhite))
+							$rowdata += @(,("",($Script:htmlsb),"MFA provider: $($ThemeMFAName)",$htmlwhite))
+							$rowdata += @(,("",($Script:htmlsb),"Description: $($MFAThemeDescription)",$htmlwhite))
+						}
 					}
 					Else
 					{
-						$rowdata += @(,( "          HA mode",($Script:htmlsb), "Active - passive (failover)",$htmlwhite))
+						$rowdata += @(,("",($Script:htmlsb),"No theme is selected",$htmlwhite))
+					}
+					$rowdata += @(,("     Connection",($Script:htmlsb),"",$htmlwhite))
+					$rowdata += @(,("          Display Name",($Script:htmlsb),$RASMFASetting.DisplayName,$htmlwhite))
+					$rowdata += @(,("          Primary Server",($Script:htmlsb),$RASMFASetting.Server,$htmlwhite))
+					$rowdata += @(,("          Secondary server",($Script:htmlsb), $RASMFASetting.BackupServer,$htmlwhite))
+					If($RASMFASetting.HAMode -eq "Parallel")
+					{
+						$rowdata += @(,("          HA mode",($Script:htmlsb), "Active - active (parallel)",$htmlwhite))
+					}
+					Else
+					{
+						$rowdata += @(,("          HA mode",($Script:htmlsb), "Active - passive (failover)",$htmlwhite))
 					}
 					$rowdata += @(,("          Port",($Script:htmlsb),$RASMFASetting.Port,$htmlwhite))
 					$rowdata += @(,("          Timeout",($Script:htmlsb),$RASMFASetting.Timeout,$htmlwhite))
 					$rowdata += @(,("          Retries",($Script:htmlsb),$RASMFASetting.Retries,$htmlwhite))
 					$rowdata += @(,("          Password Encoding",($Script:htmlsb),$RASMFASetting.PasswordEncoding.ToString(),$htmlwhite))
+					$rowdata += @(,("          User Prompt",($Script:htmlsb),$RASMFASetting.UserMessagePrompt,$htmlwhite))
 					$rowdata += @(,("          Forward username only to Radius Server",($Script:htmlsb),$RASMFASetting.UsernameOnly.ToString(),$htmlwhite))
 					$rowdata += @(,("          Forward the first password to Windows authentication provider",($Script:htmlsb),$RASMFASetting.ForwardFirstPwdToAD.ToString(),$htmlwhite))
 					$rowdata += @(,( "     Attributes",($Script:htmlsb),"",$htmlwhite))
@@ -61172,7 +65210,7 @@ Function OutputMFASetting
 					{
 						$cnt++
 						$rowdata += @(,( "",($Script:htmlsb), "Attribute $cnt",$htmlwhite))
-						$rowdata += @(,( "",($Script:htmlsb), "     Name: $($Item.Name)",$htmlwhite))
+						$rowdata += @(,( "",($Script:htmlsb), "     Name: $($Item.RadiusAttrName)",$htmlwhite))
 						$rowdata += @(,( "",($Script:htmlsb), "     Vendor: $($Item.Vendor)",$htmlwhite))
 						$rowdata += @(,( "",($Script:htmlsb), "     Type: $($Item.AttributeType)",$htmlwhite))
 						$rowdata += @(,( "",($Script:htmlsb), "     Value: $($Item.Value)",$htmlwhite))
@@ -61184,32 +65222,364 @@ Function OutputMFASetting
 					{
 						$cnt++
 						$rowdata += @(,( "",($Script:htmlsb), "Automation $cnt",$htmlwhite))
-						$rowdata += @(,( "",($Script:htmlsb), "     Enabled: $($Item.Enabled.ToString())",$htmlwhite))
+						$rowdata += @(,( "",($Script:htmlsb), "     Enabled Action: $($Item.Enabled.ToString())",$htmlwhite))
 						$rowdata += @(,( "",($Script:htmlsb), "     Title: $($Item.Title)",$htmlwhite))
 						$rowdata += @(,( "",($Script:htmlsb), "     Command: $($Item.Command)",$htmlwhite))
+						$rowdata += @(,( "",($Script:htmlsb), "     Description: $($Item.Description)",$htmlwhite))
+						$rowdata += @(,( "",($Script:htmlsb), "     Action message: $($Item.ActionMessage)",$htmlwhite))
 						$rowdata += @(,( "",($Script:htmlsb), "     Image: $($Item.Image)",$htmlwhite))
 						$rowdata += @(,( "",($Script:htmlsb), "     Autosend: $($Item.AutoSend.ToString())",$htmlwhite))
 						$rowdata += @(,( "",($Script:htmlsb),"",$htmlwhite)) #blank separator line
+					}
+					$rowdata += @(,( "     Advanced",($Script:htmlsb),"",$htmlwhite))
+					If($RASMFASetting.IgnoreErrors.Count -gt 0)
+					{
+						$cnt = -1
+						ForEach($Message in $RASMFASetting.IgnoreErrors)
+						{
+							$cnt++
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,( "          Message",($Script:htmlsb),$Message,$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,( "",($Script:htmlsb),$Message,$htmlwhite))
+							}
+						}
+					}
+					Else
+					{
+						$rowdata += @(,( "          Message",($Script:htmlsb),"",$htmlwhite))
+					}
+					$rowdata += @(,( "     Restrictions",($Script:htmlsb),"",$htmlwhite))
+					$rowdata += @(,( "          Disable MFA if",($Script:htmlsb),"",$htmlwhite))
+
+					#users and groups
+					If($RASMFASetting.Criteria.SecurityPrincipals.Enabled)
+					{
+						$cnt = -1
+						
+						ForEach($Item in $RASMFASetting.Criteria.SecurityPrincipals.members)
+						{
+							$cnt++
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,("               User or group is",($Script:htmlsb), "$($Item.Account)",$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb), "$($Item.Account)",$htmlwhite))
+							}
+						}
+						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+					}
+
+					#gateways
+					If($RASMFASetting.Criteria.Gateways.Enabled)
+					{
+						$cnt = -1
+						ForEach($item in $RASMFASetting.Criteria.Gateways.Members)
+						{
+							$cnt++
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,("               Secure gateway is",($Script:htmlsb), "$($Item.GatewayIP)",$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb), "$($Item.GatewayIP)",$htmlwhite))
+							}
+						}
+						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+					}
+
+					#client device name
+					If($RASMFASetting.Criteria.Devices.Enabled)
+					{
+						$cnt = -1
+						ForEach($item in $RASMFASetting.Criteria.Devices.Members)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,("               Device is",($Script:htmlsb), "$($Item.Client)",$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb), "$($Item.Client)",$htmlwhite))
+							}
+						}
+						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+					}
+
+					#client device operating system
+					If($RASMFASetting.Criteria.OSs.Enabled)
+					{
+						$cnt = -1
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Windows)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,("               Operating system is",($Script:htmlsb), "Windows",$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb), "Windows",$htmlwhite))
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.WebClient)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,("               Operating system is",($Script:htmlsb), "User Portal (Web Client)",$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb), "User Portal (Web Client)",$htmlwhite))
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Mac)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,("               Operating system is",($Script:htmlsb), "macOS",$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb), "macOS",$htmlwhite))
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Linux)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,("               Operating system is",($Script:htmlsb), "Linux",$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb), "Linux",$htmlwhite))
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.iOS)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,("               Operating system is",($Script:htmlsb), "iOS/iPadOS",$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb), "iOS/iPadOS",$htmlwhite))
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Android)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,("               Operating system is",($Script:htmlsb), "Android",$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb), "Android",$htmlwhite))
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Chrome)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,("               Operating system is",($Script:htmlsb), "Chrome OS",$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb), "Chrome OS",$htmlwhite))
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Wyse)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,("               Operating system is",($Script:htmlsb), "Wyse",$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb), "Wyse",$htmlwhite))
+							}
+						}
+						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+					}
+
+					#IPs
+					If( $RASMFASetting.Criteria.IPs.Enabled)
+					{
+						$cnt = -1
+						
+						If($RASMFASetting.Criteria.IPs.AllowedIPs.IPv4s.Count -gt 0)
+						{
+							ForEach($item in $RASMFASetting.Criteria.IPs.AllowedIPs.IPv4s)
+							{
+								$cnt++
+								If($cnt -eq 0)
+								{
+									If(($item.From -eq $item.To) -or ($item.To -eq ""))
+									{
+										$rowdata += @(,("               IP is",($Script:htmlsb), $item.From,$htmlwhite))
+									}
+									Else
+									{
+										$rowdata += @(,("               IP is",($Script:htmlsb), "$($item.From) - $($item.To)",$htmlwhite))
+									}
+								}
+								Else
+								{
+									If(($item.From -eq $item.To) -or ($item.To -eq ""))
+									{
+										$rowdata += @(,("",($Script:htmlsb), $item.From,$htmlwhite))
+									}
+									Else
+									{
+										$rowdata += @(,("",($Script:htmlsb), "$($item.From) - $($item.To)",$htmlwhite))
+									}
+								}
+							}
+						}
+
+						If($RASMFASetting.Criteria.IPs.AllowedIPs.IPv6s.Count -gt 0)
+						{
+							ForEach($item in $RASMFASetting.Criteria.IPs.AllowedIPs.IPv6s)
+							{
+								$cnt++
+								If($cnt -eq 0)
+								{
+									If(($item.From -eq $item.To) -or ($item.To -eq ""))
+									{
+										$rowdata += @(,("               IP is",($Script:htmlsb), $item.From,$htmlwhite))
+									}
+									Else
+									{
+										$rowdata += @(,("              IP is",($Script:htmlsb), "$($item.From) - $($item.To)",$htmlwhite))
+									}
+								}
+								Else
+								{
+									If(($item.From -eq $item.To) -or ($item.To -eq ""))
+									{
+										$rowdata += @(,("",($Script:htmlsb), $item.From,$htmlwhite))
+									}
+									Else
+									{
+										$rowdata += @(,("",($Script:htmlsb), "$($item.From) - $($item.To)",$htmlwhite))
+									}
+								}
+							}
+						}
+						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+					}
+					
+					#MAC addresses
+					If($RASMFASetting.Criteria.HardwareIDs.Enabled)
+					{
+						$cnt = -1
+						ForEach($item in $RASMFASetting.Criteria.HardwareIDs.Members)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,("               Hardware ID is",($Script:htmlsb), "$($Item.HardwareID)",$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb), "$($Item.HardwareID)",$htmlwhite))
+							}
+						}
+						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 					}
 				}
 				ElseIf($RASMFASetting.Type -eq "Radius")
 				{
-					$rowdata += @(,( "     Connection",($Script:htmlsb),"",$htmlwhite))
-					$rowdata += @(,("          Display Name",($Script:htmlsb),$RASMFASetting.DisplayName,$htmlwhite))
-					$rowdata += @(,("          Primary Server",($Script:htmlsb),$RASMFASetting.Server,$htmlwhite))
-					$rowdata += @(,( "          Secondary server",($Script:htmlsb), $RASMFASetting.BackupServer,$htmlwhite))
-					If($RASMFASetting.HAMode -eq "Parallel")
+					$rowdata += @(,("Name",($Script:htmlsb),$RASMFASetting.Name,$htmlwhite))
+					$rowdata += @(,("Enabled",($Script:htmlsb),$RASMFASetting.Enabled.ToString(),$htmlwhite))
+					$rowdata += @(,("Description",($Script:htmlsb),$RASMFASetting.Description,$htmlwhite))
+					$rowdata += @(,("Display name",($Script:htmlsb),$RASMFASetting.DisplayName,$htmlwhite))
+					$rowdata += @(,("Type",($Script:htmlsb),$RASMFASettingProvider,$htmlwhite))
+					$rowdata += @(,("Last modification by",($Script:htmlsb),$RASMFASetting.AdminLastMod,$htmlwhite))
+					$rowdata += @(,("Modified on",($Script:htmlsb),(Get-Date -UFormat "%c" $RASMFASetting.TimeLastMod),$htmlwhite))
+					$rowdata += @(,("Created by",($Script:htmlsb),$RASMFASetting.AdminCreate,$htmlwhite))
+					$rowdata += @(,("Created on",($Script:htmlsb),(Get-Date -UFormat "%c" $RASMFASetting.TimeCreate),$htmlwhite))
+					$rowdata += @(,("ID",($Script:htmlsb),$RASMFASetting.ID.ToString(),$htmlwhite))
+					$rowdata += @(,("     General",($Script:htmlsb),"",$htmlwhite))
+					$rowdata += @(,("          Enable MFA provider in site",($Script:htmlsb),$RASMFASetting.Enabled.ToString(),$htmlwhite))
+					$rowdata += @(,("          Name",($Script:htmlsb),$RASMFASetting.Name,$htmlwhite))
+					$rowdata += @(,("          Description",($Script:htmlsb),$RASMFASetting.Description,$htmlwhite))
+					$rowdata += @(,("          Type",($Script:htmlsb),$RASMFASetting.DisplayName,$htmlwhite))
+					$rowdata += @(,("          Themes",($Script:htmlsb),"",$htmlwhite))
+					If($Null -ne $MFAThemes)
 					{
-						$rowdata += @(,( "          HA mode",($Script:htmlsb), "Active - active (parallel)",$htmlwhite))
+						ForEach($MFATheme in $MFAThemes)
+						{
+							$ThemeMFAName = (Get-RASMFA -Id $MFATheme.MFAId -ea 0).Name 4>$Null
+							
+							If(!($?) -or $Null -eq $ThemeMFAName)
+							{
+								$ThemeMFAName = "Unable to retrieve the MFA Name"
+							}
+							Else
+							{
+								$ThemeMFAName = $ThemeMFAName.Replace("<","").Replace(">","")
+							}
+							
+							$MFAThemeName        = $MFATheme.Name.Replace("<","").Replace(">","")
+							$MFAThemeDescription = $MFATheme.Description.Replace("<","").Replace(">","")
+							$rowdata += @(,("",($Script:htmlsb),"Theme: $($MFAThemeName)",$htmlwhite))
+							$rowdata += @(,("",($Script:htmlsb),"MFA provider: $($ThemeMFAName)",$htmlwhite))
+							$rowdata += @(,("",($Script:htmlsb),"Description: $($MFAThemeDescription)",$htmlwhite))
+						}
 					}
 					Else
 					{
-						$rowdata += @(,( "          HA mode",($Script:htmlsb), "Active - passive (failover)",$htmlwhite))
+						$rowdata += @(,("",($Script:htmlsb),"No theme is selected",$htmlwhite))
+					}
+					$rowdata += @(,("     Connection",($Script:htmlsb),"",$htmlwhite))
+					$rowdata += @(,("          Display Name",($Script:htmlsb),$RASMFASetting.DisplayName,$htmlwhite))
+					$rowdata += @(,("          Primary Server",($Script:htmlsb),$RASMFASetting.Server,$htmlwhite))
+					$rowdata += @(,("          Secondary server",($Script:htmlsb), $RASMFASetting.BackupServer,$htmlwhite))
+					If($RASMFASetting.HAMode -eq "Parallel")
+					{
+						$rowdata += @(,("          HA mode",($Script:htmlsb), "Active - active (parallel)",$htmlwhite))
+					}
+					Else
+					{
+						$rowdata += @(,("          HA mode",($Script:htmlsb), "Active - passive (failover)",$htmlwhite))
 					}
 					$rowdata += @(,("          Port",($Script:htmlsb),$RASMFASetting.Port,$htmlwhite))
 					$rowdata += @(,("          Timeout",($Script:htmlsb),$RASMFASetting.Timeout,$htmlwhite))
 					$rowdata += @(,("          Retries",($Script:htmlsb),$RASMFASetting.Retries,$htmlwhite))
 					$rowdata += @(,("          Password Encoding",($Script:htmlsb),$RASMFASetting.PasswordEncoding.ToString(),$htmlwhite))
+					$rowdata += @(,("          User Prompt",($Script:htmlsb),$RASMFASetting.UserMessagePrompt,$htmlwhite))
 					$rowdata += @(,("          Forward username only to Radius Server",($Script:htmlsb),$RASMFASetting.UsernameOnly.ToString(),$htmlwhite))
 					$rowdata += @(,("          Forward the first password to Windows authentication provider",($Script:htmlsb),$RASMFASetting.ForwardFirstPwdToAD.ToString(),$htmlwhite))
 					$rowdata += @(,( "     Attributes",($Script:htmlsb),"",$htmlwhite))
@@ -61218,8 +65588,8 @@ Function OutputMFASetting
 					{
 						$cnt++
 						$rowdata += @(,( "",($Script:htmlsb), "Attribute $cnt",$htmlwhite))
+						$rowdata += @(,( "",($Script:htmlsb), "     Name: $($Item.RadiusAttrName)",$htmlwhite))
 						$rowdata += @(,( "",($Script:htmlsb), "     Vendor: $($Item.Vendor)",$htmlwhite))
-						$rowdata += @(,( "",($Script:htmlsb), "     Attribute: $($Item.RadiusAttrName)",$htmlwhite))
 						$rowdata += @(,( "",($Script:htmlsb), "     Type: $($Item.AttributeType)",$htmlwhite))
 						$rowdata += @(,( "",($Script:htmlsb), "     Value: $($Item.Value)",$htmlwhite))
 						$rowdata += @(,( "",($Script:htmlsb),"",$htmlwhite)) #blank separator line
@@ -61230,30 +65600,302 @@ Function OutputMFASetting
 					{
 						$cnt++
 						$rowdata += @(,( "",($Script:htmlsb), "Automation $cnt",$htmlwhite))
-						$rowdata += @(,( "",($Script:htmlsb), "     Enabled: $($Item.Enabled.ToString())",$htmlwhite))
+						$rowdata += @(,( "",($Script:htmlsb), "     Enabled Action: $($Item.Enabled.ToString())",$htmlwhite))
 						$rowdata += @(,( "",($Script:htmlsb), "     Title: $($Item.Title)",$htmlwhite))
 						$rowdata += @(,( "",($Script:htmlsb), "     Command: $($Item.Command)",$htmlwhite))
+						$rowdata += @(,( "",($Script:htmlsb), "     Description: $($Item.Description)",$htmlwhite))
+						$rowdata += @(,( "",($Script:htmlsb), "     Action message: $($Item.ActionMessage)",$htmlwhite))
 						$rowdata += @(,( "",($Script:htmlsb), "     Image: $($Item.Image)",$htmlwhite))
 						$rowdata += @(,( "",($Script:htmlsb), "     Autosend: $($Item.AutoSend.ToString())",$htmlwhite))
 						$rowdata += @(,( "",($Script:htmlsb),"",$htmlwhite)) #blank separator line
 					}
-				}
-				ElseIf($RASMFASetting.Type -eq "Deepnet")
-				{
-					$rowdata += @(,( "     Connection",($Script:htmlsb),"",$htmlwhite))
-					$rowdata += @(,( "          Type",($Script:htmlsb), $RASMFASetting.DeepnetType,$htmlwhite))
-					$rowdata += @(,( "          Server",($Script:htmlsb), $RASMFASetting.Server,$htmlwhite))
-					$rowdata += @(,( "          Port",($Script:htmlsb), $RASMFASetting.Port.ToString(),$htmlwhite))
-					$rowdata += @(,( "          Enable SSL",($Script:htmlsb), $RASMFASetting.SSL.ToString(),$htmlwhite))
-					$rowdata += @(,( "          Agent",($Script:htmlsb), $RASMFASetting.DeepnetAgent,$htmlwhite))
-					$rowdata += @(,( "     Application",($Script:htmlsb),"",$htmlwhite))
-					$rowdata += @(,( "          Application",($Script:htmlsb), $RASMFASetting.App,$htmlwhite))
-					$rowdata += @(,( "          Domain",($Script:htmlsb), $RASMFASetting.DefaultDomain,$htmlwhite))
-					$rowdata += @(,( "     Authentication",($Script:htmlsb),"",$htmlwhite))
-					$rowdata += @(,( "          Mode",($Script:htmlsb), $DeepNetAuthMode,$htmlwhite))
-					$rowdata += @(,( "          Token Type",($Script:htmlsb), $RASMFASetting.TokenType.ToString(),$htmlwhite))
-					$rowdata += @(,( "          Allow Channels",($Script:htmlsb), "Email: $($RASMFASetting.ActivateEmail.ToString())",$htmlwhite))
-					$rowdata += @(,( "                        ",($Script:htmlsb), "SMS: $($RASMFASetting.ActivateSMS.ToString())",$htmlwhite))
+					$rowdata += @(,( "     Advanced",($Script:htmlsb),"",$htmlwhite))
+					If($RASMFASetting.IgnoreErrors.Count -gt 0)
+					{
+						$cnt = -1
+						ForEach($Message in $RASMFASetting.IgnoreErrors)
+						{
+							$cnt++
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,( "          Message",($Script:htmlsb),$Message,$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,( "",($Script:htmlsb),$Message,$htmlwhite))
+							}
+						}
+					}
+					Else
+					{
+						$rowdata += @(,( "          Message",($Script:htmlsb),"",$htmlwhite))
+					}
+					$rowdata += @(,( "     Restrictions",($Script:htmlsb),"",$htmlwhite))
+					$rowdata += @(,( "          Disable MFA if",($Script:htmlsb),"",$htmlwhite))
+
+					#users and groups
+					If($RASMFASetting.Criteria.SecurityPrincipals.Enabled)
+					{
+						$cnt = -1
+						
+						ForEach($Item in $RASMFASetting.Criteria.SecurityPrincipals.members)
+						{
+							$cnt++
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,("               User or group is",($Script:htmlsb), "$($Item.Account)",$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb), "$($Item.Account)",$htmlwhite))
+							}
+						}
+						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+					}
+
+					#gateways
+					If($RASMFASetting.Criteria.Gateways.Enabled)
+					{
+						$cnt = -1
+						ForEach($item in $RASMFASetting.Criteria.Gateways.Members)
+						{
+							$cnt++
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,("               Secure gateway is",($Script:htmlsb), "$($Item.GatewayIP)",$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb), "$($Item.GatewayIP)",$htmlwhite))
+							}
+						}
+						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+					}
+
+					#client device name
+					If($RASMFASetting.Criteria.Devices.Enabled)
+					{
+						$cnt = -1
+						ForEach($item in $RASMFASetting.Criteria.Devices.Members)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,("               Device is",($Script:htmlsb), "$($Item.Client)",$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb), "$($Item.Client)",$htmlwhite))
+							}
+						}
+						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+					}
+
+					#client device operating system
+					If($RASMFASetting.Criteria.OSs.Enabled)
+					{
+						$cnt = -1
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Windows)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,("               Operating system is",($Script:htmlsb), "Windows",$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb), "Windows",$htmlwhite))
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.WebClient)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,("               Operating system is",($Script:htmlsb), "User Portal (Web Client)",$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb), "User Portal (Web Client)",$htmlwhite))
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Mac)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,("               Operating system is",($Script:htmlsb), "macOS",$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb), "macOS",$htmlwhite))
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Linux)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,("               Operating system is",($Script:htmlsb), "Linux",$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb), "Linux",$htmlwhite))
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.iOS)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,("               Operating system is",($Script:htmlsb), "iOS/iPadOS",$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb), "iOS/iPadOS",$htmlwhite))
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Android)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,("               Operating system is",($Script:htmlsb), "Android",$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb), "Android",$htmlwhite))
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Chrome)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,("               Operating system is",($Script:htmlsb), "Chrome OS",$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb), "Chrome OS",$htmlwhite))
+							}
+						}
+						
+						If($RASMFASetting.Criteria.OSs.AllowedOSes.Wyse)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,("               Operating system is",($Script:htmlsb), "Wyse",$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb), "Wyse",$htmlwhite))
+							}
+						}
+						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+					}
+
+					#IPs
+					If( $RASMFASetting.Criteria.IPs.Enabled)
+					{
+						$cnt = -1
+						
+						If($RASMFASetting.Criteria.IPs.AllowedIPs.IPv4s.Count -gt 0)
+						{
+							ForEach($item in $RASMFASetting.Criteria.IPs.AllowedIPs.IPv4s)
+							{
+								$cnt++
+								If($cnt -eq 0)
+								{
+									If(($item.From -eq $item.To) -or ($item.To -eq ""))
+									{
+										$rowdata += @(,("               IP is",($Script:htmlsb), $item.From,$htmlwhite))
+									}
+									Else
+									{
+										$rowdata += @(,("               IP is",($Script:htmlsb), "$($item.From) - $($item.To)",$htmlwhite))
+									}
+								}
+								Else
+								{
+									If(($item.From -eq $item.To) -or ($item.To -eq ""))
+									{
+										$rowdata += @(,("",($Script:htmlsb), $item.From,$htmlwhite))
+									}
+									Else
+									{
+										$rowdata += @(,("",($Script:htmlsb), "$($item.From) - $($item.To)",$htmlwhite))
+									}
+								}
+							}
+						}
+
+						If($RASMFASetting.Criteria.IPs.AllowedIPs.IPv6s.Count -gt 0)
+						{
+							ForEach($item in $RASMFASetting.Criteria.IPs.AllowedIPs.IPv6s)
+							{
+								$cnt++
+								If($cnt -eq 0)
+								{
+									If(($item.From -eq $item.To) -or ($item.To -eq ""))
+									{
+										$rowdata += @(,("               IP is",($Script:htmlsb), $item.From,$htmlwhite))
+									}
+									Else
+									{
+										$rowdata += @(,("              IP is",($Script:htmlsb), "$($item.From) - $($item.To)",$htmlwhite))
+									}
+								}
+								Else
+								{
+									If(($item.From -eq $item.To) -or ($item.To -eq ""))
+									{
+										$rowdata += @(,("",($Script:htmlsb), $item.From,$htmlwhite))
+									}
+									Else
+									{
+										$rowdata += @(,("",($Script:htmlsb), "$($item.From) - $($item.To)",$htmlwhite))
+									}
+								}
+							}
+						}
+						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+					}
+					
+					#MAC addresses
+					If($RASMFASetting.Criteria.HardwareIDs.Enabled)
+					{
+						$cnt = -1
+						ForEach($item in $RASMFASetting.Criteria.HardwareIDs.Members)
+						{
+							$cnt++
+							
+							If($cnt -eq 0)
+							{
+								$rowdata += @(,("               Hardware ID is",($Script:htmlsb), "$($Item.HardwareID)",$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb), "$($Item.HardwareID)",$htmlwhite))
+							}
+						}
+						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+					}
 				}
 				ElseIf($RASMFASetting.Type -eq "SafeNet")
 				{

@@ -337,8 +337,24 @@
 #	Updated the ReadMe file
 #
 #	Working on updating Function OutputMFASetting
-#		Fixed issues with RADIUS output
 #		Update AzureRadius:
 #			To match the console
 #			Added summary data
 #			Added Advanced and Restrictions
+#		Update DuoRadius:
+#			Added to the Text output. Somehow it was left out.
+#			To match the console
+#			Added summary data
+#			Added Advanced and Restrictions
+#		Update FortiRadius:
+#			To match the console
+#			Added summary data
+#			Added Advanced and Restrictions
+#		Update TekRadius:
+#			To match the console
+#			Added summary data
+#			Added Advanced and Restrictions
+#		Update Radius:
+#			To match the console
+#			Added summary data
+#			Added Advanced and R
