@@ -76,6 +76,37 @@
 #		Hosts
 #		Scheduler
 #
+#	In Function OutputMFASetting
+#		Update AzureRadius:
+#			To match the console
+#			Added summary data
+#			Added Advanced and Restrictions
+#		Update DuoRadius:
+#			Added to the Text output. Somehow it was left out.
+#			To match the console
+#			Added summary data
+#			Added Advanced and Restrictions
+#		Update FortiRadius:
+#			To match the console
+#			Added summary data
+#			Added Advanced and Restrictions
+#		Update TekRadius:
+#			To match the console
+#			Added summary data
+#			Added Advanced and Restrictions
+#		Update Radius:
+#			To match the console
+#			Added summary data
+#			Added Advanced and Restrictions
+#		Update GAuthTOTP
+#			To match the console
+#			Added summary data
+#			Added Themes
+#			Added Settings
+#			Added Authentication
+#			Added User Enrollment
+#			Added Restrictions
+#
 #	In Function OutputLogonHours
 #		Add General data
 #		Add logon hours schedule's criteria
@@ -335,26 +366,3 @@
 #	Updated the help text
 #
 #	Updated the ReadMe file
-#
-#	Working on updating Function OutputMFASetting
-#		Update AzureRadius:
-#			To match the console
-#			Added summary data
-#			Added Advanced and Restrictions
-#		Update DuoRadius:
-#			Added to the Text output. Somehow it was left out.
-#			To match the console
-#			Added summary data
-#			Added Advanced and Restrictions
-#		Update FortiRadius:
-#			To match the console
-#			Added summary data
-#			Added Advanced and Restrictions
-#		Update TekRadius:
-#			To match the console
-#			Added summary data
-#			Added Advanced and Restrictions
-#		Update Radius:
-#			To match the console
-#			Added summary data
-#			Added Advanced and R
