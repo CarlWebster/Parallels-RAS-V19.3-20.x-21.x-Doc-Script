@@ -106,6 +106,21 @@
 #			Added Authentication
 #			Added User Enrollment
 #			Added Restrictions
+#		Add MicrosoftTOTP
+#			Add General
+#			Add Settings
+#			Add User Enrollment
+#			Add Restrictions
+#		Add TOTP (Other TOTP Provider)
+#			Add General
+#			Add Settings
+#			Add User Enrollment
+#			Add Restrictions
+#		Add EmailOTP
+#			Add General
+#			Add Settings
+#			Add User Enrollment
+#			Add Restrictions
 #
 #	In Function OutputLogonHours
 #		Add General data
@@ -268,7 +283,9 @@
 #			Make the code consistent with all three output formats
 #		Only output optimization data if optimization is enabled
 #
-#	In Function OutputSAMLSetting, handle multiple SAML items
+#	In Function OutputSAMLSetting:
+#		Handle multiple SAML items
+#		Remove the IdP Certificate from all three output formats as it messes up the formatting.
 #
 #	In Function OutputSecureGatewaysDetails, add Tunneling Policies
 #
