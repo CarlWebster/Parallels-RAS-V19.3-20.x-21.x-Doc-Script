@@ -75,6 +75,7 @@
 		Printing (Universal Printing)
 		Scanning (Universal Scanning)
 		Connection
+		Device (Device Manager)
 		Policies
 		Admin (Administration)
 		Licensing
@@ -450,9 +451,9 @@
 	text document.
 .NOTES
 	NAME: RAS_Inventory_V4_0.ps1
-	VERSION: 4.00 Beta 54
+	VERSION: 4.00 Beta 55
 	AUTHOR: Carl Webster
-	LASTEDIT: January 28, 2026
+	LASTEDIT: January 29, 2026
 #>
 
 
@@ -479,7 +480,8 @@ Param(
 	[string]$Folder="",
 	
 	[ValidateSet('All', 'Site', 'LB', 'Publishing', 'Printing',
-	'Scanning', 'Connection', 'Policies', 'Admin', 'Licensing')]
+	'Scanning', 'Connection', 'Device', 'Policies', 'Admin', 
+	'Licensing')]
 	[parameter(Mandatory=$False)] 
 	[String[]] $Section = 'All',
 	
@@ -588,6 +590,20 @@ Param(
 #			OutputApplicationPackagesDetails
 #			OutputSiteSettingsDetails
 #		OutputLogonHours
+#		ProcessDeviceManager
+#			OutputDeviceManagerSectionPage
+#			OutputDeviceManager
+#			OutputWindowsDeviceGroups
+#
+#	Added Device Manager
+#		Device Manager
+#		Windows device groups
+#			Main
+#			OS Settings
+#			Firewall Settings
+#			Shadowing
+#		
+#	Added a new Section option to support Device Manager (-Section Device)
 #
 #	Clean up some console output
 #
@@ -1008,9 +1024,9 @@ $ErrorActionPreference    = 'SilentlyContinue'
 $Error.Clear()
 
 $Script:emailCredentials  = $Null
-$script:MyVersion         = '4.00 Beta 54'
+$script:MyVersion         = '4.00 Beta 55'
 $Script:ScriptName        = "RAS_Inventory_V4_0.ps1"
-$tmpdate                  = [datetime] "01/28/2026"
+$tmpdate                  = [datetime] "01/29/2026"
 $Script:ReleaseDate       = $tmpdate.ToUniversalTime().ToShortDateString()
 
 If($MSWord -eq $False -and $PDF -eq $False -and $Text -eq $False -and $HTML -eq $False)
@@ -1045,6 +1061,7 @@ Switch ($Section)
 	"Printing"		{$ValidSection = $True}
 	"Scanning"		{$ValidSection = $True}
 	"Connection"	{$ValidSection = $True}
+	"Device"		{$ValidSection = $True}
 	"Policies"		{$ValidSection = $True}
 	"Admin"			{$ValidSection = $True}
 	"Licensing"		{$ValidSection = $True}
@@ -1068,6 +1085,7 @@ If($ValidSection -eq $False)
 	`tPrinting (Universal Printing)
 	`tScanning (Universal Scanning)
 	`tConnection
+	`tDevice (Device Manager)
 	`tPolicies
 	`tAdmin (Administration)
 	`tLicensing
@@ -4194,7 +4212,7 @@ Function ProcessScriptSetup
 	
 	If($? -and $Null -ne $Results)
 	{
-		#this script is only for RAS 19.1 and later
+		#this script is only for RAS 19.3 and later
 		$Script:RASMajorVersion = $results.Major
 		$Script:RASMinorVersion = $results.Minor
 		
@@ -70071,6 +70089,630 @@ Function OutputRASAllowedDevicesSetting
 }
 #endregion
 
+#region process device manager
+Function ProcessDeviceManager
+{
+	Param([object]$Site)
+	
+	Write-Verbose "$(Get-Date -Format G): Processing Device Manager"
+	
+	OutputDeviceManagerSectionPage
+	
+	Write-Verbose "$(Get-Date -Format G): `tProcessing Device Manager"
+	
+	$devices = Get-RASDevicesInfo -SiteId $Site.Id -EA 0 4>$Null
+	
+	If(!($?))
+	{
+		Write-Warning "
+		`n
+		Unable to retrieve device manager information
+		"
+		If($MSWord -or $PDF)
+		{
+			WriteWordLine 0 0 ""
+			WriteWordLine 0 0 "Unable to retrieve device manager information"
+			WriteWordLine 0 0 ""
+		}
+		If($Text)
+		{
+			Line 0 ""
+			Line 0 "Unable to retrieve device manager information"
+			Line 0 ""
+		}
+		If($HTML)
+		{
+			WriteHTMLLine 0 0 ""
+			WriteHTMLLine 0 0 "Unable to retrieve device manager information"
+			WriteHTMLLine 0 0 ""
+		}
+	}
+	ElseIf($? -and $null -eq $devices)
+	{
+		Write-Host "
+		No device manager information was found
+		" -ForegroundColor White
+		If($MSWord -or $PDF)
+		{
+			WriteWordLine 0 0 ""
+			WriteWordLine 0 0 "No device manager information was found"
+			WriteWordLine 0 0 ""
+		}
+		If($Text)
+		{
+			Line 0 ""
+			Line 0 "No device manager information was found"
+			Line 0 ""
+		}
+		If($HTML)
+		{
+			WriteHTMLLine 0 0 ""
+			WriteHTMLLine 0 0 "No device manager information was found"
+			WriteHTMLLine 0 0 ""
+		}
+	}
+	Else
+	{
+		OutputDeviceManager $devices
+	}
+
+	Write-Verbose "$(Get-Date -Format G): `tProcessing Settings"
+	
+	$DeviceGroups = Get-RASWinDeviceGroup -EA 0 4>$Null
+	
+	If(!($?))
+	{
+		Write-Warning "
+		`n
+		Unable to retrieve Windows device groups information
+		"
+		If($MSWord -or $PDF)
+		{
+			WriteWordLine 0 0 ""
+			WriteWordLine 0 0 "Unable to retrieve Windows device groups information"
+			WriteWordLine 0 0 ""
+		}
+		If($Text)
+		{
+			Line 0 "Unable to retrieve Windows device groups information"
+		}
+		If($HTML)
+		{
+			WriteHTMLLine 0 0 ""
+			WriteHTMLLine 0 0 "Unable to retrieve Windows device groups information"
+			WriteHTMLLine 0 0 ""
+		}
+	}
+	ElseIf($? -and $null -eq $DeviceGroups)
+	{
+		Write-Host "
+		No Windows device groups information was found
+		" -ForegroundColor White
+		If($MSWord -or $PDF)
+		{
+			WriteWordLine 0 0 ""
+			WriteWordLine 0 0 "No Windows device groups information was found"
+			WriteWordLine 0 0 ""
+		}
+		If($Text)
+		{
+			Line 0 ""
+			Line 0 "No Windows device groups information was found"
+			Line 0 ""
+		}
+		If($HTML)
+		{
+			WriteHTMLLine 0 0 ""
+			WriteHTMLLine 0 0 "No Windows device groups information was found"
+			WriteHTMLLine 0 0 ""
+		}
+	}
+	Else
+	{
+		OutputWindowsDeviceGroups $DeviceGroups
+	}
+}
+
+Function OutputDeviceManagerSectionPage
+{
+	If($MSWord -or $PDF)
+	{
+		$Script:Selection.InsertNewPage()
+		WriteWordLine 1 0 "Device Manager"
+	}
+	If($Text)
+	{
+		Line 0 "Device Manager"
+	}
+	If($HTML)
+	{
+		WriteHTMLLine 1 0 "Device Manager"
+	}
+}
+
+Function OutputDeviceManager
+{
+	Param([object]$Devices)
+
+	Write-Verbose "$(Get-Date -Format G): `t`tOutput Device Manager"
+	
+	If($MSWord -or $PDF)
+	{
+		WriteWordLine 2 0 "Device Manager"
+		$ScriptInformation = New-Object System.Collections.ArrayList
+	}
+	If($Text)
+	{
+		Line 1 "Device Manager"
+	}
+	If($HTML)
+	{
+		WriteHTMLLine 2 0 "Device Manager"
+		$rowdata = @()
+		$cnt = -1
+	}
+
+	ForEach($Device in $Devices)
+	{
+		Switch($Device.State)
+		{
+			0		{$DeviceState = "Not supported"; Break}
+			1		{$DeviceState = "Standalone"; Break}
+			Default {$DeviceState = "The device state could not be determined: $($Device.State)"; Break}
+		}
+		
+		If($Device.OSVersion -eq "HTML5")
+		{
+			$DeviceOSVersion = "Web Client"
+		}
+		Else
+		{
+			$DeviceOSVersion = $Device.OSVersion
+		}
+		
+		If($MSWord -or $PDF)
+		{
+			$ScriptInformation.Add(@{Data = "Name"; Value = $Device.Name; }) > $Null
+			$ScriptInformation.Add(@{Data = "IP Address"; Value = $Device.IP; }) > $Null
+			$ScriptInformation.Add(@{Data = "State"; Value = $DeviceState; }) > $Null
+			$ScriptInformation.Add(@{Data = "Last user"; Value = $Device.LastLoggedUser; }) > $Null
+			$ScriptInformation.Add(@{Data = "Hardware ID"; Value = $Device.HardwareID; }) > $Null
+			$ScriptInformation.Add(@{Data = "OS version"; Value = $DeviceOSVersion; }) > $Null
+			$ScriptInformation.Add(@{Data = "Client version"; Value = $Device.ClientVersion; }) > $Null
+			#$ScriptInformation.Add(@{Data = "Group"; Value = $Device.; }) > $Null
+			#$ScriptInformation.Add(@{Data = "Secure Gateway"; Value = $Device.; }) > $Null
+			$ScriptInformation.Add(@{Data = "Gateway IP"; Value = $Device.GatewayIP; }) > $Null
+			$ScriptInformation.Add(@{Data = "Last logon time"; Value = (Get-Date -UFormat "%c" $Device.LoginTime); }) > $Null
+			#$ScriptInformation.Add(@{Data = "Vendor"; Value = $Device.; }) > $Null
+			#$ScriptInformation.Add(@{Data = "Model"; Value = $Device.; }) > $Null
+			$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+		}
+		If($Text)
+		{
+			Line 2 "Name`t`t: " $Device.Name
+			Line 2 "IP Address`t: " $Device.IP
+			Line 2 "State`t`t: " $DeviceState
+			Line 2 "Last user`t: " $Device.LastLoggedUser
+			Line 2 "Hardware ID`t: " $Device.HardwareID
+			Line 2 "OS version`t: " $DeviceOSVersion
+			Line 2 "Client version`t: " $Device.ClientVersion
+			#Line 2 "Group`t`t: " 
+			#Line 2 "Secure Gateway`t: "
+			Line 2 "Gateway IP`t: " $Device.GatewayIP
+			Line 2 "Last logon time`t: " (Get-Date -UFormat "%c" $Device.LoginTime)
+			#Line 2 "Vendor`t`t: "
+			#Line 2 "Model`t`t: "
+			Line 0 ""
+		}
+		If($HTML)
+		{
+			$cnt++
+			
+			If($cnt -eq 0)
+			{
+				$columnHeaders = @("Name",($Script:htmlsb),$Device.Name,$htmlwhite)
+			}
+			Else
+			{
+				$rowdata += @(,("Name",($Script:htmlsb),$Device.Name,$htmlwhite))
+			}
+			$rowdata += @(,("IP Address",($Script:htmlsb),$Device.IP,$htmlwhite))
+			$rowdata += @(,("State",($Script:htmlsb),$DeviceState,$htmlwhite))
+			$rowdata += @(,("Last user",($Script:htmlsb),$Device.LastLoggedUser,$htmlwhite))
+			$rowdata += @(,("Hardware ID",($Script:htmlsb),$Device.HardwareID,$htmlwhite))
+			$rowdata += @(,("OS version",($Script:htmlsb),$DeviceOSVersion,$htmlwhite))
+			$rowdata += @(,("Client version",($Script:htmlsb),$Device.ClientVersion,$htmlwhite))
+			#$rowdata += @(,("Group",($Script:htmlsb),$Device.,$htmlwhite))
+			#$rowdata += @(,("Secure Gateway",($Script:htmlsb),$Device.,$htmlwhite))
+			$rowdata += @(,("Gateway IP",($Script:htmlsb),$Device.GatewayIP,$htmlwhite))
+			$rowdata += @(,("Last logon time",($Script:htmlsb),(Get-Date -UFormat "%c" $Device.LoginTime),$htmlwhite))
+			#$rowdata += @(,("Vendor",($Script:htmlsb),$Device.,$htmlwhite))
+			#$rowdata += @(,("Model",($Script:htmlsb),$Device.,$htmlwhite))
+			$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+		}
+	}
+
+	If($MSWord -or $PDF)
+	{
+		$Table = AddWordTable -Hashtable $ScriptInformation `
+		-Columns Data,Value `
+		-List `
+		-Format $wdTableGrid `
+		-AutoFit $wdAutoFitFixed;
+
+		SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+		SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+		$Table.Columns.Item(1).Width = 150;
+		$Table.Columns.Item(2).Width = 250;
+
+		$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+		FindWordDocumentEnd
+		$Table = $Null
+		WriteWordLine 0 0 ""
+	}
+	If($HTML)
+	{
+		$msg = ""
+		$columnWidths = @("150","250")
+		FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+		WriteHTMLLine 0 0 ""
+	}
+}	
+
+Function OutputWindowsDeviceGroups
+{
+	Param([object]$DeviceGroups)
+
+	Write-Verbose "$(Get-Date -Format G): `t`tOutput Windows device groups"
+	
+	If($MSWord -or $PDF)
+	{
+		WriteWordLine 2 0 "Windows device groups"
+		$ScriptInformation = New-Object System.Collections.ArrayList
+	}
+	If($Text)
+	{
+		Line 1 "Windows device groups"
+	}
+	If($HTML)
+	{
+		WriteHTMLLine 2 0 "Windows device groups"
+		$rowdata = @()
+		$cnt = -1
+	}
+	
+	ForEach($DeviceGroup in $DeviceGroups)
+	{
+		If($MSWord -or $PDF)
+		{
+			$ScriptInformation.Add(@{Data = "Name"; Value = $DeviceGroup.Name; }) > $Null
+			$ScriptInformation.Add(@{Data = "Description"; Value = $DeviceGroup.Description; }) > $Null
+			$ScriptInformation.Add(@{Data = "Last modification by"; Value = $DeviceGroup.AdminLastMod; }) > $Null
+			$ScriptInformation.Add(@{Data = "Modified on"; Value = (Get-Date -UFormat "%c" $DeviceGroup.TimeLastMod); }) > $Null
+			$ScriptInformation.Add(@{Data = "Created by"; Value = $DeviceGroup.AdminCreate; }) > $Null
+			$ScriptInformation.Add(@{Data = "Created on"; Value = (Get-Date -UFormat "%c" $DeviceGroup.TimeCreate); }) > $Null
+			$ScriptInformation.Add(@{Data = "ID"; Value = $DeviceGroup.ID.ToString(); }) > $Null
+
+			$Table = AddWordTable -Hashtable $ScriptInformation `
+			-Columns Data,Value `
+			-List `
+			-Format $wdTableGrid `
+			-AutoFit $wdAutoFitFixed;
+
+			SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+			SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+			$Table.Columns.Item(1).Width = 150;
+			$Table.Columns.Item(2).Width = 250;
+
+			$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+			FindWordDocumentEnd
+			$Table = $Null
+			WriteWordLine 0 0 ""
+		}
+		If($Text)
+		{
+			Line 3 "Name`t`t`t: " $DeviceGroup.Name
+			Line 3 "Description`t`t: " $DeviceGroup.Description
+			Line 3 "Last modification by`t: "  $DeviceGroup.AdminLastMod
+			Line 3 "Modified on`t`t: "  (Get-Date -UFormat "%c" $DeviceGroup.TimeLastMod)
+			Line 3 "Created by`t`t: "  $DeviceGroup.AdminCreate
+			Line 3 "Created on`t`t: "  (Get-Date -UFormat "%c" $DeviceGroup.TimeCreate)
+			Line 3 "ID`t`t`t: " $DeviceGroup.ID.ToString()
+			Line 0 ""
+		}
+		If($HTML)
+		{
+			$cnt++
+			
+			If($cnt -eq 0)
+			{
+				$columnHeaders = @("Name",($Script:htmlsb),$DeviceGroup.Name.Replace("<","").Replace(">",""),$htmlwhite)
+			}
+			Else
+			{
+				$rowdata += @(,("Name",($Script:htmlsb),$DeviceGroup.Name.Replace("<","").Replace(">",""),$htmlwhite))
+			}
+			$rowdata += @(,("Description",($Script:htmlsb),$DeviceGroup.Description,$htmlwhite))
+			$rowdata += @(,("Last modification by",($Script:htmlsb),$DeviceGroup.AdminLastMod,$htmlwhite))
+			$rowdata += @(,("Modified on",($Script:htmlsb),(Get-Date -UFormat "%c" $DeviceGroup.TimeLastMod),$htmlwhite))
+			$rowdata += @(,("Created by",($Script:htmlsb),$DeviceGroup.AdminCreate,$htmlwhite))
+			$rowdata += @(,("Created on",($Script:htmlsb),(Get-Date -UFormat "%c" $DeviceGroup.TimeCreate),$htmlwhite))
+			$rowdata += @(,("ID",($Script:htmlsb),$DeviceGroup.ID.ToString(),$htmlwhite))
+
+			$msg = ""
+			$columnWidths = @("150","250")
+			FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+			WriteHTMLLine 0 0 ""
+		}
+
+		#Main
+		
+		If($MSWord -or $PDF)
+		{
+			WriteWordLine 3 0 "Main"
+		}
+		If($Text)
+		{
+			Line 3 "Main"
+		}
+		If($HTML)
+		{
+			#Nothing
+		}
+		
+		If($MSWord -or $PDF)
+		{
+			$ScriptInformation = New-Object System.Collections.ArrayList
+			$ScriptInformation.Add(@{Data = "Name"; Value = $DeviceGroup.Name; }) > $Null
+			$ScriptInformation.Add(@{Data = "Description"; Value = $DeviceGroup.Description; }) > $Null
+
+			$Table = AddWordTable -Hashtable $ScriptInformation `
+			-Columns Data,Value `
+			-List `
+			-Format $wdTableGrid `
+			-AutoFit $wdAutoFitFixed;
+
+			SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+			SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+			$Table.Columns.Item(1).Width = 250;
+			$Table.Columns.Item(2).Width = 250;
+
+			$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+			FindWordDocumentEnd
+			$Table = $Null
+			WriteWordLine 0 0 ""
+		}
+		If($Text)
+		{
+			Line 4 "Name`t`t: " $DeviceGroup.Name
+			Line 4 "Description`t: " $DeviceGroup.Description
+			Line 0 ""
+		}
+		If($HTML)
+		{
+			$rowdata = @()
+			$columnHeaders = @("Name",($Script:htmlsb),$DeviceGroup.Name.Replace("<","").Replace(">",""),$htmlwhite)
+			$rowdata += @(,("Description",($Script:htmlsb),$DeviceGroup.Description,$htmlwhite))
+
+			$msg = "Main"
+			$columnWidths = @("150","250")
+			FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+			WriteHTMLLine 0 0 ""
+		}
+
+		#OS Settings
+		
+		If($MSWord -or $PDF)
+		{
+			WriteWordLine 3 0 "OS Settings"
+		}
+		If($Text)
+		{
+			Line 3 "OS Settings"
+		}
+		If($HTML)
+		{
+			#Nothing
+		}
+		
+		If($MSWord -or $PDF)
+		{
+			$ScriptInformation = New-Object System.Collections.ArrayList
+			$ScriptInformation.Add(@{Data = "Disable removable drives"; Value = $DeviceGroup.DisableRemovableDrives.ToString(); }) > $Null
+			$ScriptInformation.Add(@{Data = "Disable Print Screen"; Value = $DeviceGroup.DisablePrintScreen.ToString(); }) > $Null
+			$ScriptInformation.Add(@{Data = "Replace desktop"; Value = $DeviceGroup.ReplaceDesktop.ToString(); }) > $Null
+			$ScriptInformation.Add(@{Data = "Kiosk mode"; Value = $DeviceGroup.KioskMode.ToString(); }) > $Null
+			$ScriptInformation.Add(@{Data = "Use client as desktop"; Value = $DeviceGroup.UseClientAsDesktop.ToString(); }) > $Null
+
+			$Table = AddWordTable -Hashtable $ScriptInformation `
+			-Columns Data,Value `
+			-List `
+			-Format $wdTableGrid `
+			-AutoFit $wdAutoFitFixed;
+
+			SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+			SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+			$Table.Columns.Item(1).Width = 250;
+			$Table.Columns.Item(2).Width = 250;
+
+			$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+			FindWordDocumentEnd
+			$Table = $Null
+			WriteWordLine 0 0 ""
+		}
+		If($Text)
+		{
+			Line 4 "Disable removable drives: " $DeviceGroup.DisableRemovableDrives.ToString()
+			Line 4 "Disable Print Screen`t: " $DeviceGroup.DisablePrintScreen.ToString()
+			Line 4 "Replace desktop`t`t: " $DeviceGroup.ReplaceDesktop.ToString()
+			Line 4 "Kiosk mode`t`t: " $DeviceGroup.KioskMode.ToString()
+			Line 4 "Use client as desktop`t: " $DeviceGroup.UseClientAsDesktop.ToString()
+			Line 0 ""
+		}
+		If($HTML)
+		{
+			$rowdata = @()
+
+			$columnHeaders = @("Disable removable drives",($Script:htmlsb),$DeviceGroup.DisableRemovableDrives.ToString(),$htmlwhite)
+			$rowdata += @(,("Disable Print Screen",($Script:htmlsb),$DeviceGroup.DisablePrintScreen.ToString(),$htmlwhite))
+			$rowdata += @(,("Replace desktop",($Script:htmlsb),$DeviceGroup.ReplaceDesktop.ToString(),$htmlwhite))
+			$rowdata += @(,("Kiosk mode",($Script:htmlsb),$DeviceGroup.KioskMode.ToString(),$htmlwhite))
+			$rowdata += @(,("Use client as desktop",($Script:htmlsb),$DeviceGroup.UseClientAsDesktop.ToString(),$htmlwhite))
+
+			$msg = "OS Settings"
+			$columnWidths = @("150","250")
+			FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+			WriteHTMLLine 0 0 ""
+		}
+
+		#Firewall Settings
+		
+		If($MSWord -or $PDF)
+		{
+			WriteWordLine 3 0 "Firewall Settings"
+		}
+		If($Text)
+		{
+			Line 3 "Firewall Settings"
+		}
+		If($HTML)
+		{
+			#Nothing
+		}
+		
+		If($MSWord -or $PDF)
+		{
+			$ScriptInformation = New-Object System.Collections.ArrayList
+			$ScriptInformation.Add(@{Data = "Enable firewall"; Value = $DeviceGroup.EnableFirewall.ToString(); }) > $Null
+			$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+
+			ForEach($Port in $DeviceGroup.InboundPorts)
+			{
+				$ScriptInformation.Add(@{Data = "Port"; Value = $Port.Port.ToString(); }) > $Null
+				$ScriptInformation.Add(@{Data = "Protocol"; Value = $Port.Protocol.ToString(); }) > $Null
+				$ScriptInformation.Add(@{Data = "Profile"; Value = $Port.Profile; }) > $Null
+				$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+			}
+
+			$Table = AddWordTable -Hashtable $ScriptInformation `
+			-Columns Data,Value `
+			-List `
+			-Format $wdTableGrid `
+			-AutoFit $wdAutoFitFixed;
+
+			SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+			SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+			$Table.Columns.Item(1).Width = 250;
+			$Table.Columns.Item(2).Width = 250;
+
+			$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+			FindWordDocumentEnd
+			$Table = $Null
+			WriteWordLine 0 0 ""
+		}
+		If($Text)
+		{
+			Line 4 "Enable firewall: " $DeviceGroup.EnableFirewall.ToString()
+			Line 0 ""
+
+			ForEach($Port in $DeviceGroup.InboundPorts)
+			{
+				Line 4 "Port`t: " $Port.Port.ToString()
+				Line 4 "Protocol: " $Port.Protocol.ToString()
+				Line 4 "Profile`t: " $Port.Profile
+				Line 0 ""
+			}
+		}
+		If($HTML)
+		{
+			$rowdata = @()
+
+			$columnHeaders = @("Enable firewall",($Script:htmlsb),$DeviceGroup.EnableFirewall.ToString(),$htmlwhite)
+			$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+
+			ForEach($Port in $DeviceGroup.InboundPorts)
+			{
+				$rowdata += @(,("Port",($Script:htmlsb),$Port.Port.ToString(),$htmlwhite))
+				$rowdata += @(,("Protocol",($Script:htmlsb),$Port.Protocol.ToString(),$htmlwhite))
+				$rowdata += @(,("Profile",($Script:htmlsb),$Port.Profile,$htmlwhite))
+				$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+			}
+
+			$msg = "Firewall Settings"
+			$columnWidths = @("150","250")
+			FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+			WriteHTMLLine 0 0 ""
+		}
+
+		#Shadowing
+		
+		If($MSWord -or $PDF)
+		{
+			WriteWordLine 3 0 "Shadowing"
+		}
+		If($Text)
+		{
+			Line 3 "Shadowing"
+		}
+		If($HTML)
+		{
+			#Nothing
+		}
+		
+		If($MSWord -or $PDF)
+		{
+			$ScriptInformation = New-Object System.Collections.ArrayList
+			$ScriptInformation.Add(@{Data = "Request Authorization"; Value = $DeviceGroup.RequestAuthorization.ToString(); }) > $Null
+
+			$Table = AddWordTable -Hashtable $ScriptInformation `
+			-Columns Data,Value `
+			-List `
+			-Format $wdTableGrid `
+			-AutoFit $wdAutoFitFixed;
+
+			SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+			SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
+
+			$Table.Columns.Item(1).Width = 250;
+			$Table.Columns.Item(2).Width = 250;
+
+			$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
+
+			FindWordDocumentEnd
+			$Table = $Null
+			WriteWordLine 0 0 ""
+		}
+		If($Text)
+		{
+			Line 4 "Request Authorization: " $DeviceGroup.RequestAuthorization.ToString()
+			Line 0 ""
+
+		}
+		If($HTML)
+		{
+			$rowdata = @()
+
+			$columnHeaders = @("Request Authorization",($Script:htmlsb),$DeviceGroup.RequestAuthorization.ToString(),$htmlwhite)
+
+			$msg = "Shadowing"
+			$columnWidths = @("150","250")
+			FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+			WriteHTMLLine 0 0 ""
+		}
+	}
+}	
+#endregion
+
 #region process policies
 Function ProcessPolicies
 {
@@ -77374,6 +78016,11 @@ ForEach($Site in $Script:Sites)
 	{
 		ProcessConnection $Site
 	}
+
+	If(($Script:RASMajorVersion -ge 20) -and ($Section -eq "All" -or $Section -eq "Device"))
+	{
+		ProcessDeviceManager $Site
+	}
 }
 
 If($Section -eq "All" -or $Section -eq "Policies")
@@ -77416,8 +78063,8 @@ ProcessScriptEnd
 # SIG # Begin signature block
 # MIIthQYJKoZIhvcNAQcCoIItdjCCLXICAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUu5Beky0hpz7nXz3aorON43LQ
-# NvuggibfMIIFjTCCBHWgAwIBAgIQDpsYjvnQLefv21DiCEAYWjANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUAlRVzMESuD11ttiOeyXFdT5j
+# u/6ggibfMIIFjTCCBHWgAwIBAgIQDpsYjvnQLefv21DiCEAYWjANBgkqhkiG9w0B
 # AQwFADBlMQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYD
 # VQQLExB3d3cuZGlnaWNlcnQuY29tMSQwIgYDVQQDExtEaWdpQ2VydCBBc3N1cmVk
 # IElEIFJvb3QgQ0EwHhcNMjIwODAxMDAwMDAwWhcNMzExMTA5MjM1OTU5WjBiMQsw
@@ -77628,33 +78275,33 @@ ProcessScriptEnd
 # UzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/BgNVBAMTOERpZ2lDZXJ0IFRy
 # dXN0ZWQgRzQgQ29kZSBTaWduaW5nIFJTQTQwOTYgU0hBMzg0IDIwMjEgQ0ExAhAL
 # bN+2Z4EOKufLWhG6HUlwMAkGBSsOAwIaBQCgQDAZBgkqhkiG9w0BCQMxDAYKKwYB
-# BAGCNwIBBDAjBgkqhkiG9w0BCQQxFgQUXV7PgRZjDFA2ESNJY208DWXu7PowDQYJ
-# KoZIhvcNAQEBBQAEggIAP5MuLq6YjFxvs53eaMCDUZK6dLze6p8Xi754LFv5TTwN
-# ZOwoIIAZs+4tpMGBE8nx7PnslIJWP74I39R8KMQmSCFv/LyY+qXKjnUeavyDgbdU
-# arW1nlAaA9vRWJyWwvk4yYRlmVSVHLlj1x71L2ea7ZZtveXEsYH4c4suQg5eA7qu
-# sv4a7jR+m3mlIZQtPrxO56iN3KIICHdWzReNMGtFR2t7OZonFxrcbqTI5zsYOqXz
-# A1cQheeu6r0DJh85K9Gl2aU5r/pcs0x+vO3emOsrpmFz1EyAIcAcDN39KLR/d9/5
-# +iIfqYNptXZ0uOFrnbXFQGrG8Ws9Pz0TjFuhykv26IOZNQPsa3v1oXbIAzJTIGn2
-# dQdXv3gOx9lUw4ZJtEycpDrP03ln2kz6743KacIq5qjzkFoFNKDlbjkaWp7PenLL
-# gKXXD9ciGMHk2/UycU2rE4Yxtd90CbXIV2QjlwvHIsg9ozV067PUiwrjeWd8wza7
-# wxG5AVXZFVY6z+sr0Q37hGVdndIJL52UK/Q8ZD6iLAJRoHSnqk/fDgm59RuEn7xW
-# FUUqfvlYCCh3w0H/Hs3vKEZUoiUyTiNKPB7bzGZpfs/2TAnqhdhHrQ3WvgwR7P9z
-# RnDF37O0KhO7GgMPXjShq8TmhfWfHLXnDrD6F9BSeTEMnysaWvK8sX/Z21CmqhWh
+# BAGCNwIBBDAjBgkqhkiG9w0BCQQxFgQUmNVejF7bM/ITXblr+vexKkNkoRgwDQYJ
+# KoZIhvcNAQEBBQAEggIAuCqkU2sLSRThJ5UYatX6WWFDX5TuW9QZfzXMKcKIhJud
+# k8AugI9FK4WiDz37Nx9DZERRAlYd0TqSLuo7PyzZSGeVMmoxivH4MPht+MB4wt9H
+# gnyIXn+8/tbbZkC4Ir2AonYq9hcC1Yv2qStaVWRYPkxy0uEfIHsITAgd6cZt+6CF
+# bImPNxf53dr2wo3nX3hBCO/QCumHvS5tju9LZ+8B1xpxFsfmOkrx+FXuoHy3Ywky
+# NDowGWlA3vRxmrr41ZPEQAvRHBxpZA7stUXCL6/YBsxi6C3RvHuwgK9lPEoTVsEA
+# 2mctmqL4KD8uePZiuC2EOX9F19mK+3Nl0nFth8k3pIsUJ3wZhsfggp4ncYD31bWv
+# zRynno8rgSpo0u8VEO7nzFn4skQezsVKNPURjErlyPhcnM6j9RzEFNfw5GNd88rZ
+# LPa1ROdqXhzvgzmyK2tahWbt+6W8VS8bAKp+0Mh0kRb8B2/ct5G2IKX8OD4weXEU
+# 8HcCVj7nbqwvToYIP/RcYjeLG7SW2IGvua8qIVREb1NZlQigP1KQ0X63o58oP3Dj
+# PYXaXqh/Jm0QVJcUpAWFameydxr4PVofYuIo3se5sYnFDmbG5mw0pGpZmdN9oa2T
+# vXNp9CVBnkU2WjWBndPUmddx3FCghomn4UyrgQXqKmQf7qNCyXhdJfQWfdJdK8eh
 # ggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8CAQEwfTBpMQswCQYDVQQGEwJVUzEX
 # MBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/BgNVBAMTOERpZ2lDZXJ0IFRydXN0
 # ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYgU0hBMjU2IDIwMjUgQ0ExAhAKgO8Y
 # S43xBYLRxHanlXRoMA0GCWCGSAFlAwQCAQUAoGkwGAYJKoZIhvcNAQkDMQsGCSqG
-# SIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjYwMTI4MTczMjMzWjAvBgkqhkiG9w0B
-# CQQxIgQgi4Fqp19l9XH1ZcDyILxl+G5VF6ghNFeaHCCpW9/EcekwDQYJKoZIhvcN
-# AQEBBQAEggIAx2h2jznTAJNJKOYDH6gqm6eKbuu380T3ZJKE+KtqhqYRKjiQKKcg
-# VWbFDN4HU0u9RXfeTJ3ERQiXHQnsuwZ2oGSW4JdOPzzVYXdYRD0xEe8I5HTVZgOA
-# /szgNHv0MCKyGFLIZXry5Wbjx45yJnlLoo2he7zSVBop6RdXueqURpRdZOgDOtn2
-# XuzhfmIdfc5x37hOJ13VTtOPXjCeo8WfS3asV8V7r7IoUgUydPI3xOW7haN+7aEa
-# FBg898uHqP7VjYuOH8cc4tnLalsbMixf1WSqZOpIAaLdSHCAQeFX4/kuwW9wK98l
-# QyZHG4CnpPdvHEjRXyuIaFONgCesdNNcJ9VNIn8S1xpovFcuJCdO/CsQ+WhmcvTG
-# uFdjbSaH9CXtLrtcsEQ+EHnbsSyTmBFVY2gB25mSYIazb/mQJta5lDHvxLgF+QSu
-# 5g1psSMC8psfnY0EBfc0Px0c1BI4scU6WABcnjZn67PKBlZcQprCZAYd+WUrYOqi
-# h86vsbhQMqDnY+aRhxzpWLlvJwKFSZo8X2hMCot1/TLPLSraya3RlSKOSO3At62Y
-# OfEOpJQuBzPho6cZBblIE8gRCv8ultDehbMjSIPhqX0cLZsa0TC2VDQaSMCIcGMf
-# TAtfR0feM8GsVHmptNxHkejFwCJxjftDLfmOkhXLjBhPTtdgKrxe6Fw=
+# SIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjYwMTI5MTYyMTE3WjAvBgkqhkiG9w0B
+# CQQxIgQgG2ajMsnxBoPIEesaZBgvQC3Ew3sVVDU1gKgTrSP72WgwDQYJKoZIhvcN
+# AQEBBQAEggIAv5JPJd4ku5K6ccilHkSgK24EoorrP2PMxEjDAakhEzYF5i2aMZU9
+# 1y0q1RQOQPy7nrahAm9JtnzUrXbp1HITCPzHMnbjnkAas8Np4jcCQeWARe7rvLLu
+# AHgbWWIFK87kowwQO4AKHK4NHb8lyVOW1gjS/XLw27oMiRaTC9K7IVar0YcReRhT
+# 1fUg3tWaZKPibnUYiQAJgCtNsICp9jj0Ue0CJk/n+yJ3RvwsBT/60/AC8r8cqIQ4
+# CdzZpivLrwlatKw4Ktjqwyu1eRXIiSd/mkFWGE8DZ/jP/xEufzZXK864Ev7JSJcA
+# DQWmCWi8+d4vEOLoA8kpD6W9oPDrcSJejBuKIf1YtYH5Y0ckrY6X2ZNaLYASL+Ze
+# fQVZbkJkiCqodjiDH/gL1IJwKSy/WUD/nUG9OBd9SxdNJQK5EDFx222t5XytP473
+# WB7yAtOullB7LcWpCUrtzuhfsNl7avzreEq6WEE6FcYOPkRXJjc+t5vOx5pyk+el
+# e/DG9stderLsvjBYTIkw00lt1tssDlgd2zHd5JK52ttWA+IVeKv9sxXeSMiZoqdo
+# bitC0VJxKPmkHUjdaSScETUWw8x0ejLgRkt8IZ3mY9wdXW08H/1PXpPQRPG9VM3r
+# uUoB2F/+JV9WxMu1CgtzXXo+mxJwhaJpFkXeWeazAkkPe9/n7Byf0HQ=
 # SIG # End signature block

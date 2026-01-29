@@ -26,6 +26,20 @@
 #			OutputApplicationPackagesDetails
 #			OutputSiteSettingsDetails
 #		OutputLogonHours
+#		ProcessDeviceManager
+#			OutputDeviceManagerSectionPage
+#			OutputDeviceManager
+#			OutputWindowsDeviceGroups
+#
+#	Added Device Manager
+#		Device Manager
+#		Windows device groups
+#			Main
+#			OS Settings
+#			Firewall Settings
+#			Shadowing
+#		
+#	Added a new Section option to support Device Manager (-Section Device)
 #
 #	Clean up some console output
 #
