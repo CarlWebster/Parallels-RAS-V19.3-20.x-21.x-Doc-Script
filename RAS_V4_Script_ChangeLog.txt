@@ -56,6 +56,10 @@
 #	In Function GetRASStatus:
 #		Added a String parameter to tell who or what is checking the status
 #		Updated all calls to GetRASStatus to add the new second parameter
+#		Updated all "WVD" to "AVD"
+#
+#	In Function GetVDIType:
+#		Update ENUM to https://docs.parallels.com/ras-powershell-api-21/parallels-ras-powershell-admin-module/types/providersubtypeall
 #
 #	In Function OutputFarmSite, 
 #		Add Farm Properties
@@ -320,6 +324,9 @@
 #		If the Theme's MFA ID is not 0 and is found, use the MFA name
 #		If the Theme's MFA ID is 0, use "No MFA provider selected for this Theme"
 #		If the Theme's MFA ID is not found, use "Unable to determine MFA provider"
+#
+#	In Function OutputSiteDetails:
+#		Don't process AVD stuff if Settings/Features/Enable Azure Virtual Desktop management is not enabled 
 #
 #	In Function OutputSiteSummary:
 #		Changed "VDI Host" to "Provider"

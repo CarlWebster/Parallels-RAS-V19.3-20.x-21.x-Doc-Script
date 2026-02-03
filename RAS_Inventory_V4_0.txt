@@ -99,14 +99,14 @@
 	Outputs all errors to a text file at the end of the script.
 	
 	This is used when the script developer requests more troubleshooting data.
-	The text file is placed in the same folder from where the script is run.
+	The text file is placed in the same folder from which the script is run.
 	
 	This parameter is disabled by default.
 .PARAMETER Log
 	Generates a log file for troubleshooting.
 .PARAMETER ScriptInfo
 	Outputs information about the script to a text file.
-	The text file is placed in the same folder from where the script is run.
+	The text file is placed in the same folder from which the script is run.
 	
 	This parameter is disabled by default.
 	This parameter has an alias of SI.
@@ -138,7 +138,7 @@
 .PARAMETER PDF
 	SaveAs PDF file instead of DOCX file.
 	
-	The PDF file is roughly 5 to 10 times larger than the DOCX file.
+	The PDF file is roughly 5-10 times larger than the DOCX file.
 	
 	This parameter requires Microsoft Word to be installed.
 	This parameter uses Word's SaveAs PDF capability.
@@ -223,7 +223,7 @@
 		Mod (Word 2010. Works)
 		Motion (Word 2010/2013/2016. Works if the top date is manually changed to 
 		36 point)
-		Newsprint (Word 2010. Works but the date is not populated)
+		Newsprint (Word 2010. Works, but the date is not populated)
 		Perspective (Word 2010. Works)
 		Pinstripes (Word 2010. Works)
 		Puzzle (Word 2010. Top date doesn't fit; box needs to be manually 
@@ -254,11 +254,11 @@
 .PARAMETER SmtpServer
 	Specifies the optional email server to send the output report(s). 
 	
-	If From or To are used, this is a required parameter.
+	If From or To is used, this is a required parameter.
 .PARAMETER From
 	Specifies the username for the From email address.
 	
-	If SmtpServer or To are used, this is a required parameter.
+	If SmtpServer or To is used, this parameter is required.
 .PARAMETER To
 	Specifies the username for the To email address.
 	
@@ -451,9 +451,9 @@
 	text document.
 .NOTES
 	NAME: RAS_Inventory_V4_0.ps1
-	VERSION: 4.00 Beta 55
+	VERSION: 4.00 RC
 	AUTHOR: Carl Webster
-	LASTEDIT: January 29, 2026
+	LASTEDIT: February 3, 2026
 #>
 
 
@@ -620,6 +620,10 @@ Param(
 #	In Function GetRASStatus:
 #		Added a String parameter to tell who or what is checking the status
 #		Updated all calls to GetRASStatus to add the new second parameter
+#		Updated all "WVD" to "AVD"
+#
+#	In Function GetVDIType:
+#		Update ENUM to https://docs.parallels.com/ras-powershell-api-21/parallels-ras-powershell-admin-module/types/providersubtypeall
 #
 #	In Function OutputFarmSite, 
 #		Add Farm Properties
@@ -885,6 +889,9 @@ Param(
 #		If the Theme's MFA ID is 0, use "No MFA provider selected for this Theme"
 #		If the Theme's MFA ID is not found, use "Unable to determine MFA provider"
 #
+#	In Function OutputSiteDetails:
+#		Don't process AVD stuff if Settings/Features/Enable Azure Virtual Desktop management is not enabled 
+#
 #	In Function OutputSiteSummary:
 #		Changed "VDI Host" to "Provider"
 #		For Providers, remove the CPU, RAM, Disk read time, and Disk write time metrics, as they are no longer shown in the console.
@@ -1024,9 +1031,9 @@ $ErrorActionPreference    = 'SilentlyContinue'
 $Error.Clear()
 
 $Script:emailCredentials  = $Null
-$script:MyVersion         = '4.00 Beta 55'
+$script:MyVersion         = '4.00 RC'
 $Script:ScriptName        = "RAS_Inventory_V4_0.ps1"
-$tmpdate                  = [datetime] "01/29/2026"
+$tmpdate                  = [datetime] "02/03/2026"
 $Script:ReleaseDate       = $tmpdate.ToUniversalTime().ToShortDateString()
 
 If($MSWord -eq $False -and $PDF -eq $False -and $Text -eq $False -and $HTML -eq $False)
@@ -2064,6 +2071,7 @@ Function SetupWord
 		Company Name is blank so Cover Page will not show a Company Name.
 		Check HKCU:\Software\Microsoft\Office\Common\UserInfo for Company or CompanyName value.
 		You may want to use the -CompanyName parameter if you need a Company Name on the cover page.
+		
 			" -ForegroundColor White
 			$Script:CoName = $TmpName
 		}
@@ -4601,6 +4609,7 @@ Function OutputFarmSite
 	{
 		Write-Host "
 	No Site Status retrieved for Site $Site.Name.`
+	
 		" -ForegroundColor White
 		$PrimaryPublishingAgent = "N/A"
 		If($Site.LicensingSite)
@@ -4816,8 +4825,8 @@ Function OutputFarmSite
 		SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 		SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-		$Table.Columns.Item(1).Width = 200;
-		$Table.Columns.Item(2).Width = 250;
+		$Table.Columns.Item(1).Width = 225;
+		$Table.Columns.Item(2).Width = 50;
 
 		$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -4945,6 +4954,8 @@ Function GetVDIType
 {
 	Param([string] $VDIHostType)
 	
+	#https://docs.parallels.com/ras-powershell-api-21/parallels-ras-powershell-admin-module/types/providersubtypeall
+	
 	Switch ($VDIHostType)
 	{
 		"HyperVWin2008Std"					{$VDIType = "Microsoft Hyper-V on Windows Server 2008 Standard Edition"; Break}
@@ -4971,6 +4982,13 @@ Function GetVDIType
 		"CitrixXen7_2"						{$VDIType = "Citrix XenServer 7.2"; Break}
 		"QemuKvmUnknown"					{$VDIType = "QEMU KVM unknown"; Break}
 		"QemuKvm1_2_14"						{$VDIType = "QEMU KVM 1.2.14"; Break}
+		"ScaleUnknown"						{$VDIType = "Scale unknown"; Break}
+		"Scale7_4"							{$VDIType = "Scale 7.4"; Break}
+		"Scale8_6_5"						{$VDIType = "Scale 8.6.5"; Break}
+		"Scale8_8"							{$VDIType = "Scale 8.8"; Break}
+		"Scale8_9"							{$VDIType = "Scale 8.9"; Break}
+		"Scale9_1"							{$VDIType = "Scale 9.1"; Break}
+		"RemotePCUnknown"					{$VDIType = "Remote PC unknown"; Break}
 		"HyperVUnknown"						{$VDIType = "Microsoft Hyper-V on Unknown Server"; Break}
 		"HyperVWin2012R2Std"				{$VDIType = "Microsoft Hyper-V on Windows Server 2012 Standard Edition"; Break}
 		"HyperVWin2012R2Dtc"				{$VDIType = "Microsoft Hyper-V on Windows Server 2012 R2 Datacenter Edition"; Break}
@@ -4983,7 +5001,12 @@ Function GetVDIType
 		"HyperVWin2019Srv"					{$VDIType = "Microsoft Hyper-V on Windows Server 2019"; Break}
 		"HyperVWin2022Std"					{$VDIType = "Microsoft Hyper-V on Windows Server 2022 Standard Edition"; Break}
 		"HyperVWin2022Dtc"					{$VDIType = "Microsoft Hyper-V on Windows Server 2022 Datacenter Edition"; Break}
+		"HyperVWin2022DtcAzure"				{$VDIType = "Microsoft Hyper-V on Windows Server 2022 Datacenter Azure Edition"; Break}
+		"HyperVWin2025Std"					{$VDIType = "Microsoft Hyper-V on Windows Server 2025 Standard Edition"; Break}
+		"HyperVWin2025Dtc"					{$VDIType = "Microsoft Hyper-V on Windows Server 2025 Datacenter Edition"; Break}
+		"HyperVWin2025DtcAzure"				{$VDIType = "Microsoft Hyper-V on Windows Server 2025 Datacenter Azure Edition"; Break}
 		"HyperVFailover"					{$VDIType = "Microsoft Hyper-V Failover Cluster"; Break}
+		"HyperVFailoverCluster"				{$VDIType = "HyperV Failover Cluster on Unknown Server"; Break}
 		"HyperVFailoverClusterUnknown"		{$VDIType = "Microsoft Hyper-V Failover Cluster on Unknown Server"; Break}
 		"HyperVFailoverClusterEnt"			{$VDIType = "Microsoft Hyper-V Failover Cluster Enterprise Edition"; Break}
 		"HyperVFailoverClusterDtc"			{$VDIType = "Microsoft Hyper-V Failover Cluster Datacenter Edition"; Break}
@@ -4992,7 +5015,9 @@ Function GetVDIType
 		"HyperVFailoverClusterWin2016"		{$VDIType = "Microsoft Hyper-V Failover Cluster on Windows Server 2016"; Break}
 		"HyperVFailoverClusterWin2019"		{$VDIType = "Microsoft Hyper-V Failover Cluster on Windows Server 2019"; Break}
 		"HyperVFailoverClusterWin2022"		{$VDIType = "Microsoft Hyper-V Failover Cluster on Windows Server 2022"; Break}
+		"HyperVFailoverClusterWin2025"		{$VDIType = "Microsoft Hyper-V Failover Cluster on Windows Server 2025"; Break}
 		"VmwareESXi"						{$VDIType = "Vmware ESXi"; Break}
+		"VmwareESXiUnknown"					{$VDIType = "Vmware ESXi"; Break}
 		"VmwareESXUnknown"					{$VDIType = "Vmware ESXi"; Break}
 		"VmwareESXi4_0"						{$VDIType = "Vmware ESXi 4.0"; Break}
 		"VmwareESX4_0"						{$VDIType = "Vmware ESX 4.0"; Break}
@@ -5005,6 +5030,7 @@ Function GetVDIType
 		"VmwareESXi6_5"						{$VDIType = "Vmware ESXi 6.5"; Break}
 		"VmwareESXi6_7"						{$VDIType = "Vmware ESXi 6.7"; Break}
 		"VmwareESXi7_0"						{$VDIType = "Vmware ESXi 7.0"; Break}
+		"VmwareESXi8_0"						{$VDIType = "Vmware ESXi 8.0"; Break}
 		"VmwareVCenter"						{$VDIType = "Vmware VCenter"; Break}
 		"VmwareVCenterUnknown"				{$VDIType = "Vmware VCenter Server"; Break}
 		"VmwareVCenter4_0"					{$VDIType = "Vmware VCenter Server 4.0"; Break}
@@ -5016,6 +5042,7 @@ Function GetVDIType
 		"VmwareVCenter6_5"					{$VDIType = "Vmware VCenter Server 6.5"; Break}
 		"VmwareVCenter6_7"					{$VDIType = "Vmware VCenter Server 6.7"; Break}
 		"VmwareVCenter7_0"					{$VDIType = "Vmware VCenter Server 7.0"; Break}
+		"VmwareVCenter8_0"					{$VDIType = "Vmware VCenter Server 8.0"; Break}
 		15									{$VDIType = "Vmware VCenter Server 7.0"; Break}
 		"Nutanix"							{$VDIType = "Nutanix AHV (AOS)"; Break}
 		"NutanixUnknown"					{$VDIType = "Nutanix unknown"; Break}
@@ -5025,23 +5052,19 @@ Function GetVDIType
 		"Nutanix5_15"						{$VDIType = "Nutanix 5.15"; Break}
 		"Nutanix5_20"						{$VDIType = "Nutanix 5.20"; Break}
 		"Nutanix6_5"						{$VDIType = "Nutanix 6.5"; Break}
+		"Nutanix6_10"						{$VDIType = "Nutanix 6.10"; Break}
 		"RemotePCStaticUnknown"				{$VDIType = "Remote PC (static) unknown"; Break}
 		"RemotePCStatic"					{$VDIType = "Remote PC (static)"; Break}
 		"RemotePCDynamicUnknown"			{$VDIType = "Remote PC (dynamic) unknown"; Break}
 		"RemotePCDynamic"					{$VDIType = "Remote PC (dynamic)"; Break}
 		"ScaleComputing"					{$VDIType = "SC//HyperCore"; Break}
 		"Scale"								{$VDIType = "Scale unknown"; Break}
-		"ScaleUnknown"						{$VDIType = "Scale unknown"; Break}
-		"Scale7_4"							{$VDIType = "Scale 7.4"; Break}
-		"Scale8_6_5"						{$VDIType = "Scale 8.6.5"; Break}
-		"Scale8_8"							{$VDIType = "Scale 8.8"; Break}
-		"Scale8_9"							{$VDIType = "Scale 8.9"; Break}
-		"Scale9_1"							{$VDIType = "Scale 9.1"; Break}
 		"Azure"								{$VDIType = "Microsoft Azure"; Break}
 		21									{$VDIType = "Microsoft Azure"; Break}
 		"AzureUnknown"						{$VDIType = "Microsoft Azure"; Break}					
 		"AVD"								{$VDIType = "Azure Virtual Desktop"; Break}					
 		"AWSEC2"							{$VDIType = "Amazon EC2"; Break}					
+		"CustomProvider"					{$VDIType = "Custom Provider"; Break}					
 		Default								{$VDIType = "Unable to determine VDI Host Type: $($VDIHostType)"; Break}
 	}
 	
@@ -5148,12 +5171,12 @@ Function GetRASStatus
 		"FreeESXLicenseNotSupported"	{$FullRASStatus = "Free ESX License is not supported with RAS"; Break}
 		"FSLogixNeedsUpdate"			{$FullRASStatus = "Version of installed FSLogix older than the one in configuration"; Break}
 		"FSLogixNotAvail"				{$FullRASStatus = "FSLogix is not available"; Break}
-		"HotfixKB2580360NotInstalled"	{$FullRASStatus = "Hotfix KB2580360 not installed on the host. This is required by the RAS Vdi Agent to connect to the host"; Break}
+		"HotfixKB2580360NotInstalled"	{$FullRASStatus = "Hotfix KB2580360 not installed on the host. This is required by the RAS VDI Agent to connect to the host"; Break}
 		"ImageOptimization"				{$FullRASStatus = "Image optimization is in active state"; Break}
 		"ImageOptimizationPending"		{$FullRASStatus = "Image optimization is in pending state"; Break}
 		"InstallingRDSRole"				{$FullRASStatus = "Installation of RDS role is in progress"; Break}
 		"InUse"							{$FullRASStatus = "Agent is already connected to another farm"; Break}
-		"Invalid"						{$FullRASStatus = "WVD object data corrupted"; Break}
+		"Invalid"						{$FullRASStatus = "AVD object data corrupted"; Break}
 		"InvalidCAConfig"				{$FullRASStatus = "Invalid Certificate Authority configuration"; Break}
 		"InvalidCredentials"			{$FullRASStatus = "Connection to host failed because of invalid credentials"; Break}
 		"InvalidEAUserCredentials"		{$FullRASStatus = "Invalid enrollment agent credentials"; Break}
@@ -5170,15 +5193,15 @@ Function GetRASStatus
 		"ManagedESXNotSupported"		{$FullRASStatus = "Managed ESX License is not supported by RAS"; Break}
 		"MarkedForDeletion"				{$FullRASStatus = "Agent is marked for deletion"; Break}
 		"MaxNonCompletedSessions"		{$FullRASStatus = "Maximum number of non-completed sessions limit reached"; Break}
-		"MembersNeedUpdate"				{$FullRASStatus = "One or more members in the host pool is in need update state"; Break}
-		"NeedsAttention"				{$FullRASStatus = "HALB Instance: One or more HALB devices are not configured OR WVD HostPool is empty (no hosts assigned)"; Break}
+		"MembersNeedUpdate"				{$FullRASStatus = "One or more members in the host pool is in need: member needs updating"; Break}
+		"NeedsAttention"				{$FullRASStatus = "HALB Instance: One or more HALB devices are not configured OR AVD HostPool is empty (no hosts assigned)"; Break}
 		"NeedsDowngrade"				{$FullRASStatus = "Agent version is greater than the RAS Publishing Agent version"; Break}
 		"NeedsSysprep"					{$FullRASStatus = "Guest agent needs Sysprep answer file"; Break}
 		"NeedsUpdate"					{$FullRASStatus = "Agent version is less than the RAS Server version"; Break}
 		"NoAvailableGateways"			{$FullRASStatus = "There are no RAS Secure Gateways that the Tenant Broker can use to process connections"; Break}
 		"NoDevices"						{$FullRASStatus = "HALB Instance: No HALB devices are configured"; Break}
 		"NoMembersAvailable"			{$FullRASStatus = "No members in the host pool"; Break}
-		"NonRAS"						{$FullRASStatus = "Non RAS agent (WVD related agents)"; Break}
+		"NonRAS"						{$FullRASStatus = "Non RAS agent (AVD related agents)"; Break}
 		"NotApplied"					{$FullRASStatus = "Agent settings not applied"; Break}
 		"NotInUse"						{$FullRASStatus = "Agent is not connect to any farm"; Break}
 		"NotJoined"						{$FullRASStatus = "Tenant is invited to join or has been added to the farm but not yet joined"; Break}
@@ -5268,6 +5291,7 @@ Function OutputSiteSummary
 	{
 		Write-Host "
 	No RD Session Hosts retrieved for Site $($Site.Name).
+	
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
@@ -5491,6 +5515,7 @@ Function OutputSiteSummary
 	{
 		Write-Host "
 	No Providers retrieved for Site $($Site.Name).`
+	
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
@@ -5699,6 +5724,7 @@ Function OutputSiteSummary
 	{
 		Write-Host "
 	No Secure Gateways retrieved for Site $($Site.Name).`
+	
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
@@ -5908,6 +5934,7 @@ Function OutputSiteSummary
 	{
 		Write-Host "
 	No Connection Brokers retrieved for Site $($Site.Name).`
+	
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
@@ -6122,6 +6149,7 @@ Function OutputSiteSummary
 	{
 		Write-Host "
 	No Enrollment Servers retrieved for Site $($Site.Name).`
+	
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
@@ -6286,7 +6314,37 @@ Function OutputSiteDetails
 {
 	OutputRDSessionHostsDetails
 	OutputVDIDetails
-	OutputAVDDetails
+	If((Get-RASAVDSettings -SiteID 1 -EA 0 4>$Null).Enabled)
+	{
+		#don't process AVD stuff if Settings/Features/Enable Azure Virtual Desktop management is not enabled
+		OutputAVDDetails
+	}
+	Else
+	{
+		Write-Host "
+		
+	Settings/Features/Enable Azure Virtual Desktop management is not enabled for Site $($Site.Name)`
+		
+		" -ForegroundColor White
+		If($MSWord -or $PDF)
+		{
+			WriteWordLine 0 0 ""
+			WriteWordLine 0 0 "Settings/Features/Enable Azure Virtual Desktop management is not enabled for Site $($Site.Name)"
+			WriteWordLine 0 0 ""
+		}
+		If($Text)
+		{
+			Line 0 ""
+			Line 0 "Settings/Features/Enable Azure Virtual Desktop management is not enabled for Site $($Site.Name)"
+			Line 0 ""
+		}
+		If($HTML)
+		{
+			WriteHTMLLine 0 0 ""
+			WriteHTMLLine 0 0 "Settings/Features/Enable Azure Virtual Desktop management is not enabled for Site $($Site.Name)"
+			WriteHTMLLine 0 0 ""
+		}
+	}
 	#Remote PCs are not in PoSH
 	OutputRemotePCDetails
 	OutputProvidersDetails
@@ -6305,6 +6363,7 @@ Function OutputRDSessionHostsDetails
 	Write-Verbose "$(Get-Date -Format G): Output RD Session Hosts"
 	If($MSWord -or $PDF)
 	{
+		$Script:Selection.InsertNewPage()
 		WriteWordLine 2 0 "RD Session Hosts"
 	}
 	If($Text)
@@ -6347,6 +6406,7 @@ Function OutputRDSessionHostsDetails
 	{
 		Write-Host "
 	No RD Session Hosts retrieved for Site $($Site.Name).`
+	
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
@@ -8211,6 +8271,7 @@ Function OutputRDSessionHostsDetails
 				-Format $wdTableGrid `
 				-AutoFit $wdAutoFitFixed
 
+				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 				$Table.Columns.Item(1).Width = 200;
@@ -8394,7 +8455,7 @@ Function OutputRDSessionHostsDetails
 				-Format $wdTableGrid `
 				-AutoFit $wdAutoFitFixed;
 
-				#SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 				$Table.Columns.Item(1).Width = 250;
@@ -8472,7 +8533,7 @@ Function OutputRDSessionHostsDetails
 						-Format $wdTableGrid `
 						-AutoFit $wdAutoFitFixed;
 
-						#SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+						SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 						SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 						$Table.Columns.Item(1).Width = 250;
@@ -8498,7 +8559,7 @@ Function OutputRDSessionHostsDetails
 						-Format $wdTableGrid `
 						-AutoFit $wdAutoFitFixed;
 
-						#SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+						SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 						SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 						$Table.Columns.Item(1).Width = 200;
@@ -8545,6 +8606,7 @@ Function OutputRDSessionHostsDetails
 							-Format $wdTableGrid `
 							-AutoFit $wdAutoFitFixed;
 
+							SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 							SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 							$Table.Columns.Item(1).Width = 200;
@@ -8571,7 +8633,7 @@ Function OutputRDSessionHostsDetails
 						-Format $wdTableGrid `
 						-AutoFit $wdAutoFitFixed;
 
-						#SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+						SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 						SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 						$Table.Columns.Item(1).Width = 200;
@@ -8592,7 +8654,7 @@ Function OutputRDSessionHostsDetails
 							{
 								Try
 								{
-									$DispName = Get-Service -Name $item.ServiceName -EA Stop
+									$DispName = Get-Service -Name $item.ServiceName -EA 0
 									If(ValidObject $DispName DisplayName)
 									{
 										$DisplayName = $DispName.DisplayName
@@ -8667,7 +8729,7 @@ Function OutputRDSessionHostsDetails
 						-Format $wdTableGrid `
 						-AutoFit $wdAutoFitFixed;
 
-						#SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+						SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 						SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 						$Table.Columns.Item(1).Width = 200;
@@ -8723,6 +8785,7 @@ Function OutputRDSessionHostsDetails
 							-Format $wdTableGrid `
 							-AutoFit $wdAutoFitFixed;
 
+							SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 							SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 							$Table.Columns.Item(1).Width = 200;
@@ -8749,7 +8812,7 @@ Function OutputRDSessionHostsDetails
 						-Format $wdTableGrid `
 						-AutoFit $wdAutoFitFixed;
 
-						#SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+						SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 						SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 						$Table.Columns.Item(1).Width = 200;
@@ -8832,6 +8895,7 @@ Function OutputRDSessionHostsDetails
 							-Format $wdTableGrid `
 							-AutoFit $wdAutoFitFixed;
 
+							SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 							SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 							$Table.Columns.Item(1).Width = 275;
@@ -8858,7 +8922,7 @@ Function OutputRDSessionHostsDetails
 						-Format $wdTableGrid `
 						-AutoFit $wdAutoFitFixed;
 
-						#SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+						SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 						SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 						$Table.Columns.Item(1).Width = 200;
@@ -8929,9 +8993,10 @@ Function OutputRDSessionHostsDetails
 							-Format $wdTableGrid `
 							-AutoFit $wdAutoFitFixed;
 
+							SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 							SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-							$Table.Columns.Item(1).Width = 150;
+							$Table.Columns.Item(1).Width = 175;
 							$Table.Columns.Item(2).Width = 50;
 							$Table.Columns.Item(3).Width = 50;
 							
@@ -9003,6 +9068,7 @@ Function OutputRDSessionHostsDetails
 						-Format $wdTableGrid `
 						-AutoFit $wdAutoFitFixed;
 
+						SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 						SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 						$Table.Columns.Item(1).Width = 125;
@@ -9027,7 +9093,7 @@ Function OutputRDSessionHostsDetails
 						-Format $wdTableGrid `
 						-AutoFit $wdAutoFitFixed;
 
-						#SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+						SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 						SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 						$Table.Columns.Item(1).Width = 200;
@@ -9135,10 +9201,11 @@ Function OutputRDSessionHostsDetails
 							-Format $wdTableGrid `
 							-AutoFit $wdAutoFitFixed;
 
+							SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 							SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-							$Table.Columns.Item(1).Width = 250;
-							$Table.Columns.Item(2).Width = 50;
+							$Table.Columns.Item(1).Width = 300;
+							$Table.Columns.Item(2).Width = 75;
 							
 							$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -9160,6 +9227,7 @@ Function OutputRDSessionHostsDetails
 						-Format $wdTableGrid `
 						-AutoFit $wdAutoFitFixed;
 
+						SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 						SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 						$Table.Columns.Item(1).Width = 200;
@@ -9207,10 +9275,11 @@ Function OutputRDSessionHostsDetails
 							-Format $wdTableGrid `
 							-AutoFit $wdAutoFitFixed;
 
+							SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 							SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 							$Table.Columns.Item(1).Width = 175;
-							$Table.Columns.Item(2).Width = 50;
+							$Table.Columns.Item(2).Width = 60;
 							
 							$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -9236,7 +9305,7 @@ Function OutputRDSessionHostsDetails
 						-Format $wdTableGrid `
 						-AutoFit $wdAutoFitFixed;
 
-						#SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+						SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 						SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 						$Table.Columns.Item(1).Width = 100;
@@ -9381,7 +9450,7 @@ Function OutputRDSessionHostsDetails
 							{
 								Try
 								{
-									$DispName = Get-Service -Name $item.ServiceName -EA Stop
+									$DispName = Get-Service -Name $item.ServiceName -EA 0
 									If(ValidObject $DispName DisplayName)
 									{
 										$DisplayName = $DispName.DisplayName
@@ -9963,7 +10032,7 @@ Function OutputRDSessionHostsDetails
 							{
 								Try
 								{
-									$DispName = Get-Service -Name $item.ServiceName -EA Stop
+									$DispName = Get-Service -Name $item.ServiceName -EA 0
 									If(ValidObject $DispName DisplayName)
 									{
 										$DisplayName = $DispName.DisplayName
@@ -10742,7 +10811,7 @@ Function OutputRDSessionHostsDetails
 							}
 							Else
 							{
-								$RDSSessionReadinessTimeout = ""
+								$RDSSessionReadinessTimeout = "25 seconds"	#bug in RAS where this property is not enumerated
 							}
 							
 							#fixed the following missing variables in 2.52 thanks to Thomas Krampe
@@ -10874,7 +10943,7 @@ Function OutputRDSessionHostsDetails
 								}
 								Else
 								{
-									$RDSSessionReadinessTimeout = ""
+									$RDSSessionReadinessTimeout = "25 seconds"	#bug in RAS where this property is not enumerated
 								}
 						
 								$RDSAllowRemoteExec             = $RDSDefaults.AllowRemoteExec.ToString()
@@ -11028,7 +11097,7 @@ Function OutputRDSessionHostsDetails
 					}
 					Else
 					{
-						$RDSSessionReadinessTimeout = ""
+						$RDSSessionReadinessTimeout = "25 seconds"	#bug in RAS where this property is not enumerated
 					}
 						
 					$RDSAllowRemoteExec             = $RDSHost.AllowRemoteExec.ToString()
@@ -11155,7 +11224,7 @@ Function OutputRDSessionHostsDetails
 				}
 				Else
 				{
-					$RDSSessionReadinessTimeout = ""
+					$RDSSessionReadinessTimeout = "25 seconds"	#bug in RAS where this property is not enumerated
 				}
 						
 				$RDSAllowRemoteExec             = $RDSHost.AllowRemoteExec.ToString()
@@ -11250,7 +11319,7 @@ Function OutputRDSessionHostsDetails
 				$rowdata += @(,("     Disconnect active session after",($Script:htmlsb),$RDSSessionDisconnectTimeout,$htmlwhite))
 				$rowdata += @(,("     Logoff disconnected session after",($Script:htmlsb),$RDSSessionResetTime,$htmlwhite))
 				$rowdata += @(,("Other settings",($Script:htmlsb),$RDSPort,$htmlwhite))
-				$rowdata += @(,("     Session readiness timeout: ",($Script:htmlsb),$RDSSessionReadinessTimeout,$htmlwhite))
+				$rowdata += @(,("     Session readiness timeout",($Script:htmlsb),$RDSSessionReadinessTimeout,$htmlwhite))
 				$rowdata += @(,("     Port",($Script:htmlsb),$RDSPort,$htmlwhite))
 				$rowdata += @(,("     Max Sessions",($Script:htmlsb),$RDSMaxSessions,$htmlwhite))
 				$rowdata += @(,("     Preferred Connection Broker",($Script:htmlsb),$RDSPreferredPublishingAgent,$htmlwhite))
@@ -11475,6 +11544,7 @@ Function OutputRDSessionHostsDetails
 	{
 		Write-Host "
 	No RD Session Host Pools retrieved for Site $($Site.Name).`
+	
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
@@ -11548,8 +11618,8 @@ Function OutputRDSessionHostsDetails
 				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 250;
-				$Table.Columns.Item(2).Width = 250;
+				$Table.Columns.Item(1).Width = 150;
+				$Table.Columns.Item(2).Width = 350;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -11624,8 +11694,8 @@ Function OutputRDSessionHostsDetails
 				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 250;
-				$Table.Columns.Item(2).Width = 250;
+				$Table.Columns.Item(1).Width = 150;
+				$Table.Columns.Item(2).Width = 350;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -11721,8 +11791,8 @@ Function OutputRDSessionHostsDetails
 				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 250;
-				$Table.Columns.Item(2).Width = 250;
+				$Table.Columns.Item(1).Width = 150;
+				$Table.Columns.Item(2).Width = 350;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -11920,8 +11990,8 @@ Function OutputRDSessionHostsDetails
 			}
 			Else
 			{
-				$RDSHostPoolTemplateName         = "Unable to retrieve RDS Group template"
-				$RDSHostPoolTemplateVersionName  = "N/A"
+				$RDSHostPoolTemplateName         = ""
+				$RDSHostPoolTemplateVersionName  = ""
 			}
 			
 			#Provisioning
@@ -13577,6 +13647,7 @@ Function OutputRDSessionHostsDetails
 				-Format $wdTableGrid `
 				-AutoFit $wdAutoFitFixed
 
+				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 				$Table.Columns.Item(1).Width = 200;
@@ -13910,7 +13981,7 @@ Function OutputRDSessionHostsDetails
 					}
 					Else
 					{
-						$RDSSessionReadinessTimeout = ""
+						$RDSSessionReadinessTimeout = "25 seconds"	#bug in RAS where this property is not enumerated
 					}
 							
 					If($RDSDefaults.PreferredBrokerId -eq 0)
@@ -14030,7 +14101,7 @@ Function OutputRDSessionHostsDetails
 				$RDSEnableAppMonitoring = $RDSHostPoolDefaults.EnableAppMonitoring.ToString()
 				$RDSAllowFileTransfer   = $RDSHostPoolDefaults.AllowFileTransfer.ToString()
 				
-				If(ValidObject $$RDSHostPoolDefaults SessionReadinessTimeout)
+				If(ValidObject $RDSHostPoolDefaults SessionReadinessTimeout)
 				{
 					Switch ($RDSHostPoolDefaults.SessionReadinessTimeout)
 					{
@@ -14043,7 +14114,7 @@ Function OutputRDSessionHostsDetails
 				}
 				Else
 				{
-					$RDSSessionReadinessTimeout = ""
+					$RDSSessionReadinessTimeout = "25 seconds"	#bug in RAS where this property is not enumerated
 				}
 			}
 			
@@ -14099,7 +14170,7 @@ Function OutputRDSessionHostsDetails
 				Line 6 "Disconnect active session after`t`t`t`t: " $RDSSessionDisconnectTimeout
 				Line 6 "Logoff disconnected session after`t`t`t: " $RDSSessionResetTime
 				Line 5 "Other settings"
-				Line 6 "Session readiness timeout: " $RDSSessionReadinessTimeout
+				Line 6 "Session readiness timeout`t`t`t`t: " $RDSSessionReadinessTimeout
 				Line 6 "Port`t`t`t`t`t`t`t: " $RDSPort
 				Line 6 "Max Sessions`t`t`t`t`t`t: " $RDSMaxSessions
 				Line 6 "Preferred Connection Broker`t`t`t`t: " $RDSPreferredPublishingAgent
@@ -14451,7 +14522,7 @@ Function OutputRDSessionHostsDetails
 				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 350;
+				$Table.Columns.Item(1).Width = 250;
 				$Table.Columns.Item(2).Width = 250;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
@@ -14590,6 +14661,7 @@ Function OutputRDSessionHostsDetails
 	{
 		Write-Host "
 	No RD Session Hosts Templates retrieved for Site $($Site.Name).`
+	
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
@@ -15036,7 +15108,7 @@ Function OutputRDSessionHostsDetails
 				-Format $wdTableGrid `
 				-AutoFit $wdAutoFitFixed;
 
-				#SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 				$Table.Columns.Item(1).Width = 250;
@@ -15113,6 +15185,7 @@ Function OutputRDSessionHostsDetails
 					-Format $wdTableGrid `
 					-AutoFit $wdAutoFitFixed;
 
+					SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 					SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 					$Table.Columns.Item(1).Width = 250;
@@ -15138,9 +15211,10 @@ Function OutputRDSessionHostsDetails
 					-Format $wdTableGrid `
 					-AutoFit $wdAutoFitFixed;
 
+					SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 					SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-					$Table.Columns.Item(1).Width = 200;
+					$Table.Columns.Item(1).Width = 250;
 					$Table.Columns.Item(2).Width = 15;
 
 					$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
@@ -15184,6 +15258,7 @@ Function OutputRDSessionHostsDetails
 						-Format $wdTableGrid `
 						-AutoFit $wdAutoFitFixed;
 
+						SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 						SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 						$Table.Columns.Item(1).Width = 200;
@@ -15210,9 +15285,10 @@ Function OutputRDSessionHostsDetails
 					-Format $wdTableGrid `
 					-AutoFit $wdAutoFitFixed;
 
+					SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 					SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-					$Table.Columns.Item(1).Width = 200;
+					$Table.Columns.Item(1).Width = 250;
 					$Table.Columns.Item(2).Width = 15;
 
 					$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
@@ -15230,7 +15306,7 @@ Function OutputRDSessionHostsDetails
 							{
 								Try
 								{
-									$DispName = Get-Service -Name $item.ServiceName -EA Stop
+									$DispName = Get-Service -Name $item.ServiceName -EA 0
 									If(ValidObject $DispName DisplayName)
 									{
 										$DisplayName = $DispName.DisplayName
@@ -15277,6 +15353,7 @@ Function OutputRDSessionHostsDetails
 						-Format $wdTableGrid `
 						-AutoFit $wdAutoFitFixed;
 
+						SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 						SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 						$Table.Columns.Item(1).Width = 200;
@@ -15304,9 +15381,10 @@ Function OutputRDSessionHostsDetails
 					-Format $wdTableGrid `
 					-AutoFit $wdAutoFitFixed;
 
+					SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 					SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-					$Table.Columns.Item(1).Width = 200;
+					$Table.Columns.Item(1).Width = 250;
 					$Table.Columns.Item(2).Width = 15;
 
 					$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
@@ -15386,6 +15464,7 @@ Function OutputRDSessionHostsDetails
 					-Format $wdTableGrid `
 					-AutoFit $wdAutoFitFixed;
 
+					SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 					SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 					$Table.Columns.Item(1).Width = 200;
@@ -15468,6 +15547,7 @@ Function OutputRDSessionHostsDetails
 						-Format $wdTableGrid `
 						-AutoFit $wdAutoFitFixed;
 
+						SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 						SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 						$Table.Columns.Item(1).Width = 275;
@@ -15494,6 +15574,7 @@ Function OutputRDSessionHostsDetails
 					-Format $wdTableGrid `
 					-AutoFit $wdAutoFitFixed;
 
+					SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 					SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 					$Table.Columns.Item(1).Width = 200;
@@ -15564,9 +15645,10 @@ Function OutputRDSessionHostsDetails
 						-Format $wdTableGrid `
 						-AutoFit $wdAutoFitFixed;
 
+						SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 						SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-						$Table.Columns.Item(1).Width = 150;
+						$Table.Columns.Item(1).Width = 175;
 						$Table.Columns.Item(2).Width = 50;
 						$Table.Columns.Item(3).Width = 50;
 						
@@ -15639,6 +15721,7 @@ Function OutputRDSessionHostsDetails
 					-Format $wdTableGrid `
 					-AutoFit $wdAutoFitFixed;
 
+					SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 					SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 					$Table.Columns.Item(1).Width = 125;
@@ -15663,6 +15746,7 @@ Function OutputRDSessionHostsDetails
 					-Format $wdTableGrid `
 					-AutoFit $wdAutoFitFixed;
 
+					SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 					SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 					$Table.Columns.Item(1).Width = 200;
@@ -15770,10 +15854,11 @@ Function OutputRDSessionHostsDetails
 						-Format $wdTableGrid `
 						-AutoFit $wdAutoFitFixed;
 
+						SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 						SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-						$Table.Columns.Item(1).Width = 250;
-						$Table.Columns.Item(2).Width = 50;
+						$Table.Columns.Item(1).Width = 300;
+						$Table.Columns.Item(2).Width = 75;
 						
 						$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -15795,6 +15880,7 @@ Function OutputRDSessionHostsDetails
 					-Format $wdTableGrid `
 					-AutoFit $wdAutoFitFixed;
 
+					SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 					SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 					$Table.Columns.Item(1).Width = 200;
@@ -15842,10 +15928,11 @@ Function OutputRDSessionHostsDetails
 						-Format $wdTableGrid `
 						-AutoFit $wdAutoFitFixed;
 
+						SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 						SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 						$Table.Columns.Item(1).Width = 175;
-						$Table.Columns.Item(2).Width = 50;
+						$Table.Columns.Item(2).Width = 60;
 						
 						$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -15871,6 +15958,7 @@ Function OutputRDSessionHostsDetails
 					-Format $wdTableGrid `
 					-AutoFit $wdAutoFitFixed;
 
+					SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 					SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 					$Table.Columns.Item(1).Width = 100;
@@ -15958,7 +16046,7 @@ Function OutputRDSessionHostsDetails
 						{
 							Try
 							{
-								$DispName = Get-Service -Name $item.ServiceName -EA Stop
+								$DispName = Get-Service -Name $item.ServiceName -EA 0
 								If(ValidObject $DispName DisplayName)
 								{
 									$DisplayName = $DispName.DisplayName
@@ -16427,7 +16515,7 @@ Function OutputRDSessionHostsDetails
 							{
 								Try
 								{
-									$DispName = Get-Service -Name $item.ServiceName -EA Stop
+									$DispName = Get-Service -Name $item.ServiceName -EA 0
 									If(ValidObject $DispName DisplayName)
 									{
 										$DisplayName = $DispName.DisplayName
@@ -17023,6 +17111,7 @@ Function OutputRDSessionHostsDetails
 	{
 		Write-Host "
 	No RD Session Host Scheduler retrieved for Site $($Site.Name).`
+	
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
@@ -17732,6 +17821,7 @@ Function OutputVDIDetails
 	Write-Verbose "$(Get-Date -Format G): Output VDI"
 	If($MSWord -or $PDF)
 	{
+		$Script:Selection.InsertNewPage()
 		WriteWordLine 2 0 "VDI"
 	}
 	If($Text)
@@ -17774,6 +17864,7 @@ Function OutputVDIDetails
 	{
 		Write-Host "
 	No VDI retrieved for Site $($Site.Name).`
+	
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
@@ -17887,8 +17978,8 @@ Function OutputVDIDetails
 					SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 					SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-					$Table.Columns.Item(1).Width = 200;
-					$Table.Columns.Item(2).Width = 250;
+					$Table.Columns.Item(1).Width = 125;
+					$Table.Columns.Item(2).Width = 375;
 
 					$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -18038,7 +18129,7 @@ Function OutputVDIDetails
 							}
 							ElseIf($? -and $Null -eq $VDIPoolMembers)
 							{
-								$ScriptInformation.Add(@{Data = "HOsts"; Value = "None found"; }) > $Null
+								$ScriptInformation.Add(@{Data = "Hosts"; Value = "None found"; }) > $Null
 							}
 							Else
 							{
@@ -18329,7 +18420,7 @@ Function OutputVDIDetails
 						SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 						SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-						$Table.Columns.Item(1).Width = 300;
+						$Table.Columns.Item(1).Width = 200;
 						$Table.Columns.Item(2).Width = 200;
 
 						$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
@@ -18435,6 +18526,7 @@ Function OutputVDIDetails
 					-Format $wdTableGrid `
 					-AutoFit $wdAutoFitFixed;
 
+					SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 					SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 					$Table.Columns.Item(1).Width = 200;
@@ -19746,6 +19838,7 @@ Function OutputVDIDetails
 					-Format $wdTableGrid `
 					-AutoFit $wdAutoFitFixed
 
+					SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 					SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 					$Table.Columns.Item(1).Width = 200;
@@ -19902,7 +19995,7 @@ Function OutputVDIDetails
 					-Format $wdTableGrid `
 					-AutoFit $wdAutoFitFixed;
 
-					#SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+					SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 					SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 					$Table.Columns.Item(1).Width = 250;
@@ -20006,7 +20099,7 @@ Function OutputVDIDetails
 							-Format $wdTableGrid `
 							-AutoFit $wdAutoFitFixed;
 
-							#SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+							SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 							SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 							$Table.Columns.Item(1).Width = 200;
@@ -20053,6 +20146,7 @@ Function OutputVDIDetails
 								-Format $wdTableGrid `
 								-AutoFit $wdAutoFitFixed;
 
+								SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 								SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 								$Table.Columns.Item(1).Width = 200;
@@ -20079,7 +20173,7 @@ Function OutputVDIDetails
 							-Format $wdTableGrid `
 							-AutoFit $wdAutoFitFixed;
 
-							#SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+							SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 							SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 							$Table.Columns.Item(1).Width = 200;
@@ -20100,7 +20194,7 @@ Function OutputVDIDetails
 								{
 									Try
 									{
-										$DispName = Get-Service -Name $item.ServiceName -EA Stop
+										$DispName = Get-Service -Name $item.ServiceName -EA 0
 										If(ValidObject $DispName DisplayName)
 										{
 											$DisplayName = $DispName.DisplayName
@@ -20147,6 +20241,7 @@ Function OutputVDIDetails
 								-Format $wdTableGrid `
 								-AutoFit $wdAutoFitFixed;
 
+								SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 								SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 								$Table.Columns.Item(1).Width = 200;
@@ -20174,7 +20269,7 @@ Function OutputVDIDetails
 							-Format $wdTableGrid `
 							-AutoFit $wdAutoFitFixed;
 
-							#SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+							SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 							SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 							$Table.Columns.Item(1).Width = 200;
@@ -20257,7 +20352,7 @@ Function OutputVDIDetails
 							-Format $wdTableGrid `
 							-AutoFit $wdAutoFitFixed;
 
-							#SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+							SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 							SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 							$Table.Columns.Item(1).Width = 200;
@@ -20340,6 +20435,7 @@ Function OutputVDIDetails
 								-Format $wdTableGrid `
 								-AutoFit $wdAutoFitFixed;
 
+								SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 								SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 								$Table.Columns.Item(1).Width = 275;
@@ -20366,7 +20462,7 @@ Function OutputVDIDetails
 							-Format $wdTableGrid `
 							-AutoFit $wdAutoFitFixed;
 
-							#SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+							SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 							SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 							$Table.Columns.Item(1).Width = 200;
@@ -20437,9 +20533,10 @@ Function OutputVDIDetails
 								-Format $wdTableGrid `
 								-AutoFit $wdAutoFitFixed;
 
+								SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 								SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-								$Table.Columns.Item(1).Width = 150;
+								$Table.Columns.Item(1).Width = 175;
 								$Table.Columns.Item(2).Width = 50;
 								$Table.Columns.Item(3).Width = 50;
 								
@@ -20511,6 +20608,7 @@ Function OutputVDIDetails
 							-Format $wdTableGrid `
 							-AutoFit $wdAutoFitFixed;
 
+							SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 							SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 							$Table.Columns.Item(1).Width = 125;
@@ -20535,7 +20633,7 @@ Function OutputVDIDetails
 							-Format $wdTableGrid `
 							-AutoFit $wdAutoFitFixed;
 
-							#SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+							SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 							SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 							$Table.Columns.Item(1).Width = 200;
@@ -20643,10 +20741,11 @@ Function OutputVDIDetails
 								-Format $wdTableGrid `
 								-AutoFit $wdAutoFitFixed;
 
+								SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 								SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-								$Table.Columns.Item(1).Width = 250;
-								$Table.Columns.Item(2).Width = 50;
+								$Table.Columns.Item(1).Width = 300;
+								$Table.Columns.Item(2).Width = 75;
 								
 								$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -20668,6 +20767,7 @@ Function OutputVDIDetails
 							-Format $wdTableGrid `
 							-AutoFit $wdAutoFitFixed;
 
+							SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 							SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 							$Table.Columns.Item(1).Width = 200;
@@ -20715,10 +20815,11 @@ Function OutputVDIDetails
 								-Format $wdTableGrid `
 								-AutoFit $wdAutoFitFixed;
 
+								SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 								SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 								$Table.Columns.Item(1).Width = 175;
-								$Table.Columns.Item(2).Width = 50;
+								$Table.Columns.Item(2).Width = 60;
 								
 								$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -20744,7 +20845,7 @@ Function OutputVDIDetails
 							-Format $wdTableGrid `
 							-AutoFit $wdAutoFitFixed;
 
-							#SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+							SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 							SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 							$Table.Columns.Item(1).Width = 100;
@@ -20889,7 +20990,7 @@ Function OutputVDIDetails
 								{
 									Try
 									{
-										$DispName = Get-Service -Name $item.ServiceName -EA Stop
+										$DispName = Get-Service -Name $item.ServiceName -EA 0
 										If(ValidObject $DispName DisplayName)
 										{
 											$DisplayName = $DispName.DisplayName
@@ -21471,7 +21572,7 @@ Function OutputVDIDetails
 								{
 									Try
 									{
-										$DispName = Get-Service -Name $item.ServiceName -EA Stop
+										$DispName = Get-Service -Name $item.ServiceName -EA 0
 										
 										If(ValidObject $DispName DisplayName)
 										{
@@ -22883,6 +22984,7 @@ Function OutputVDIDetails
 		{
 			Write-Host "
 	No VDI Templates retrieved for Site $($Site.Name).`
+	
 			" -ForegroundColor White
 			If($MSWord -or $PDF)
 			{
@@ -23240,8 +23342,8 @@ Function OutputVDIDetails
 					SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 					SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-					$Table.Columns.Item(1).Width = 200;
-					$Table.Columns.Item(2).Width = 250;
+					$Table.Columns.Item(1).Width = 150;
+					$Table.Columns.Item(2).Width = 350;
 
 					$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -23355,7 +23457,7 @@ Function OutputVDIDetails
 				If($MSWord -or $PDF)
 				{
 					$ScriptInformation = New-Object System.Collections.ArrayList
-					$ScriptInformation.Add(@{Data = "Inherit default settings"; Value = $VDITemplate.InheritDefaultUserProfileSettings.ToString(); }) > $Null
+					$ScriptInformation.Add(@{Data = "Inherit default settings"; Value = $VDITemplate.InheritDefaultOptimizationSettings.ToString(); }) > $Null
 					$ScriptInformation.Add(@{Data = "Enable optimization"; Value = $OPTEnableOptimization; }) > $Null
 					$ScriptInformation.Add(@{Data = "Optimization type"; Value = $OPTOptimizationType; }) > $Null
 
@@ -23468,6 +23570,7 @@ Function OutputVDIDetails
 						-Format $wdTableGrid `
 						-AutoFit $wdAutoFitFixed;
 
+						SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 						SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 						$Table.Columns.Item(1).Width = 200;
@@ -23514,6 +23617,7 @@ Function OutputVDIDetails
 							-Format $wdTableGrid `
 							-AutoFit $wdAutoFitFixed;
 
+							SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 							SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 							$Table.Columns.Item(1).Width = 200;
@@ -23540,6 +23644,7 @@ Function OutputVDIDetails
 						-Format $wdTableGrid `
 						-AutoFit $wdAutoFitFixed;
 
+						SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 						SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 						$Table.Columns.Item(1).Width = 200;
@@ -23560,7 +23665,7 @@ Function OutputVDIDetails
 							{
 								Try
 								{
-									$DispName = Get-Service -Name $item.ServiceName -EA Stop
+									$DispName = Get-Service -Name $item.ServiceName -EA 0
 									If(ValidObject $DispName DisplayName)
 									{
 										$DisplayName = $DispName.DisplayName
@@ -23607,9 +23712,10 @@ Function OutputVDIDetails
 							-Format $wdTableGrid `
 							-AutoFit $wdAutoFitFixed;
 
+							SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 							SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-							$Table.Columns.Item(1).Width = 200;
+							$Table.Columns.Item(1).Width = 300;
 							$Table.Columns.Item(2).Width = 100;
 							$Table.Columns.Item(3).Width = 50;
 							
@@ -23634,6 +23740,7 @@ Function OutputVDIDetails
 						-Format $wdTableGrid `
 						-AutoFit $wdAutoFitFixed;
 
+						SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 						SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 						$Table.Columns.Item(1).Width = 200;
@@ -23716,6 +23823,7 @@ Function OutputVDIDetails
 						-Format $wdTableGrid `
 						-AutoFit $wdAutoFitFixed;
 
+						SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 						SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 						$Table.Columns.Item(1).Width = 200;
@@ -23798,6 +23906,7 @@ Function OutputVDIDetails
 							-Format $wdTableGrid `
 							-AutoFit $wdAutoFitFixed;
 
+							SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 							SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 							$Table.Columns.Item(1).Width = 275;
@@ -23824,6 +23933,7 @@ Function OutputVDIDetails
 						-Format $wdTableGrid `
 						-AutoFit $wdAutoFitFixed;
 
+						SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 						SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 						$Table.Columns.Item(1).Width = 200;
@@ -23894,9 +24004,10 @@ Function OutputVDIDetails
 							-Format $wdTableGrid `
 							-AutoFit $wdAutoFitFixed;
 
+							SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 							SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-							$Table.Columns.Item(1).Width = 150;
+							$Table.Columns.Item(1).Width = 175;
 							$Table.Columns.Item(2).Width = 50;
 							$Table.Columns.Item(3).Width = 50;
 							
@@ -23969,6 +24080,7 @@ Function OutputVDIDetails
 						-Format $wdTableGrid `
 						-AutoFit $wdAutoFitFixed;
 
+						SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 						SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 						$Table.Columns.Item(1).Width = 125;
@@ -23993,6 +24105,7 @@ Function OutputVDIDetails
 						-Format $wdTableGrid `
 						-AutoFit $wdAutoFitFixed;
 
+						SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 						SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 						$Table.Columns.Item(1).Width = 200;
@@ -24100,10 +24213,11 @@ Function OutputVDIDetails
 							-Format $wdTableGrid `
 							-AutoFit $wdAutoFitFixed;
 
+							SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 							SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-							$Table.Columns.Item(1).Width = 250;
-							$Table.Columns.Item(2).Width = 50;
+							$Table.Columns.Item(1).Width = 300;
+							$Table.Columns.Item(2).Width = 75;
 							
 							$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -24125,6 +24239,7 @@ Function OutputVDIDetails
 						-Format $wdTableGrid `
 						-AutoFit $wdAutoFitFixed;
 
+						SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 						SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 						$Table.Columns.Item(1).Width = 200;
@@ -24172,10 +24287,11 @@ Function OutputVDIDetails
 							-Format $wdTableGrid `
 							-AutoFit $wdAutoFitFixed;
 
+							SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 							SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 							$Table.Columns.Item(1).Width = 175;
-							$Table.Columns.Item(2).Width = 50;
+							$Table.Columns.Item(2).Width = 60;
 							
 							$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -24201,6 +24317,7 @@ Function OutputVDIDetails
 						-Format $wdTableGrid `
 						-AutoFit $wdAutoFitFixed;
 
+						SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 						SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 						$Table.Columns.Item(1).Width = 100;
@@ -24288,7 +24405,7 @@ Function OutputVDIDetails
 							{
 								Try
 								{
-									$DispName = Get-Service -Name $item.ServiceName -EA Stop
+									$DispName = Get-Service -Name $item.ServiceName -EA 0
 									If(ValidObject $DispName DisplayName)
 									{
 										$DisplayName = $DispName.DisplayName
@@ -24471,19 +24588,19 @@ Function OutputVDIDetails
 						{
 							If($item.RegType.ToString() -eq "REG_SZ" -or $item.RegType.ToString() -eq "REG_EXPAND_SZ")
 							{
-								Line 7 ( "{0,-40}  {1,-6}  {2,-20}  {3,-13}  {4,-20}  {5,-60}" -f `
+								Line 6 ( "{0,-40}  {1,-6}  {2,-20}  {3,-13}  {4,-20}  {5,-60}" -f `
 								$item.DisplayName, $item.Action, $item.RegistryName, $item.RegType.ToString(), $item.StringValue, "$($item.HiveType)\$($item.Path)")
 							}
 							ElseIf($item.RegType.ToString() -eq "REG_DWORD" -or $item.RegType.ToString() -eq "REG_QWORD")
 							{
-								Line 7 ( "{0,-40}  {1,-6}  {2,-20}  {3,-13}  {4,-20}  {5,-60}" -f `
+								Line 6 ( "{0,-40}  {1,-6}  {2,-20}  {3,-13}  {4,-20}  {5,-60}" -f `
 								$item.DisplayName, $item.Action, $item.RegistryName, $item.RegType.ToString(), $item.DWORDValue, "$($item.HiveType)\$($item.Path)")
 							}
 							ElseIf($item.RegType.ToString() -eq "REG_MULTI_SZ")
 							{
 								#If($item.StringValue.Count -eq 1)
 								#{
-								#	Line 7 ( "{0,-40}  {1,-6}  {2,-20}  {3,-13}  {4,-20}  {5,-60}" -f `
+								#	Line 6 ( "{0,-40}  {1,-6}  {2,-20}  {3,-13}  {4,-20}  {5,-60}" -f `
 								#	$item.DisplayName, $item.Action, $item.RegistryName, $item.RegType.ToString(), $item.StringValue.ToString(), "$($item.HiveType)\$($item.Path)")
 								#}
 								#Else
@@ -24496,12 +24613,12 @@ Function OutputVDIDetails
 										
 										If($cnt -eq 0)
 										{
-											Line 7 ( "{0,-40}  {1,-6}  {2,-20}  {3,-13}  {4,-20}  {5,-60}" -f `
+											Line 6 ( "{0,-40}  {1,-6}  {2,-20}  {3,-13}  {4,-20}  {5,-60}" -f `
 											$item.DisplayName, $item.Action, $item.RegistryName, $item.RegType.ToString(), $SubItem, "$($item.HiveType)\$($item.Path)")
 										}
 										Else
 										{
-											Line 17 "       " $SubItem
+											Line 16 "       " $SubItem
 										}
 									}
 								#}
@@ -24765,7 +24882,7 @@ Function OutputVDIDetails
 							{
 								Try
 								{
-									$DispName = Get-Service -Name $item.ServiceName -EA Stop
+									$DispName = Get-Service -Name $item.ServiceName -EA 0
 									If(ValidObject $DispName DisplayName)
 									{
 										$DisplayName = $DispName.DisplayName
@@ -25349,6 +25466,7 @@ Function OutputVDIDetails
 		{
 			Write-Host "
 	No VDI Hosts retrieved for Site $($Site.Name).`
+	
 			" -ForegroundColor White
 			If($MSWord -or $PDF)
 			{
@@ -26295,6 +26413,7 @@ Function OutputAVDDetails
 	Write-Verbose "$(Get-Date -Format G): Output Azure Virtual Desktop"
 	If($MSWord -or $PDF)
 	{
+		$Script:Selection.InsertNewPage()
 		WriteWordLine 2 0 "Azure Virtual Desktop"
 	}
 	If($Text)
@@ -26338,6 +26457,7 @@ Function OutputAVDDetails
 	{
 		Write-Host "
 	No Azure Virtual Desktops retrieved for Site $($Site.Name).`
+	
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
@@ -26618,6 +26738,7 @@ Function OutputAVDDetails
 	{
 		Write-Host "
 	No Azure Virtual Desktop Host Pools retrieved for Site $($Site.Name).`
+	
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
@@ -26727,7 +26848,6 @@ Function OutputAVDDetails
 				Default			{$LoadBalancerType = "Unable to determine Load Balancer Type: $($AVDHostPool.Configuration.LoadBalancerType)"; Break}
 			}
 
-
 			Switch($AVDHostPool.Configuration.DefaultLicenseType)
 			{
 				"WindowsClient"		{$DefaultLicenseType = "Windows client"; Break}
@@ -26745,6 +26865,17 @@ Function OutputAVDDetails
 			{
 				$LastIndex = $AVDHostPool.LinkedRemoteApplicationGroup.LastIndexOf("/") + 1
 				$ApplicationGroup = $AVDHostPool.LinkedRemoteApplicationGroup.SubString($LastIndex)
+			}
+			
+			$Status = Get-RASAVDHostPoolStatus -Name $AVDHostPool.Name -EA 0 4>$Null
+			
+			If($?)
+			{
+				$FullStatus = GetRASStatus $Status.AgentState "AVD Host Pool"
+			}
+			Else
+			{
+				$FullStatus = "Unable to retrieve the agent state"
 			}
 			
 			If($MSWord -or $PDF)
@@ -26767,7 +26898,7 @@ Function OutputAVDDetails
 				$ScriptInformation.Add(@{Data = "Enabled"; Value = $AVDHostPool.Enabled.ToString(); }) > $Null
 				$ScriptInformation.Add(@{Data = "Friendly name"; Value = $AVDHostPool.FriendlyName; }) > $Null
 				$ScriptInformation.Add(@{Data = "Description"; Value = $AVDHostPool.Description; }) > $Null
-				$ScriptInformation.Add(@{Data = "Status"; Value = ""; }) > $Null
+				$ScriptInformation.Add(@{Data = "Status"; Value = $FullStatus; }) > $Null
 				$ScriptInformation.Add(@{Data = "Template"; Value = $AVDTemplateName; }) > $Null
 				$ScriptInformation.Add(@{Data = "Template version"; Value = $AVDTemplateVersionName; }) > $Null
 				$ScriptInformation.Add(@{Data = "Resource group"; Value = $AVDHostPool.ResourceGroup; }) > $Null
@@ -26794,8 +26925,8 @@ Function OutputAVDDetails
 				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 250;
-				$Table.Columns.Item(2).Width = 250;
+				$Table.Columns.Item(1).Width = 150;
+				$Table.Columns.Item(2).Width = 350;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -26808,7 +26939,7 @@ Function OutputAVDDetails
 				Line 4 "Enabled`t`t`t: " $AVDHostPool.Enabled.ToString()
 				Line 4 "Friendly name`t`t: " $AVDHostPool.FriendlyName
 				Line 4 "Description`t`t: " $AVDHostPool.Description
-				Line 4 "Status`t`t`t: " ""
+				Line 4 "Status`t`t`t: " $FullStatus
 				Line 4 "Template`t`t: " $AVDTemplateName
 				Line 4 "Template version`t: " $AVDTemplateVersionName
 				Line 4 "Resource group`t`t: " $AVDHostPool.ResourceGroup
@@ -26834,7 +26965,7 @@ Function OutputAVDDetails
 				$rowdata += @(,("Enabled",($Script:htmlsb),$AVDHostPool.Enabled.ToString(),$htmlwhite))
 				$rowdata += @(,("Friendly name",($Script:htmlsb),$AVDHostPool.FriendlyName,$htmlwhite))
 				$rowdata += @(,("Description",($Script:htmlsb),$AVDHostPool.Description,$htmlwhite))
-				$rowdata += @(,("Status",($Script:htmlsb),"",$htmlwhite))
+				$rowdata += @(,("Status",($Script:htmlsb),$FullStatus,$htmlwhite))
 				$rowdata += @(,("Template",($Script:htmlsb),$AVDTemplateName,$htmlwhite))
 				$rowdata += @(,("Template version",($Script:htmlsb),$AVDTemplateVersionName,$htmlwhite))
 				$rowdata += @(,("Resource group",($Script:htmlsb),$AVDHostPool.ResourceGroup,$htmlwhite))
@@ -26893,8 +27024,8 @@ Function OutputAVDDetails
 				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 200;
-				$Table.Columns.Item(2).Width = 250;
+				$Table.Columns.Item(1).Width = 150;
+				$Table.Columns.Item(2).Width = 350;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -27037,13 +27168,17 @@ Function OutputAVDDetails
 						Else
 						{
 							$AVDHostPoolTemplateName        = "Unable to retrieve AVD host pool template"
-							$AVDHostPoolTemplateVersionName = "N/A"
+							$AVDHostPoolTemplateVersionName = "Unable to retrieve AVD host pool template"
+							$AVDHostPoolHostVirtualNetwork  = "Unable to retrieve AVD host pool template"
 						}
+						
+						$AVDHostPoolHostVirtualNetwork = "$($AVDHostPoolTemplate.Advanced.Azure.VirtualNetworkName)/$($AVDHostPoolTemplate.Advanced.Azure.Subnet.SubnetName)"
 					}
 					Else
 					{
 						$AVDHostPoolTemplateName        = ""
 						$AVDHostPoolTemplateVersionName = ""
+						$AVDHostPoolHostVirtualNetwork  = ""
 					}
 
 					$AVDLocation = GetRASLocation $AVDHostPoolHost.Location
@@ -27058,7 +27193,7 @@ Function OutputAVDDetails
 						$ScriptInformation.Add(@{Data = "Template version"; Value = $AVDHostPoolTemplateVersionName; }) > $Null
 						$ScriptInformation.Add(@{Data = "Resource group"; Value = $AVDHostPoolHost.ResourceGroup; }) > $Null
 						$ScriptInformation.Add(@{Data = "Location"; Value = $AVDLocation; }) > $Null
-						$ScriptInformation.Add(@{Data = "Virtual network"; Value = ""; }) > $Null
+						$ScriptInformation.Add(@{Data = "Virtual network"; Value = $AVDHostPoolHostVirtualNetwork; }) > $Null
 						$ScriptInformation.Add(@{Data = "Provider"; Value = $AVDProviderName; }) > $Null
 						$Table = AddWordTable -Hashtable $ScriptInformation `
 						-Columns Data,Value `
@@ -27069,8 +27204,8 @@ Function OutputAVDDetails
 						SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 						SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-						$Table.Columns.Item(1).Width = 200;
-						$Table.Columns.Item(2).Width = 250;
+						$Table.Columns.Item(1).Width = 150;
+						$Table.Columns.Item(2).Width = 350;
 
 						$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -27087,7 +27222,7 @@ Function OutputAVDDetails
 						Line 5 "Template version: " $AVDHostPoolTemplateVersionName
 						Line 5 "Resource group`t: " $AVDHostPoolHost.ResourceGroup
 						Line 5 "Location`t: " $AVDLocation
-						Line 5 "Virtual network`t: " 
+						Line 5 "Virtual network`t: " $AVDHostPoolHostVirtualNetwork
 						Line 5 "Provider`t: " $AVDProviderName
 						Line 0 ""
 					}
@@ -27101,7 +27236,7 @@ Function OutputAVDDetails
 						$rowdata += @(,("Template version",($Script:htmlsb),$AVDHostPoolTemplateVersionName,$htmlwhite))
 						$rowdata += @(,("Resource group",($Script:htmlsb),$AVDHostPoolHost.ResourceGroup,$htmlwhite))
 						$rowdata += @(,("Location",($Script:htmlsb),$AVDLocation,$htmlwhite))
-						$rowdata += @(,("Virtual network",($Script:htmlsb),"",$htmlwhite))
+						$rowdata += @(,("Virtual network",($Script:htmlsb),$AVDHostPoolHostVirtualNetwork,$htmlwhite))
 						$rowdata += @(,("Provider",($Script:htmlsb),$AVDProviderName,$htmlwhite))
 						
 						$msg = "Hosts"
@@ -27146,10 +27281,10 @@ Function OutputAVDDetails
 				-Format $wdTableGrid `
 				-AutoFit $wdAutoFitFixed;
 
-				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 250;
+				$Table.Columns.Item(1).Width = 160;
 				$Table.Columns.Item(2).Width = 250;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
@@ -28823,6 +28958,7 @@ Function OutputAVDDetails
 				-Format $wdTableGrid `
 				-AutoFit $wdAutoFitFixed
 
+				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 				$Table.Columns.Item(1).Width = 200;
@@ -30447,8 +30583,8 @@ Function OutputAVDDetails
 				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 250;
-				$Table.Columns.Item(2).Width = 250;
+				$Table.Columns.Item(1).Width = 150;
+				$Table.Columns.Item(2).Width = 350;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -30627,6 +30763,7 @@ Function OutputAVDDetails
 					-Format $wdTableGrid `
 					-AutoFit $wdAutoFitFixed;
 
+					SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 					SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 					$Table.Columns.Item(1).Width = 200;
@@ -30673,6 +30810,7 @@ Function OutputAVDDetails
 						-Format $wdTableGrid `
 						-AutoFit $wdAutoFitFixed;
 
+						SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 						SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 						$Table.Columns.Item(1).Width = 200;
@@ -30699,6 +30837,7 @@ Function OutputAVDDetails
 					-Format $wdTableGrid `
 					-AutoFit $wdAutoFitFixed;
 
+					SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 					SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 					$Table.Columns.Item(1).Width = 200;
@@ -30719,7 +30858,7 @@ Function OutputAVDDetails
 						{
 							Try
 							{
-								$DispName = Get-Service -Name $item.ServiceName -EA Stop
+								$DispName = Get-Service -Name $item.ServiceName -EA 0
 								If(ValidObject $DispName DisplayName)
 								{
 									$DisplayName = $DispName.DisplayName
@@ -30766,9 +30905,10 @@ Function OutputAVDDetails
 						-Format $wdTableGrid `
 						-AutoFit $wdAutoFitFixed;
 
+						SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 						SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-						$Table.Columns.Item(1).Width = 200;
+						$Table.Columns.Item(1).Width = 300;
 						$Table.Columns.Item(2).Width = 100;
 						$Table.Columns.Item(3).Width = 50;
 						
@@ -30793,6 +30933,7 @@ Function OutputAVDDetails
 					-Format $wdTableGrid `
 					-AutoFit $wdAutoFitFixed;
 
+					SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 					SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 					$Table.Columns.Item(1).Width = 200;
@@ -30875,6 +31016,7 @@ Function OutputAVDDetails
 					-Format $wdTableGrid `
 					-AutoFit $wdAutoFitFixed;
 
+					SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 					SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 					$Table.Columns.Item(1).Width = 200;
@@ -30957,6 +31099,7 @@ Function OutputAVDDetails
 						-Format $wdTableGrid `
 						-AutoFit $wdAutoFitFixed;
 
+						SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 						SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 						$Table.Columns.Item(1).Width = 275;
@@ -30983,6 +31126,7 @@ Function OutputAVDDetails
 					-Format $wdTableGrid `
 					-AutoFit $wdAutoFitFixed;
 
+					SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 					SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 					$Table.Columns.Item(1).Width = 200;
@@ -31053,9 +31197,10 @@ Function OutputAVDDetails
 						-Format $wdTableGrid `
 						-AutoFit $wdAutoFitFixed;
 
+						SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 						SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-						$Table.Columns.Item(1).Width = 150;
+						$Table.Columns.Item(1).Width = 175;
 						$Table.Columns.Item(2).Width = 50;
 						$Table.Columns.Item(3).Width = 50;
 						
@@ -31128,6 +31273,7 @@ Function OutputAVDDetails
 					-Format $wdTableGrid `
 					-AutoFit $wdAutoFitFixed;
 
+					SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 					SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 					$Table.Columns.Item(1).Width = 125;
@@ -31152,6 +31298,7 @@ Function OutputAVDDetails
 					-Format $wdTableGrid `
 					-AutoFit $wdAutoFitFixed;
 
+					SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 					SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 					$Table.Columns.Item(1).Width = 200;
@@ -31259,10 +31406,11 @@ Function OutputAVDDetails
 						-Format $wdTableGrid `
 						-AutoFit $wdAutoFitFixed;
 
+						SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 						SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-						$Table.Columns.Item(1).Width = 250;
-						$Table.Columns.Item(2).Width = 50;
+						$Table.Columns.Item(1).Width = 300;
+						$Table.Columns.Item(2).Width = 75;
 						
 						$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -31284,6 +31432,7 @@ Function OutputAVDDetails
 					-Format $wdTableGrid `
 					-AutoFit $wdAutoFitFixed;
 
+					SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 					SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 					$Table.Columns.Item(1).Width = 200;
@@ -31331,10 +31480,11 @@ Function OutputAVDDetails
 						-Format $wdTableGrid `
 						-AutoFit $wdAutoFitFixed;
 
+						SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 						SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 						$Table.Columns.Item(1).Width = 175;
-						$Table.Columns.Item(2).Width = 50;
+						$Table.Columns.Item(2).Width = 60;
 						
 						$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -31360,6 +31510,7 @@ Function OutputAVDDetails
 					-Format $wdTableGrid `
 					-AutoFit $wdAutoFitFixed;
 
+					SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 					SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 					$Table.Columns.Item(1).Width = 100;
@@ -31446,7 +31597,7 @@ Function OutputAVDDetails
 						{
 							Try
 							{
-								$DispName = Get-Service -Name $item.ServiceName -EA Stop
+								$DispName = Get-Service -Name $item.ServiceName -EA 0
 								If(ValidObject $DispName DisplayName)
 								{
 									$DisplayName = $DispName.DisplayName
@@ -31629,19 +31780,19 @@ Function OutputAVDDetails
 					{
 						If($item.RegType.ToString() -eq "REG_SZ" -or $item.RegType.ToString() -eq "REG_EXPAND_SZ")
 						{
-							Line 8 ( "{0,-40}  {1,-6}  {2,-20}  {3,-13}  {4,-20}  {5,-60}" -f `
+							Line 7 ( "{0,-40}  {1,-6}  {2,-20}  {3,-13}  {4,-20}  {5,-60}" -f `
 							$item.DisplayName, $item.Action, $item.RegistryName, $item.RegType.ToString(), $item.StringValue, "$($item.HiveType)\$($item.Path)")
 						}
 						ElseIf($item.RegType.ToString() -eq "REG_DWORD" -or $item.RegType.ToString() -eq "REG_QWORD")
 						{
-							Line 8 ( "{0,-40}  {1,-6}  {2,-20}  {3,-13}  {4,-20}  {5,-60}" -f `
+							Line 7 ( "{0,-40}  {1,-6}  {2,-20}  {3,-13}  {4,-20}  {5,-60}" -f `
 							$item.DisplayName, $item.Action, $item.RegistryName, $item.RegType.ToString(), $item.DWORDValue, "$($item.HiveType)\$($item.Path)")
 						}
 						ElseIf($item.RegType.ToString() -eq "REG_MULTI_SZ")
 						{
 							#If($item.StringValue.Count -eq 1)
 							#{
-							#	Line 8 ( "{0,-40}  {1,-6}  {2,-20}  {3,-13}  {4,-20}  {5,-60}" -f `
+							#	Line 7 ( "{0,-40}  {1,-6}  {2,-20}  {3,-13}  {4,-20}  {5,-60}" -f `
 							#	$item.DisplayName, $item.Action, $item.RegistryName, $item.RegType.ToString(), $item.StringValue.ToString(), "$($item.HiveType)\$($item.Path)")
 							#}
 							#Else
@@ -31654,7 +31805,7 @@ Function OutputAVDDetails
 									
 									If($cnt -eq 0)
 									{
-										Line 8 ( "{0,-40}  {1,-6}  {2,-20}  {3,-13}  {4,-20}  {5,-60}" -f `
+										Line 7 ( "{0,-40}  {1,-6}  {2,-20}  {3,-13}  {4,-20}  {5,-60}" -f `
 										$item.DisplayName, $item.Action, $item.RegistryName, $item.RegType.ToString(), $SubItem, "$($item.HiveType)\$($item.Path)")
 									}
 									Else
@@ -31923,7 +32074,7 @@ Function OutputAVDDetails
 						{
 							Try
 							{
-								$DispName = Get-Service -Name $item.ServiceName -EA Stop
+								$DispName = Get-Service -Name $item.ServiceName -EA 0
 								If(ValidObject $DispName DisplayName)
 								{
 									$DisplayName = $DispName.DisplayName
@@ -32572,7 +32723,7 @@ Function OutputAVDDetails
 			SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 			$Table.Columns.Item(1).Width = 150;
-			$Table.Columns.Item(2).Width = 250;
+			$Table.Columns.Item(2).Width = 350;
 
 			$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -33375,6 +33526,7 @@ Function OutputProvidersDetails
 	Write-Verbose "$(Get-Date -Format G): Output Providers"
 	If($MSWord -or $PDF)
 	{
+		$Script:Selection.InsertNewPage()
 		WriteWordLine 2 0 "Providers"
 	}
 	If($Text)
@@ -33417,6 +33569,7 @@ Function OutputProvidersDetails
 	{
 		Write-Host "
 	No Providers retrieved for Site $($Site.Name).`
+	
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
@@ -33730,11 +33883,11 @@ Function OutputProvidersDetails
 				-Format $wdTableGrid `
 				-AutoFit $wdAutoFitFixed;
 
-				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 				$Table.Columns.Item(1).Width = 150;
-				$Table.Columns.Item(2).Width = 300;
+				$Table.Columns.Item(2).Width = 350;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -34081,6 +34234,7 @@ Function OutputSecureGatewaysDetails
 	Write-Verbose "$(Get-Date -Format G): Output Secure Gateways"
 	If($MSWord -or $PDF)
 	{
+		$Script:Selection.InsertNewPage()
 		WriteWordLine 2 0 "Secure Gateways"
 	}
 	If($Text)
@@ -34123,6 +34277,7 @@ Function OutputSecureGatewaysDetails
 	{
 		Write-Host "
 	No Secure Gateways retrieved for Site $($Site.Name).`
+	
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
@@ -34995,8 +35150,8 @@ Function OutputSecureGatewaysDetails
 				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 200;
-				$Table.Columns.Item(2).Width = 250;
+				$Table.Columns.Item(1).Width = 300;
+				$Table.Columns.Item(2).Width = 200;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -35087,10 +35242,10 @@ Function OutputSecureGatewaysDetails
 				-Format $wdTableGrid `
 				-AutoFit $wdAutoFitFixed;
 
-				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 200;
+				$Table.Columns.Item(1).Width = 250;
 				$Table.Columns.Item(2).Width = 250;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
@@ -35541,7 +35696,7 @@ Function OutputSecureGatewaysDetails
 				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 200;
+				$Table.Columns.Item(1).Width = 250;
 				$Table.Columns.Item(2).Width = 250;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
@@ -35885,6 +36040,7 @@ Function OutputSecureGatewaysDetails
 	{
 		Write-Host "
 	No Tunneling Policies retrieved for Site $($Site.Name).`
+	
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
@@ -36035,6 +36191,7 @@ Function OutputConnectionBrokersDetails
 {
 	If($MSWord -or $PDF)
 	{
+		$Script:Selection.InsertNewPage()
 		WriteWordLine 2 0 "Connection Brokers"
 	}
 	If($Text)
@@ -36078,6 +36235,7 @@ Function OutputConnectionBrokersDetails
 	{
 		Write-Host "
 	No Connection Brokers retrieved for Site $($Site.Name).`
+	
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
@@ -36435,6 +36593,7 @@ Function OutputEnrollmentServersDetails
 	#Enrollment Servers
 	If($MSWord -or $PDF)
 	{
+		$Script:Selection.InsertNewPage()
 		WriteWordLine 2 0 "Enrollment Servers"
 	}
 	If($Text)
@@ -36478,6 +36637,7 @@ Function OutputEnrollmentServersDetails
 	{
 		Write-Host "
 	No Enrollment Servers retrieved for Site $($Site.Name).`
+	
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
@@ -36755,6 +36915,7 @@ Function OutputEnrollmentServersDetails
 		{
 			Write-Host "
 		No Enrollment Server AD Integration retrieved for Site $($Site.Name).`
+		
 			" -ForegroundColor White
 			If($MSWord -or $PDF)
 			{
@@ -36852,6 +37013,7 @@ Function OutputHALBDetails
 	#HALB
 	If($MSWord -or $PDF)
 	{
+		$Script:Selection.InsertNewPage()
 		WriteWordLine 2 0 "HALB"
 	}
 	If($Text)
@@ -36895,6 +37057,7 @@ Function OutputHALBDetails
 	{
 		Write-Host "
 	No HALBs retrieved for Site $($Site.Name).`
+	
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
@@ -37216,6 +37379,7 @@ Function OutputHALBDetails
 					-Format $wdTableGrid `
 					-AutoFit $wdAutoFitFixed;
 
+					SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 					SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 					$Table.Columns.Item(1).Width = 200;
@@ -37452,6 +37616,7 @@ Function OutputHALBDetails
 					-Format $wdTableGrid `
 					-AutoFit $wdAutoFitFixed;
 
+					SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 					SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 					$Table.Columns.Item(1).Width = 200;
@@ -37621,6 +37786,7 @@ Function OutputHALBDetails
 						-Format $wdTableGrid `
 						-AutoFit $wdAutoFitFixed;
 
+						SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 						SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 						$Table.Columns.Item(1).Width = 100;
@@ -37758,6 +37924,7 @@ Function OutputThemesDetails
 	#Themes
 	If($MSWord -or $PDF)
 	{
+		$Script:Selection.InsertNewPage()
 		WriteWordLine 2 0 "Themes"
 	}
 	If($Text)
@@ -37801,6 +37968,7 @@ Function OutputThemesDetails
 	{
 		Write-Host "
 	No Themes retrieved for Site $($Site.Name).`
+	
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
@@ -38153,13 +38321,13 @@ Function OutputThemesDetails
 			}
 			If($Text)
 			{
-				Line 4 "Override authentication domain`t: " $Theme.OverrideAuthenticationDomain.ToString()
+				Line 4 "Override authentication domain`t`t: " $Theme.OverrideAuthenticationDomain.ToString()
 				If($Theme.OverrideAuthenticationDomain)
 				{
-					Line 7 "Domain  : " $Theme.Domain
+					Line 5 "Domain: " $Theme.Domain
 				}
 				Line 4 "Limit access to this theme to "
-				Line 4 "members of these AD groups`t: " $Theme.GroupEnabled.ToString()
+				Line 4 "members of these AD groups`t`t: " $Theme.GroupEnabled.ToString()
 				If($Theme.GroupEnabled)
 				{
 					ForEach($Group in $Theme.GroupFilters)
@@ -38169,11 +38337,11 @@ Function OutputThemesDetails
 						Line 8 "  "
 					}
 				}
-				Line 4 "MFA provider`t`t`t: " $MFAProvider
-				Line 4 "SAML Single Sign-in IdP`t`t: " $SAMLProvider
+				Line 4 "MFA provider`t`t`t`t: " $MFAProvider
+				Line 4 "SAML Single Sign-in IdP`t`t`t: " $SAMLProvider
 				If($Theme.Name -eq "<Default>")
 				{
-					Line 4 "Allow gateway tunneling connections: " $Theme.AllowTunneling.ToString()
+					Line 4 "Allow gateway tunneling connections`t: " $Theme.AllowTunneling.ToString()
 				}
 				Line 0 ""
 			}
@@ -38477,7 +38645,7 @@ Function OutputThemesDetails
 				Else
 				{
 					WriteWordLine 4 0 "Footer URLs:"
-					WriteWordLine 0 0 "There are no Footer URLs"
+					WriteWordLine 0 1 "There are no Footer URLs"
 					WriteWordLine 0 0 ""
 				}	
 			}
@@ -38507,7 +38675,7 @@ Function OutputThemesDetails
 				Else
 				{
 					Line 4 "Footer URLs:"
-					Line 4 "There are no Footer URLs"
+					Line 5 "There are no Footer URLs"
 					Line 0 ""
 				}	
 			}
@@ -38548,7 +38716,7 @@ Function OutputThemesDetails
 				Else
 				{
 					WriteHTMLLine 4 0 "Footer URLs:"
-					WriteHTMLLine 0 0 "There are no Footer URLs"
+					WriteHTMLLine 0 1 "There are no Footer URLs"
 					WriteHTMLLine 0 0 ""
 				}	
 			}
@@ -38583,8 +38751,8 @@ Function OutputThemesDetails
 				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 200;
-				$Table.Columns.Item(2).Width = 400;
+				$Table.Columns.Item(1).Width = 150;
+				$Table.Columns.Item(2).Width = 350;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -39050,7 +39218,7 @@ Function OutputThemesDetails
 					SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 					$Table.Columns.Item(1).Width = 100;
-					$Table.Columns.Item(2).Width = 100;
+					$Table.Columns.Item(2).Width = 150;
 					$Table.Columns.Item(3).Width = 150;
 					
 					$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
@@ -39399,8 +39567,8 @@ Function OutputThemesDetails
 				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 200;
-				$Table.Columns.Item(2).Width = 400;
+				$Table.Columns.Item(1).Width = 150;
+				$Table.Columns.Item(2).Width = 350;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -39567,6 +39735,7 @@ Function OutputCertificatesDetails
 
 	If($MSWord -or $PDF)
 	{
+		$Script:Selection.InsertNewPage()
 		WriteWordLine 2 0 "Certificates"
 	}
 	If($Text)
@@ -39610,6 +39779,7 @@ Function OutputCertificatesDetails
 	{
 		Write-Host "
 	No Certificates retrieved for Site $($Site.Name).`
+	
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
@@ -39915,6 +40085,7 @@ Function OutputApplicationPackagesDetails
 
 	If($MSWord -or $PDF)
 	{
+		$Script:Selection.InsertNewPage()
 		WriteWordLine 2 0 "Application Packages"
 	}
 	If($Text)
@@ -39957,6 +40128,7 @@ Function OutputApplicationPackagesDetails
 	{
 		Write-Host "
 	No Application Packages retrieved for Site $($Site.Name).`
+	
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
@@ -40064,6 +40236,7 @@ Function OutputApplicationPackagesDetails
 				-Format $wdTableGrid `
 				-AutoFit $wdAutoFitFixed
 
+				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 				$Table.Columns.Item(1).Width = 200;
@@ -40245,6 +40418,7 @@ Function OutputApplicationPackagesDetails
 				-Format $wdTableGrid `
 				-AutoFit $wdAutoFitFixed
 
+				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 				$Table.Columns.Item(1).Width = 200;
@@ -40407,6 +40581,7 @@ Function OutputApplicationPackagesDetails
 				-Format $wdTableGrid `
 				-AutoFit $wdAutoFitFixed
 
+				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 				$Table.Columns.Item(1).Width = 200;
@@ -40449,6 +40624,7 @@ Function OutputSiteSettingsDetails
 	
 	If($MSWord -or $PDF)
 	{
+		$Script:Selection.InsertNewPage()
 		WriteWordLine 2 0 "Settings"
 	}
 	If($Text)
@@ -40492,6 +40668,7 @@ Function OutputSiteSettingsDetails
 	{
 		Write-Host "
 	No Settings retrieved for Site $($Site.Name).`
+	
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
@@ -40564,6 +40741,7 @@ Function OutputSiteSettingsDetails
 	{
 		Write-Host "
 	No URL Redirection settings retrieved for Site $($Site.Name).`
+	
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
@@ -40813,7 +40991,7 @@ Function OutputSiteSettingsDetails
 		OutputRASTemplateVersionSettings $TemplateVersions
 	}
 	
-	$FSLogixDeploymentSettings = Get-RASFSLogixSettings -SiteID $Site.Id-EA 0 4>$Null
+	$FSLogixDeploymentSettings = Get-RASFSLogixSettings -SiteID $Site.Id -EA 0 4>$Null
 	
 	If(!($?))
 	{
@@ -41075,6 +41253,7 @@ Function OutputRASURLRedirection
 			-Format $wdTableGrid `
 			-AutoFit $wdAutoFitFixed;
 
+			SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 			SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 			$Table.Columns.Item(1).Width = 250;
@@ -41581,8 +41760,8 @@ Function OutputRASClientSettings
 		SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 		SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-		$Table.Columns.Item(1).Width = 200;
-		$Table.Columns.Item(2).Width = 225;
+		$Table.Columns.Item(1).Width = 250;
+		$Table.Columns.Item(2).Width = 250;
 
 		$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -41705,6 +41884,7 @@ Function OutputRASTemplateVersionSettings
 			-Format $wdTableGrid `
 			-AutoFit $wdAutoFitFixed;
 
+			SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 			SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 			$Table.Columns.Item(1).Width = 50;
@@ -41990,6 +42170,7 @@ Function OutputRASAppPackageSettings
 			-Format $wdTableGrid `
 			-AutoFit $wdAutoFitFixed;
 
+			SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 			SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 			$Table.Columns.Item(1).Width = 50;
@@ -42168,6 +42349,7 @@ Function OutputRASLBSettings
 	
 	If($MSWord -or $PDF)
 	{
+		$Script:Selection.InsertNewPage()
 		WriteWordLine 2 0 "Load Balancing"
 	}
 	If($Text)
@@ -52282,7 +52464,7 @@ Function ProcessUniversalPrinting
 		ElseIf($? -and $null -eq $results)
 		{
 		Write-Host "
-		No VDI Hosts Printing information was found
+	No VDI Hosts Printing information was found
 		" -ForegroundColor White
 			#$VDIHostobjects = [PSCustomObject] @{
 			#	Server        = "None found"
@@ -52469,6 +52651,7 @@ Function OutputUniversalPrintingSettings
 			-Format $wdTableGrid `
 			-AutoFit $wdAutoFitFixed;
 
+			SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 			SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 			$Table.Columns.Item(1).Width = 200;
@@ -52484,7 +52667,7 @@ Function OutputUniversalPrintingSettings
 	}
 	If($Text)
 	{
-		Line 3 "Server                          Type                 State   "
+		Line 3 "Server                          Type                  State  "
 		Line 3 "============================================================="
 		#       1234567890123456789012345678901S123456789012345678901S12345678
 
@@ -53144,7 +53327,7 @@ Function ProcessUniversalScanning
 		ElseIf($? -and $null -eq $results)
 		{
 		Write-Host "
-		No VDI Hosts Scanning information was found
+	No VDI Hosts Scanning information was found
 		" -ForegroundColor White
 			$VDIHostsobj = [PSCustomObject] @{
 				Server = $Null
@@ -53806,7 +53989,7 @@ Function ProcessConnection
 	ElseIf($? -and $null -eq $results)
 	{
 		Write-Host "
-		No Logon hours information was found
+	No Logon hours information was found
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
@@ -69912,7 +70095,7 @@ Function OutputRASAllowedDevicesSetting
 		SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 		$Table.Columns.Item(1).Width = 250;
-		$Table.Columns.Item(2).Width = 175;
+		$Table.Columns.Item(2).Width = 200;
 
 		$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -70752,7 +70935,7 @@ Function ProcessPolicies
 	ElseIf($? -and $null -eq $Policies)
 	{
 		Write-Host "
-		No Policies information was found
+	No Policies information was found
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
@@ -73628,7 +73811,7 @@ Function OutputPoliciesDetails
 					}
 				}
 				
-				$txt = "Session/Local devices and resources/Clipboard/Advanced/Allow remote clipboard content to be save in local clipboard history"
+				$txt = "Session/Local devices and resources/Clipboard/Advanced/Allow remote clipboard content to be saved in local clipboard history"
 				If($MSWord -or $PDF)
 				{
 					$SettingsWordTable += @{
@@ -73745,7 +73928,7 @@ Function OutputPoliciesDetails
 				}
 				If($Text)
 				{
-					OutputPolicySetting "`t`t`t`t`t`t`t`t`t`t`t   " "Drives A through Z"
+					OutputPolicySetting "`t`t`t`t`t`t`t`t`t`t`t`t`t`t`t`t " "Drives A through Z"
 				}
 			}
 			Else
