@@ -44,6 +44,9 @@
 #	Clean up some console output
 #
 #	Fixed and refined the HTML, Text, and MSWord output
+#		For HTML output in many functions, if the data contained "<" and/or ">", no data was output from the HTML functions.
+#			For properties like Name, FriendlyName, Server, Host, and Description, 
+#				I had to add almost 300 ".Replace("<","").Replace(">","") to get the output to show in the HTML file
 #
 #	For the messages: 
 #		"Unable to find _____"
@@ -146,6 +149,7 @@
 #		Add logon hours schedule for Permitted and Denied hours
 #
 #	In Function OutputPoliciesDetails:
+#		Added headings for the policy settings for Text output to work with the changes in FUnction OutputPOlicySetting
 #		For RAS version 19.4 and later, added 
 #			Session/Printing/Default printer/Set the following printer as default
 #		For RAS version 20.0 and later, added 
@@ -157,9 +161,15 @@
 #		For RAS version 20.2 and later, removed
 #			Client options/Advanced/Printing/Advanced client options - Printing settings/Cache printers hardware information
 #			Client options/Advanced/Printing/Advanced client options - Printing settings/Refresh printer hardware information every 30 days
+#		For the HTML policy setting output, change the table widths to make it more readable
 #		Handle multiple criteria
+#		Rewrote the section for Criteria so the formatting is now readable
 #		Update for the Policy changes in 19.3 and later
+#		Update some of the Text output for some policy settings to work correctly with the changes to Function OutputPolicySetting
 #
+#	In Function OutputPolicySetting
+#		Reformatted the text output to make it more readable
+#		
 #	In Function OutputProvidersDetails
 #		Add the Advanced section
 #		Remove the Agent settings section

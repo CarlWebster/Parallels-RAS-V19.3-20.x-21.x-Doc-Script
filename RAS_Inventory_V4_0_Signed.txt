@@ -451,9 +451,9 @@
 	text document.
 .NOTES
 	NAME: RAS_Inventory_V4_0.ps1
-	VERSION: 4.00 RC
+	VERSION: 4.00 RC3
 	AUTHOR: Carl Webster
-	LASTEDIT: February 3, 2026
+	LASTEDIT: February 5, 2026
 #>
 
 
@@ -608,6 +608,9 @@ Param(
 #	Clean up some console output
 #
 #	Fixed and refined the HTML, Text, and MSWord output
+#		For HTML output in many functions, if the data contained "<" and/or ">", no data was output from the HTML functions.
+#			For properties like Name, FriendlyName, Server, Host, and Description, 
+#				I had to add almost 300 ".Replace("<","").Replace(">","") to get the output to show in the HTML file
 #
 #	For the messages: 
 #		"Unable to find _____"
@@ -710,6 +713,7 @@ Param(
 #		Add logon hours schedule for Permitted and Denied hours
 #
 #	In Function OutputPoliciesDetails:
+#		Added headings for the policy settings for Text output to work with the changes in FUnction OutputPOlicySetting
 #		For RAS version 19.4 and later, added 
 #			Session/Printing/Default printer/Set the following printer as default
 #		For RAS version 20.0 and later, added 
@@ -721,9 +725,15 @@ Param(
 #		For RAS version 20.2 and later, removed
 #			Client options/Advanced/Printing/Advanced client options - Printing settings/Cache printers hardware information
 #			Client options/Advanced/Printing/Advanced client options - Printing settings/Refresh printer hardware information every 30 days
+#		For the HTML policy setting output, change the table widths to make it more readable
 #		Handle multiple criteria
+#		Rewrote the section for Criteria so the formatting is now readable
 #		Update for the Policy changes in 19.3 and later
+#		Update some of the Text output for some policy settings to work correctly with the changes to Function OutputPolicySetting
 #
+#	In Function OutputPolicySetting
+#		Reformatted the text output to make it more readable
+#		
 #	In Function OutputProvidersDetails
 #		Add the Advanced section
 #		Remove the Agent settings section
@@ -979,7 +989,7 @@ Function AbortScript
 		{
 			$Script:Word.quit()
 			[System.Runtime.Interopservices.Marshal]::ReleaseComObject($Script:Word) | Out-Null
-			Remove-Variable -Name word -Scope Global 4>$Null
+			Remove-Variable -Name word -Scope Global 4> $Null
 		}
 	}
 	[gc]::collect() 
@@ -993,7 +1003,7 @@ Function AbortScript
 		$SessionID = (Get-Process -PID $PID).SessionId
 
 		#Find out if winword running in our session
-		$wordprocess = ((Get-Process 'WinWord' -ea 0) | Where-Object {$_.SessionId -eq $SessionID}) | Select-Object -Property Id 
+		$wordprocess = ((Get-Process 'WinWord' -EA 0) | Where-Object {$_.SessionId -eq $SessionID}) | Select-Object -Property Id 
 		If( $wordprocess -and $wordprocess.Id -gt 0)
 		{
 			Write-Verbose "$(Get-Date -Format G): WinWord Process is still running. Attempting to stop WinWord Process # $($wordprocess.Id)"
@@ -1031,9 +1041,9 @@ $ErrorActionPreference    = 'SilentlyContinue'
 $Error.Clear()
 
 $Script:emailCredentials  = $Null
-$script:MyVersion         = '4.00 RC'
+$script:MyVersion         = '4.00 RC3'
 $Script:ScriptName        = "RAS_Inventory_V4_0.ps1"
-$tmpdate                  = [datetime] "02/03/2026"
+$tmpdate                  = [datetime] "02/05/2026"
 $Script:ReleaseDate       = $tmpdate.ToUniversalTime().ToShortDateString()
 
 If($MSWord -eq $False -and $PDF -eq $False -and $Text -eq $False -and $HTML -eq $False)
@@ -1328,43 +1338,43 @@ If($MSWord -or $PDF)
 
 If($HTML)
 {
-    $Script:htmlredmask       = "#FF0000" 4>$Null
-    $Script:htmlcyanmask      = "#00FFFF" 4>$Null
-    $Script:htmlbluemask      = "#0000FF" 4>$Null
-    $Script:htmldarkbluemask  = "#0000A0" 4>$Null
-    $Script:htmllightbluemask = "#ADD8E6" 4>$Null
-    $Script:htmlpurplemask    = "#800080" 4>$Null
-    $Script:htmlyellowmask    = "#FFFF00" 4>$Null
-    $Script:htmllimemask      = "#00FF00" 4>$Null
-    $Script:htmlmagentamask   = "#FF00FF" 4>$Null
-    $Script:htmlwhitemask     = "#FFFFFF" 4>$Null
-    $Script:htmlsilvermask    = "#C0C0C0" 4>$Null
-    $Script:htmlgraymask      = "#808080" 4>$Null
-    $Script:htmlblackmask     = "#000000" 4>$Null
-    $Script:htmlorangemask    = "#FFA500" 4>$Null
-    $Script:htmlmaroonmask    = "#800000" 4>$Null
-    $Script:htmlgreenmask     = "#008000" 4>$Null
-    $Script:htmlolivemask     = "#808000" 4>$Null
+    $Script:htmlredmask       = "#FF0000" 4> $Null
+    $Script:htmlcyanmask      = "#00FFFF" 4> $Null
+    $Script:htmlbluemask      = "#0000FF" 4> $Null
+    $Script:htmldarkbluemask  = "#0000A0" 4> $Null
+    $Script:htmllightbluemask = "#ADD8E6" 4> $Null
+    $Script:htmlpurplemask    = "#800080" 4> $Null
+    $Script:htmlyellowmask    = "#FFFF00" 4> $Null
+    $Script:htmllimemask      = "#00FF00" 4> $Null
+    $Script:htmlmagentamask   = "#FF00FF" 4> $Null
+    $Script:htmlwhitemask     = "#FFFFFF" 4> $Null
+    $Script:htmlsilvermask    = "#C0C0C0" 4> $Null
+    $Script:htmlgraymask      = "#808080" 4> $Null
+    $Script:htmlblackmask     = "#000000" 4> $Null
+    $Script:htmlorangemask    = "#FFA500" 4> $Null
+    $Script:htmlmaroonmask    = "#800000" 4> $Null
+    $Script:htmlgreenmask     = "#008000" 4> $Null
+    $Script:htmlolivemask     = "#808000" 4> $Null
 
-    $Script:htmlbold        = 1 4>$Null
-    $Script:htmlitalics     = 2 4>$Null
-    $Script:htmlred         = 4 4>$Null
-    $Script:htmlcyan        = 8 4>$Null
-    $Script:htmlblue        = 16 4>$Null
-    $Script:htmldarkblue    = 32 4>$Null
-    $Script:htmllightblue   = 64 4>$Null
-    $Script:htmlpurple      = 128 4>$Null
-    $Script:htmlyellow      = 256 4>$Null
-    $Script:htmllime        = 512 4>$Null
-    $Script:htmlmagenta     = 1024 4>$Null
-    $Script:htmlwhite       = 2048 4>$Null
-    $Script:htmlsilver      = 4096 4>$Null
-    $Script:htmlgray        = 8192 4>$Null
-    $Script:htmlolive       = 16384 4>$Null
-    $Script:htmlorange      = 32768 4>$Null
-    $Script:htmlmaroon      = 65536 4>$Null
-    $Script:htmlgreen       = 131072 4>$Null
-	$Script:htmlblack       = 262144 4>$Null
+    $Script:htmlbold        = 1 4> $Null
+    $Script:htmlitalics     = 2 4> $Null
+    $Script:htmlred         = 4 4> $Null
+    $Script:htmlcyan        = 8 4> $Null
+    $Script:htmlblue        = 16 4> $Null
+    $Script:htmldarkblue    = 32 4> $Null
+    $Script:htmllightblue   = 64 4> $Null
+    $Script:htmlpurple      = 128 4> $Null
+    $Script:htmlyellow      = 256 4> $Null
+    $Script:htmllime        = 512 4> $Null
+    $Script:htmlmagenta     = 1024 4> $Null
+    $Script:htmlwhite       = 2048 4> $Null
+    $Script:htmlsilver      = 4096 4> $Null
+    $Script:htmlgray        = 8192 4> $Null
+    $Script:htmlolive       = 16384 4> $Null
+    $Script:htmlorange      = 32768 4> $Null
+    $Script:htmlmaroon      = 65536 4> $Null
+    $Script:htmlgreen       = 131072 4> $Null
+	$Script:htmlblack       = 262144 4> $Null
 
 	$Script:htmlsb          = ( $htmlsilver -bor $htmlBold ) ## point optimization
 
@@ -1779,7 +1789,7 @@ Function CheckWordPrereq
 	{
 		Write-Host "
 		`n
-		This script directly outputs to Microsoft Word, please install Microsoft Word
+	This script directly outputs to Microsoft Word, please install Microsoft Word
 		`n"
 		AbortScript
 	}
@@ -1789,12 +1799,12 @@ Function CheckWordPrereq
 	
 	#Find out if winword is running in our session
 	#fixed by MBS
-	[bool]$wordrunning = $null –ne ((Get-Process 'WinWord' -ea 0) | Where-Object {$_.SessionId -eq $SessionID})
+	[bool]$wordrunning = $null –ne ((Get-Process 'WinWord' -EA 0) | Where-Object {$_.SessionId -eq $SessionID})
 	If($wordrunning)
 	{
 		Write-Host "
 		`n
-		Please close all instances of Microsoft Word before running this report.
+	Please close all instances of Microsoft Word before running this report.
 		`n"
 		AbortScript
 	}
@@ -1847,7 +1857,7 @@ Function Check-LoadedModule
 	[string]$ModuleFound = ($LoadedModules -like "*$ModuleName*")
 	If($ModuleFound -ne $ModuleName) 
 	{
-		$module = Import-Module -Name $ModuleName -PassThru -EA 0 4>$Null
+		$module = Import-Module -Name $ModuleName -PassThru -EA 0 4> $Null
 		If($module -and $?)
 		{
 			# module imported properly
@@ -1966,7 +1976,7 @@ Function SetupWord
 
 	# Setup word for output
 	Write-Verbose "$(Get-Date -Format G): Create Word comObject."
-	$Script:Word = New-Object -comobject "Word.Application" -EA 0 4>$Null
+	$Script:Word = New-Object -comobject "Word.Application" -EA 0 4> $Null
 
 #Do not indent the following write-error lines. Doing so will mess up the console formatting of the error message.
 	If(!($?) -or $Null -eq $Script:Word)
@@ -2791,7 +2801,7 @@ Function WriteHTMLLine
 	}
 	$null = $sb.AppendLine( '' )
 
-	Out-File -FilePath $Script:HtmlFileName -Append -InputObject $sb.ToString() 4>$Null
+	Out-File -FilePath $Script:HtmlFileName -Append -InputObject $sb.ToString() 4> $Null
 }
 #endregion
 
@@ -2892,7 +2902,7 @@ Function AddHTMLTable
 		$null = $sb.AppendLine( '</tr>' )
 	}
 
-	Out-File -FilePath $Script:HtmlFileName -Append -InputObject $sb.ToString() 4>$Null 
+	Out-File -FilePath $Script:HtmlFileName -Append -InputObject $sb.ToString() 4> $Null 
 }
 
 #***********************************************************************************************************
@@ -3122,7 +3132,7 @@ Function FormatHTMLTable
 
 	$HTMLBody += '</tr>' + $crlf
 
-	Out-File -FilePath $Script:HtmlFileName -Append -InputObject $HTMLBody 4>$Null 
+	Out-File -FilePath $Script:HtmlFileName -Append -InputObject $HTMLBody 4> $Null 
 	$HTMLBody = ''
 
 	If( $rowArray )
@@ -3139,7 +3149,7 @@ Function FormatHTMLTable
 		$HTMLBody += '</table>'
 	}
 
-	Out-File -FilePath $Script:HtmlFileName -Append -InputObject $HTMLBody 4>$Null 
+	Out-File -FilePath $Script:HtmlFileName -Append -InputObject $HTMLBody 4> $Null 
 }
 #endregion
 
@@ -3157,7 +3167,7 @@ Function SetupHTML
 	}
 
 	$htmlhead = "<html><head><meta http-equiv='Content-Language' content='da'><title>" + $Script:Title + "</title></head><body>"
-	out-file -FilePath $Script:HtmlFileName -Force -InputObject $HTMLHead 4>$Null
+	out-file -FilePath $Script:HtmlFileName -Force -InputObject $HTMLHead 4> $Null
 }#endregion
 
 #region Iain's Word table functions
@@ -3670,7 +3680,7 @@ Function SaveandCloseDocumentandShutdownWord
 	[System.Runtime.Interopservices.Marshal]::ReleaseComObject($Script:Word) | Out-Null
 	If(Test-Path variable:global:word)
 	{
-		Remove-Variable -Name word -Scope Global 4>$Null
+		Remove-Variable -Name word -Scope Global 4> $Null
 	}
 	$SaveFormat = $Null
 	[gc]::collect() 
@@ -3682,7 +3692,7 @@ Function SaveandCloseDocumentandShutdownWord
 	$SessionID = (Get-Process -PID $PID).SessionId
 
 	#Find out if winword running in our session
-	$wordprocess = ((Get-Process 'WinWord' -ea 0) | Where-Object {$_.SessionId -eq $SessionID}) | Select-Object -Property Id 
+	$wordprocess = ((Get-Process 'WinWord' -EA 0) | Where-Object {$_.SessionId -eq $SessionID}) | Select-Object -Property Id 
 	If( $wordprocess -and $wordprocess.Id -gt 0)
 	{
 		Write-Verbose "$(Get-Date -Format G): WinWord Process is still running. Attempting to stop WinWord Process # $($wordprocess.Id)"
@@ -3710,7 +3720,7 @@ Function SaveandCloseTextDocument
 	Write-Verbose "$(Get-Date -Format G): Saving Text file"
 	Line 0 ""
 	Line 0 "Report Complete"
-	Write-Output $script:Output.ToString() | Out-File $Script:TextFileName 4>$Null
+	Write-Output $script:Output.ToString() | Out-File $Script:TextFileName 4> $Null
 	[System.Text.StringBuilder] $Script:Output = New-Object System.Text.StringBuilder( 16384 )
 }
 
@@ -3719,7 +3729,7 @@ Function SaveandCloseHTMLDocument
 	Write-Verbose "$(Get-Date -Format G): Saving HTML file"
 	WriteHTMLLine 0 0 ""
 	WriteHTMLLine 0 0 "Report Complete"
-	Out-File -FilePath $Script:HTMLFileName -Append -InputObject "<p></p></body></html>" 4>$Null
+	Out-File -FilePath $Script:HTMLFileName -Append -InputObject "<p></p></body></html>" 4> $Null
 }
 
 Function SetFilenames
@@ -3999,7 +4009,7 @@ $Script:Title is attached.
 
 	If($Dev)
 	{
-		Out-File -FilePath $Script:DevErrorFile -InputObject $error 4>$Null
+		Out-File -FilePath $Script:DevErrorFile -InputObject $error 4> $Null
 	}
 
 	$error.Clear()
@@ -4064,7 +4074,7 @@ $Script:Title is attached.
 
 				If($Dev)
 				{
-					Out-File -FilePath $Script:DevErrorFile -InputObject $error -Append 4>$Null
+					Out-File -FilePath $Script:DevErrorFile -InputObject $error -Append 4> $Null
 				}
 
 				$error.Clear()
@@ -4216,7 +4226,7 @@ Function ProcessScriptSetup
 	}
 
 	Write-Verbose "$(Get-Date -Format G): Get RAS Version"
-	$Results = Get-RASVersion -Details -EA 0 4>$Null
+	$Results = Get-RASVersion -Details -EA 0 4> $Null
 	
 	If($? -and $Null -ne $Results)
 	{
@@ -4349,84 +4359,84 @@ Function ProcessScriptEnd
 	{
 		If($SmtpServer -eq "")
 		{
-			Out-File -FilePath $Script:DevErrorFile -InputObject $error 4>$Null
+			Out-File -FilePath $Script:DevErrorFile -InputObject $error 4> $Null
 		}
 		Else
 		{
-			Out-File -FilePath $Script:DevErrorFile -InputObject $error -Append 4>$Null
+			Out-File -FilePath $Script:DevErrorFile -InputObject $error -Append 4> $Null
 		}
 	}
 
 	If($ScriptInfo)
 	{
 		$SIFile = "$Script:pwdpath\RASInventoryScriptInfo_$(Get-Date -f yyyy-MM-dd_HHmm).txt"
-		Out-File -FilePath $SIFile -InputObject "" 4>$Null
-		Out-File -FilePath $SIFile -Append -InputObject "Add DateTime         : $AddDateTime" 4>$Null
+		Out-File -FilePath $SIFile -InputObject "" 4> $Null
+		Out-File -FilePath $SIFile -Append -InputObject "Add DateTime         : $AddDateTime" 4> $Null
 		If($MSWORD -or $PDF)
 		{
-			Out-File -FilePath $SIFile -Append -InputObject "Company Name         : $Script:CoName" 4>$Null		
-			Out-File -FilePath $SIFile -Append -InputObject "Company Address      : $CompanyAddress" 4>$Null		
-			Out-File -FilePath $SIFile -Append -InputObject "Company Email        : $CompanyEmail" 4>$Null		
-			Out-File -FilePath $SIFile -Append -InputObject "Company Fax          : $CompanyFax" 4>$Null		
-			Out-File -FilePath $SIFile -Append -InputObject "Company Phone        : $CompanyPhone" 4>$Null		
-			Out-File -FilePath $SIFile -Append -InputObject "Cover Page           : $CoverPage" 4>$Null
+			Out-File -FilePath $SIFile -Append -InputObject "Company Name         : $Script:CoName" 4> $Null		
+			Out-File -FilePath $SIFile -Append -InputObject "Company Address      : $CompanyAddress" 4> $Null		
+			Out-File -FilePath $SIFile -Append -InputObject "Company Email        : $CompanyEmail" 4> $Null		
+			Out-File -FilePath $SIFile -Append -InputObject "Company Fax          : $CompanyFax" 4> $Null		
+			Out-File -FilePath $SIFile -Append -InputObject "Company Phone        : $CompanyPhone" 4> $Null		
+			Out-File -FilePath $SIFile -Append -InputObject "Cover Page           : $CoverPage" 4> $Null
 		}
-		Out-File -FilePath $SIFile -Append -InputObject "Dev                  : $Dev" 4>$Null
+		Out-File -FilePath $SIFile -Append -InputObject "Dev                  : $Dev" 4> $Null
 		If($Dev)
 		{
-			Out-File -FilePath $SIFile -Append -InputObject "DevErrorFile         : $Script:DevErrorFile" 4>$Null
+			Out-File -FilePath $SIFile -Append -InputObject "DevErrorFile         : $Script:DevErrorFile" 4> $Null
 		}
 		If($MSWord)
 		{
-			Out-File -FilePath $SIFile -Append -InputObject "Word FileName        : $Script:WordFileName" 4>$Null
+			Out-File -FilePath $SIFile -Append -InputObject "Word FileName        : $Script:WordFileName" 4> $Null
 		}
 		If($HTML)
 		{
-			Out-File -FilePath $SIFile -Append -InputObject "HTML FileName        : $Script:HtmlFileName" 4>$Null
+			Out-File -FilePath $SIFile -Append -InputObject "HTML FileName        : $Script:HtmlFileName" 4> $Null
 		}
 		If($PDF)
 		{
-			Out-File -FilePath $SIFile -Append -InputObject "PDF Filename         : $Script:PDFFileName" 4>$Null
+			Out-File -FilePath $SIFile -Append -InputObject "PDF Filename         : $Script:PDFFileName" 4> $Null
 		}
 		If($Text)
 		{
-			Out-File -FilePath $SIFile -Append -InputObject "Text FileName        : $Script:TextFileName" 4>$Null
+			Out-File -FilePath $SIFile -Append -InputObject "Text FileName        : $Script:TextFileName" 4> $Null
 		}
-		Out-File -FilePath $SIFile -Append -InputObject "Folder               : $Folder" 4>$Null
-		Out-File -FilePath $SIFile -Append -InputObject "From                 : $From" 4>$Null
-		Out-File -FilePath $SIFile -Append -InputObject "Log                  : $Log" 4>$Null
-		Out-File -FilePath $SIFile -Append -InputObject "Report Footer        : $ReportFooter" 4>$Null
-		Out-File -FilePath $SIFile -Append -InputObject "Save As HTML         : $HTML" 4>$Null
-		Out-File -FilePath $SIFile -Append -InputObject "Save As PDF          : $PDF" 4>$Null
-		Out-File -FilePath $SIFile -Append -InputObject "Save As TEXT         : $TEXT" 4>$Null
-		Out-File -FilePath $SIFile -Append -InputObject "Save As WORD         : $MSWORD" 4>$Null
-		Out-File -FilePath $SIFile -Append -InputObject "Script Info          : $ScriptInfo" 4>$Null
-		Out-File -FilePath $SIFile -Append -InputObject "Server               : $Script:ServerName" 4>$Null
-		Out-File -FilePath $SIFile -Append -InputObject "Section              : $($Section)" 4>$Null
-		Out-File -FilePath $SIFile -Append -InputObject "Smtp Port            : $SmtpPort" 4>$Null
-		Out-File -FilePath $SIFile -Append -InputObject "Smtp Server          : $SmtpServer" 4>$Null
-		Out-File -FilePath $SIFile -Append -InputObject "Title                : $Script:Title" 4>$Null
-		Out-File -FilePath $SIFile -Append -InputObject "To                   : $To" 4>$Null
-		Out-File -FilePath $SIFile -Append -InputObject "Use SSL              : $UseSSL" 4>$Null
-		Out-File -FilePath $SIFile -Append -InputObject "User                 : $Script:User" 4>$Null
+		Out-File -FilePath $SIFile -Append -InputObject "Folder               : $Folder" 4> $Null
+		Out-File -FilePath $SIFile -Append -InputObject "From                 : $From" 4> $Null
+		Out-File -FilePath $SIFile -Append -InputObject "Log                  : $Log" 4> $Null
+		Out-File -FilePath $SIFile -Append -InputObject "Report Footer        : $ReportFooter" 4> $Null
+		Out-File -FilePath $SIFile -Append -InputObject "Save As HTML         : $HTML" 4> $Null
+		Out-File -FilePath $SIFile -Append -InputObject "Save As PDF          : $PDF" 4> $Null
+		Out-File -FilePath $SIFile -Append -InputObject "Save As TEXT         : $TEXT" 4> $Null
+		Out-File -FilePath $SIFile -Append -InputObject "Save As WORD         : $MSWORD" 4> $Null
+		Out-File -FilePath $SIFile -Append -InputObject "Script Info          : $ScriptInfo" 4> $Null
+		Out-File -FilePath $SIFile -Append -InputObject "Server               : $Script:ServerName" 4> $Null
+		Out-File -FilePath $SIFile -Append -InputObject "Section              : $($Section)" 4> $Null
+		Out-File -FilePath $SIFile -Append -InputObject "Smtp Port            : $SmtpPort" 4> $Null
+		Out-File -FilePath $SIFile -Append -InputObject "Smtp Server          : $SmtpServer" 4> $Null
+		Out-File -FilePath $SIFile -Append -InputObject "Title                : $Script:Title" 4> $Null
+		Out-File -FilePath $SIFile -Append -InputObject "To                   : $To" 4> $Null
+		Out-File -FilePath $SIFile -Append -InputObject "Use SSL              : $UseSSL" 4> $Null
+		Out-File -FilePath $SIFile -Append -InputObject "User                 : $Script:User" 4> $Null
 		If($MSWORD -or $PDF)
 		{
-			Out-File -FilePath $SIFile -Append -InputObject "User Name            : $UserName" 4>$Null
+			Out-File -FilePath $SIFile -Append -InputObject "User Name            : $UserName" 4> $Null
 		}
-		Out-File -FilePath $SIFile -Append -InputObject "" 4>$Null
-		Out-File -FilePath $SIFile -Append -InputObject "OS Detected          : $Script:RunningOS" 4>$Null
-		Out-File -FilePath $SIFile -Append -InputObject "PoSH version         : $($Host.Version)" 4>$Null
-		Out-File -FilePath $SIFile -Append -InputObject "PSCulture            : $PSCulture" 4>$Null
-		Out-File -FilePath $SIFile -Append -InputObject "PSUICulture          : $PSUICulture" 4>$Null
-		Out-File -FilePath $SIFile -Append -InputObject "RAS Version          : $Script:RASVersion" 4>$Null
+		Out-File -FilePath $SIFile -Append -InputObject "" 4> $Null
+		Out-File -FilePath $SIFile -Append -InputObject "OS Detected          : $Script:RunningOS" 4> $Null
+		Out-File -FilePath $SIFile -Append -InputObject "PoSH version         : $($Host.Version)" 4> $Null
+		Out-File -FilePath $SIFile -Append -InputObject "PSCulture            : $PSCulture" 4> $Null
+		Out-File -FilePath $SIFile -Append -InputObject "PSUICulture          : $PSUICulture" 4> $Null
+		Out-File -FilePath $SIFile -Append -InputObject "RAS Version          : $Script:RASVersion" 4> $Null
 		If($MSWORD -or $PDF)
 		{
-			Out-File -FilePath $SIFile -Append -InputObject "Word language        : $Script:WordLanguageValue" 4>$Null
-			Out-File -FilePath $SIFile -Append -InputObject "Word version         : $Script:WordProduct" 4>$Null
+			Out-File -FilePath $SIFile -Append -InputObject "Word language        : $Script:WordLanguageValue" 4> $Null
+			Out-File -FilePath $SIFile -Append -InputObject "Word version         : $Script:WordProduct" 4> $Null
 		}
-		Out-File -FilePath $SIFile -Append -InputObject "" 4>$Null
-		Out-File -FilePath $SIFile -Append -InputObject "Script start         : $Script:StartTime" 4>$Null
-		Out-File -FilePath $SIFile -Append -InputObject "Elapsed time         : $Str" 4>$Null
+		Out-File -FilePath $SIFile -Append -InputObject "" 4> $Null
+		Out-File -FilePath $SIFile -Append -InputObject "Script start         : $Script:StartTime" 4> $Null
+		Out-File -FilePath $SIFile -Append -InputObject "Elapsed time         : $Str" 4> $Null
 	}
 
 	#stop transcript logging
@@ -4456,7 +4466,7 @@ Function ProcessFarm
 {
 	Write-Verbose "$(Get-Date -Format G): Processing Farm"
 	
-	$Results = Get-RASFarmSettings -EA 0 4>$Null
+	$Results = Get-RASFarmSettings -EA 0 4> $Null
 
 	If(!($?))
 	{
@@ -4717,7 +4727,7 @@ Function OutputFarmSite
 	If($HTML)
 	{
 		$rowdata = @()
-		$columnHeaders = @("Site",($Script:htmlsb),$Site.Name,$htmlwhite)
+		$columnHeaders = @("Site",($Script:htmlsb),$Site.Name.Replace("<","").Replace(">",""),$htmlwhite)
 		$rowdata += @(,("Primary Connection Broker",($Script:htmlsb),$PrimaryPublishingAgent,$htmlwhite))
 		$rowdata += @(,("Type",($Script:htmlsb),$Type,$htmlwhite))
 		$rowdata += @(,("State",($Script:htmlsb),$State.ToString(),$htmlwhite))
@@ -4764,7 +4774,7 @@ Function OutputFarmSite
 		#Access addresses in not availble in PowerShell 19.x
 		If($Script:RASMajorVersion -ge 20)
 		{
-			$AccessAddresses = Get-RASSiteAccessAddresses -Id $Site.Id -EA 0 4>$Null
+			$AccessAddresses = Get-RASSiteAccessAddresses -Id $Site.Id -EA 0 4> $Null
 			
 			WriteWordLine 3 0 "Access addresses"
 			$ScriptInformation = New-Object System.Collections.ArrayList
@@ -4845,7 +4855,7 @@ Function OutputFarmSite
 		#Access addresses in not availble in PowerShell 19.x
 		If($Script:RASMajorVersion -ge 20)
 		{
-			$AccessAddresses = Get-RASSiteAccessAddresses -Id $Site.Id -EA 0 4>$Null
+			$AccessAddresses = Get-RASSiteAccessAddresses -Id $Site.Id -EA 0 4> $Null
 			
 			Line 2 "Access addresses"
 			If($? -and $Null -ne $AccessAddresses)
@@ -4883,7 +4893,7 @@ Function OutputFarmSite
 		WriteHTMLLine 2 0 "$($Site.Name) Properties"
 
 		$rowdata = @()
-		$columnHeaders = @("Site",($Script:htmlsb),$Site.Name,$htmlwhite)
+		$columnHeaders = @("Site",($Script:htmlsb),$Site.Name.Replace("<","").Replace(">",""),$htmlwhite)
 		$rowdata += @(,("Server",($Script:htmlsb),$PrimaryPublishingAgent,$htmlwhite))
 		$rowdata += @(,("Description",($Script:htmlsb),$Description,$htmlwhite))
 
@@ -4895,7 +4905,7 @@ Function OutputFarmSite
 		#Access addresses in not availble in PowerShell 19.x
 		If($Script:RASMajorVersion -ge 20)
 		{
-			$AccessAddresses = Get-RASSiteAccessAddresses -Id $Site.Id -EA 0 4>$Null
+			$AccessAddresses = Get-RASSiteAccessAddresses -Id $Site.Id -EA 0 4> $Null
 			
 			WriteHTMLLine 3 0 "Access addresses"
 			$rowdata = @()
@@ -4908,13 +4918,13 @@ Function OutputFarmSite
 					
 					If($xCnt -eq 0)
 					{
-						$columnHeaders = @("Name",($Script:htmlsb),$AccessAddress.Name,$htmlwhite)
+						$columnHeaders = @("Name",($Script:htmlsb),$AccessAddress.Name.Replace("<","").Replace(">",""),$htmlwhite)
 					}
 					Else
 					{
-						$rowdata += @(,("Name",($Script:htmlsb),$AccessAddress.Name,$htmlwhite))
+						$rowdata += @(,("Name",($Script:htmlsb),$AccessAddress.Name.Replace("<","").Replace(">",""),$htmlwhite))
 					}
-					$rowdata += @(,("Description",($Script:htmlsb),$AccessAddress.Description,$htmlwhite))
+					$rowdata += @(,("Description",($Script:htmlsb),$AccessAddress.Description.Replace("<","").Replace(">",""),$htmlwhite))
 					$rowdata += @(,("Public Address",($Script:htmlsb),$AccessAddress.PublicAddress,$htmlwhite))
 					$rowdata += @(,("IPs",($Script:htmlsb),$AccessAddress.IPs,$htmlwhite))
 					$rowdata += @(,("Type",($Script:htmlsb),$AccessAddress.Type,$htmlwhite))
@@ -5331,7 +5341,7 @@ Function OutputSiteSummary
 		ForEach($RDSHost in $RDSHosts)
 		{
 			Write-Verbose "$(Get-Date -Format G): `t`t$($RDSHost.Server)"
-			$RDSStatus = Get-RASRDSHostStatus -Id $RDSHost.Id -EA 0 4>$Null
+			$RDSStatus = Get-RASRDSHostStatus -Id $RDSHost.Id -EA 0 4> $Null
 			
 			If(!($?))
 			{
@@ -5361,7 +5371,7 @@ Function OutputSiteSummary
 			ElseIf($? -and $Null -eq $RDSStatus)
 			{
 				Write-Host "
-				No RDS Status retrieved for RDS Host $($RDSHost.Server)`
+	No RDS Status retrieved for RDS Host $($RDSHost.Server)`
 				" -ForegroundColor White
 				If($MSWord -or $PDF)
 				{
@@ -5449,7 +5459,7 @@ Function OutputSiteSummary
 				If($HTML)
 				{
 					$rowdata = @()
-					$columnHeaders = @("Name",($Script:htmlsb),$RDSHost.Server,$htmlwhite)
+					$columnHeaders = @("Name",($Script:htmlsb),$RDSHost.Server.Replace("<","").Replace(">",""),$htmlwhite)
 					$rowdata += @(,("Status",($Script:htmlsb),$RDSStatusAgentState,$htmlwhite))
 					$rowdata += @(,("CPU",($Script:htmlsb),"$($RDSStatus.CPULoad)%",$htmlwhite))
 					$rowdata += @(,("RAM",($Script:htmlsb),"$($RDSStatus.MemLoad)%",$htmlwhite))
@@ -5484,7 +5494,7 @@ Function OutputSiteSummary
 		WriteHTMLLine 2 0 "Providers"
 	}
 
-	$Providers = Get-RASProvider -SiteId $Site.Id -EA 0 4>$Null
+	$Providers = Get-RASProvider -SiteId $Site.Id -EA 0 4> $Null
 	
 	If(!($?))
 	{
@@ -5543,7 +5553,7 @@ Function OutputSiteSummary
 			If($Provider.Enabled)
 			{
 				Write-Verbose "$(Get-Date -Format G): `t`t$($Provider.Server)"
-				$Providerstatus = Get-RASProviderStatus -Id $Provider.Id -EA 0 4>$Null
+				$Providerstatus = Get-RASProviderStatus -Id $Provider.Id -EA 0 4> $Null
 				
 				If(!($?))
 				{
@@ -5573,7 +5583,7 @@ Function OutputSiteSummary
 				ElseIf($? -and $Null -eq $Providerstatus)
 				{
 					Write-Host "
-					No Provider Status retrieved for Provider $($Provider.Id)`
+	No Provider Status retrieved for Provider $($Provider.Id)`
 					" -ForegroundColor White
 					If($MSWord -or $PDF)
 					{
@@ -5658,7 +5668,7 @@ Function OutputSiteSummary
 					If($HTML)
 					{
 						$rowdata = @()
-						$columnHeaders = @("Name",($Script:htmlsb),$Provider.Name,$htmlwhite)
+						$columnHeaders = @("Name",($Script:htmlsb),$Provider.Name.Replace("<","").Replace(">",""),$htmlwhite)
 						$rowdata += @(,("Status",($Script:htmlsb),$FullProviderStatus,$htmlwhite))
 						#$rowdata += @(,("CPU",($Script:htmlsb),"$($Providerstatus.CPULoad)%",$htmlwhite))
 						#$rowdata += @(,("RAM",($Script:htmlsb),"$($Providerstatus.MemLoad)%",$htmlwhite))
@@ -5750,7 +5760,7 @@ Function OutputSiteSummary
 		ForEach($SecureGateway in $SecureGateways)
 		{
 			Write-Verbose "$(Get-Date -Format G): `t`t$($SecureGateway.Server)"
-			$SecureGatewayStatus = Get-RASGatewayStatus -Id $SecureGateway.Id -EA 0 4>$Null
+			$SecureGatewayStatus = Get-RASGatewayStatus -Id $SecureGateway.Id -EA 0 4> $Null
 			
 			If(!($?))
 			{
@@ -5780,7 +5790,7 @@ Function OutputSiteSummary
 			ElseIf($? -and $Null -eq $SecureGatewayStatus)
 			{
 				Write-Host "
-				No Gateway Status retrieved for Secure Gateway $($SecureGateway.Id)`
+	No Gateway Status retrieved for Secure Gateway $($SecureGateway.Id)`
 				" -ForegroundColor White
 				If($MSWord -or $PDF)
 				{
@@ -5868,7 +5878,7 @@ Function OutputSiteSummary
 				If($HTML)
 				{
 					$rowdata = @()
-					$columnHeaders = @("Name",($Script:htmlsb),$SecureGateway.Server,$htmlwhite)
+					$columnHeaders = @("Name",($Script:htmlsb),$SecureGateway.Server.Replace("<","").Replace(">",""),$htmlwhite)
 					$rowdata += @(,("Status",($Script:htmlsb),$SecureGatewayStatusAgentState.ToString(),$htmlwhite))
 					$rowdata += @(,("CPU",($Script:htmlsb),"$($SecureGatewayStatus.CPULoad)%",$htmlwhite))
 					$rowdata += @(,("RAM",($Script:htmlsb),"$($SecureGatewayStatus.MemLoad)%",$htmlwhite))
@@ -5960,7 +5970,7 @@ Function OutputSiteSummary
 		ForEach($ConnectionBroker in $ConnectionBrokers)
 		{
 			Write-Verbose "$(Get-Date -Format G): `t`t$($ConnectionBroker.Server)"
-			$ConnectionBrokerStatus = Get-RASBrokerStatus -Id $ConnectionBroker.Id -EA 0 4>$Null
+			$ConnectionBrokerStatus = Get-RASBrokerStatus -Id $ConnectionBroker.Id -EA 0 4> $Null
 			
 			If(!($?))
 			{
@@ -5990,7 +6000,7 @@ Function OutputSiteSummary
 			ElseIf($? -and $Null -eq $ConnectionBrokerStatus)
 			{
 				Write-Host "
-				No Connection Brokers Status retrieved for Connection Brokers $($ConnectionBroker.Id)`
+	No Connection Brokers Status retrieved for Connection Brokers $($ConnectionBroker.Id)`
 				" -ForegroundColor White
 				If($MSWord -or $PDF)
 				{
@@ -6084,7 +6094,7 @@ Function OutputSiteSummary
 				If($HTML)
 				{
 					$rowdata = @()
-					$columnHeaders = @("Name",($Script:htmlsb),$ConnectionBroker.Server,$htmlwhite)
+					$columnHeaders = @("Name",($Script:htmlsb),$ConnectionBroker.Server.Replace("<","").Replace(">",""),$htmlwhite)
 					$rowdata += @(,("Priority",($Script:htmlsb),$ConnectionBrokerPriority,$htmlwhite))
 					$rowdata += @(,("Status",($Script:htmlsb),$ConnectionBrokerStatusAgentState.ToString(),$htmlwhite))
 					$rowdata += @(,("CPU",($Script:htmlsb),"$($ConnectionBrokerStatus.CPULoad)%",$htmlwhite))
@@ -6176,7 +6186,7 @@ Function OutputSiteSummary
 		{
 			Write-Verbose "$(Get-Date -Format G): `t`t$($EnrollmentServer.Server)"
 			
-			$ESStatus = Get-RASEnrollmentServerStatus -Server $EnrollmentServer.Server -EA 0 4>$Null
+			$ESStatus = Get-RASEnrollmentServerStatus -Server $EnrollmentServer.Server -EA 0 4> $Null
 			
 			If(!($?))
 			{
@@ -6206,7 +6216,7 @@ Function OutputSiteSummary
 			ElseIf($? -and $Null -eq $ESStatus)
 			{
 				Write-Host "
-				No Status retrieved for Enrollment Server $($EnrollmentServer.Server)`
+	No Status retrieved for Enrollment Server $($EnrollmentServer.Server)`
 				" -ForegroundColor White
 				If($MSWord -or $PDF)
 				{
@@ -6291,7 +6301,7 @@ Function OutputSiteSummary
 			If($HTML)
 			{
 				$rowdata = @()
-				$columnHeaders = @("Name",($Script:htmlsb),$EnrollmentServer.Server,$htmlwhite)
+				$columnHeaders = @("Name",($Script:htmlsb),$EnrollmentServer.Server.Replace("<","").Replace(">",""),$htmlwhite)
 				$rowdata += @(,("Status",($Script:htmlsb),$EnrollmentServerStatus,$htmlwhite))
 				$rowdata += @(,("CPU",($Script:htmlsb),"$($ESSTatus.CPULoad)%",$htmlwhite))
 				$rowdata += @(,("RAM",($Script:htmlsb),"$($ESSTatus.MemLoad)%",$htmlwhite))
@@ -6314,7 +6324,7 @@ Function OutputSiteDetails
 {
 	OutputRDSessionHostsDetails
 	OutputVDIDetails
-	If((Get-RASAVDSettings -SiteID 1 -EA 0 4>$Null).Enabled)
+	If((Get-RASAVDSettings -SiteID 1 -EA 0 4> $Null).Enabled)
 	{
 		#don't process AVD stuff if Settings/Features/Enable Azure Virtual Desktop management is not enabled
 		OutputAVDDetails
@@ -6375,7 +6385,7 @@ Function OutputRDSessionHostsDetails
 		WriteHTMLLine 2 0 "RD Session Hosts"
 	}
 
-	$RDSHosts = Get-RASRDSHost -Siteid $Site.Id -EA 0 4>$Null
+	$RDSHosts = Get-RASRDSHost -Siteid $Site.Id -EA 0 4> $Null
 	
 	If(!($?))
 	{
@@ -6432,7 +6442,7 @@ Function OutputRDSessionHostsDetails
 		ForEach($RDSHost in $RDSHosts)
 		{
 			Write-Verbose "$(Get-Date -Format G): `t$($RDSHost.Server)"
-			$RDSStatus = Get-RASRDSHostStatus -Id $RDSHost.Id -EA 0 4>$Null
+			$RDSStatus = Get-RASRDSHostStatus -Id $RDSHost.Id -EA 0 4> $Null
 			
 			If(!($?))
 			{
@@ -6462,7 +6472,7 @@ Function OutputRDSessionHostsDetails
 			ElseIf($? -and $Null -eq $RDSStatus)
 			{
 				Write-Host "
-				No RD Session Hosts Status retrieved for RD Session Hosts $($RDSHost.Id)`
+	No RD Session Hosts Status retrieved for RD Session Hosts $($RDSHost.Id)`
 				" -ForegroundColor White
 				If($MSWord -or $PDF)
 				{
@@ -6513,7 +6523,7 @@ Function OutputRDSessionHostsDetails
 				$UPDStatus = "Unknown"
 				If($RDSStatus.UPDStatus -eq "NotSupported")
 				{
-					$UPDDefault = (Get-RASRDSDefaultSettings -SiteId $Site.Id -Ea 0 4>$Null).UPDMode
+					$UPDDefault = (Get-RASRDSDefaultSettings -SiteId $Site.Id -Ea 0 4> $Null).UPDMode
 					
 					If($UPDDefault -eq "DoNotChange")
 					{
@@ -6537,7 +6547,7 @@ Function OutputRDSessionHostsDetails
 				
 				$RDSHostPool = @()
 				
-				$Results = Get-RASRDSHostPool -SiteId $Site.Id -EA 0 4>$Null
+				$Results = Get-RASRDSHostPool -SiteId $Site.Id -EA 0 4> $Null
 				
 				If($? -and $Null -ne $Results)
 				{
@@ -6591,7 +6601,6 @@ Function OutputRDSessionHostsDetails
 					$ScriptInformation = New-Object System.Collections.ArrayList
 					$ScriptInformation.Add(@{Data = "Host"; Value = $RDSHost.Server; }) > $Null
 					$ScriptInformation.Add(@{Data = "Enabled"; Value = $RDSHost.Enabled.ToString(); }) > $Null
-					$ScriptInformation.Add(@{Data = "ID"; Value = $RDSHost.Id.ToString(); }) > $Null
 					$ScriptInformation.Add(@{Data = "Status"; Value = $FullAgentStatus; }) > $Null
 					$ScriptInformation.Add(@{Data = "Logon status"; Value = $LogonStatus; }) > $Null
 					$ScriptInformation.Add(@{Data = "Host pool"; Value = $RDSHostPool[0]; }) > $Null
@@ -6629,7 +6638,6 @@ Function OutputRDSessionHostsDetails
 				{
 					Line 3 "Host`t`t`t: " $RDSHost.Server
 					Line 3 "Enabled`t`t`t: " $RDSHost.Enabled.ToString()
-					Line 3 "ID`t`t`t: " $RDSHost.Id.ToString()
 					Line 3 "Status`t`t`t: " $FullAgentStatus
 					Line 3 "Logon status`t`t: " $LogonStatus
 					Line 3 "Host pool`t`t: " $RDSHostPool[0]
@@ -6644,21 +6652,21 @@ Function OutputRDSessionHostsDetails
 					Line 3 "Modified on`t`t: " (Get-Date -UFormat "%c" $RDSHost.TimeLastMod)
 					Line 3 "Created by`t`t: " $RDSHost.AdminCreate
 					Line 3 "Created on`t`t: " (Get-Date -UFormat "%c" $RDSHost.TimeCreate)
+					Line 3 "ID`t`t`t: " $RDSHost.Id.ToString()
 					Line 0 ""
 				}
 				If($HTML)
 				{
 					$rowdata = @()
-					$columnHeaders = @("Host",($Script:htmlsb),$RDSHost.Server,$htmlwhite)
+					$columnHeaders = @("Host",($Script:htmlsb),$RDSHost.Server.Replace("<","").Replace(">",""),$htmlwhite)
 					$rowdata += @(,("Enabled",($Script:htmlsb),$RDSHost.Enabled.ToString(),$htmlwhite))
-					$rowdata += @(,("ID",($Script:htmlsb),$RDSHost.Id.ToString(),$htmlwhite))
 					$rowdata += @(,("Status",($Script:htmlsb),$FullAgentStatus,$htmlwhite))
 					$rowdata += @(,("Logon status",($Script:htmlsb),$LogonStatus,$htmlwhite))
-					$rowdata += @(,("Host pool",($Script:htmlsb),$RDSHostPool[0],$htmlwhite))
+					$rowdata += @(,("Host pool",($Script:htmlsb),$RDSHostPool[0].Replace("<","").Replace(">",""),$htmlwhite))
 					$rowdata += @(,("Template",($Script:htmlsb),$RDSTemplateName,$htmlwhite))
 					#$rowdata += @(,("Template version",($Script:htmlsb),$RDSTemplateVersionName,$htmlwhite))
 					$rowdata += @(,("Direct address",($Script:htmlsb),$RDSHost.DirectAddress,$htmlwhite))
-					$rowdata += @(,("Description",($Script:htmlsb),$RDSHost.Description,$htmlwhite))
+					$rowdata += @(,("Description",($Script:htmlsb),$RDSHost.Description.Replace("<","").Replace(">",""),$htmlwhite))
 					$rowdata += @(,("User profile",($Script:htmlsb),$UPDStatus,$htmlwhite))
 					$rowdata += @(,("Log level",($Script:htmlsb),$RDSStatus.LogLevel,$htmlwhite))
 					$rowdata += @(,("Agent version",($Script:htmlsb),$RDSStatus.AgentVer,$htmlwhite))
@@ -6666,6 +6674,7 @@ Function OutputRDSessionHostsDetails
 					$rowdata += @(,("Modified on",($Script:htmlsb), (Get-Date -UFormat "%c" $RDSHost.TimeLastMod),$htmlwhite))
 					$rowdata += @(,("Created by",($Script:htmlsb), $RDSHost.AdminCreate,$htmlwhite))
 					$rowdata += @(,("Created on",($Script:htmlsb), (Get-Date -UFormat "%c" $RDSHost.TimeCreate),$htmlwhite))
+					$rowdata += @(,("ID",($Script:htmlsb),$RDSHost.Id.ToString(),$htmlwhite))
 
 					$msg = ""
 					$columnWidths = @("150","275")
@@ -6738,8 +6747,8 @@ Function OutputRDSessionHostsDetails
 			{
 				$rowdata = @()
 				$columnHeaders = @("Enable host in site",($Script:htmlsb),$RDSHost.Enabled.ToString(),$htmlwhite)
-				$rowdata += @(,("Host",($Script:htmlsb),$RDSHost.Server,$htmlwhite))
-				$rowdata += @(,("Description",($Script:htmlsb),$RDSHost.Description,$htmlwhite))
+				$rowdata += @(,("Host",($Script:htmlsb),$RDSHost.Server.Replace("<","").Replace(">",""),$htmlwhite))
+				$rowdata += @(,("Description",($Script:htmlsb),$RDSHost.Description.Replace("<","").Replace(">",""),$htmlwhite))
 				$rowdata += @(,("Change Direct Address",($Script:htmlsb),$ChangeDirectAccess,$htmlwhite))
 				$rowdata += @(,("Direct Address",($Script:htmlsb),$RDSHost.DirectAddress,$htmlwhite))
 
@@ -6769,7 +6778,7 @@ Function OutputRDSessionHostsDetails
 				#do we inherit site defaults?
 				#yes we do, get the default settings for the Site
 				#use the Site default settings
-				$RDSDefaults = Get-RASRDSDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
+				$RDSDefaults = Get-RASRDSDefaultSettings -SiteId $Site.Id -EA 0 4> $Null
 				
 				If($? -and $Null -ne $RDSDefaults)
 				{
@@ -6819,7 +6828,7 @@ Function OutputRDSessionHostsDetails
 					}
 				
 					$FSLogixSettings           = $RDSDefaults.FSLogix.ProfileContainer
-					$FSLogixDeploymentSettings = Get-RASFSLogixSettings -EA 0 4>$Null | Where-Object{ $_.SiteId -eq $Site.Id}
+					$FSLogixDeploymentSettings = Get-RASFSLogixSettings -EA 0 4> $Null | Where-Object{ $_.SiteId -eq $Site.Id}
 					
 					Switch($FSLogixDeploymentSettings.InstallType)
 					{
@@ -7153,7 +7162,7 @@ Function OutputRDSessionHostsDetails
 				}
 
 				$FSLogixSettings           = $RDSHost.FSLogix.ProfileContainer
-				$FSLogixDeploymentSettings = Get-RASFSLogixSettings -EA 0 4>$Null | Where-Object{ $_.SiteId -eq $Site.Id}
+				$FSLogixDeploymentSettings = Get-RASFSLogixSettings -EA 0 4> $Null | Where-Object{ $_.SiteId -eq $Site.Id}
 				
 				Switch($FSLogixDeploymentSettings.InstallType)
 				{
@@ -8197,7 +8206,7 @@ Function OutputRDSessionHostsDetails
 			{
 				#do we inherit group or site defaults?
 				#is this RDS host in a group?
-				$Result = Get-RASRDSHostPool -SiteId $Site.Id -EA 0 4>$Null | Where-Object {$_.RDSIds -Contains $RDSHost.Id}
+				$Result = Get-RASRDSHostPool -SiteId $Site.Id -EA 0 4> $Null | Where-Object {$_.RDSIds -Contains $RDSHost.Id}
 				
 				If($? -and $Null -ne $Result)
 				{
@@ -8211,7 +8220,7 @@ Function OutputRDSessionHostsDetails
 					{
 						#yes we do, get the default settings for the Site
 						#use the Site default settings
-						$RDSDefaults = Get-RASRDSDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
+						$RDSDefaults = Get-RASRDSDefaultSettings -SiteId $Site.Id -EA 0 4> $Null
 						
 						If($? -and $Null -ne $RDSDefaults)
 						{
@@ -8242,13 +8251,13 @@ Function OutputRDSessionHostsDetails
 			{
 				$ScriptInformation = New-Object System.Collections.ArrayList
 				$ScriptInformation.Add(@{Data = "Inherit default settings"; Value = $RDSHost.InheritDefaultAppPackageSettings.ToString(); }) > $Null
-				$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
 
 				If(validObject $AppPackagesAssigned ApplicationPackagesAssigned)
 				{
+					$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
 					ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
 					{
-						$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4>$Null
+						$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4> $Null
 						
 						If($? -and $Null -ne $Result)
 						{
@@ -8286,13 +8295,13 @@ Function OutputRDSessionHostsDetails
 			If($Text)
 			{
 				Line 4 "Inherit default settings`t: " $RDSHost.InheritDefaultAppPackageSettings.ToString()
-				Line 5 ""
 
 				If(validObject $AppPackagesAssigned ApplicationPackagesAssigned)
 				{
+					Line 5 ""
 					ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
 					{
-						$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4>$Null
+						$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4> $Null
 						
 						If($? -and $Null -ne $Result)
 						{
@@ -8313,20 +8322,20 @@ Function OutputRDSessionHostsDetails
 			{
 				$rowdata = @()
 				$columnHeaders = @("Inherit default settings",($Script:htmlsb),$RDSHost.InheritDefaultAppPackageSettings.ToString(),$htmlwhite)
-				$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 
 				If(validObject $AppPackagesAssigned ApplicationPackagesAssigned)
 				{
+					$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 					ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
 					{
-						$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4>$Null
+						$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4> $Null
 						
 						If($? -and $Null -ne $Result)
 						{
-							$rowdata += @(,("Name",($Script:htmlsb),$Result.PackageName,$htmlwhite))
+							$rowdata += @(,("Name",($Script:htmlsb),$Result.PackageName.Replace("<","").Replace(">",""),$htmlwhite))
 							$rowdata += @(,("Status",($Script:htmlsb),"",$htmlwhite))
 							$rowdata += @(,("Version",($Script:htmlsb),$Result.Version,$htmlwhite))
-							$rowdata += @(,("Display name",($Script:htmlsb),$Result.DisplayName,$htmlwhite))
+							$rowdata += @(,("Display name",($Script:htmlsb),$Result.DisplayName.Replace("<","").Replace(">",""),$htmlwhite))
 							$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 						}
 						Else
@@ -8357,40 +8366,13 @@ Function OutputRDSessionHostsDetails
 				#Nothing
 			}
 
-			<#
-				Get-RASImageOptimization -Id 1 -ObjType RDS
-
-				EnableOptimization            : True
-				OptimizationType              : Automatic
-				WindowsDefenderATP            : RASAdminEngine.Core.OutputModels.ImagesOptimization.Categories.WindowsDefenderATP
-				WindowsComponents             : RASAdminEngine.Core.OutputModels.ImagesOptimization.Categories.WindowsComponents
-				WindowsDefenderATPEnabled     : True
-				WindowsComponentsEnabled      : True
-				WindowsServicesEnabled        : True
-				WindowsScheduledTasksEnabled  : True
-				WindowsAdvancedOptionsEnabled : True
-				NetworkPerformanceEnabled     : True
-				RegistryEnabled               : True
-				VisualEffectsEnabled          : True
-				DiskCleanupEnabled            : True
-				CustomScriptEnabled           : False
-				WindowsServices               : RASAdminEngine.Core.OutputModels.ImagesOptimization.Categories.WindowsServices
-				WindowsAdvancedOptions        : RASAdminEngine.Core.OutputModels.ImagesOptimization.Categories.WindowsAdvancedOptions
-				NetworkPerformance            : RASAdminEngine.Core.OutputModels.ImagesOptimization.Categories.NetworkPerformance
-				CustomScript                  : RASAdminEngine.Core.OutputModels.ImagesOptimization.Categories.CustomScript
-				DiskCleanup                   : RASAdminEngine.Core.OutputModels.ImagesOptimization.Categories.DiskCleanup
-				VisualEffects                 : RASAdminEngine.Core.OutputModels.ImagesOptimization.Categories.VisualEffects
-				WindowsScheduledTasks         : RASAdminEngine.Core.OutputModels.ImagesOptimization.Categories.WindowsScheduledTasks
-				Registry                      : RASAdminEngine.Core.OutputModels.ImagesOptimization.Categories.Registries
-			#>
-
 			If($RDSHost.InheritDefaultOptimizationSettings)
 			{
 				#http://woshub.com/hot-to-convert-sid-to-username-and-vice-versa/
 				#for translating the User SID to the AD user name
 				#get the RDS default settings
 				
-				$RDSHostDefaults = Get-RASRDSDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
+				$RDSHostDefaults = Get-RASRDSDefaultSettings -SiteId $Site.Id -EA 0 4> $Null
 				
 				If($? -and $Null -ne $RDSHostDefaults)
 				{
@@ -9331,14 +9313,6 @@ Function OutputRDSessionHostsDetails
 					Line 5 "Windows Defender ATP: " $OPTWindowsDefenderATPEnabled
 					If($OPTWindowsDefenderATPEnabled -eq "True")
 					{
-						<#
-							WinDefATPTurnOffOn        : TurnOnWindowsDefenderATP
-							DisableRealTimeProtection : False
-							ExcludeFolders            : {%ProgramData%\Parallels\RASLogs\, %ProgramFiles(x86)%\Parallels\,
-														%ProgramFiles%\Parallels\, %WINDOWS%\system32\config\...}
-							ExcludeProcesses          : {csrss.exe, winlogon.exe, rdpclip.exe, rdpinit.exe...}
-							ExcludeExtension          : {.vhd, .vhdx}					
-						#>
 						If($RDSHost.Optimization.WindowsDefenderATP.WinDefATPTurnOffOn.ToString() -eq "TurnOffWindowsDefenderATP")
 						{
 							Line 6 "Windows Defender ATP Optimizations: Turn off Windows Defender ATP (I use my own ATP solution)"
@@ -9380,17 +9354,7 @@ Function OutputRDSessionHostsDetails
 						Line 7 "======================================================================================================"
 						#		12345678901234567890123456789012345678901234567890SS12345678901234567890123456789012345678901234567890
 						#		Printing-XPSServices-Features                       SMB 1.0/CIFS File sharing support component
-						<#
-								  Type ComponentName                 DisplayName Aliases
-								  ---- -------------                 ----------- -------
-							Predefined MSRDC-Infrastructure
-							Predefined MediaPlayback
-							Predefined WindowsMediaPlayer
-							Predefined Printing-XPSServices-Features
-							Predefined SMB1Protocol
-							Predefined SearchEngine-Client-Package
-							Predefined Xps-Foundation-Xps-Viewer					
-						#>
+
 						ForEach($item in $RDSHost.Optimization.WindowsComponents.WindowsComponentsList)
 						{
 							Line 7 ( "{0,-50}  {1,-50}" -f $item.DisplayName, $item.ComponentName)
@@ -9408,42 +9372,7 @@ Function OutputRDSessionHostsDetails
 						Line 7 "========================================================================================================"
 						#		12345678901234567890123456789012345678901234567890SS123456789012345678901234567890SS12345678901234567890
 						#		Windows Media Player Network Sharing Service        TabletInputService              Superfecth
-						<#
-								  Type ServiceName        DisplayName Aliases
-								  ---- -----------        ----------- -------
-							Predefined AJRouter
-							Predefined ALG
-							Predefined BTAGService
-							Predefined BthAvctpSvc
-							Predefined CscService
-							Predefined DOT3SVC
-							Predefined DPS
-							Predefined DiagTrack
-							Predefined EFS
-							Predefined FDResPub
-							Predefined MapsBroker
-							Predefined SSDPSRV
-							Predefined SensrSvc
-							Predefined SharedAccess
-							Predefined ShellHWDetection
-							Predefined StorSvc
-							Predefined Sysmain
-							Predefined Superfetch
-							Predefined TabletInputService
-							Predefined TapiSrv
-							Predefined Themes
-							Predefined WMPNetworkSvc
-							Predefined WbioSrvc
-							Predefined WdiSystemHost
-							Predefined WerSvc
-							Predefined bthserv
-							Predefined fdPHost
-							Predefined lfsvc
-							Predefined upnphost
-							Predefined wbengine
-							Predefined wisvc
-							Predefined wlidsvc					
-						#>
+
 						ForEach($item in $RDSHost.Optimization.WindowsServices.WindowsServicesList)
 						{
 							If($Null -eq $item.DisplayName)
@@ -9497,30 +9426,7 @@ Function OutputRDSessionHostsDetails
 						Line 7 "=============================================================================================================="
 						#		12345678901234567890123456789012345678901234567890SS123456SS12345678901234567890123456789012345678901234567890
 						#		MNO Metadata Parser                                 Folder  \Microsoft\Windows\Mobile Broadband Accounts\
-						<#
-							Task                Location                                        Type
-							----                --------                                        ----
-							*                   \Microsoft\Windows\Application Experience     Folder
-							*                   \Microsoft\Windows\BitLocker                  Folder
-							CDSSync             \Microsoft\Windows\WlanSvc\                     Task
-							*                   \Microsoft\OneCore\DirectX                    Folder
-							GatherNetworkInfo   \Microsoft\Windows\NetTrace\                    Task
-							MNO Metadata Parser \Microsoft\Windows\Mobile Broadband Accounts\   Task
-							NotificationTask    \Microsoft\Windows\WwanSvc\                     Task
-							*                   \Microsoft\Office                             Folder
-							QueueReporting      \Microsoft\Windows\Windows Error Reporting\     Task
-							SR                  \Microsoft\Windows\SystemRestore\               Task
-							ScheduledDefrag     \Microsoft\Windows\Defrag\                      Task
-							Scheduled Start     \Microsoft\Windows\WindowsUpdate\               Task
-							*                   \Microsoft\Windows\Sysmain                    Folder
-							Tpm-HASCertRetr     \Microsoft\Windows\TPM\                         Task
-							Tpm-Maintenance     \Microsoft\Windows\TPM\                         Task
-							UninstallDeviceTask \Microsoft\Windows\Bluetooth\                   Task
-							UpdateLibrary       \Microsoft\Windows\Windows Media Sharing\       Task
-							*                   \Microsoft\Windows\Windows Defender           Folder
-							XblGameSaveTask     \Microsoft\XblGameSave\                         Task
-							sihpostreboot       \Microsoft\Windows\WindowsUpdate\               Task					
-						#>
+
 						ForEach($item in $RDSHost.Optimization.WindowsScheduledTasks.WindowsScheduledTasksList)
 						{
 							Line 7 ( "{0,-50}  {1,-6}  {2,-50}" -f $item.Task, $item.Type.ToString(), $item.Location)
@@ -9537,19 +9443,7 @@ Function OutputRDSessionHostsDetails
 						Line 7 "============================================================================================================="
 						#		123456789012345678901234567890123456789012345678SS1234567SS12345678901234567890123456789012345678901234567890
 						#		Remove Common program groups from the start menu  False    SomeConfigFile.xml
-						<#
-							PartialStartLayoutContent   : Configuration.xml
-							Hibernate                   : True
-							TeleCollection              : True
-							SystemRestore               : True
-							AdditionalErrorReport       : True
-							Tiles                       : True
-							Cortana                     : True
-							MicrosoftConsumerExperience : True
-							WindowsTips                 : True
-							CommonProgramGroups         : True
-							PartialStartMenu            : True
-						#>
+
 						Line 7 ( "{0,-48}  {1,-7}  {2,-50}" -f `
 						"Disable Hibernate", `
 						$RDSHost.Optimization.WindowsAdvancedOptions.Hibernate.ToString(), `
@@ -9612,20 +9506,7 @@ Function OutputRDSessionHostsDetails
 						Line 7 "==========================================="
 						#		123456789012345678901234567SS1234567SS12345
 						#		FileNotFoundCacheEntriesMax  False    32768
-						<#
-							DirCacheMax             : 4096
-							DormantFileLimit        : 256
-							FileNotFoundCache       : 32768
-							FileInfoCache           : 32768
-							FileInfoCacheEnable     : True
-							DirectoryCacheEnable    : True
-							FileNotFoundCacheEnable : True
-							DormantFileLimitEnable  : True
-							DisableTCP              : True
-							DisableIPv6CompEnable   : True
-							DisableIPv6ToIPv4       : True
-							DisableIsaTap           : True
-						#>
+
 						Line 7 ( "{0,-27}  {1,-7}  {2,-5}" -f `
 						"FileInfoCacheEntriesMax", `
 						$RDSHost.Optimization.NetworkPerformance.FileInfoCacheEnable.ToString(), `
@@ -9676,29 +9557,12 @@ Function OutputRDSessionHostsDetails
 						Line 0 ""
 						#		123456789012345678901234567SS1234567SS12345
 						#		FileNotFoundCacheEntriesMax  False    32768
-						<#
-							Id           : 1
-							Action       : Modify
-							RegistryName : ServicesPipeTimeout
-							DWORDValue   : 18000
-							DisplayName  : Increase service startup timeouts
-							HiveType     : HKEY_LOCAL_MACHINE
-							Path         : System\CurrentControlSet\Control
-							RegType      : REG_DWORD
 
-							Id           : 2
-							Action       : Modify
-							RegistryName : TimeOutValue
-							DWORDValue   : 200
-							DisplayName  : Increase Disk I/O Timeout
-							HiveType     : HKEY_LOCAL_MACHINE
-							Path         : System\CurrentControlSet\Services\Disk
-							RegType      : REG_DWORD
-						#>
 						Line 7 "Registry                                  Action  Value                 Type           Data                  Path                                                        "
 						Line 7 "========================================================================================================================================================================="
 						#		1234567890123456789012345678901234567890SS123456SS12345678901234567890SS1234567890123SS12345678901234567890SS123456789012345678901234567890123456789012345678901234567890
 						#		Increase service startup timeouts         Modify  99999999999999999999  REG_EXPAND_SZ  99999999999999999999  HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services\Disk
+
 						ForEach($item in $RDSHost.Optimization.Registry.RegistryList)
 						{
 							If($item.RegType.ToString() -eq "REG_SZ" -or $item.RegType.ToString() -eq "REG_EXPAND_SZ")
@@ -9762,26 +9626,7 @@ Function OutputRDSessionHostsDetails
 						Line 7 "==========================================================="
 						#		12345678901234567890123456789012345678901234567890SS1234567
 						#		Use drop shadows for icon labels on the desktop     False  
-						<#
-							VisualEffectsTypes                     : Custom
-							AnimateControlSelectElements           : False
-							AnimateWindowsWhenMinimizingMaximizing : False
-							AnimateTaskbar                         : False
-							EnablePeek                             : False
-							FadeSlideMenus                         : False
-							FadeSlideToolTips                      : False
-							FadeOutMenuItems                       : False
-							SaveTaskbarThumbnail                   : False
-							ShowShadowUnderMouse                   : False
-							ShadowUnderWindows                     : False
-							ThumbnailsInsteadOfIcons               : False
-							ShowTranslucentSelection               : False
-							ShowWindowsContentWhilstDragging       : False
-							SlideOpenComboBoxes                    : False
-							SmoothEdgesScreenFonts                 : True
-							SmoothScrollListBoxes                  : False
-							DropShadowsIcon                        : False
-						#>
+
 						Line 7 ( "{0,-50}  {1,-7}" -f `
 						"Animate controls and elements inside windows", `
 						$RDSHost.Optimization.VisualEffects.AnimateControlSelectElements.ToString())
@@ -9863,13 +9708,7 @@ Function OutputRDSessionHostsDetails
 						Line 7 "=========================================="
 						#		123456789012345678901234567890123SS1234567
 						#		Clean up temporary files and logs  False  
-						<#
-							CleanupWinSxSFolder      : False
-							CleanupSystemFiles       : False
-							CleanupTemporaryFileLogs : True
-							RemoveOneDrive           : False
-							DeleteUserProfiles       : False
-						#>
+
 						Line 7 ( "{0,-33}  {1,-7}" -f `
 						"Clean up redundant system files", `
 						$RDSHost.Optimization.DiskCleanup.CleanupSystemFiles.ToString())
@@ -9898,13 +9737,6 @@ Function OutputRDSessionHostsDetails
 					{
 						Line 6 "Custom Script"
 						Line 0 ""
-						
-						<#
-							Arguments : CustomScriptArguments
-							Command   : CustomScriptCommand
-							InitDir   : CustomScriptInitialDirectory
-							User      : CustomScriptUsername
-						#>
 						Line 7 "Command`t`t : " $RDSHost.Optimization.CustomScript.Command
 						Line 7 "Arguments`t : " $RDSHost.Optimization.CustomScript.Arguments
 						Line 7 "Initial directory: " $RDSHost.Optimization.CustomScript.InitDir
@@ -9988,7 +9820,7 @@ Function OutputRDSessionHostsDetails
 
 
 						$msg = ""
-						$columnWidths = @("300","275")
+						$columnWidths = @("250","350")
 						FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 						WriteHTMLLine 0 0 ""
 					}
@@ -10467,8 +10299,8 @@ Function OutputRDSessionHostsDetails
 					{
 						$rowdata = @()
 						$columnHeaders = @("Custom Script",($Script:htmlsb),"",$htmlwhite)
-						$rowdata += @(,("     Command",($Script:htmlsb), $RDSHost.Optimization.CustomScript.Command,$htmlwhite))
-						$rowdata += @(,("     Arguments",($Script:htmlsb), $RDSHost.Optimization.CustomScript.Arguments,$htmlwhite))
+						$rowdata += @(,("     Command",($Script:htmlsb), $RDSHost.Optimization.CustomScript.Command.Replace("<","").Replace(">",""),$htmlwhite))
+						$rowdata += @(,("     Arguments",($Script:htmlsb), $RDSHost.Optimization.CustomScript.Arguments.Replace("<","").Replace(">",""),$htmlwhite))
 						$rowdata += @(,("     Initial directory",($Script:htmlsb), $RDSHost.Optimization.CustomScript.InitDir,$htmlwhite))
 						$rowdata += @(,("     Username",($Script:htmlsb), $RDSHost.Optimization.CustomScript.User,$htmlwhite))
 
@@ -10501,7 +10333,7 @@ Function OutputRDSessionHostsDetails
 				#is this RDS host in a group?
 				#http://woshub.com/hot-to-convert-sid-to-username-and-vice-versa/
 				#for translating the User SID to the AD user name
-				$Results = Get-RASRDSHostPool -SiteId $Site.Id -EA 0 4>$Null
+				$Results = Get-RASRDSHostPool -SiteId $Site.Id -EA 0 4> $Null
 				
 				If($? -and $Null -ne $Results)
 				{
@@ -10528,7 +10360,7 @@ Function OutputRDSessionHostsDetails
 						{
 							#yes we do, get the default settings for the Site
 							#use the Site default settings
-							$RDSDefaults = Get-RASRDSDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
+							$RDSDefaults = Get-RASRDSDefaultSettings -SiteId $Site.Id -EA 0 4> $Null
 							
 							If($? -and $Null -ne $RDSDefaults)
 							{
@@ -10686,7 +10518,7 @@ Function OutputRDSessionHostsDetails
 			{
 				#do we inherit group or site defaults?
 				#is this RDS host in a group?
-				$Results = Get-RASRDSHostPool -SiteId $Site.Id -EA 0 4>$Null
+				$Results = Get-RASRDSHostPool -SiteId $Site.Id -EA 0 4> $Null
 				
 				If($? -and $Null -ne $Results)
 				{
@@ -10768,7 +10600,7 @@ Function OutputRDSessionHostsDetails
 							}
 							Else
 							{
-								$RDSPreferredPublishingAgent = (Get-RASBroker -Id $GroupDefaults.PreferredBrokerId -EA 0 4>$Null).Server
+								$RDSPreferredPublishingAgent = (Get-RASBroker -Id $GroupDefaults.PreferredBrokerId -EA 0 4> $Null).Server
 							}
 
 							Switch ($GroupDefaults.FileTransferMode)
@@ -10827,7 +10659,7 @@ Function OutputRDSessionHostsDetails
 							#yes we do, get the default settings for the Site
 							#use the Site default settings
 
-							$RDSDefaults = Get-RASRDSDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
+							$RDSDefaults = Get-RASRDSDefaultSettings -SiteId $Site.Id -EA 0 4> $Null
 							
 							If($? -and $Null -ne $RDSDefaults)
 							{
@@ -10927,7 +10759,7 @@ Function OutputRDSessionHostsDetails
 								}
 								Else
 								{
-									$RDSPreferredPublishingAgent = (Get-RASBroker -Id $RDSDefaults.PreferredBrokerId -EA 0 4>$Null).Server
+									$RDSPreferredPublishingAgent = (Get-RASBroker -Id $RDSDefaults.PreferredBrokerId -EA 0 4> $Null).Server
 								}
 
 								If(ValidObject $RDSDefaults SessionReadinessTimeout)
@@ -11081,7 +10913,7 @@ Function OutputRDSessionHostsDetails
 					}
 					Else
 					{
-						$RDSPreferredPublishingAgent = (Get-RASBroker -Id $RDSHost.PreferredBrokerId -EA 0 4>$Null).Server
+						$RDSPreferredPublishingAgent = (Get-RASBroker -Id $RDSHost.PreferredBrokerId -EA 0 4> $Null).Server
 					}
 
 					If(ValidObject $RDSHost SessionReadinessTimeout)
@@ -11208,7 +11040,7 @@ Function OutputRDSessionHostsDetails
 				}
 				Else
 				{
-					$RDSPreferredPublishingAgent = (Get-RASBroker -Id $RDSHost.PreferredBrokerId -EA 0 4>$Null).Server
+					$RDSPreferredPublishingAgent = (Get-RASBroker -Id $RDSHost.PreferredBrokerId -EA 0 4> $Null).Server
 				}
 
 				If(ValidObject $RDSHost SessionReadinessTimeout)
@@ -11365,7 +11197,7 @@ Function OutputRDSessionHostsDetails
 			{
 				#do we inherit group or site defaults?
 				#is this RDS host in a group?
-				$Results = Get-RASRDSHostPool -SiteId $Site.Id -EA 0 4>$Null
+				$Results = Get-RASRDSHostPool -SiteId $Site.Id -EA 0 4> $Null
 				
 				If($? -and $Null -ne $Results)
 				{
@@ -11392,7 +11224,7 @@ Function OutputRDSessionHostsDetails
 						{
 							#yes we do, get the default settings for the Site
 							#use the Site default settings
-							$RDSDefaults = Get-RASRDSDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
+							$RDSDefaults = Get-RASRDSDefaultSettings -SiteId $Site.Id -EA 0 4> $Null
 							
 							If($? -and $Null -ne $RDSDefaults)
 							{
@@ -11571,7 +11403,7 @@ Function OutputRDSessionHostsDetails
 		{
 			Write-Verbose "$(Get-Date -Format G): `t`t$($RDSHostPool.Name)"
 			#Get the agent state for the group
-			$RDSHostPoolstatus = Get-RASRDSHostPoolStatus -Name $RDSHostPool.Name -EA 0 4>$Null
+			$RDSHostPoolstatus = Get-RASRDSHostPoolStatus -Name $RDSHostPool.Name -EA 0 4> $Null
 			
 			If(!($?) -or $Null -eq $RDSHostPoolstatus)
 			{
@@ -11643,10 +11475,10 @@ Function OutputRDSessionHostsDetails
 			If($HTML)
 			{
 				$rowdata = @()
-				$columnHeaders = @("Name",($Script:htmlsb),$RDSHostPool.Name,$htmlwhite)
+				$columnHeaders = @("Name",($Script:htmlsb),$RDSHostPool.Name.Replace("<","").Replace(">",""),$htmlwhite)
 				$rowdata += @(,("Enabled",($Script:htmlsb),$RDSHostPool.Enabled.ToString(),$htmlwhite))
 				$rowdata += @(,("Members",($Script:htmlsb),$RDSHostPool.RDSIds.Count.ToString(),$htmlwhite))
-				$rowdata += @(,("Description",($Script:htmlsb),$RDSHostPool.Description,$htmlwhite))
+				$rowdata += @(,("Description",($Script:htmlsb),$RDSHostPool.Description.Replace("<","").Replace(">",""),$htmlwhite))
 				$rowdata += @(,("Status",($Script:htmlsb),$RDSHostPoolAgentState,$htmlwhite))
 				$rowdata += @(,("Last modification by",($Script:htmlsb), $RDSHostPool.AdminLastMod,$htmlwhite))
 				$rowdata += @(,("Modified on",($Script:htmlsb), (Get-Date -UFormat "%c" $RDSHostPool.TimeLastMod),$htmlwhite))
@@ -11676,7 +11508,7 @@ Function OutputRDSessionHostsDetails
 			}
 			
 			#get any pool members
-			$RDSHostPoolMembers = @(Get-RASRDSHostPoolMember -HostPoolId $RDSHostPool.Id -EA 0 4>$Null)
+			$RDSHostPoolMembers = @(Get-RASRDSHostPoolMember -HostPoolId $RDSHostPool.Id -EA 0 4> $Null)
 			
 			If($MSWord -or $PDF)
 			{
@@ -11714,8 +11546,8 @@ Function OutputRDSessionHostsDetails
 			{
 				$rowdata = @()
 				$columnHeaders = @("Enable host pool in site",($Script:htmlsb),$RDSHostPool.Enabled.ToString(),$htmlwhite)
-				$rowdata += @(,("Name",($Script:htmlsb),$RDSHostPool.Name,$htmlwhite))
-				$rowdata += @(,("Description",($Script:htmlsb),$RDSHostPool.Description,$htmlwhite))
+				$rowdata += @(,("Name",($Script:htmlsb),$RDSHostPool.Name.Replace("<","").Replace(">",""),$htmlwhite))
+				$rowdata += @(,("Description",($Script:htmlsb),$RDSHostPool.Description.Replace("<","").Replace(">",""),$htmlwhite))
 
 				$msg = "General"
 				$columnWidths = @("150","350")
@@ -11755,7 +11587,7 @@ Function OutputRDSessionHostsDetails
 							$RDSHostPoolMemberLogonStatus = "Disabled"
 						}
 						
-						$Status = Get-RASRDSHostStatus -Server $RDSHostPoolMember.Server  -EA 0 4>$Null
+						$Status = Get-RASRDSHostStatus -Server $RDSHostPoolMember.Server  -EA 0 4> $Null
 						
 						If($? -and $Null -ne $Status)
 						{
@@ -11816,7 +11648,7 @@ Function OutputRDSessionHostsDetails
 							$RDSHostPoolMemberLogonStatus = "Disabled"
 						}
 							
-						$Status = Get-RASRDSHostStatus -Server $RDSHostPoolMember.Server  -EA 0 4>$Null
+						$Status = Get-RASRDSHostStatus -Server $RDSHostPoolMember.Server  -EA 0 4> $Null
 							
 						If($? -and $Null -ne $Status)
 						{
@@ -11861,7 +11693,7 @@ Function OutputRDSessionHostsDetails
 							$RDSHostPoolMemberLogonStatus = "Disabled"
 						}
 							
-						$Status = Get-RASRDSHostStatus -Server $RDSHostPoolMember.Server  -EA 0 4>$Null
+						$Status = Get-RASRDSHostStatus -Server $RDSHostPoolMember.Server  -EA 0 4> $Null
 						
 						If($? -and $Null -ne $Status)
 						{
@@ -11869,15 +11701,15 @@ Function OutputRDSessionHostsDetails
 							$cnt++
 							If($cnt -eq 0)
 							{
-								$columnHeaders = @("Member",($Script:htmlsb),$RDSHostPoolMember.Server,$htmlwhite)
+								$columnHeaders = @("Member",($Script:htmlsb),$RDSHostPoolMember.Server.Replace("<","").Replace(">",""),$htmlwhite)
 							}
 							Else
 							{
-								$rowdata += @(,("Member",($Script:htmlsb),$RDSHostPoolMember.Server,$htmlwhite))
+								$rowdata += @(,("Member",($Script:htmlsb),$RDSHostPoolMember.Server.Replace("<","").Replace(">",""),$htmlwhite))
 							}
 							$rowdata += @(,("Status",($Script:htmlsb),$AgentStatus,$htmlwhite))
 							$rowdata += @(,("Logon status",($Script:htmlsb),$RDSHostPoolMemberLogonStatus,$htmlwhite))
-							$rowdata += @(,("Description",($Script:htmlsb),$RDSHostPoolMember.Description,$htmlwhite))
+							$rowdata += @(,("Description",($Script:htmlsb),$RDSHostPoolMember.Description.Replace("<","").Replace(">",""),$htmlwhite))
 							$rowdata += @(,("Sessions",($Script:htmlsb),$Status.ActiveSessions.ToString(),$htmlwhite))
 							If($RDSHostPoolMembers.Count -gt 1)
 							{
@@ -12117,7 +11949,7 @@ Function OutputRDSessionHostsDetails
 					$rowdata += @(,("     Host state after the preparation",($Script:htmlsb),$PoweredOnState,$htmlwhite))
 					If(ValidObject $RDSHostPool RDSProvisioningSettings.AutoScale)
 					{
-						$rowdata += @(,("Autoscale settings",($Script:htmlsb),$PoweredOnState,$htmlwhite))
+						$rowdata += @(,("Autoscale settings",($Script:htmlsb),"",$htmlwhite))
 						$rowdata += @(,("     Enable autoscale",($Script:htmlsb),$RDSHostPool.RDSProvisioningSettings.AutoScale.AutoScaleEnabled.ToString(),$htmlwhite))
 						If($RDSHostPool.RDSProvisioningSettings.AutoScale.AutoScaleEnabled)
 						{
@@ -12165,7 +11997,7 @@ Function OutputRDSessionHostsDetails
 				#do we inherit site defaults?
 				#yes we do, get the default settings for the Site
 				#use the Site default settings
-				$RDSDefaults = Get-RASRDSDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
+				$RDSDefaults = Get-RASRDSDefaultSettings -SiteId $Site.Id -EA 0 4> $Null
 				
 				If($? -and $Null -ne $RDSDefaults)
 				{
@@ -12215,7 +12047,7 @@ Function OutputRDSessionHostsDetails
 					}
 						
 					$FSLogixSettings           = $RDSDefaults.FSLogix.ProfileContainer
-					$FSLogixDeploymentSettings = Get-RASFSLogixSettings -EA 0 4>$Null | Where-Object{ $_.SiteId -eq $Site.Id}
+					$FSLogixDeploymentSettings = Get-RASFSLogixSettings -EA 0 4> $Null | Where-Object{ $_.SiteId -eq $Site.Id}
 					
 					Switch($FSLogixDeploymentSettings.InstallType)
 					{
@@ -12551,7 +12383,7 @@ Function OutputRDSessionHostsDetails
 				}
 						
 				$FSLogixSettings           = $RDSHostPoolDefaults.FSLogix.ProfileContainer
-				$FSLogixDeploymentSettings = Get-RASFSLogixSettings -EA 0 4>$Null | Where-Object{ $_.SiteId -eq $Site.Id}
+				$FSLogixDeploymentSettings = Get-RASFSLogixSettings -EA 0 4> $Null | Where-Object{ $_.SiteId -eq $Site.Id}
 				
 				Switch($FSLogixDeploymentSettings.InstallType)
 				{
@@ -13600,7 +13432,7 @@ Function OutputRDSessionHostsDetails
 				#do we inherit site defaults?
 				#yes we do, get the default settings for the Site
 				#use the Site default settings
-				$RDSHostPoolDefaults = Get-RASRDSDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
+				$RDSHostPoolDefaults = Get-RASRDSDefaultSettings -SiteId $Site.Id -EA 0 4> $Null
 				
 				If($? -and $Null -ne $RDSHostPoolDefaults)
 				{
@@ -13618,13 +13450,13 @@ Function OutputRDSessionHostsDetails
 			{
 				$ScriptInformation = New-Object System.Collections.ArrayList
 				$ScriptInformation.Add(@{Data = "Inherit default settings"; Value = $RDSHostPool.InheritDefaultAppPackageSettings.ToString(); }) > $Null
-				$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
 
 				If(validObject $AppPackagesAssigned ApplicationPackagesAssigned)
 				{
+					$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
 					ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
 					{
-						$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4>$Null
+						$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4> $Null
 						
 						If($? -and $Null -ne $Result)
 						{
@@ -13662,13 +13494,13 @@ Function OutputRDSessionHostsDetails
 			If($Text)
 			{
 				Line 5 "Inherit default settings`t: " $RDSHostPool.InheritDefaultAppPackageSettings.ToString()
-				Line 5 ""
 
 				If(validObject $AppPackagesAssigned ApplicationPackagesAssigned)
 				{
+					Line 5 ""
 					ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
 					{
-						$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4>$Null
+						$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4> $Null
 						
 						If($? -and $Null -ne $Result)
 						{
@@ -13689,20 +13521,20 @@ Function OutputRDSessionHostsDetails
 			{
 				$rowdata = @()
 				$columnHeaders = @("Inherit default settings",($Script:htmlsb),$RDSHostPool.InheritDefaultAppPackageSettings.ToString(),$htmlwhite)
-				$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 
 				If(validObject $AppPackagesAssigned ApplicationPackagesAssigned)
 				{
+					$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 					ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
 					{
-						$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4>$Null
+						$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4> $Null
 						
 						If($? -and $Null -ne $Result)
 						{
-							$rowdata += @(,("Name",($Script:htmlsb),$Result.PackageName,$htmlwhite))
+							$rowdata += @(,("Name",($Script:htmlsb),$Result.PackageName.Replace("<","").Replace(">",""),$htmlwhite))
 							$rowdata += @(,("Status",($Script:htmlsb),"",$htmlwhite))
 							$rowdata += @(,("Version",($Script:htmlsb),$Result.Version,$htmlwhite))
-							$rowdata += @(,("Display name",($Script:htmlsb),$Result.DisplayName,$htmlwhite))
+							$rowdata += @(,("Display name",($Script:htmlsb),$Result.DisplayName.Replace("<","").Replace(">",""),$htmlwhite))
 							$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 						}
 						Else
@@ -13740,7 +13572,7 @@ Function OutputRDSessionHostsDetails
 				#for translating the User SID to the AD user name
 				#yes we do, get the default settings for the Site
 				#use the Site default settings
-				$RDSDefaults = Get-RASRDSDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
+				$RDSDefaults = Get-RASRDSDefaultSettings -SiteId $Site.Id -EA 0 4> $Null
 				
 				If($? -and $Null -ne $RDSDefaults)
 				{
@@ -13883,7 +13715,7 @@ Function OutputRDSessionHostsDetails
 				#yes we do, get the default settings for the Site
 				#use the Site default settings
 
-				$RDSDefaults = Get-RASRDSDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
+				$RDSDefaults = Get-RASRDSDefaultSettings -SiteId $Site.Id -EA 0 4> $Null
 				
 				If($? -and $Null -ne $RDSDefaults)
 				{
@@ -13990,7 +13822,7 @@ Function OutputRDSessionHostsDetails
 					}
 					Else
 					{
-						$RDSPreferredPublishingAgent = (Get-RASBroker -Id $RDSDefaults.PreferredBrokerId -EA 0 4>$Null).Server
+						$RDSPreferredPublishingAgent = (Get-RASBroker -Id $RDSDefaults.PreferredBrokerId -EA 0 4> $Null).Server
 					}
 					$RDSAllowRemoteExec     = $RDSDefaults.AllowRemoteExec.ToString()
 					$RDSUseRemoteApps       = $RDSDefaults.UseRemoteApps.ToString()
@@ -14094,7 +13926,7 @@ Function OutputRDSessionHostsDetails
 				}
 				Else
 				{
-					$RDSPreferredPublishingAgent = (Get-RASBroker -Id $RDSHostPoolDefaults.PreferredBrokerId -EA 0 4>$Null).Server
+					$RDSPreferredPublishingAgent = (Get-RASBroker -Id $RDSHostPoolDefaults.PreferredBrokerId -EA 0 4> $Null).Server
 				}
 				$RDSAllowRemoteExec     = $RDSHostPoolDefaults.AllowRemoteExec.ToString()
 				$RDSUseRemoteApps       = $RDSHostPoolDefaults.UseRemoteApps.ToString()
@@ -14243,7 +14075,7 @@ Function OutputRDSessionHostsDetails
 				#do we inherit group or site defaults?
 				#yes we do, get the default settings for the Site
 				#use the Site default settings
-				$RDSDefaults = Get-RASRDSDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
+				$RDSDefaults = Get-RASRDSDefaultSettings -SiteId $Site.Id -EA 0 4> $Null
 				
 				If($? -and $Null -ne $RDSDefaults)
 				{
@@ -14351,7 +14183,7 @@ Function OutputRDSessionHostsDetails
 				#do we inherit group or site defaults?
 				#yes we do, get the default settings for the Site
 				#use the Site default settings
-				$Results = Get-RASRDSDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
+				$Results = Get-RASRDSDefaultSettings -SiteId $Site.Id -EA 0 4> $Null
 				
 				If($? -and $Null -ne $Results)
 				{
@@ -14415,7 +14247,7 @@ Function OutputRDSessionHostsDetails
 			{
 				#we don't inherit
 				#get the settings for the host pool
-				$Results = Get-RASAutoUpgrade -Name $RDSHostPool.Name -SiteId $Site.Id -ObjType "RDSHostPool" -EA 0 4>$Null
+				$Results = Get-RASAutoUpgrade -Name $RDSHostPool.Name -SiteId $Site.Id -ObjType "RDSHostPool" -EA 0 4> $Null
 				
 				If(!($?) -or $Null -eq $Results)
 				{
@@ -14630,7 +14462,7 @@ Function OutputRDSessionHostsDetails
 		WriteHTMLLine 3 0 "Templates"
 	}
 		
-	$RDSTemplates = Get-RASTemplate -Siteid $Site.Id -ObjType "RDSTemplate" -EA 0 4>$Null
+	$RDSTemplates = Get-RASTemplate -Siteid $Site.Id -ObjType "RDSTemplate" -EA 0 4> $Null
 
 	If(!($?))
 	{
@@ -14687,7 +14519,7 @@ Function OutputRDSessionHostsDetails
 		ForEach($RDSTemplate in $RDSTemplates)
 		{
 			Write-Verbose "$(Get-Date -Format G): `t`t$($RDSTemplate.Name)"
-			$TemplateProvider = Get-RASProvider -Id $RDSTemplate.ProviderId -EA 0 4>$Null
+			$TemplateProvider = Get-RASProvider -Id $RDSTemplate.ProviderId -EA 0 4> $Null
 			
 			If($? -and $Null -ne $TemplateProvider)
 			{
@@ -14700,19 +14532,10 @@ Function OutputRDSessionHostsDetails
 				$TemplateProviderType = ""
 			}
 
-			$TemplateVM = Get-RASVM -Id $RDSTemplate.VMId -ProviderId $RDSTemplate.ProviderId -EA 0 4>$Null
+			$TemplateVM = Get-RASVM -Id $RDSTemplate.VMId -ProviderId $RDSTemplate.ProviderId -EA 0 4> $Null
 			
 			If($? -and $Null -ne $TemplateVM)
 			{
-				<#
-					Values	        Description
-					Unknown	        The VM is in the 'Unknown' state
-					On	            The VM is powered on.
-					Off	            The VM is powered off
-					Paused	        The VM is already, or in the process of being, suspended
-					CloningFailed	Failed to clone the VM.
-					CloningCanceled	VM cloning was cancelled
-				#>
 				Switch($TemplateVM.State)
 				{
 					"Unknown"			{$TemplatePowerState = "Unknown"; Break}
@@ -14777,7 +14600,7 @@ Function OutputRDSessionHostsDetails
 			If($HTML)
 			{
 				$rowdata = @()
-				$columnHeaders = @("Name",($Script:htmlsb),$RDSTemplate.Name,$htmlwhite)
+				$columnHeaders = @("Name",($Script:htmlsb),$RDSTemplate.Name.Replace("<","").Replace(">",""),$htmlwhite)
 				$rowdata += @(,("Power state",($Script:htmlsb),$TemplatePowerState,$htmlwhite))
 				$rowdata += @(,("Provider",($Script:htmlsb),$TemplateProviderName,$htmlwhite))
 				$rowdata += @(,("Provider type",($Script:htmlsb),$TemplateProviderType,$htmlwhite))
@@ -14868,7 +14691,7 @@ Function OutputRDSessionHostsDetails
 			If($HTML)
 			{
 				$rowdata = @()
-				$columnHeaders = @("Template name",($Script:htmlsb),$RDSTemplate.Name,$htmlwhite)
+				$columnHeaders = @("Template name",($Script:htmlsb),$RDSTemplate.Name.Replace("<","").Replace(">",""),$htmlwhite)
 				$rowdata += @(,("Maximum guest VMs",($Script:htmlsb),$RDSTemplate.MaxVMs.ToString(),$htmlwhite))
 				$rowdata += @(,("Keep available buffer",($Script:htmlsb),$RDSTemplate.PreCreatedVMs.ToString(),$htmlwhite))
 				$rowdata += @(,("Guest VM name",($Script:htmlsb),$RDSTemplate.VMNameFormat,$htmlwhite))
@@ -14876,7 +14699,7 @@ Function OutputRDSessionHostsDetails
 				$rowdata += @(,("Clone method",($Script:htmlsb),$CloneMethod,$htmlwhite))
 
 				$msg = "General"
-				$columnWidths = @("300","275")
+				$columnWidths = @("200","275")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 			}
@@ -15042,7 +14865,7 @@ Function OutputRDSessionHostsDetails
 				#for translating the User SID to the AD user name
 				#yes we do, get the default settings for the Site
 				#use the Site default settings
-				$RDSDefaults = Get-RASRDSDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
+				$RDSDefaults = Get-RASRDSDefaultSettings -SiteId $Site.Id -EA 0 4> $Null
 				
 				If($? -and $Null -ne $RDSDefaults)
 				{
@@ -15124,15 +14947,14 @@ Function OutputRDSessionHostsDetails
 				If($OPTWindowsDefenderATPEnabled -eq "True")
 				{
 					$ScriptInformation = New-Object System.Collections.ArrayList
-					$ScriptInformation.Add(@{Data = "Windows Defender ATP Optimizations"; Value = ""; }) > $Null
 
 					If($RDSTemplate.Optimization.WindowsDefenderATP.WinDefATPTurnOffOn.ToString() -eq "TurnOffWindowsDefenderATP")
 					{
-						$ScriptInformation.Add(@{Data = "     Turn off Windows Defender ATP (I use my own ATP solution)"; Value = ""; }) > $Null
+						$ScriptInformation.Add(@{Data = "Windows Defender ATP Optimizations"; Value = "Turn off Windows Defender ATP (I use my own ATP solution)"; }) > $Null
 					}
 					Else
 					{
-						$ScriptInformation.Add(@{Data = "     Turn on Windows Defender ATP and set process and folder exclusions"; Value = ""; }) > $Null
+						$ScriptInformation.Add(@{Data = "Windows Defender ATP Optimizations"; Value = "Turn on Windows Defender ATP and set process and folder exclusions"; }) > $Null
 						$ScriptInformation.Add(@{Data = "     Disable real-time protection"; Value = $RDSTemplate.Optimization.WindowsDefenderATP.DisableRealTimeProtection.ToString(); }) > $Null
 						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
 						
@@ -15981,14 +15803,13 @@ Function OutputRDSessionHostsDetails
 				Line 5 "Windows Defender ATP: " $OPTWindowsDefenderATPEnabled
 				If($OPTWindowsDefenderATPEnabled -eq "True")
 				{
-					Line 6 "Windows Defender ATP Optimizations"
 					If($RDSTemplate.Optimization.WindowsDefenderATP.WinDefATPTurnOffOn.ToString() -eq "TurnOffWindowsDefenderATP")
 					{
-						Line 7 "Turn off Windows Defender ATP (I use my own ATP solution)"
+						Line 6 "Windows Defender ATP Optimizations: Turn off Windows Defender ATP (I use my own ATP solution)"
 					}
 					Else
 					{
-						Line 7 "Turn on Windows Defender ATP and set process and folder exclusions"
+						Line 6 "Windows Defender ATP Optimizations: Turn on Windows Defender ATP and set process and folder exclusions"
 						Line 7 "Disable real-time protection: " $RDSTemplate.Optimization.WindowsDefenderATP.DisableRealTimeProtection.ToString()
 						Line 0 ""
 						Line 7 "Exclude files and folders:"
@@ -16414,15 +16235,14 @@ Function OutputRDSessionHostsDetails
 				If($OPTWindowsDefenderATPEnabled -eq "True")
 				{
 					$rowdata = @()
-					$columnHeaders = @("Windows Defender ATP Optimizations",($Script:htmlsb),"",$htmlwhite)
 
 					If($RDSTemplate.Optimization.WindowsDefenderATP.WinDefATPTurnOffOn.ToString() -eq "TurnOffWindowsDefenderATP")
 					{
-						$rowdata += @(,("     Turn off Windows Defender ATP (I use my own ATP solution)",($Script:htmlsb),"",$htmlwhite))
+						$columnHeaders = @("Windows Defender ATP Optimizations",($Script:htmlsb),"Turn off Windows Defender ATP (I use my own ATP solution)",$htmlwhite)
 					}
 					Else
 					{
-						$rowdata += @(,("     Turn on Windows Defender ATP and set process and folder exclusions",($Script:htmlsb),"",$htmlwhite))
+						$columnHeaders = @("Windows Defender ATP Optimizations",($Script:htmlsb),"Turn on Windows Defender ATP and set process and folder exclusions",$htmlwhite)
 						$rowdata += @(,("     Disable real-time protection",($Script:htmlsb), $RDSTemplate.Optimization.WindowsDefenderATP.DisableRealTimeProtection.ToString(),$htmlwhite))
 						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 						
@@ -16471,7 +16291,7 @@ Function OutputRDSessionHostsDetails
 
 
 					$msg = ""
-					$columnWidths = @("300","275")
+					$columnWidths = @("250","350")
 					FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 					WriteHTMLLine 0 0 ""
 				}
@@ -16950,8 +16770,8 @@ Function OutputRDSessionHostsDetails
 				{
 					$rowdata = @()
 					$columnHeaders = @("Custom Script",($Script:htmlsb),"",$htmlwhite)
-					$rowdata += @(,("     Command",($Script:htmlsb), $RDSTemplate.Optimization.CustomScript.Command,$htmlwhite))
-					$rowdata += @(,("     Arguments",($Script:htmlsb), $RDSTemplate.Optimization.CustomScript.Arguments,$htmlwhite))
+					$rowdata += @(,("     Command",($Script:htmlsb), $RDSTemplate.Optimization.CustomScript.Command.Replace("<","").Replace(">",""),$htmlwhite))
+					$rowdata += @(,("     Arguments",($Script:htmlsb), $RDSTemplate.Optimization.CustomScript.Arguments.Replace("<","").Replace(">",""),$htmlwhite))
 					$rowdata += @(,("     Initial directory",($Script:htmlsb), $RDSTemplate.Optimization.CustomScript.InitDir,$htmlwhite))
 					$rowdata += @(,("     Username",($Script:htmlsb), $RDSTemplate.Optimization.CustomScript.User,$htmlwhite))
 
@@ -16989,7 +16809,7 @@ Function OutputRDSessionHostsDetails
 				{
 					$ScriptInformation.Add(@{Data = "License key management type"; Value = "Multple Activation Key (MAK)"; }) > $Null
 					
-					$LicenseKeys = Get-RASTemplateLicenseKey -Id $RDSTemplate.Id -ObjType RDSTemplate -EA 0 4>$Null
+					$LicenseKeys = Get-RASTemplateLicenseKey -Id $RDSTemplate.Id -ObjType RDSTemplate -EA 0 4> $Null
 					
 					ForEach($Item in $LicenseKeys)
 					{
@@ -17026,7 +16846,7 @@ Function OutputRDSessionHostsDetails
 				{
 					Line 4 "License key management type: " "Multple Activation Key (MAK)"
 					
-					$LicenseKeys = Get-RASTemplateLicenseKey -Id $RDSTemplate.Id -ObjType RDSTemplate -EA 0 4>$Null
+					$LicenseKeys = Get-RASTemplateLicenseKey -Id $RDSTemplate.Id -ObjType RDSTemplate -EA 0 4> $Null
 
 					ForEach($Item in $LicenseKeys)
 					{
@@ -17047,7 +16867,7 @@ Function OutputRDSessionHostsDetails
 				{
 					$columnHeaders = @("License key management type",($Script:htmlsb),"Multple Activation Key (MAK)",$htmlwhite)
 					
-					$LicenseKeys = Get-RASTemplateLicenseKey -Id $RDSTemplate.Id -ObjType RDSTemplate -EA 0 4>$Null
+					$LicenseKeys = Get-RASTemplateLicenseKey -Id $RDSTemplate.Id -ObjType RDSTemplate -EA 0 4> $Null
 
 					$cnt = -1
 					ForEach($Item in $LicenseKeys)
@@ -17207,7 +17027,7 @@ Function OutputRDSessionHostsDetails
 			{
 				ForEach($Item in $RDSSchedule.TargetIds)
 				{
-					$Result = Get-RASRDSHost -Id $Item -EA 0 4>$Null
+					$Result = Get-RASRDSHost -Id $Item -EA 0 4> $Null
 					
 					If($? -and $Null -ne $Result)
 					{
@@ -17224,7 +17044,7 @@ Function OutputRDSessionHostsDetails
 			{
 				ForEach($Item in $RDSSchedule.TargetIds)
 				{
-					$Result = Get-RASRDSHost -Id $Item -EA 0 4>$Null
+					$Result = Get-RASRDSHost -Id $Item -EA 0 4> $Null
 					
 					If($? -and $Null -ne $Result)
 					{
@@ -17366,7 +17186,7 @@ Function OutputRDSessionHostsDetails
 			If($HTML)
 			{
 				$rowdata = @()
-				$columnHeaders = @("Name",($Script:htmlsb),$RDSSchedule.Name,$htmlwhite)
+				$columnHeaders = @("Name",($Script:htmlsb),$RDSSchedule.Name.Replace("<","").Replace(">",""),$htmlwhite)
 				$rowdata += @(,("Enabled",($Script:htmlsb),$RDSSchedule.Enabled.ToString(),$htmlwhite))
 				$rowdata += @(,("Action",($Script:htmlsb),$Action,$htmlwhite))
 				$rowdata += @(,("Target type",($Script:htmlsb),$TargetType,$htmlwhite))
@@ -17387,7 +17207,7 @@ Function OutputRDSessionHostsDetails
 				
 				$rowdata += @(,("Start",($Script:htmlsb),$RDSSchedule.Trigger.StartDateTime,$htmlwhite))
 				$rowdata += @(,("Repeat",($Script:htmlsb),$Repeat,$htmlwhite))
-				$rowdata += @(,("Description",($Script:htmlsb),$RDSSchedule.Description,$htmlwhite))
+				$rowdata += @(,("Description",($Script:htmlsb),$RDSSchedule.Description.Replace("<","").Replace(">",""),$htmlwhite))
 				$rowdata += @(,("Last modification by",($Script:htmlsb),$RDSSchedule.AdminLastMod,$htmlwhite))
 				$rowdata += @(,("Modified on",($Script:htmlsb),(Get-Date -UFormat "%c" $RDSSchedule.TimeLastMod),$htmlwhite))
 				$rowdata += @(,("Created by",($Script:htmlsb),$RDSSchedule.AdminCreate,$htmlwhite))
@@ -17481,9 +17301,9 @@ Function OutputRDSessionHostsDetails
 			{
 				$rowdata = @()
 				$columnHeaders = @("Enable schedule",($Script:htmlsb),$RDSSchedule.Enabled.ToString(),$htmlwhite)
-				$rowdata += @(,("Name",($Script:htmlsb),$RDSSchedule.Name,$htmlwhite))
+				$rowdata += @(,("Name",($Script:htmlsb),$RDSSchedule.Name.Replace("<","").Replace(">",""),$htmlwhite))
 				$rowdata += @(,("Action",($Script:htmlsb),$Action,$htmlwhite))
-				$rowdata += @(,("Description",($Script:htmlsb),$RDSSchedule.Description,$htmlwhite))
+				$rowdata += @(,("Description",($Script:htmlsb),$RDSSchedule.Description.Replace("<","").Replace(">",""),$htmlwhite))
 				
 				$cnt=-1
 				ForEach($Item in $Target)
@@ -17806,7 +17626,7 @@ Function OutputRDSessionHostsDetails
 					}
 
 					$msg = "Options"
-					$columnWidths = @("350","275")
+					$columnWidths = @("250","275")
 					FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 					WriteHTMLLine 0 0 ""
 				}
@@ -17833,7 +17653,7 @@ Function OutputVDIDetails
 		WriteHTMLLine 2 0 "VDI"
 	}
 
-	$VDIHosts = Get-RASProvider -SiteId $Site.Id -EA 0 4>$Null
+	$VDIHosts = Get-RASProvider -SiteId $Site.Id -EA 0 4> $Null
 	
 	If(!($?))
 	{
@@ -17890,7 +17710,7 @@ Function OutputVDIDetails
 		Write-Verbose "$(Get-Date -Format G): `tOutput VDI Host pools"
 		#Host pools
 		
-		$VDIPools = Get-RASVDIHostPool -SiteId $Site.Id -EA 0 4>$Null
+		$VDIPools = Get-RASVDIHostPool -SiteId $Site.Id -EA 0 4> $Null
 		If($? -and $Null -ne $VDIPools)
 		{
 			ForEach($VDIPool in $VDIPools)
@@ -17910,7 +17730,7 @@ Function OutputVDIDetails
 					WriteHTMLLine 3 0 "Pool $($VDIPool.Name)"
 				}
 
-				$Status = Get-RASVDIHostPoolStatus -Name $VDIPool.Name -SiteId $Site.Id -EA 0 4>$Null #original
+				$Status = Get-RASVDIHostPoolStatus -Name $VDIPool.Name -SiteId $Site.Id -EA 0 4> $Null #original
 
 				If($? -and $Null -ne $Status)
 				{
@@ -17921,7 +17741,7 @@ Function OutputVDIDetails
 					$PoolStatus = ""
 				}
 					
-				$VDIPoolMembers = Get-RASVDIHostPoolMember -SiteId $Site.Id -VDIHostPoolName $VDIPool.Name -EA 0 4>$Null 
+				$VDIPoolMembers = Get-RASVDIHostPoolMember -SiteId $Site.Id -VDIHostPoolName $VDIPool.Name -EA 0 4> $Null 
 				
 				If($? -and $Null -ne $VDIPoolMembers)
 				{
@@ -18006,9 +17826,9 @@ Function OutputVDIDetails
 				If($HTML)
 				{
 					$rowdata = @()
-					$columnHeaders = @("Name",($Script:htmlsb),$VDIPool.Name,$htmlwhite)
+					$columnHeaders = @("Name",($Script:htmlsb),$VDIPool.Name.Replace("<","").Replace(">",""),$htmlwhite)
 					$rowdata += @(,("Enabled",($Script:htmlsb),$VDIPool.Enabled.ToString(),$htmlwhite))
-					$rowdata += @(,("Description",($Script:htmlsb),$VDIPool.Description,$htmlwhite))
+					$rowdata += @(,("Description",($Script:htmlsb),$VDIPool.Description.Replace("<","").Replace(">",""),$htmlwhite))
 					$rowdata += @(,("Status",($Script:htmlsb),$PoolStatus,$htmlwhite))
 					$rowdata += @(,("Members type",($Script:htmlsb),$MemberType,$htmlwhite))
 					$rowdata += @(,("Template",($Script:htmlsb),$Template,$htmlwhite))
@@ -18020,7 +17840,7 @@ Function OutputVDIDetails
 					$rowdata += @(,("ID",($Script:htmlsb),$VDIPool.Id.ToString(),$htmlwhite))
 
 					$msg = ""
-					$columnWidths = @("200","275")
+					$columnWidths = @("125","425")
 					FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 					WriteHTMLLine 0 0 ""
 				}
@@ -18074,8 +17894,8 @@ Function OutputVDIDetails
 				{
 					$rowdata = @()
 					$columnHeaders = @("Enable host pool in site",($Script:htmlsb),$VDIPool.Enabled.ToString(),$htmlwhite)
-					$rowdata += @(,("Name",($Script:htmlsb),$VDIPool.Name,$htmlwhite))
-					$rowdata += @(,("Description",($Script:htmlsb),$VDIPool.Description,$htmlwhite))
+					$rowdata += @(,("Name",($Script:htmlsb),$VDIPool.Name.Replace("<","").Replace(">",""),$htmlwhite))
+					$rowdata += @(,("Description",($Script:htmlsb),$VDIPool.Description.Replace("<","").Replace(">",""),$htmlwhite))
 					
 					$msg = "General"
 					$columnWidths = @("200","275")
@@ -18098,7 +17918,7 @@ Function OutputVDIDetails
 					{
 						ForEach($Item in $VDIPool.Members.Members)
 						{
-							$VDIPoolMembers = Get-RASVDIHostPoolMember -SiteId $Site.Id -VDIPoolName $VDIPool.Name -EA 0 4>$Null
+							$VDIPoolMembers = Get-RASVDIHostPoolMember -SiteId $Site.Id -VDIPoolName $VDIPool.Name -EA 0 4> $Null
 							
 							If($? -and $Null -ne $VDIPoolMembers)
 							{
@@ -18168,7 +17988,7 @@ Function OutputVDIDetails
 					{
 						ForEach($Item in $VDIPool.Members.Members)
 						{
-							$VDIPoolMembers = Get-RASVDIHostPoolMember -SiteId $Site.Id -VDIPoolName $VDIPool.Name -EA 0 4>$Null
+							$VDIPoolMembers = Get-RASVDIHostPoolMember -SiteId $Site.Id -VDIPoolName $VDIPool.Name -EA 0 4> $Null
 							
 							If($? -and $Null -ne $VDIPoolMembers)
 							{
@@ -18221,7 +18041,7 @@ Function OutputVDIDetails
 					{
 						ForEach($Item in $VDIPool.Members.Members)
 						{
-							$VDIPoolMembers = Get-RASVDIHostPoolMember -SiteId $Site.Id -VDIPoolName $VDIPool.Name -EA 0 4>$Null
+							$VDIPoolMembers = Get-RASVDIHostPoolMember -SiteId $Site.Id -VDIPoolName $VDIPool.Name -EA 0 4> $Null
 							
 							If($? -and $Null -ne $VDIPoolMembers)
 							{
@@ -18466,7 +18286,7 @@ Function OutputVDIDetails
 					#yes we do, get the default settings for the Site
 					#use the Site default settings
 
-					$VDIDefaults = Get-RASVDIDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
+					$VDIDefaults = Get-RASVDIDefaultSettings -SiteId $Site.Id -EA 0 4> $Null
 					
 					If($? -and $Null -ne $VDIDefaults)
 					{
@@ -18585,7 +18405,7 @@ Function OutputVDIDetails
 					#use the Site default settings
 					
 					#VDI host pool settings do not include UPD, only FSLogix
-					$VDIPoolDefaults = Get-RASVDIDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
+					$VDIPoolDefaults = Get-RASVDIDefaultSettings -SiteId $Site.Id -EA 0 4> $Null
 					
 					If($? -and $Null -ne $VDIPoolDefaults)
 					{
@@ -18598,7 +18418,7 @@ Function OutputVDIDetails
 						}
 						
 						$FSLogixSettings           = $VDIPoolDefaults.UserProfile.FSLogix.ProfileContainer
-						$FSLogixDeploymentSettings = Get-RASFSLogixSettings -EA 0 4>$Null | Where-Object{ $_.SiteId -eq $Site.Id}
+						$FSLogixDeploymentSettings = Get-RASFSLogixSettings -EA 0 4> $Null | Where-Object{ $_.SiteId -eq $Site.Id}
 						
 						Switch($FSLogixDeploymentSettings.InstallType)
 						{
@@ -18889,7 +18709,7 @@ Function OutputVDIDetails
 					}
 							
 					$FSLogixSettings           = $VDIPool.UserProfile.FSLogix.ProfileContainer
-					$FSLogixDeploymentSettings = Get-RASFSLogixSettings -EA 0 4>$Null | Where-Object{ $_.SiteId -eq $Site.Id}
+					$FSLogixDeploymentSettings = Get-RASFSLogixSettings -EA 0 4> $Null | Where-Object{ $_.SiteId -eq $Site.Id}
 					
 					Switch($FSLogixDeploymentSettings.InstallType)
 					{
@@ -19791,7 +19611,7 @@ Function OutputVDIDetails
 					#do we inherit site defaults?
 					#yes we do, get the default settings for the Site
 					#use the Site default settings
-					$VDIPoolDefaults = Get-RASVDIDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
+					$VDIPoolDefaults = Get-RASVDIDefaultSettings -SiteId $Site.Id -EA 0 4> $Null
 					
 					If($? -and $Null -ne $VDIPoolDefaults)
 					{
@@ -19809,13 +19629,13 @@ Function OutputVDIDetails
 				{
 					$ScriptInformation = New-Object System.Collections.ArrayList
 					$ScriptInformation.Add(@{Data = "Inherit default settings"; Value = $VDIPool.InheritDefaultAppPackageSettings.ToString(); }) > $Null
-					$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
 
 					If(validObject $AppPackagesAssigned ApplicationPackagesAssigned)
 					{
+						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
 						ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
 						{
-							$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4>$Null
+							$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4> $Null
 							
 							If($? -and $Null -ne $Result)
 							{
@@ -19853,13 +19673,13 @@ Function OutputVDIDetails
 				If($Text)
 				{
 					Line 4 "Inherit default settings`t: " $VDIPool.InheritDefaultAppPackageSettings.ToString()
-					Line 4 ""
 
 					If(validObject $AppPackagesAssigned ApplicationPackagesAssigned)
 					{
+						Line 4 ""
 						ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
 						{
-							$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4>$Null
+							$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4> $Null
 							
 							If($? -and $Null -ne $Result)
 							{
@@ -19880,20 +19700,20 @@ Function OutputVDIDetails
 				{
 					$rowdata = @()
 					$columnHeaders = @("Inherit default settings",($Script:htmlsb),$VDIPool.InheritDefaultAppPackageSettings.ToString(),$htmlwhite)
-					$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 
 					If(validObject $AppPackagesAssigned ApplicationPackagesAssigned)
 					{
+						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 						ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
 						{
-							$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4>$Null
+							$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4> $Null
 							
 							If($? -and $Null -ne $Result)
 							{
 								$rowdata += @(,("Name",($Script:htmlsb),$Result.PackageName,$htmlwhite))
 								$rowdata += @(,("Status",($Script:htmlsb),"",$htmlwhite))
 								$rowdata += @(,("Version",($Script:htmlsb),$Result.Version,$htmlwhite))
-								$rowdata += @(,("Display name",($Script:htmlsb),$Result.DisplayName,$htmlwhite))
+								$rowdata += @(,("Display name",($Script:htmlsb),$Result.DisplayName.Replace("<","").Replace(">",""),$htmlwhite))
 								$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 							}
 							Else
@@ -19930,7 +19750,7 @@ Function OutputVDIDetails
 					#for translating the User SID to the AD user name
 					#get the VDI host pool default settings
 					
-					$VDIPoolDefaults = Get-RASVDIDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
+					$VDIPoolDefaults = Get-RASVDIDefaultSettings -SiteId $Site.Id -EA 0 4> $Null
 					
 					If($? -and $Null -ne $VDIPoolDefaults)
 					{
@@ -20871,14 +20691,6 @@ Function OutputVDIDetails
 						Line 5 "Windows Defender ATP: " $OPTWindowsDefenderATPEnabled
 						If($OPTWindowsDefenderATPEnabled -eq "True")
 						{
-							<#
-								WinDefATPTurnOffOn        : TurnOnWindowsDefenderATP
-								DisableRealTimeProtection : False
-								ExcludeFolders            : {%ProgramData%\Parallels\RASLogs\, %ProgramFiles(x86)%\Parallels\,
-															%ProgramFiles%\Parallels\, %WINDOWS%\system32\config\...}
-								ExcludeProcesses          : {csrss.exe, winlogon.exe, rdpclip.exe, rdpinit.exe...}
-								ExcludeExtension          : {.vhd, .vhdx}					
-							#>
 							If($VDIPool.Optimization.WindowsDefenderATP.WinDefATPTurnOffOn.ToString() -eq "TurnOffWindowsDefenderATP")
 							{
 								Line 6 "Windows Defender ATP Optimizations: Turn off Windows Defender ATP (I use my own ATP solution)"
@@ -20920,17 +20732,7 @@ Function OutputVDIDetails
 							Line 7 "======================================================================================================"
 							#		12345678901234567890123456789012345678901234567890SS12345678901234567890123456789012345678901234567890
 							#		Printing-XPSServices-Features                       SMB 1.0/CIFS File sharing support component
-							<#
-									  Type ComponentName                 DisplayName Aliases
-									  ---- -------------                 ----------- -------
-								Predefined MSRDC-Infrastructure
-								Predefined MediaPlayback
-								Predefined WindowsMediaPlayer
-								Predefined Printing-XPSServices-Features
-								Predefined SMB1Protocol
-								Predefined SearchEngine-Client-Package
-								Predefined Xps-Foundation-Xps-Viewer					
-							#>
+
 							ForEach($item in $VDIPool.Optimization.WindowsComponents.WindowsComponentsList)
 							{
 								Line 7 ( "{0,-50}  {1,-50}" -f $item.DisplayName, $item.ComponentName)
@@ -20948,42 +20750,7 @@ Function OutputVDIDetails
 							Line 7 "========================================================================================================"
 							#		12345678901234567890123456789012345678901234567890SS123456789012345678901234567890SS12345678901234567890
 							#		Windows Media Player Network Sharing Service        TabletInputService              Superfecth
-							<#
-									  Type ServiceName        DisplayName Aliases
-									  ---- -----------        ----------- -------
-								Predefined AJRouter
-								Predefined ALG
-								Predefined BTAGService
-								Predefined BthAvctpSvc
-								Predefined CscService
-								Predefined DOT3SVC
-								Predefined DPS
-								Predefined DiagTrack
-								Predefined EFS
-								Predefined FDResPub
-								Predefined MapsBroker
-								Predefined SSDPSRV
-								Predefined SensrSvc
-								Predefined SharedAccess
-								Predefined ShellHWDetection
-								Predefined StorSvc
-								Predefined Sysmain
-								Predefined Superfetch
-								Predefined TabletInputService
-								Predefined TapiSrv
-								Predefined Themes
-								Predefined WMPNetworkSvc
-								Predefined WbioSrvc
-								Predefined WdiSystemHost
-								Predefined WerSvc
-								Predefined bthserv
-								Predefined fdPHost
-								Predefined lfsvc
-								Predefined upnphost
-								Predefined wbengine
-								Predefined wisvc
-								Predefined wlidsvc					
-							#>
+
 							ForEach($item in $VDIPool.Optimization.WindowsServices.WindowsServicesList)
 							{
 								If($Null -eq $item.DisplayName)
@@ -21037,30 +20804,7 @@ Function OutputVDIDetails
 							Line 7 "=============================================================================================================="
 							#		12345678901234567890123456789012345678901234567890SS123456SS12345678901234567890123456789012345678901234567890
 							#		MNO Metadata Parser                                 Folder  \Microsoft\Windows\Mobile Broadband Accounts\
-							<#
-								Task                Location                                        Type
-								----                --------                                        ----
-								*                   \Microsoft\Windows\Application Experience     Folder
-								*                   \Microsoft\Windows\BitLocker                  Folder
-								CDSSync             \Microsoft\Windows\WlanSvc\                     Task
-								*                   \Microsoft\OneCore\DirectX                    Folder
-								GatherNetworkInfo   \Microsoft\Windows\NetTrace\                    Task
-								MNO Metadata Parser \Microsoft\Windows\Mobile Broadband Accounts\   Task
-								NotificationTask    \Microsoft\Windows\WwanSvc\                     Task
-								*                   \Microsoft\Office                             Folder
-								QueueReporting      \Microsoft\Windows\Windows Error Reporting\     Task
-								SR                  \Microsoft\Windows\SystemRestore\               Task
-								ScheduledDefrag     \Microsoft\Windows\Defrag\                      Task
-								Scheduled Start     \Microsoft\Windows\WindowsUpdate\               Task
-								*                   \Microsoft\Windows\Sysmain                    Folder
-								Tpm-HASCertRetr     \Microsoft\Windows\TPM\                         Task
-								Tpm-Maintenance     \Microsoft\Windows\TPM\                         Task
-								UninstallDeviceTask \Microsoft\Windows\Bluetooth\                   Task
-								UpdateLibrary       \Microsoft\Windows\Windows Media Sharing\       Task
-								*                   \Microsoft\Windows\Windows Defender           Folder
-								XblGameSaveTask     \Microsoft\XblGameSave\                         Task
-								sihpostreboot       \Microsoft\Windows\WindowsUpdate\               Task					
-							#>
+
 							ForEach($item in $VDIPool.Optimization.WindowsScheduledTasks.WindowsScheduledTasksList)
 							{
 								Line 7 ( "{0,-50}  {1,-6}  {2,-50}" -f $item.Task, $item.Type.ToString(), $item.Location)
@@ -21077,19 +20821,7 @@ Function OutputVDIDetails
 							Line 7 "============================================================================================================="
 							#		123456789012345678901234567890123456789012345678SS1234567SS12345678901234567890123456789012345678901234567890
 							#		Remove Common program groups from the start menu  False    SomeConfigFile.xml
-							<#
-								PartialStartLayoutContent   : Configuration.xml
-								Hibernate                   : True
-								TeleCollection              : True
-								SystemRestore               : True
-								AdditionalErrorReport       : True
-								Tiles                       : True
-								Cortana                     : True
-								MicrosoftConsumerExperience : True
-								WindowsTips                 : True
-								CommonProgramGroups         : True
-								PartialStartMenu            : True
-							#>
+
 							Line 7 ( "{0,-48}  {1,-7}  {2,-50}" -f `
 							"Disable Hibernate", `
 							$VDIPool.Optimization.WindowsAdvancedOptions.Hibernate.ToString(), `
@@ -21152,20 +20884,7 @@ Function OutputVDIDetails
 							Line 7 "==========================================="
 							#		123456789012345678901234567SS1234567SS12345
 							#		FileNotFoundCacheEntriesMax  False    32768
-							<#
-								DirCacheMax             : 4096
-								DormantFileLimit        : 256
-								FileNotFoundCache       : 32768
-								FileInfoCache           : 32768
-								FileInfoCacheEnable     : True
-								DirectoryCacheEnable    : True
-								FileNotFoundCacheEnable : True
-								DormantFileLimitEnable  : True
-								DisableTCP              : True
-								DisableIPv6CompEnable   : True
-								DisableIPv6ToIPv4       : True
-								DisableIsaTap           : True
-							#>
+
 							Line 7 ( "{0,-27}  {1,-7}  {2,-5}" -f `
 							"FileInfoCacheEntriesMax", `
 							$VDIPool.Optimization.NetworkPerformance.FileInfoCacheEnable.ToString(), `
@@ -21216,25 +20935,7 @@ Function OutputVDIDetails
 							Line 0 ""
 							#		123456789012345678901234567SS1234567SS12345
 							#		FileNotFoundCacheEntriesMax  False    32768
-							<#
-								Id           : 1
-								Action       : Modify
-								RegistryName : ServicesPipeTimeout
-								DWORDValue   : 18000
-								DisplayName  : Increase service startup timeouts
-								HiveType     : HKEY_LOCAL_MACHINE
-								Path         : System\CurrentControlSet\Control
-								RegType      : REG_DWORD
 
-								Id           : 2
-								Action       : Modify
-								RegistryName : TimeOutValue
-								DWORDValue   : 200
-								DisplayName  : Increase Disk I/O Timeout
-								HiveType     : HKEY_LOCAL_MACHINE
-								Path         : System\CurrentControlSet\Services\Disk
-								RegType      : REG_DWORD
-							#>
 							Line 7 "Registry                                  Action  Value                 Type           Data                  Path                                                        "
 							Line 7 "========================================================================================================================================================================="
 							#		1234567890123456789012345678901234567890SS123456SS12345678901234567890SS1234567890123SS12345678901234567890SS123456789012345678901234567890123456789012345678901234567890
@@ -21302,26 +21003,7 @@ Function OutputVDIDetails
 							Line 7 "==========================================================="
 							#		12345678901234567890123456789012345678901234567890SS1234567
 							#		Use drop shadows for icon labels on the desktop     False  
-							<#
-								VisualEffectsTypes                     : Custom
-								AnimateControlSelectElements           : False
-								AnimateWindowsWhenMinimizingMaximizing : False
-								AnimateTaskbar                         : False
-								EnablePeek                             : False
-								FadeSlideMenus                         : False
-								FadeSlideToolTips                      : False
-								FadeOutMenuItems                       : False
-								SaveTaskbarThumbnail                   : False
-								ShowShadowUnderMouse                   : False
-								ShadowUnderWindows                     : False
-								ThumbnailsInsteadOfIcons               : False
-								ShowTranslucentSelection               : False
-								ShowWindowsContentWhilstDragging       : False
-								SlideOpenComboBoxes                    : False
-								SmoothEdgesScreenFonts                 : True
-								SmoothScrollListBoxes                  : False
-								DropShadowsIcon                        : False
-							#>
+
 							Line 7 ( "{0,-50}  {1,-7}" -f `
 							"Animate controls and elements inside windows", `
 							$VDIPool.Optimization.VisualEffects.AnimateControlSelectElements.ToString())
@@ -21403,13 +21085,7 @@ Function OutputVDIDetails
 							Line 7 "=========================================="
 							#		123456789012345678901234567890123SS1234567
 							#		Clean up temporary files and logs  False  
-							<#
-								CleanupWinSxSFolder      : False
-								CleanupSystemFiles       : False
-								CleanupTemporaryFileLogs : True
-								RemoveOneDrive           : False
-								DeleteUserProfiles       : False
-							#>
+
 							Line 7 ( "{0,-33}  {1,-7}" -f `
 							"Clean up redundant system files", `
 							$VDIPool.Optimization.DiskCleanup.CleanupSystemFiles.ToString())
@@ -21438,13 +21114,6 @@ Function OutputVDIDetails
 						{
 							Line 6 "Custom Script"
 							Line 0 ""
-							
-							<#
-								Arguments : CustomScriptArguments
-								Command   : CustomScriptCommand
-								InitDir   : CustomScriptInitialDirectory
-								User      : CustomScriptUsername
-							#>
 							Line 7 "Command`t`t : " $VDIPool.Optimization.CustomScript.Command
 							Line 7 "Arguments`t : " $VDIPool.Optimization.CustomScript.Arguments
 							Line 7 "Initial directory: " $VDIPool.Optimization.CustomScript.InitDir
@@ -21528,7 +21197,7 @@ Function OutputVDIDetails
 
 
 							$msg = ""
-							$columnWidths = @("300","350")
+							$columnWidths = @("250","350")
 							FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 							WriteHTMLLine 0 0 ""
 						}
@@ -22022,26 +21691,6 @@ Function OutputVDIDetails
 				}
 				
 				#settings
-				<#
-					PS C:\Parallels-RAS-V19.x-Doc-Script-4.00> $x1.agent |fl
-
-					Name                                                 Value
-					----                                                 -----
-					AllowRemoteExec                                       True
-					AllowURLAndMailRedirection      EnabledWithAppRegistration
-					DisconnectActiveSessionAfter                            60
-					DragAndDropMode                             ClientToServer
-					EnableDriveRedirectionCache                           True
-					EnableZOrder                                          True
-					FileTransferLocation
-					FileTransferLockLocation                             False
-					FileTransferMode                             Bidirectional
-					LogoffDisconnectedSessionAfter                         300
-					ManageRDPTransportProtocol                      BothUDPTCP
-					SessionReadinessTimeout                               3600
-					SupportShellURLNamespaceObjects                       True
-				#>
-
 				If($MSWord -or $PDF)
 				{
 					WriteWordLine 4 0 "Settings"
@@ -22061,7 +21710,7 @@ Function OutputVDIDetails
 					#yes we do, get the default settings for the Site
 					#use the Site default settings
 
-					$VDIPoolDefaults = Get-RASVDIDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
+					$VDIPoolDefaults = Get-RASVDIDefaultSettings -SiteId $Site.Id -EA 0 4> $Null
 					
 					If($? -and $Null -ne $VDIPoolDefaults)
 					{
@@ -22423,15 +22072,10 @@ Function OutputVDIDetails
 					#Nothing
 				}
 				
-				<#
-					PrinterNameFormat                  : PrnFormat_PRN_CMP_SES
-					RemoveSessionNumberFromPrinterName : True
-					RemoveClientNameFromPrinterName    : True
-				#>
 				If($VDIPool.InheritDefaultRDPPrinterSettings)
 				{
 					#do we inherit site defaults?
-					$VDIPoolDefaults = Get-RASVDIDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
+					$VDIPoolDefaults = Get-RASVDIDefaultSettings -SiteId $Site.Id -EA 0 4> $Null
 					
 					If($? -and $Null -ne $VDIPoolDefaults)
 					{
@@ -22532,7 +22176,7 @@ Function OutputVDIDetails
 					#yes we do, get the default settings for the Site
 					#use the Site default settings
 
-					$VDIDefaults = Get-RASVDIDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
+					$VDIDefaults = Get-RASVDIDefaultSettings -SiteId $Site.Id -EA 0 4> $Null
 					
 					If($? -and $Null -ne $VDIDefaults)
 					{
@@ -22642,7 +22286,7 @@ Function OutputVDIDetails
 					#do we inherit site defaults?
 					#yes we do, get the default settings for the Site
 					#use the Site default settings
-					$VDIPoolDefaults = Get-RASVDIDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
+					$VDIPoolDefaults = Get-RASVDIDefaultSettings -SiteId $Site.Id -EA 0 4> $Null
 					
 					If($? -and $Null -ne $VDIPoolDefaults)
 					{
@@ -22706,7 +22350,7 @@ Function OutputVDIDetails
 				{
 					#we don't inherit
 					#get the settings for the host pool
-					$Results = Get-RASAutoUpgrade -Name $VDIPool.Name -SiteId $Site.Id -ObjType "VDIHostPool" -EA 0 4>$Null
+					$Results = Get-RASAutoUpgrade -Name $VDIPool.Name -SiteId $Site.Id -ObjType "VDIHostPool" -EA 0 4> $Null
 					
 					If(!($?) -or $Null -eq $Results)
 					{
@@ -22953,7 +22597,7 @@ Function OutputVDIDetails
 		#Templates
 		Write-Verbose "$(Get-Date -Format G): `tOutput VDI Templates"
 		
-		$VDITemplates = Get-RASTemplate -Siteid $Site.Id -ObjType "VDITemplate" -EA 0 4>$Null
+		$VDITemplates = Get-RASTemplate -Siteid $Site.Id -ObjType "VDITemplate" -EA 0 4> $Null
 
 		If(!($?))
 		{
@@ -23024,7 +22668,7 @@ Function OutputVDIDetails
 					WriteHTMLLine 3 0 "Template $($VDITemplate.Name)"
 				}
 				
-				$TemplateProvider = Get-RASProvider -Id $VDITemplate.ProviderId -EA 0 4>$Null
+				$TemplateProvider = Get-RASProvider -Id $VDITemplate.ProviderId -EA 0 4> $Null
 				
 				If($? -and $Null -ne $TemplateProvider)
 				{
@@ -23037,19 +22681,10 @@ Function OutputVDIDetails
 					$TemplateProviderType = ""
 				}
 				
-				$TemplateVM = Get-RASVM -Id $VDITemplate.VMId -ProviderId $VDITemplate.ProviderId -EA 0 4>$Null
+				$TemplateVM = Get-RASVM -Id $VDITemplate.VMId -ProviderId $VDITemplate.ProviderId -EA 0 4> $Null
 				
 				If($? -and $Null -ne $TemplateVM)
 				{
-					<#
-						Values	        Description
-						Unknown	        The VM is in the 'Unknown' state
-						On	            The VM is powered on.
-						Off	            The VM is powered off
-						Paused	        The VM is already, or in the process of being, suspended
-						CloningFailed	Failed to clone the VM.
-						CloningCanceled	VM cloning was cancelled
-					#>
 					Switch($TemplateVM.State)
 					{
 						"Unknown"			{$TemplatePowerState = "Unknown"; Break}
@@ -23113,7 +22748,7 @@ Function OutputVDIDetails
 				If($HTML)
 				{
 					$rowdata = @()
-					$columnHeaders = @("Name",($Script:htmlsb),$VDITemplate.Name,$htmlwhite)
+					$columnHeaders = @("Name",($Script:htmlsb),$VDITemplate.Name.Replace("<","").Replace(">",""),$htmlwhite)
 					$rowdata += @(,("Power state",($Script:htmlsb),$TemplatePowerState,$htmlwhite))
 					$rowdata += @(,("Provider",($Script:htmlsb),$TemplateProviderName,$htmlwhite))
 					$rowdata += @(,("Provider type",($Script:htmlsb),$TemplateProviderType,$htmlwhite))
@@ -23190,8 +22825,8 @@ Function OutputVDIDetails
 				If($HTML)
 				{
 					$rowdata = @()
-					$columnHeaders = @("Template name",($Script:htmlsb),$VDITemplate.Name,$htmlwhite)
-					$rowdata += @(,("Description",($Script:htmlsb),$VDITemplate.Description,$htmlwhite))
+					$columnHeaders = @("Template name",($Script:htmlsb),$VDITemplate.Name.Replace("<","").Replace(">",""),$htmlwhite)
+					$rowdata += @(,("Description",($Script:htmlsb),$VDITemplate.Description.Replace("<","").Replace(">",""),$htmlwhite))
 					$rowdata += @(,("Clone method",($Script:htmlsb),$CloneMethod,$htmlwhite))
 					$rowdata += @(,("High availability",($Script:htmlsb),"",$htmlwhite))
 					$rowdata += @(,("     Availabiity set",($Script:htmlsb),$VDITemplate.AvailabilitySet.ToString(),$htmlwhite))
@@ -23401,7 +23036,7 @@ Function OutputVDIDetails
 					#for translating the User SID to the AD user name
 					#yes we do, get the default settings for the Site
 					#use the Site default settings
-					$VDIDefaults = Get-RASVDIDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
+					$VDIDefaults = Get-RASVDIDefaultSettings -SiteId $Site.Id -EA 0 4> $Null
 					
 					If($? -and $Null -ne $VDIDefaults)
 					{
@@ -23483,15 +23118,14 @@ Function OutputVDIDetails
 					If($OPTWindowsDefenderATPEnabled -eq "True")
 					{
 						$ScriptInformation = New-Object System.Collections.ArrayList
-						$ScriptInformation.Add(@{Data = "Windows Defender ATP Optimizations"; Value = ""; }) > $Null
 
 						If($VDITemplate.Optimization.WindowsDefenderATP.WinDefATPTurnOffOn.ToString() -eq "TurnOffWindowsDefenderATP")
 						{
-							$ScriptInformation.Add(@{Data = "     Turn off Windows Defender ATP (I use my own ATP solution)"; Value = ""; }) > $Null
+							$ScriptInformation.Add(@{Data = "Windows Defender ATP Optimizations"; Value = "Turn off Windows Defender ATP (I use my own ATP solution)"; }) > $Null
 						}
 						Else
 						{
-							$ScriptInformation.Add(@{Data = "     Turn on Windows Defender ATP and set process and folder exclusions"; Value = ""; }) > $Null
+							$ScriptInformation.Add(@{Data = "Windows Defender ATP Optimizations"; Value = "Turn on Windows Defender ATP and set process and folder exclusions"; }) > $Null
 							$ScriptInformation.Add(@{Data = "     Disable real-time protection"; Value = $VDITemplate.Optimization.WindowsDefenderATP.DisableRealTimeProtection.ToString(); }) > $Null
 							$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
 							
@@ -24340,14 +23974,13 @@ Function OutputVDIDetails
 					Line 4 "Windows Defender ATP: " $OPTWindowsDefenderATPEnabled
 					If($OPTWindowsDefenderATPEnabled -eq "True")
 					{
-						Line 5 "Windows Defender ATP Optimizations"
 						If($VDITemplate.Optimization.WindowsDefenderATP.WinDefATPTurnOffOn.ToString() -eq "TurnOffWindowsDefenderATP")
 						{
-							Line 6 "Turn off Windows Defender ATP (I use my own ATP solution)"
+							Line 5 "Windows Defender ATP Optimizations: Turn off Windows Defender ATP (I use my own ATP solution)"
 						}
 						Else
 						{
-							Line 6 "Turn on Windows Defender ATP and set process and folder exclusions"
+							Line 5 "Windows Defender ATP Optimizations: Turn on Windows Defender ATP and set process and folder exclusions"
 							Line 6 "Disable real-time protection: " $VDITemplate.Optimization.WindowsDefenderATP.DisableRealTimeProtection.ToString()
 							Line 0 ""
 							Line 6 "Exclude files and folders:"
@@ -24781,15 +24414,14 @@ Function OutputVDIDetails
 					If($OPTWindowsDefenderATPEnabled -eq "True")
 					{
 						$rowdata = @()
-						$columnHeaders = @("Windows Defender ATP Optimizations",($Script:htmlsb),"",$htmlwhite)
 
 						If($VDITemplate.Optimization.WindowsDefenderATP.WinDefATPTurnOffOn.ToString() -eq "TurnOffWindowsDefenderATP")
 						{
-							$rowdata += @(,("     Turn off Windows Defender ATP (I use my own ATP solution)",($Script:htmlsb),"",$htmlwhite))
+							$columnHeaders = @("Windows Defender ATP Optimizations",($Script:htmlsb),"Turn off Windows Defender ATP (I use my own ATP solution)",$htmlwhite)
 						}
 						Else
 						{
-							$rowdata += @(,("     Turn on Windows Defender ATP and set process and folder exclusions",($Script:htmlsb),"",$htmlwhite))
+							$columnHeaders = @("Windows Defender ATP Optimizations",($Script:htmlsb),"Turn on Windows Defender ATP and set process and folder exclusions",$htmlwhite)
 							$rowdata += @(,("     Disable real-time protection",($Script:htmlsb), $VDITemplate.Optimization.WindowsDefenderATP.DisableRealTimeProtection.ToString(),$htmlwhite))
 							$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 							
@@ -24838,7 +24470,7 @@ Function OutputVDIDetails
 
 
 						$msg = ""
-						$columnWidths = @("300","275")
+						$columnWidths = @("250","350")
 						FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 						WriteHTMLLine 0 0 ""
 					}
@@ -25356,7 +24988,7 @@ Function OutputVDIDetails
 					{
 						$ScriptInformation.Add(@{Data = "License key management type"; Value = "Multple Activation Key (MAK)"; }) > $Null
 						
-						$LicenseKeys = Get-RASTemplateLicenseKey -Id $VDITemplate.Id -ObjType VDITemplate -EA 0 4>$Null
+						$LicenseKeys = Get-RASTemplateLicenseKey -Id $VDITemplate.Id -ObjType VDITemplate -EA 0 4> $Null
 						
 						ForEach($Item in $LicenseKeys)
 						{
@@ -25393,7 +25025,7 @@ Function OutputVDIDetails
 					{
 						Line 4 "License key management type: " "Multple Activation Key (MAK)"
 						
-						$LicenseKeys = Get-RASTemplateLicenseKey -Id $VDITemplate.Id -ObjType VDITemplate -EA 0 4>$Null
+						$LicenseKeys = Get-RASTemplateLicenseKey -Id $VDITemplate.Id -ObjType VDITemplate -EA 0 4> $Null
 
 						ForEach($Item in $LicenseKeys)
 						{
@@ -25414,7 +25046,7 @@ Function OutputVDIDetails
 					{
 						$columnHeaders = @("License key management type",($Script:htmlsb),"Multple Activation Key (MAK)",$htmlwhite)
 						
-						$LicenseKeys = Get-RASTemplateLicenseKey -Id $VDITemplate.Id -ObjType VDITemplate -EA 0 4>$Null
+						$LicenseKeys = Get-RASTemplateLicenseKey -Id $VDITemplate.Id -ObjType VDITemplate -EA 0 4> $Null
 
 						$cnt = -1
 						ForEach($Item in $LicenseKeys)
@@ -25435,7 +25067,7 @@ Function OutputVDIDetails
 		#Hosts
 		Write-Verbose "$(Get-Date -Format G): `tOutput VDI Hosts"
 		
-		$VDIHosts = Get-RASVDIHost -Siteid $Site.Id -EA 0 4>$Null
+		$VDIHosts = Get-RASVDIHost -Siteid $Site.Id -EA 0 4> $Null
 
 		If(!($?))
 		{
@@ -25506,7 +25138,7 @@ Function OutputVDIDetails
 					WriteHTMLLine 3 0 "Host $($VDIHost.Name)"
 				}
 				
-				$Status = Get-RASVDIHostStatus -ProviderId $VDIHost.ProviderId -SiteId $Site.Id -HostId $VDIHost.Id -EA 0 4>$Null
+				$Status = Get-RASVDIHostStatus -ProviderId $VDIHost.ProviderId -SiteId $Site.Id -HostId $VDIHost.Id -EA 0 4> $Null
 				
 				If($? -and $Null -ne $Status)
 				{
@@ -25517,7 +25149,7 @@ Function OutputVDIDetails
 					$HostStatus = ""
 				}
 				
-				$HostPool = Get-RASVDIHostPool -Id $VDIHost.PoolId -EA 0 4>$Null
+				$HostPool = Get-RASVDIHostPool -Id $VDIHost.PoolId -EA 0 4> $Null
 				
 				If($? -and $Null -ne $HostPool)
 				{
@@ -25555,7 +25187,7 @@ Function OutputVDIDetails
 					$VDIHostTemplateVersionName  = ""
 				}
 
-				$VDIHostProvider = Get-RASProvider -Id $VDIHost.ProviderId -EA 0 4>$Null
+				$VDIHostProvider = Get-RASProvider -Id $VDIHost.ProviderId -EA 0 4> $Null
 				
 				If($? -and $Null -ne $VDIHostProvider)
 				{
@@ -25646,7 +25278,7 @@ Function OutputVDIDetails
 				If($HTML)
 				{
 					$rowdata = @()
-					$columnHeaders = @("Host",($Script:htmlsb),$VDIHost.Name,$htmlwhite)
+					$columnHeaders = @("Host",($Script:htmlsb),$VDIHost.Name.Replace("<","").Replace(">",""),$htmlwhite)
 					$rowdata += @(,("Power state",($Script:htmlsb),$TemplatePowerState,$htmlwhite))
 
 					$rowdata += @(,("Host",($Script:htmlsb), ,$htmlwhite))
@@ -25659,7 +25291,7 @@ Function OutputVDIDetails
 					$rowdata += @(,("Template",($Script:htmlsb), $VDIHostTemplateName,$htmlwhite))
 					$rowdata += @(,("Template version",($Script:htmlsb), $TemplateVersion,$htmlwhite))
 					$rowdata += @(,("Host pool",($Script:htmlsb), $HostPoolName,$htmlwhite))
-					#$rowdata += @(,("Description",($Script:htmlsb), $VDIHost.Description,$htmlwhite))
+					#$rowdata += @(,("Description",($Script:htmlsb), $VDIHost.Description.Replace("<","").Replace(">",""),$htmlwhite))
 					$rowdata += @(,("Provider",($Script:htmlsb), $VDIHostProviderName,$htmlwhite))
 					$rowdata += @(,("Disk(s)",($Script:htmlsb), $Status.Disks,$htmlwhite))
 					$rowdata += @(,("Last used",($Script:htmlsb), (Get-Date -UFormat "%c" $VDIHost.TimeLastUsed),$htmlwhite))
@@ -25720,7 +25352,7 @@ Function OutputVDIDetails
 		ElseIf($? -and $Null -eq $VDISchedules)
 		{
 			Write-Host "
-		No VDI Scheduler retrieved.`
+	No VDI Scheduler retrieved.`
 			" -ForegroundColor White
 			If($MSWord -or $PDF)
 			{
@@ -25957,7 +25589,7 @@ Function OutputVDIDetails
 				If($HTML)
 				{
 					$rowdata = @()
-					$columnHeaders = @("Name",($Script:htmlsb),$VDISchedule.Name,$htmlwhite)
+					$columnHeaders = @("Name",($Script:htmlsb),$VDISchedule.Name.Replace("<","").Replace(">",""),$htmlwhite)
 					$rowdata += @(,("Enabled",($Script:htmlsb),$VDISchedule.Enabled.ToString(),$htmlwhite))
 					$rowdata += @(,("Action",($Script:htmlsb),$Action,$htmlwhite))
 					$rowdata += @(,("Target type",($Script:htmlsb),$TargetType,$htmlwhite))
@@ -25978,7 +25610,7 @@ Function OutputVDIDetails
 					
 					$rowdata += @(,("Start",($Script:htmlsb),"$($VDISchedule.Trigger.StartDateTime.ToShortDateString()) $($VDISchedule.Trigger.StartDateTime.ToShortTImeString())",$htmlwhite))
 					$rowdata += @(,("Repeat",($Script:htmlsb),$Repeat,$htmlwhite))
-					$rowdata += @(,("Description",($Script:htmlsb),$VDISchedule.Description,$htmlwhite))
+					$rowdata += @(,("Description",($Script:htmlsb),$VDISchedule.Description.Replace("<","").Replace(">",""),$htmlwhite))
 					$rowdata += @(,("Last modification by",($Script:htmlsb),$VDISchedule.AdminLastMod,$htmlwhite))
 					$rowdata += @(,("Modified on",($Script:htmlsb),(Get-Date -UFormat "%c" $VDISchedule.TimeLastMod),$htmlwhite))
 					$rowdata += @(,("Created by",($Script:htmlsb),$VDISchedule.AdminCreate,$htmlwhite))
@@ -26072,9 +25704,9 @@ Function OutputVDIDetails
 				{
 					$rowdata = @()
 					$columnHeaders = @("Enable schedule",($Script:htmlsb),$VDISchedule.Enabled.ToString(),$htmlwhite)
-					$rowdata += @(,("Name",($Script:htmlsb),$VDISchedule.Name,$htmlwhite))
+					$rowdata += @(,("Name",($Script:htmlsb),$VDISchedule.Name.Replace("<","").Replace(">",""),$htmlwhite))
 					$rowdata += @(,("Action",($Script:htmlsb),$Action,$htmlwhite))
-					$rowdata += @(,("Description",($Script:htmlsb),$VDISchedule.Description,$htmlwhite))
+					$rowdata += @(,("Description",($Script:htmlsb),$VDISchedule.Description.Replace("<","").Replace(">",""),$htmlwhite))
 					
 					$cnt=-1
 					ForEach($Item in $Target)
@@ -26397,7 +26029,7 @@ Function OutputVDIDetails
 						}
 
 						$msg = "Options"
-						$columnWidths = @("350","275")
+						$columnWidths = @("250","275")
 						FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 						WriteHTMLLine 0 0 ""
 					}
@@ -26426,7 +26058,7 @@ Function OutputAVDDetails
 	}
 
 	#Workspaces
-	$AVDs = Get-RASAVDWorkspace -SiteId $Site.Id -EA 0 4>$Null
+	$AVDs = Get-RASAVDWorkspace -SiteId $Site.Id -EA 0 4> $Null
 	
 	If(!($?))
 	{
@@ -26499,7 +26131,7 @@ Function OutputAVDDetails
 		{
 			Write-Verbose "$(Get-Date -Format G): `t`t$($AVD.Name)"
 
-			$WorkspaceStatus = Get-RASAVDWorkspaceStatus -Name $AVD.Name -EA 0 4>$Null
+			$WorkspaceStatus = Get-RASAVDWorkspaceStatus -Name $AVD.Name -EA 0 4> $Null
 			
 			If(!($?))
 			{
@@ -26514,7 +26146,7 @@ Function OutputAVDDetails
 				$AVDStatus = $WorkspaceStatus.AgentState
 			}
 			
-			$AVDProvider = Get-RASProvider -Id $AVD.ProviderId  -EA 0 4>$Null
+			$AVDProvider = Get-RASProvider -Id $AVD.ProviderId  -EA 0 4> $Null
 			
 			If(!($?))
 			{
@@ -26597,10 +26229,10 @@ Function OutputAVDDetails
 			If($HTML)
 			{
 				$rowdata = @()
-				$columnHeaders = @("Name",($Script:htmlsb),$AVD.Name,$htmlwhite)
+				$columnHeaders = @("Name",($Script:htmlsb),$AVD.Name.Replace("<","").Replace(">",""),$htmlwhite)
 				$rowdata += @(,("Enabled",($Script:htmlsb),$AVD.Enabled.ToString(),$htmlwhite))
-				$rowdata += @(,("Friendly name",($Script:htmlsb),$AVD.FriendlyName,$htmlwhite))
-				$rowdata += @(,("Description",($Script:htmlsb),$AVD.Description,$htmlwhite))
+				$rowdata += @(,("Friendly name",($Script:htmlsb),$AVD.FriendlyName.Replace("<","").Replace(">",""),$htmlwhite))
+				$rowdata += @(,("Description",($Script:htmlsb),$AVD.Description.Replace("<","").Replace(">",""),$htmlwhite))
 				$rowdata += @(,("Status",($Script:htmlsb),$AVDStatus,$htmlwhite))
 				$rowdata += @(,("Provider",($Script:htmlsb),$AVDProviderName,$htmlwhite))
 				$rowdata += @(,("Resource group",($Script:htmlsb),$WorkspaceStatus.ResourceGroup,$htmlwhite))
@@ -26676,9 +26308,9 @@ Function OutputAVDDetails
 			{
 				$rowdata = @()
 				$columnHeaders = @("Enable workspace in site",($Script:htmlsb),$AVD.Enabled.ToString(),$htmlwhite)
-				$rowdata += @(,("Name",($Script:htmlsb),$AVD.Name,$htmlwhite))
-				$rowdata += @(,("Friendly name",($Script:htmlsb),$AVD.FriendlyName,$htmlwhite))
-				$rowdata += @(,("Description",($Script:htmlsb),$AVD.Description,$htmlwhite))
+				$rowdata += @(,("Name",($Script:htmlsb),$AVD.Name.Replace("<","").Replace(">",""),$htmlwhite))
+				$rowdata += @(,("Friendly name",($Script:htmlsb),$AVD.FriendlyName.Replace("<","").Replace(">",""),$htmlwhite))
+				$rowdata += @(,("Description",($Script:htmlsb),$AVD.Description.Replace("<","").Replace(">",""),$htmlwhite))
 				$rowdata += @(,("Resource group",($Script:htmlsb),$WorkspaceStatus.ResourceGroup,$htmlwhite))
 				$rowdata += @(,("Location",($Script:htmlsb),$AVDLocation,$htmlwhite))
 				$rowdata += @(,("Provider",($Script:htmlsb),$AVDProviderName,$htmlwhite))
@@ -26773,7 +26405,10 @@ Function OutputAVDDetails
 				{
 					$AVDTemplateName = $AVDTemplate.Name
 					
-					$AVDTemplateVersion = Get-RASTemplateVersion -Id $AVDHostPool.TemplateSettings.TemplateVersionId -TemplateId $AVDHostPool.TemplateSettings.TemplateId -ObjType "AVDTemplate" -EA 0 4> $Null
+					$AVDTemplateVersion = Get-RASTemplateVersion -Id $AVDHostPool.TemplateSettings.TemplateVersionId `
+					-TemplateId $AVDHostPool.TemplateSettings.TemplateId `
+					-ObjType "AVDTemplate" `
+					-EA 0 4> $Null
 
 					If($? -and $Null -ne $AVDTemplateVersion)
 					{
@@ -26813,7 +26448,7 @@ Function OutputAVDDetails
 			{
 				$AVDWorkspace = $Results.Name
 				
-				$AVDProvider = Get-RASProvider -Id $Results.ProviderId  -EA 0 4>$Null
+				$AVDProvider = Get-RASProvider -Id $Results.ProviderId  -EA 0 4> $Null
 				
 				If(!($?))
 				{
@@ -26867,7 +26502,7 @@ Function OutputAVDDetails
 				$ApplicationGroup = $AVDHostPool.LinkedRemoteApplicationGroup.SubString($LastIndex)
 			}
 			
-			$Status = Get-RASAVDHostPoolStatus -Name $AVDHostPool.Name -EA 0 4>$Null
+			$Status = Get-RASAVDHostPoolStatus -Name $AVDHostPool.Name -EA 0 4> $Null
 			
 			If($?)
 			{
@@ -26961,10 +26596,10 @@ Function OutputAVDDetails
 			If($HTML)
 			{
 				$rowdata = @()
-				$columnHeaders = @("Name",($Script:htmlsb),$AVDHostPool.Name,$htmlwhite)
+				$columnHeaders = @("Name",($Script:htmlsb),$AVDHostPool.Name.Replace("<","").Replace(">",""),$htmlwhite)
 				$rowdata += @(,("Enabled",($Script:htmlsb),$AVDHostPool.Enabled.ToString(),$htmlwhite))
-				$rowdata += @(,("Friendly name",($Script:htmlsb),$AVDHostPool.FriendlyName,$htmlwhite))
-				$rowdata += @(,("Description",($Script:htmlsb),$AVDHostPool.Description,$htmlwhite))
+				$rowdata += @(,("Friendly name",($Script:htmlsb),$AVDHostPool.FriendlyName.Replace("<","").Replace(">",""),$htmlwhite))
+				$rowdata += @(,("Description",($Script:htmlsb),$AVDHostPool.Description.Replace("<","").Replace(">",""),$htmlwhite))
 				$rowdata += @(,("Status",($Script:htmlsb),$FullStatus,$htmlwhite))
 				$rowdata += @(,("Template",($Script:htmlsb),$AVDTemplateName,$htmlwhite))
 				$rowdata += @(,("Template version",($Script:htmlsb),$AVDTemplateVersionName,$htmlwhite))
@@ -26984,7 +26619,7 @@ Function OutputAVDDetails
 				$rowdata += @(,("ID",($Script:htmlsb),$AVDHostPool.Id.ToString(),$htmlwhite))
 
 				$msg = ""
-				$columnWidths = @("300","275")
+				$columnWidths = @("200","400")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 			}
@@ -27050,9 +26685,9 @@ Function OutputAVDDetails
 			{
 				$rowdata = @()
 				$columnHeaders = @("Enable host pool in site",($Script:htmlsb),$AVDHostPool.Enabled.ToString(),$htmlwhite)
-				$rowdata += @(,("Name",($Script:htmlsb),$AVDHostPool.Name,$htmlwhite))
-				$rowdata += @(,("Friendly name",($Script:htmlsb),$AVDHostPool.FriendlyName,$htmlwhite))
-				$rowdata += @(,("Description",($Script:htmlsb),$AVDHostPool.Description,$htmlwhite))
+				$rowdata += @(,("Name",($Script:htmlsb),$AVDHostPool.Name.Replace("<","").Replace(">",""),$htmlwhite))
+				$rowdata += @(,("Friendly name",($Script:htmlsb),$AVDHostPool.FriendlyName.Replace("<","").Replace(">",""),$htmlwhite))
+				$rowdata += @(,("Description",($Script:htmlsb),$AVDHostPool.Description.Replace("<","").Replace(">",""),$htmlwhite))
 				$rowdata += @(,("Resource group",($Script:htmlsb),$AVDHostPool.ResourceGroup,$htmlwhite))
 				$rowdata += @(,("Location",($Script:htmlsb),$AVDLocation,$htmlwhite))
 				$rowdata += @(,("Provider",($Script:htmlsb),$AVDProviderName,$htmlwhite))
@@ -27322,7 +26957,7 @@ Function OutputAVDDetails
 				$rowdata += @(,("     Validation environment",($Script:htmlsb), $ValidationEnvironment,$htmlwhite))
 
 				$msg = "Configuration"
-				$columnWidths = @("300","275")
+				$columnWidths = @("250","275")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 			}
@@ -27520,7 +27155,7 @@ Function OutputAVDDetails
 					$rowdata += @(,("     Template name",($Script:htmlsb),$AVDTemplateName,$htmlwhite))
 					$rowdata += @(,("     Host name",($Script:htmlsb),$AVDHostPool.ProvisioningSettings.HostName,$htmlwhite))
 					$rowdata += @(,("     Host state after the preparation",($Script:htmlsb),$PoweredOnState,$htmlwhite))
-					$rowdata += @(,("Autoscale settings",($Script:htmlsb),$PoweredOnState,$htmlwhite))
+					$rowdata += @(,("Autoscale settings",($Script:htmlsb),"",$htmlwhite))
 					$rowdata += @(,("     Enable autoscale",($Script:htmlsb),$AVDHostPool.ProvisioningSettings.AutoScale.AutoScaleEnabled.ToString(),$htmlwhite))
 					If($AVDHostPool.ProvisioningSettings.AutoScale.AutoScaleEnabled)
 					{
@@ -27705,7 +27340,7 @@ Function OutputAVDDetails
 				#use the Site default settings
 				
 				#AVD host pool settings do not include UPD, only FSLogix
-				$AVDHostPoolDefaults = Get-RASAVDDefaultSettings -DefObjType AVDMultiSessionDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
+				$AVDHostPoolDefaults = Get-RASAVDDefaultSettings -DefObjType AVDMultiSessionDefaultSettings -SiteId $Site.Id -EA 0 4> $Null
 				
 				If($? -and $Null -ne $AVDHostPoolDefaults)
 				{
@@ -27718,7 +27353,7 @@ Function OutputAVDDetails
 					}
 					
 					$FSLogixSettings           = $AVDHostPoolDefaults.UserProfile.FSLogix.ProfileContainer
-					$FSLogixDeploymentSettings = Get-RASFSLogixSettings -EA 0 4>$Null | Where-Object{ $_.SiteId -eq $Site.Id}
+					$FSLogixDeploymentSettings = Get-RASFSLogixSettings -EA 0 4> $Null | Where-Object{ $_.SiteId -eq $Site.Id}
 					
 					Switch($FSLogixDeploymentSettings.InstallType)
 					{
@@ -28009,7 +27644,7 @@ Function OutputAVDDetails
 				}
 						
 				$FSLogixSettings           = $AVDHostPool.UserProfile.FSLogix.ProfileContainer
-				$FSLogixDeploymentSettings = Get-RASFSLogixSettings -EA 0 4>$Null | Where-Object{ $_.SiteId -eq $Site.Id}
+				$FSLogixDeploymentSettings = Get-RASFSLogixSettings -EA 0 4> $Null | Where-Object{ $_.SiteId -eq $Site.Id}
 				
 				Switch($FSLogixDeploymentSettings.InstallType)
 				{
@@ -28911,7 +28546,7 @@ Function OutputAVDDetails
 				#do we inherit site defaults?
 				#yes we do, get the default settings for the Site
 				#use the Site default settings
-				$AVDHostPoolDefaults = Get-RASAVDDefaultSettings -DefObjType AVDMultiSessionDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
+				$AVDHostPoolDefaults = Get-RASAVDDefaultSettings -DefObjType AVDMultiSessionDefaultSettings -SiteId $Site.Id -EA 0 4> $Null
 				
 				If($? -and $Null -ne $AVDHostPoolDefaults)
 				{
@@ -28929,13 +28564,13 @@ Function OutputAVDDetails
 			{
 				$ScriptInformation = New-Object System.Collections.ArrayList
 				$ScriptInformation.Add(@{Data = "Inherit default settings"; Value = $AVDHostPool.InheritDefaultAppPackageSettings.ToString(); }) > $Null
-				$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
 
 				If(validObject $AppPackagesAssigned ApplicationPackagesAssigned)
 				{
+					$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
 					ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
 					{
-						$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4>$Null
+						$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4> $Null
 						
 						If($? -and $Null -ne $Result)
 						{
@@ -28973,13 +28608,13 @@ Function OutputAVDDetails
 			If($Text)
 			{
 				Line 5 "Inherit default settings: " $AVDHostPool.InheritDefaultAppPackageSettings.ToString()
-				Line 5 ""
 
 				If(validObject $AppPackagesAssigned ApplicationPackagesAssigned)
 				{
+					Line 5 ""
 					ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
 					{
-						$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4>$Null
+						$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4> $Null
 						
 						If($? -and $Null -ne $Result)
 						{
@@ -29000,20 +28635,20 @@ Function OutputAVDDetails
 			{
 				$rowdata = @()
 				$columnHeaders = @("Inherit default settings",($Script:htmlsb),$AVDHostPool.InheritDefaultAppPackageSettings.ToString(),$htmlwhite)
-				$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 
 				If(validObject $AppPackagesAssigned ApplicationPackagesAssigned)
 				{
+					$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 					ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
 					{
-						$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4>$Null
+						$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4> $Null
 						
 						If($? -and $Null -ne $Result)
 						{
 							$rowdata += @(,("Name",($Script:htmlsb),$Result.PackageName,$htmlwhite))
 							$rowdata += @(,("Status",($Script:htmlsb),"",$htmlwhite))
 							$rowdata += @(,("Version",($Script:htmlsb),$Result.Version,$htmlwhite))
-							$rowdata += @(,("Display name",($Script:htmlsb),$Result.DisplayName,$htmlwhite))
+							$rowdata += @(,("Display name",($Script:htmlsb),$Result.DisplayName.Replace("<","").Replace(">",""),$htmlwhite))
 							$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 						}
 						Else
@@ -29048,48 +28683,7 @@ Function OutputAVDDetails
 				#do we inherit site defaults?
 				#yes we do, get the default settings for the Site
 				#use the Site default settings
-				<#
-					PS C:\Users\carl.webster> $x = Get-RASAVDDefaultSettings -DefObjType AVDMultiSessionDefaultSettings
-					PS C:\Users\carl.webster> $x | % {$_.psobject.properties | select name, value | sort name}
-
-					Name                Value
-					----                -----
-					Action
-					Agent               RASAdminEngine.Core.OutputModels.HostPool.HostPoolAgentSettings
-					AppPackagesAssigned RASAdminEngine.Core.OutputModels.AppPackagesAssigned
-					AutoUpgrade         RASAdminEngine.Core.OutputModels.HostPool.AutoUpgradeSettings
-					DefObjType          AVDMultiSessionDefaultSettings
-					Optimization        RASAdminEngine.Core.OutputModels.ImagesOptimization.ImageOptimization
-					RDPPrinter          RASAdminEngine.Core.OutputModels.HostPool.RDPPrinterSettings
-					SiteId              1
-					UserProfile         RASAdminEngine.Core.OutputModels.UserProfile.UserProfileSettings
-
-
-					PS C:\Users\carl.webster> $x.agent | % {$_.psobject.properties | select name, value | sort name}
-
-					Name                                    Value
-					----                                    -----
-					AllowRemoteExec                          True
-					AllowURLAndMailRedirection            Enabled
-					AppMonitor                               True
-					DisconnectActiveSessionAfter               25
-					DragAndDropMode                 Bidirectional
-					EnableDriveRedirectionCache              True
-					EnableZOrder                            False
-					FileTransferLocation
-					FileTransferLockLocation                False
-					FileTransferMode                Bidirectional
-					LogoffDisconnectedSessionAfter              1
-					ManageRDPShortpath                      False
-					ManageRDPTransportProtocol           Disabled
-					MaxRDPShortpathPort                     39299
-					MinRDPShortpathPort                     38300
-					SessionReadinessTimeout                   300
-					SupportShellURLNamespaceObjects          True
-					UseRDPShortpath                         False
-					UseSmallerPortRange                     False
-				#>
-				$AVDHostPoolDefaults = Get-RASAVDDefaultSettings -DefObjType AVDMultiSessionDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
+				$AVDHostPoolDefaults = Get-RASAVDDefaultSettings -DefObjType AVDMultiSessionDefaultSettings -SiteId $Site.Id -EA 0 4> $Null
 				
 				If($? -and $Null -ne $AVDHostPoolDefaults)
 				{
@@ -29489,7 +29083,7 @@ Function OutputAVDDetails
 				#do we inherit group or site defaults?
 				#yes we do, get the default settings for the Site
 				#use the Site default settings
-				$AVDHostPoolDefaults = Get-RASAVDDefaultSettings -DefObjType AVDMultiSessionDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
+				$AVDHostPoolDefaults = Get-RASAVDDefaultSettings -DefObjType AVDMultiSessionDefaultSettings -SiteId $Site.Id -EA 0 4> $Null
 				
 				If($? -and $Null -ne $AVDHostPoolDefaults)
 				{
@@ -29597,35 +29191,7 @@ Function OutputAVDDetails
 				#yes we do, get the default settings for the Site
 				#use the Site default settings
 
-				<#
-					PS C:\Parallels-RAS-V19.x-Doc-Script-4.00> $AVDHostPoolDefaults.AutoUpgrade | % {$_.psobject.properties | select name, value | sort name}
-
-					Name                                   Value
-					----                                   -----
-					DrainModeDurationInSecs                  900
-					Enabled                                 True
-					ForceLogoffSessions                     True
-					Messages                                 {1}
-					Repeat                             EveryWeek
-					SpecificDays                           Never
-					StartDateTime           12/2/2025 7:24:26 PM
-
-
-					PS C:\Parallels-RAS-V19.x-Doc-Script-4.00>
-
-					PS C:\Parallels-RAS-V19.x-Doc-Script-4.00> $AVDHostPoolDefaults.AutoUpgrade.Messages | % {$_.psobject.properties | select name, value | sort name}
-
-					Name                                          Value
-					----                                          -----
-					Enabled                                        True
-					Id                                                1
-					Message      hey you! Get off the figgin' server!!!
-					MessageTitle         Message from RAS administrator
-					SendMsgSecs                                     900
-					SendMsgWhen                                  Before
-				#>
-
-				$AVDHostPoolDefaults = Get-RASAVDDefaultSettings -DefObjType AVDMultiSessionDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
+				$AVDHostPoolDefaults = Get-RASAVDDefaultSettings -DefObjType AVDMultiSessionDefaultSettings -SiteId $Site.Id -EA 0 4> $Null
 				
 				If($? -and $Null -ne $AVDHostPoolDefaults)
 				{
@@ -29689,7 +29255,7 @@ Function OutputAVDDetails
 			{
 				#we don't inherit
 				#get the settings for the host pool
-				$Results = Get-RASAutoUpgrade -Name $AVDHostPool.Name -SiteId $Site.Id -ObjType "AVDHostPool" -EA 0 4>$Null
+				$Results = Get-RASAutoUpgrade -Name $AVDHostPool.Name -SiteId $Site.Id -ObjType "AVDHostPool" -EA 0 4> $Null
 				
 				If(!($?) -or $Null -eq $Results)
 				{
@@ -29901,28 +29467,7 @@ Function OutputAVDDetails
 			{
 				#nothing
 			}
-			<#
-				PS C:\Parallels-RAS-V19.x-Doc-Script-4.00> $AVDHostPool1.AVDAgent | fl
 
-
-				ScheduleAgentUpdates : False
-				LocalSessionTimeZone : True
-				TimeZone             :
-				ScheduleDay1         : Friday
-				ScheduleTime1        : h00
-				EnableSchedule2      : False
-				ScheduleDay2         : Monday
-				ScheduleTime2        : h00
-
-				ScheduleAgentUpdates : True
-				LocalSessionTimeZone : False
-				TimeZone             : (UTC-06:00) Central Time (US & Canada)
-				ScheduleDay1         : Monday
-				ScheduleTime1        : h01
-				EnableSchedule2      : True
-				ScheduleDay2         : Sunday
-				ScheduleTime2        : h02
-			#>
 			If($MSWord -or $PDF)
 			{
 				$ScriptInformation = New-Object System.Collections.ArrayList
@@ -30211,7 +29756,7 @@ Function OutputAVDDetails
 		WriteHTMLLine 3 0 "Templates"
 	}
 
-	$AVDTemplates = Get-RASTemplate -ObjType AVDTemplate -SiteId $Site.Id -EA 0 4>$Null
+	$AVDTemplates = Get-RASTemplate -ObjType AVDTemplate -SiteId $Site.Id -EA 0 4> $Null
 
 	If(!($?))
 	{
@@ -30261,7 +29806,7 @@ Function OutputAVDDetails
 		{
 			Write-Verbose "$(Get-Date -Format G): `t`t$($AVDTemplate.Name)"
 
-			$TemplateProvider = Get-RASProvider -Id $AVDTemplate.ProviderId -EA 0 4>$Null
+			$TemplateProvider = Get-RASProvider -Id $AVDTemplate.ProviderId -EA 0 4> $Null
 			
 			If($? -and $Null -ne $TemplateProvider)
 			{
@@ -30272,7 +29817,7 @@ Function OutputAVDDetails
 				$TemplateProviderName = ""
 			}
 
-			$TemplateStatus = Get-RASTemplateStatus -Id $AVDTemplate.Id -ObjType AVDTemplate -EA 0 4>$Null
+			$TemplateStatus = Get-RASTemplateStatus -Id $AVDTemplate.Id -ObjType AVDTemplate -EA 0 4> $Null
 
 			If($? -and $Null -ne $TemplateStatus)
 			{
@@ -30364,8 +29909,8 @@ Function OutputAVDDetails
 			If($HTML)
 			{
 				$rowdata = @()
-				$columnHeaders = @("Name",($Script:htmlsb),$AVDTemplate.Name,$htmlwhite)
-				$rowdata += @(,("Description",($Script:htmlsb),$AVDTemplate.Description,$htmlwhite))
+				$columnHeaders = @("Name",($Script:htmlsb),$AVDTemplate.Name.Replace("<","").Replace(">",""),$htmlwhite)
+				$rowdata += @(,("Description",($Script:htmlsb),$AVDTemplate.Description.Replace("<","").Replace(">",""),$htmlwhite))
 				$rowdata += @(,("Status",($Script:htmlsb),$FullTemplateStatus,$htmlwhite))
 				$rowdata += @(,("Power state",($Script:htmlsb),$TemplatePowerState,$htmlwhite))
 				$rowdata += @(,("Type",($Script:htmlsb),$AVDTemplateType,$htmlwhite))
@@ -30446,9 +29991,9 @@ Function OutputAVDDetails
 			If($HTML)
 			{
 				$rowdata = @()
-				$columnHeaders = @("Template name",($Script:htmlsb),$AVDTemplate.Name,$htmlwhite)
+				$columnHeaders = @("Template name",($Script:htmlsb),$AVDTemplate.Name.Replace("<","").Replace(">",""),$htmlwhite)
 				$rowdata += @(,("Type",($Script:htmlsb),$AVDTemplateType,$htmlwhite))
-				$rowdata += @(,("Description",($Script:htmlsb),$AVDTemplate.Description,$htmlwhite))
+				$rowdata += @(,("Description",($Script:htmlsb),$AVDTemplate.Description.Replace("<","").Replace(">",""),$htmlwhite))
 				$rowdata += @(,("High availability",($Script:htmlsb),"",$htmlwhite))
 				$rowdata += @(,("     Availability set",($Script:htmlsb),$AvailabilitySet,$htmlwhite))
 
@@ -30676,15 +30221,14 @@ Function OutputAVDDetails
 				If($OPTWindowsDefenderATPEnabled -eq "True")
 				{
 					$ScriptInformation = New-Object System.Collections.ArrayList
-					$ScriptInformation.Add(@{Data = "Windows Defender ATP Optimizations"; Value = ""; }) > $Null
 
 					If($AVDTemplate.Optimization.WindowsDefenderATP.WinDefATPTurnOffOn.ToString() -eq "TurnOffWindowsDefenderATP")
 					{
-						$ScriptInformation.Add(@{Data = "     Turn off Windows Defender ATP (I use my own ATP solution)"; Value = ""; }) > $Null
+						$ScriptInformation.Add(@{Data = "Windows Defender ATP Optimizations"; Value = "Turn off Windows Defender ATP (I use my own ATP solution)"; }) > $Null
 					}
 					Else
 					{
-						$ScriptInformation.Add(@{Data = "     Turn on Windows Defender ATP and set process and folder exclusions"; Value = ""; }) > $Null
+						$ScriptInformation.Add(@{Data = "Windows Defender ATP Optimizations"; Value = "Turn on Windows Defender ATP and set process and folder exclusions"; }) > $Null
 						$ScriptInformation.Add(@{Data = "     Disable real-time protection"; Value = $AVDTemplate.Optimization.WindowsDefenderATP.DisableRealTimeProtection.ToString(); }) > $Null
 						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
 						
@@ -31532,14 +31076,13 @@ Function OutputAVDDetails
 				Line 5 "Windows Defender ATP: " $OPTWindowsDefenderATPEnabled
 				If($OPTWindowsDefenderATPEnabled -eq "True")
 				{
-					Line 6 "Windows Defender ATP Optimizations"
 					If($AVDTemplate.Optimization.WindowsDefenderATP.WinDefATPTurnOffOn.ToString() -eq "TurnOffWindowsDefenderATP")
 					{
-						Line 7 "Turn off Windows Defender ATP (I use my own ATP solution)"
+						Line 6 "Windows Defender ATP Optimizations: Turn off Windows Defender ATP (I use my own ATP solution)"
 					}
 					Else
 					{
-						Line 7 "Turn on Windows Defender ATP and set process and folder exclusions"
+						Line 6 "Windows Defender ATP Optimizations: Turn on Windows Defender ATP and set process and folder exclusions"
 						Line 7 "Disable real-time protection: " $AVDTemplate.Optimization.WindowsDefenderATP.DisableRealTimeProtection.ToString()
 						Line 0 ""
 						Line 7 "Exclude files and folders:"
@@ -31973,15 +31516,14 @@ Function OutputAVDDetails
 				If($OPTWindowsDefenderATPEnabled -eq "True")
 				{
 					$rowdata = @()
-					$columnHeaders = @("Windows Defender ATP Optimizations",($Script:htmlsb),"",$htmlwhite)
 
 					If($AVDTemplate.Optimization.WindowsDefenderATP.WinDefATPTurnOffOn.ToString() -eq "TurnOffWindowsDefenderATP")
 					{
-						$rowdata += @(,("     Turn off Windows Defender ATP (I use my own ATP solution)",($Script:htmlsb),"",$htmlwhite))
+						$columnHeaders = @("Windows Defender ATP Optimizations",($Script:htmlsb),"Turn off Windows Defender ATP (I use my own ATP solution)",$htmlwhite)
 					}
 					Else
 					{
-						$rowdata += @(,("     Turn on Windows Defender ATP and set process and folder exclusions",($Script:htmlsb),"",$htmlwhite))
+						$columnHeaders = @("Windows Defender ATP Optimizations",($Script:htmlsb),"Turn on Windows Defender ATP and set process and folder exclusions",$htmlwhite)
 						$rowdata += @(,("     Disable real-time protection",($Script:htmlsb), $AVDTemplate.Optimization.WindowsDefenderATP.DisableRealTimeProtection.ToString(),$htmlwhite))
 						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 						
@@ -32030,7 +31572,7 @@ Function OutputAVDDetails
 
 
 					$msg = ""
-					$columnWidths = @("300","275")
+					$columnWidths = @("250","350")
 					FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 					WriteHTMLLine 0 0 ""
 				}
@@ -32625,7 +32167,7 @@ Function OutputAVDDetails
 			Default				{$AVDHostPowerState = "Unable to determine AVD Host power state: $($Status.PowerState)"; Break}
 		}
 
-		$AVDProvider = Get-RASProvider -Id $AVDHost.ProviderId -EA 0 4>$Null
+		$AVDProvider = Get-RASProvider -Id $AVDHost.ProviderId -EA 0 4> $Null
 		
 		If(!($?))
 		{
@@ -32640,7 +32182,7 @@ Function OutputAVDDetails
 			$AVDProviderName = $AVDProvider.Name
 		}
 		
-		$AVDHostPool = Get-RASAVDHostPool -Name $AVDHost.HostPool -EA 0 4>$Null
+		$AVDHostPool = Get-RASAVDHostPool -Name $AVDHost.HostPool -EA 0 4> $Null
 		
 		If($?)
 		{
@@ -32652,7 +32194,10 @@ Function OutputAVDDetails
 				{
 					$AVDTemplateName = $AVDTemplate.Name
 					
-					$AVDTemplateVersion = Get-RASTemplateVersion -Id $AVDHostPool.TemplateSettings.TemplateVersionId -TemplateId $AVDHostPool.TemplateSettings.TemplateId -ObjType "AVDTemplate" -EA 0 4> $Null
+					$AVDTemplateVersion = Get-RASTemplateVersion -Id $AVDHostPool.TemplateSettings.TemplateVersionId `
+					-TemplateId $AVDHostPool.TemplateSettings.TemplateId `
+					-ObjType "AVDTemplate" `
+					-EA 0 4> $Null
 
 					If($? -and $Null -ne $AVDTemplateVersion)
 					{
@@ -32778,7 +32323,7 @@ Function OutputAVDDetails
 			$rowdata += @(,("Disk(s)",($Script:htmlsb),$Status.Disks,$htmlwhite))
 
 			$msg = ""
-			$columnWidths = @("200","275")
+			$columnWidths = @("150","350")
 			FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 			WriteHTMLLine 0 0 ""
 		}
@@ -33067,7 +32612,7 @@ Function OutputAVDDetails
 			If($HTML)
 			{
 				$rowdata = @()
-				$columnHeaders = @("Name",($Script:htmlsb),$AVDSchedule.Name,$htmlwhite)
+				$columnHeaders = @("Name",($Script:htmlsb),$AVDSchedule.Name.Replace("<","").Replace(">",""),$htmlwhite)
 				$rowdata += @(,("Enabled",($Script:htmlsb),$AVDSchedule.Enabled.ToString(),$htmlwhite))
 				$rowdata += @(,("Action",($Script:htmlsb),$Action,$htmlwhite))
 				$rowdata += @(,("Target type",($Script:htmlsb),$TargetType,$htmlwhite))
@@ -33088,7 +32633,7 @@ Function OutputAVDDetails
 				
 				$rowdata += @(,("Start",($Script:htmlsb),"$($AVDSchedule.Trigger.StartDateTime.ToShortDateString()) $($AVDSchedule.Trigger.StartDateTime.ToShortTImeString())",$htmlwhite))
 				$rowdata += @(,("Repeat",($Script:htmlsb),$Repeat,$htmlwhite))
-				$rowdata += @(,("Description",($Script:htmlsb),$AVDSchedule.Description,$htmlwhite))
+				$rowdata += @(,("Description",($Script:htmlsb),$AVDSchedule.Description.Replace("<","").Replace(">",""),$htmlwhite))
 				$rowdata += @(,("Last modification by",($Script:htmlsb),$AVDSchedule.AdminLastMod,$htmlwhite))
 				$rowdata += @(,("Modified on",($Script:htmlsb),(Get-Date -UFormat "%c" $AVDSchedule.TimeLastMod),$htmlwhite))
 				$rowdata += @(,("Created by",($Script:htmlsb),$AVDSchedule.AdminCreate,$htmlwhite))
@@ -33182,9 +32727,9 @@ Function OutputAVDDetails
 			{
 				$rowdata = @()
 				$columnHeaders = @("Enable schedule",($Script:htmlsb),$AVDSchedule.Enabled.ToString(),$htmlwhite)
-				$rowdata += @(,("Name",($Script:htmlsb),$AVDSchedule.Name,$htmlwhite))
+				$rowdata += @(,("Name",($Script:htmlsb),$AVDSchedule.Name.Replace("<","").Replace(">",""),$htmlwhite))
 				$rowdata += @(,("Action",($Script:htmlsb),$Action,$htmlwhite))
-				$rowdata += @(,("Description",($Script:htmlsb),$AVDSchedule.Description,$htmlwhite))
+				$rowdata += @(,("Description",($Script:htmlsb),$AVDSchedule.Description.Replace("<","").Replace(">",""),$htmlwhite))
 				
 				$cnt=-1
 				ForEach($Item in $Target)
@@ -33507,7 +33052,7 @@ Function OutputAVDDetails
 					}
 
 					$msg = "Options"
-					$columnWidths = @("350","275")
+					$columnWidths = @("250","275")
 					FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 					WriteHTMLLine 0 0 ""
 				}
@@ -33538,7 +33083,7 @@ Function OutputProvidersDetails
 		WriteHTMLLine 2 0 "Providers"
 	}
 
-	$Providers = Get-RASProvider -SiteId $Site.Id -EA 0 4>$Null
+	$Providers = Get-RASProvider -SiteId $Site.Id -EA 0 4> $Null
 	
 	If(!($?))
 	{
@@ -33594,7 +33139,7 @@ Function OutputProvidersDetails
 	{
 		ForEach($Provider in $Providers)
 		{
-			$ProviderStatus = Get-RASProviderStatus -Id $Provider.Id -EA 0 4>$Null
+			$ProviderStatus = Get-RASProviderStatus -Id $Provider.Id -EA 0 4> $Null
 			
 			If(!($?))
 			{
@@ -33624,7 +33169,7 @@ Function OutputProvidersDetails
 			ElseIf($? -and $Null -eq $ProviderStatus)
 			{
 				Write-Host "
-				No Provider Status retrieved for Provider $($Provider.Id)`
+	No Provider Status retrieved for Provider $($Provider.Id)`
 				" -ForegroundColor White
 				If($MSWord -or $PDF)
 				{
@@ -33751,11 +33296,11 @@ Function OutputProvidersDetails
 				If($HTML)
 				{
 					$rowdata = @()
-					$columnHeaders = @("Name",($Script:htmlsb),$Provider.Name,$htmlwhite)
+					$columnHeaders = @("Name",($Script:htmlsb),$Provider.Name.Replace("<","").Replace(">",""),$htmlwhite)
 					$rowdata += @(,("Enabled",($Script:htmlsb),$Provider.Enabled.ToString(),$htmlwhite))
 					$rowdata += @(,("Status",($Script:htmlsb),$FullProviderStatus,$htmlwhite))
 					$rowdata += @(,("Type",($Script:htmlsb),$VDIType,$htmlwhite))
-					$rowdata += @(,("Description",($Script:htmlsb),$Provider.Description,$htmlwhite))
+					$rowdata += @(,("Description",($Script:htmlsb),$Provider.Description.Replace("<","").Replace(">",""),$htmlwhite))
 					$rowdata += @(,("Provider Agent",($Script:htmlsb),$Provider.VDIAgent,$htmlwhite))
 					If($VDIType -like "*azure*")
 					{
@@ -33799,7 +33344,7 @@ Function OutputProvidersDetails
 			
 			If(validobject $Provider PreferredBrokerId)
 			{
-				$HostPA = Get-RASBroker -Id $Provider.PreferredBrokerId -EA 0 4>$Null
+				$HostPA = Get-RASBroker -Id $Provider.PreferredBrokerId -EA 0 4> $Null
 			}
 			Else
 			{
@@ -33945,8 +33490,8 @@ Function OutputProvidersDetails
 				$columnHeaders = @("Enable provider in site",($Script:htmlsb),$Provider.Enabled.ToString(),$htmlwhite)
 				If($VDIType -like "*azure*")
 				{
-					$rowdata += @(,("Name",($Script:htmlsb), $Provider.Name,$htmlwhite))
-					$rowdata += @(,("Description",($Script:htmlsb), $Provider.Description,$htmlwhite))
+					$rowdata += @(,("Name",($Script:htmlsb), $Provider.Name.Replace("<","").Replace(">",""),$htmlwhite))
+					$rowdata += @(,("Description",($Script:htmlsb), $Provider.Description.Replace("<","").Replace(">",""),$htmlwhite))
 					$rowdata += @(,("Type",($Script:htmlsb),$VDIType,$htmlwhite))
 					$rowdata += @(,("Preferred Connection Broker",($Script:htmlsb),$ProviderStatus.PreferredBroker,$htmlwhite))
 					$rowdata += @(,("Microsoft Azure subscription",($Script:htmlsb),"",$htmlwhite))
@@ -33970,12 +33515,12 @@ Function OutputProvidersDetails
 				}
 				Else
 				{
-					$rowdata += @(,("Name",($Script:htmlsb), $Provider.Name,$htmlwhite))
-					$rowdata += @(,("Description",($Script:htmlsb), $Provider.Description,$htmlwhite))
+					$rowdata += @(,("Name",($Script:htmlsb), $Provider.Name.Replace("<","").Replace(">",""),$htmlwhite))
+					$rowdata += @(,("Description",($Script:htmlsb), $Provider.Description.Replace("<","").Replace(">",""),$htmlwhite))
 					$rowdata += @(,("Type",($Script:htmlsb),$VDIType,$htmlwhite))
 					$rowdata += @(,("Host",($Script:htmlsb),$Provider.Server,$htmlwhite))
 					$rowdata += @(,("Port",($Script:htmlsb),$Provider.VDIPort.ToString(),$htmlwhite))
-					$rowdata += @(,("Description",($Script:htmlsb),$Provider.Description,$htmlwhite))
+					$rowdata += @(,("Description",($Script:htmlsb),$Provider.Description.Replace("<","").Replace(">",""),$htmlwhite))
 				}
 				$rowdata += @(,("Dedicated Provider Agent",($Script:htmlsb),$DedicatedVDIAgent.ToString(),$htmlwhite))
 				If($DedicatedVDIAgent)
@@ -34005,12 +33550,6 @@ Function OutputProvidersDetails
 			}
 
 			$ProviderUsername = $Provider.ProviderUsername
-			
-			<#
-				ADType                      WindowsServerADDS (Windows Server AD DS (objectGUID)
-				ADType						3 (Windows Server AD DS (objectGUID String)
-				ADType						AzureADDS (Azure AD DS)
-			#>
 			
 			If(ValidObject $Provider ADType)
 			{
@@ -34315,7 +33854,7 @@ Function OutputSecureGatewaysDetails
 				WriteHTMLLine 3 0 "Secure Gateway $($SecureGateway.Server)"
 			}
 
-			$SecureGatewayStatus = Get-RASGatewayStatus -Id $SecureGateway.Id -EA 0 4>$Null
+			$SecureGatewayStatus = Get-RASGatewayStatus -Id $SecureGateway.Id -EA 0 4> $Null
 			
 			If(!($?))
 			{
@@ -34356,7 +33895,7 @@ Function OutputSecureGatewaysDetails
 			ElseIf($? -and $Null -eq $SecureGatewayStatus)
 			{
 				Write-Host "
-				No Secure Gateway Status retrieved for Secure Gateway $($SecureGateway.Id)`
+	No Secure Gateway Status retrieved for Secure Gateway $($SecureGateway.Id)`
 				" -ForegroundColor White
 				If($MSWord -or $PDF)
 				{
@@ -34390,7 +33929,7 @@ Function OutputSecureGatewaysDetails
 					#yes we do, get the default settings for the Site
 					#use the Site default settings
 
-					$SecureGatewayDefaults = Get-RASGatewayDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
+					$SecureGatewayDefaults = Get-RASGatewayDefaultSettings -SiteId $Site.Id -EA 0 4> $Null
 					
 					If($? -and $Null -ne $SecureGatewayDefaults)
 					{
@@ -34435,7 +33974,7 @@ Function OutputSecureGatewaysDetails
 						}
 						Else
 						{
-							$Results = Get-RASCertificate -Id $SecureGatewayDefaults.CertificateId -EA 0 4>$Null
+							$Results = Get-RASCertificate -Id $SecureGatewayDefaults.CertificateId -EA 0 4> $Null
 							
 							If($? -and $Null -ne $Results)
 							{
@@ -34504,7 +34043,7 @@ Function OutputSecureGatewaysDetails
 					}
 					Else
 					{
-						$Results = Get-RASCertificate -Id $SecureGateway.CertificateId -EA 0 4>$Null
+						$Results = Get-RASCertificate -Id $SecureGateway.CertificateId -EA 0 4> $Null
 						
 						If($? -and $Null -ne $Results)
 						{
@@ -34574,7 +34113,7 @@ Function OutputSecureGatewaysDetails
 					$columnHeaders = @("Server",($Script:htmlsb),$SecureGateway.Server,$htmlwhite)
 					$rowdata += @(,("Mode",($Script:htmlsb),$SecureGateway.Mode.ToString(),$htmlwhite))
 					$rowdata += @(,("Status",($Script:htmlsb),$SecureGatewayStatusAgentState.ToString(),$htmlwhite))
-					$rowdata += @(,("Description",($Script:htmlsb),$SecureGateway.Description,$htmlwhite))
+					$rowdata += @(,("Description",($Script:htmlsb),$SecureGateway.Description.Replace("<","").Replace(">",""),$htmlwhite))
 					$rowdata += @(,("Certificate",($Script:htmlsb),$SecureGatewayCertificates,$htmlwhite))
 					$rowdata += @(,("Log level",($Script:htmlsb),$SecureGatewayStatus.LogLevel,$htmlwhite))
 					$rowdata += @(,("Last modification by",($Script:htmlsb), $SecureGateway.AdminLastMod,$htmlwhite))
@@ -34750,7 +34289,7 @@ Function OutputSecureGatewaysDetails
 				$rowdata = @()
 				$columnHeaders = @("Enable Secure Gateway in Site",($Script:htmlsb),$SecureGateway.Enabled.ToString(),$htmlwhite)
 				$rowdata += @(,("Server",($Script:htmlsb),$SecureGateway.Server,$htmlwhite))
-				$rowdata += @(,("Description",($Script:htmlsb),$SecureGateway.Description,$htmlwhite))
+				$rowdata += @(,("Description",($Script:htmlsb),$SecureGateway.Description.Replace("<","").Replace(">",""),$htmlwhite))
 				$rowdata += @(,("IP version",($Script:htmlsb),"",$htmlwhite))
 				$rowdata += @(,("     Use IP version",($Script:htmlsb),$IPVersion,$htmlwhite))
 				
@@ -34807,7 +34346,7 @@ Function OutputSecureGatewaysDetails
 				#yes we do, get the default settings for the Site
 				#use the Site default settings
 
-				$SecureGatewayDefaults = Get-RASGatewayDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
+				$SecureGatewayDefaults = Get-RASGatewayDefaultSettings -SiteId $Site.Id -EA 0 4> $Null
 				
 				If($? -and $Null -ne $SecureGatewayDefaults)
 				{
@@ -34828,7 +34367,7 @@ Function OutputSecureGatewaysDetails
 					}
 					Else
 					{
-						$SecureGatewayPreferredConnectionBroker = (Get-RASBroker -Id $SecureGatewayDefaults.PreferredBrokerId -EA 0 4>$Null).Server
+						$SecureGatewayPreferredConnectionBroker = (Get-RASBroker -Id $SecureGatewayDefaults.PreferredBrokerId -EA 0 4> $Null).Server
 					}
 				}
 				Else
@@ -34861,7 +34400,7 @@ Function OutputSecureGatewaysDetails
 				}
 				Else
 				{
-					$SecureGatewayPreferredConnectionBroker = (Get-RASBroker -Id $SecureGateway.PreferredBrokerId -EA 0 4>$Null).Server
+					$SecureGatewayPreferredConnectionBroker = (Get-RASBroker -Id $SecureGateway.PreferredBrokerId -EA 0 4> $Null).Server
 				}
 			}
 			
@@ -35078,7 +34617,7 @@ Function OutputSecureGatewaysDetails
 				#yes we do, get the default settings for the Site
 				#use the Site default settings
 
-				$SecureGatewayDefaults = Get-RASGatewayDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
+				$SecureGatewayDefaults = Get-RASGatewayDefaultSettings -SiteId $Site.Id -EA 0 4> $Null
 				
 				If($? -and $Null -ne $SecureGatewayDefaults)
 				{
@@ -35333,7 +34872,7 @@ Function OutputSecureGatewaysDetails
 				#yes we do, get the default settings for the Site
 				#use the Site default settings
 
-				$SecureGatewayDefaults = Get-RASGatewayDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
+				$SecureGatewayDefaults = Get-RASGatewayDefaultSettings -SiteId $Site.Id -EA 0 4> $Null
 				
 				If($? -and $Null -ne $SecureGatewayDefaults)
 				{
@@ -35658,7 +35197,7 @@ Function OutputSecureGatewaysDetails
 				#yes we do, get the default settings for the Site
 				#use the Site default settings
 
-				$SecureGatewayDefaults = Get-RASGatewayDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
+				$SecureGatewayDefaults = Get-RASGatewayDefaultSettings -SiteId $Site.Id -EA 0 4> $Null
 				
 				If($? -and $Null -ne $SecureGatewayDefaults)
 				{
@@ -35746,7 +35285,7 @@ Function OutputSecureGatewaysDetails
 				#yes we do, get the default settings for the Site
 				#use the Site default settings
 
-				$SecureGatewayDefaults = Get-RASGatewayDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
+				$SecureGatewayDefaults = Get-RASGatewayDefaultSettings -SiteId $Site.Id -EA 0 4> $Null
 				
 				If($? -and $Null -ne $SecureGatewayDefaults)
 				{
@@ -35923,7 +35462,7 @@ Function OutputSecureGatewaysDetails
 				#yes we do, get the default settings for the Site
 				#use the Site default settings
 
-				$SecureGatewayDefaults = Get-RASGatewayDefaultSettings -SiteId $Site.Id -EA 0 4>$Null
+				$SecureGatewayDefaults = Get-RASGatewayDefaultSettings -SiteId $Site.Id -EA 0 4> $Null
 				
 				If($? -and $Null -ne $SecureGatewayDefaults)
 				{
@@ -36092,7 +35631,7 @@ Function OutputSecureGatewaysDetails
 			{
 				$PublishType = "RD Session Host Pool"
 				
-				$Results = Get-RASRDSHostPool -Id $TunnelPolicy.RDSHostPoolIds[0]
+				$Results = Get-RASRDSHostPool -Id $TunnelPolicy.RDSHostPoolIds[0] -EA 0 4> $Null
 				
 				If($?)
 				{
@@ -36107,7 +35646,7 @@ Function OutputSecureGatewaysDetails
 			{
 				$PublishType = "Individual"
 				
-				$Results = Get-RASRDSHost -Id $TunnelPolicy.RDSHostIds[0]
+				$Results = Get-RASRDSHost -Id $TunnelPolicy.RDSHostIds[0] -EA 0 4> $Null
 				
 				If($?)
 				{
@@ -36169,9 +35708,9 @@ Function OutputSecureGatewaysDetails
 			If($HTML)
 			{
 				$rowdata = @()
-				$columnHeaders = @("Gateway IP",($Script:htmlsb),$TunnelPolicy.IP.Trim("<",">"),$htmlwhite)
-				$rowdata += @(,( "Type",($Script:htmlsb),$PublishType.Trim("<",">"),$htmlwhite))
-				$rowdata += @(,( "Description",($Script:htmlsb),$Description.Trim("<",">"),$htmlwhite))
+				$columnHeaders = @("Gateway IP",($Script:htmlsb),$TunnelPolicy.IP.Replace("<","").Replace(">",""),$htmlwhite)
+				$rowdata += @(,( "Type",($Script:htmlsb),$PublishType.Replace("<","").Replace(">",""),$htmlwhite))
+				$rowdata += @(,( "Description",($Script:htmlsb),$Description.Replace("<","").Replace(">",""),$htmlwhite))
 				$rowdata += @(,( "Last modification by",($Script:htmlsb),$TunnelPolicy.AdminLastMod,$htmlwhite))
 				$rowdata += @(,( "Modified on",($Script:htmlsb),(Get-Date -UFormat "%c" $TunnelPolicy.TimeLastMod),$htmlwhite))
 				$rowdata += @(,( "Created by",($Script:htmlsb),$TunnelPolicy.AdminCreate.ToString(),$htmlwhite))
@@ -36260,7 +35799,7 @@ Function OutputConnectionBrokersDetails
 	{
 		ForEach($ConnectionBroker in $ConnectionBrokers)
 		{
-			$ConnectionBrokerStatus = Get-RASBrokerStatus -Id $ConnectionBroker.Id -EA 0 4>$Null
+			$ConnectionBrokerStatus = Get-RASBrokerStatus -Id $ConnectionBroker.Id -EA 0 4> $Null
 			
 			If(!($?))
 			{
@@ -36290,7 +35829,7 @@ Function OutputConnectionBrokersDetails
 			ElseIf($? -and $Null -eq $ConnectionBrokerStatus)
 			{
 				Write-Host "
-				No Status retrieved for Connection Broker $($ConnectionBroker.Id)`
+	No Status retrieved for Connection Broker $($ConnectionBroker.Id)`
 				" -ForegroundColor White
 				If($MSWord -or $PDF)
 				{
@@ -36452,7 +35991,7 @@ Function OutputConnectionBrokersDetails
 				$rowdata += @(,("Server",($Script:htmlsb),$ConnectionBroker.Server,$htmlwhite))
 				$rowdata += @(,("IP",($Script:htmlsb),$ConnectionBroker.IP,$htmlwhite))
 				$rowdata += @(,("Alternative IPs",($Script:htmlsb),$ConnectionBroker.AlternativeIPs,$htmlwhite))
-				$rowdata += @(,("Description",($Script:htmlsb),$ConnectionBroker.Description,$htmlwhite))
+				$rowdata += @(,("Description",($Script:htmlsb),$ConnectionBroker.Description.Replace("<","").Replace(">",""),$htmlwhite))
 				$rowdata += @(,("Standby",($Script:htmlsb),$ConnectionBroker.Standby.ToString(),$htmlwhite))
 
 				$msg = "Properties"
@@ -36462,7 +36001,7 @@ Function OutputConnectionBrokersDetails
 			}
 
 			#Auto-promotion
-			$ConnectionBrokerAutoPromotion = Get-RASBrokerAutoPromotionSettings -SiteId $Site.Id -EA 0 4>$Null
+			$ConnectionBrokerAutoPromotion = Get-RASBrokerAutoPromotionSettings -SiteId $Site.Id -EA 0 4> $Null
 			
 			If(!($?))
 			{
@@ -36492,7 +36031,7 @@ Function OutputConnectionBrokersDetails
 			ElseIf($? -and $Null -eq $ConnectionBrokerStatus)
 			{
 				Write-Host "
-				No data retrieved for Auto-promotion for Site $($Site.Id)`
+	No data retrieved for Auto-promotion for Site $($Site.Id)`
 				" -ForegroundColor White
 				If($MSWord -or $PDF)
 				{
@@ -36690,7 +36229,7 @@ Function OutputEnrollmentServersDetails
 				WriteHTMLLine 4 0 "Enrollment Server $($EnrollmentServer.Server)"
 			}
 			
-			$ESStatus = Get-RASEnrollmentServerStatus -Server $EnrollmentServer.Server -EA 0 4>$Null
+			$ESStatus = Get-RASEnrollmentServerStatus -Server $EnrollmentServer.Server -EA 0 4> $Null
 			
 			If(!($?))
 			{
@@ -36720,7 +36259,7 @@ Function OutputEnrollmentServersDetails
 			ElseIf($? -and $Null -eq $ESStatus)
 			{
 				Write-Host "
-				No Status retrieved for Enrollment Server $($EnrollmentServer.Server)`
+	No Status retrieved for Enrollment Server $($EnrollmentServer.Server)`
 				" -ForegroundColor White
 				If($MSWord -or $PDF)
 				{
@@ -36798,7 +36337,7 @@ Function OutputEnrollmentServersDetails
 				$columnHeaders = @("Name",($Script:htmlsb),$EnrollmentServer.Server,$htmlwhite)
 				$rowdata += @(,("Enabled",($Script:htmlsb),$EnrollmentServer.Enabled.ToString(),$htmlwhite))
 				$rowdata += @(,("Status",($Script:htmlsb),$EnrollmentServerStatus,$htmlwhite))
-				$rowdata += @(,("Description",($Script:htmlsb),$EnrollmentServer.Description,$htmlwhite))
+				$rowdata += @(,("Description",($Script:htmlsb),$EnrollmentServer.Description.Replace("<","").Replace(">",""),$htmlwhite))
 				$rowdata += @(,("Log level",($Script:htmlsb),$ESStatus.LogLevel,$htmlwhite))
 				$rowdata += @(,("Last modification by",($Script:htmlsb), $EnrollmentServer.AdminLastMod,$htmlwhite))
 				$rowdata += @(,("Modified on",($Script:htmlsb), (Get-Date -UFormat "%c" $EnrollmentServer.TimeLastMod),$htmlwhite))
@@ -36831,7 +36370,7 @@ Function OutputEnrollmentServersDetails
 			}
 			Else
 			{
-				$EnrollmentServerPreferredConnectionBroker = (Get-RASBroker -Id $EnrollmentServer.PreferredBrokerId -EA 0 4>$Null).Server
+				$EnrollmentServerPreferredConnectionBroker = (Get-RASBroker -Id $EnrollmentServer.PreferredBrokerId -EA 0 4> $Null).Server
 			}
 
 			If($MSWord -or $PDF)
@@ -36873,7 +36412,7 @@ Function OutputEnrollmentServersDetails
 				$rowdata = @()
 				$columnHeaders = @("Enable Enrollment Server",($Script:htmlsb),$EnrollmentServer.Enabled.ToString(),$htmlwhite)
 				$rowdata += @(,("Server",($Script:htmlsb),$EnrollmentServer.Server,$htmlwhite))
-				$rowdata += @(,("Description",($Script:htmlsb),$EnrollmentServer.Description,$htmlwhite))
+				$rowdata += @(,("Description",($Script:htmlsb),$EnrollmentServer.Description.Replace("<","").Replace(">",""),$htmlwhite))
 				$rowdata += @(,("Preferred Connection Broker",($Script:htmlsb),$EnrollmentServerPreferredConnectionBroker,$htmlwhite))
 
 				$msg = "General"
@@ -36914,7 +36453,7 @@ Function OutputEnrollmentServersDetails
 		ElseIf($? -and $Null -eq $EnrollmentServers)
 		{
 			Write-Host "
-		No Enrollment Server AD Integration retrieved for Site $($Site.Name).`
+	No Enrollment Server AD Integration retrieved for Site $($Site.Name).`
 		
 			" -ForegroundColor White
 			If($MSWord -or $PDF)
@@ -37148,11 +36687,11 @@ Function OutputHALBDetails
 			{
 				WriteHTMLLine 3 0 "HALB $($HALB.Name)"
 				$rowdata = @()
-				$columnHeaders = @("Name",($Script:htmlsb),$HALB.Name,$htmlwhite)
+				$columnHeaders = @("Name",($Script:htmlsb),$HALB.Name.Replace("<","").Replace(">",""),$htmlwhite)
 				$rowdata += @(,("IPv4",($Script:htmlsb),$HALB.VirtualIPV4,$htmlwhite))
 				$rowdata += @(,("IPv6",($Script:htmlsb),$HALB.VirtualIPV6,$htmlwhite))
 				$rowdata += @(,("Status",($Script:htmlsb),$HALBStatus,$htmlwhite))
-				$rowdata += @(,("Description",($Script:htmlsb),$HALB.Description,$htmlwhite))
+				$rowdata += @(,("Description",($Script:htmlsb),$HALB.Description.Replace("<","").Replace(">",""),$htmlwhite))
 				$rowdata += @(,("Public Address",($Script:htmlsb),$HALB.PublicAddress,$htmlwhite))
 				$rowdata += @(,("Last modification by",($Script:htmlsb), $HALB.AdminLastMod,$htmlwhite))
 				$rowdata += @(,("Modified on",($Script:htmlsb), (Get-Date -UFormat "%c" $HALB.TimeLastMod),$htmlwhite))
@@ -37245,8 +36784,8 @@ Function OutputHALBDetails
 			{
 				$rowdata = @()
 				$columnHeaders = @("Enable HALB",($Script:htmlsb),$HALB.EnableHALBInstance.ToString(),$htmlwhite)
-				$rowdata += @(,("Name",($Script:htmlsb),$HALB.Name,$htmlwhite))
-				$rowdata += @(,("Description",($Script:htmlsb),$HALB.Description,$htmlwhite))
+				$rowdata += @(,("Name",($Script:htmlsb),$HALB.Name.Replace("<","").Replace(">",""),$htmlwhite))
+				$rowdata += @(,("Description",($Script:htmlsb),$HALB.Description.Replace("<","").Replace(">",""),$htmlwhite))
 				$rowdata += @(,("Public address",($Script:htmlsb),$HALB.PublicAddress,$htmlwhite))
 				$rowdata += @(,("Virtual IP",($Script:htmlsb),"",$htmlwhite))
 				$rowdata += @(,("     Use IP version",($Script:htmlsb), $HALBIPVersion,$htmlwhite))
@@ -37717,7 +37256,7 @@ Function OutputHALBDetails
 			If((!($?)) -or ($? -and $Null -eq $HALBDevices))
 			{
 				Write-Host "
-				No HALB Devices retrieved for HALB $($HALB.Name).`
+	No HALB Devices retrieved for HALB $($HALB.Name).`
 				" -ForegroundColor White
 				If($MSWord -or $PDF)
 				{
@@ -38012,28 +37551,28 @@ Function OutputThemesDetails
 			#the Get-RASThemeImage cmdlet returns all four items as an array, but there is nothing that
 			#specifies which array element is which branding image file
 			#I get each image file separately to make sure each image file is correctly associated
-			$ThemeCompanyLogo = Get-RASThemeImage -Name $Theme.name -ImageType CompanyLogo -EA 0 4>$Null
+			$ThemeCompanyLogo = Get-RASThemeImage -Name $Theme.name -ImageType CompanyLogo -EA 0 4> $Null
 			
 			If(!($?))
 			{
 				$ThemeCompanyLogo = ""
 			}
 			
-			$ThemeFaviconIcon = Get-RASThemeImage -Name $Theme.name -ImageType FaviconIcon -EA 0 4>$Null
+			$ThemeFaviconIcon = Get-RASThemeImage -Name $Theme.name -ImageType FaviconIcon -EA 0 4> $Null
 			
 			If(!($?))
 			{
 				$ThemeFaviconIcon = ""
 			}
 			
-			$ThemeConnectionBanner = Get-RASThemeImage -Name $Theme.name -ImageType ConnectionBanner -EA 0 4>$Null
+			$ThemeConnectionBanner = Get-RASThemeImage -Name $Theme.name -ImageType ConnectionBanner -EA 0 4> $Null
 			
 			If(!($?))
 			{
 				$ThemeConnectionBanner = ""
 			}
 			
-			$ThemeApplicationIcon = Get-RASThemeImage -Name $Theme.name -ImageType ApplicationIcon -EA 0 4>$Null
+			$ThemeApplicationIcon = Get-RASThemeImage -Name $Theme.name -ImageType ApplicationIcon -EA 0 4> $Null
 			
 			If(!($?))
 			{
@@ -38069,7 +37608,7 @@ Function OutputThemesDetails
 				Default				{$ThemeHTMLClipboardDirection = "Unable to determine Clipboard direction: $($Theme.UserPortal.Gateway.ClipboardDirection)"; Break}
 			}
 			
-			$Results = Get-RASSAMLIDP -SiteId $Site.Id -EA 0 4>$Null | Where-Object {$_.ThemeId -eq $Theme.Id}
+			$Results = Get-RASSAMLIDP -SiteId $Site.Id -EA 0 4> $Null | Where-Object {$_.ThemeId -eq $Theme.Id}
 			
 			If($? -and $Null -ne $Results)
 			{
@@ -38087,7 +37626,7 @@ Function OutputThemesDetails
 			}
 			Else
 			{
-				$Results = Get-RASMFA -Id $Theme.MFAId -EA 0 4>$Null
+				$Results = Get-RASMFA -Id $Theme.MFAId -EA 0 4> $Null
 
 				If($? -and $Null -ne $Results)
 				{
@@ -38109,8 +37648,8 @@ Function OutputThemesDetails
 			}
 			If($HTML)
 			{
-				$ThemeName = $Theme.Name.Trim("<",">")
-				WriteHTMLLine 3 0 "Theme $ThemeName"
+				$ThemeName = $Theme.Name.Replace("<","").Replace(">","")
+				WriteHTMLLine 3 0 "Theme $Theme.Name"
 			}
 
 			If($MSWord -or $PDF)
@@ -38168,7 +37707,7 @@ Function OutputThemesDetails
 				$rowdata = @()
 				$columnHeaders = @("Name",($Script:htmlsb),$ThemeName,$htmlwhite)
 				$rowdata += @(,("Enabled",($Script:htmlsb),$Theme.Enabled.ToString(),$htmlwhite))
-				$rowdata += @(,("Description",($Script:htmlsb),$Theme.Description,$htmlwhite))
+				$rowdata += @(,("Description",($Script:htmlsb),$Theme.Description.Replace("<","").Replace(">",""),$htmlwhite))
 				$rowdata += @(,("User Portal URL",($Script:htmlsb),$ThemeUserPortalURL,$htmlwhite))
 				$rowdata += @(,("Client Connection",($Script:htmlsb),$ThemeClientConnection,$htmlwhite))
 				$rowdata += @(,("MFA provider",($Script:htmlsb),$MFAProvider,$htmlwhite))
@@ -38238,11 +37777,10 @@ Function OutputThemesDetails
 			}
 			If($HTML)
 			{
-				$ThemeName = $Theme.Name.Replace("<","").Replace(">","")
 				$rowdata = @()
 				$columnHeaders = @("Enable Theme",($Script:htmlsb),$Theme.Enabled.ToString(),$htmlwhite)
-				$rowdata += @(,("Name",($Script:htmlsb),$ThemeName,$htmlwhite))
-				$rowdata += @(,("Description",($Script:htmlsb),$Theme.Description,$htmlwhite))
+				$rowdata += @(,("Name",($Script:htmlsb),$Theme.Name.Replace("<","").Replace(">",""),$htmlwhite))
+				$rowdata += @(,("Description",($Script:htmlsb),$Theme.Description.Replace("<","").Replace(">",""),$htmlwhite))
 				$rowdata += @(,("Path",($Script:htmlsb),$Theme.UserPortal.Url.LoginPageURLPath,$htmlwhite))
 				$rowdata += @(,("User Portal URL",($Script:htmlsb),$ThemeUserPortalURL,$htmlwhite))
 				$rowdata += @(,("Client Connection",($Script:htmlsb),$ThemeClientConnection,$htmlwhite))
@@ -38681,7 +38219,6 @@ Function OutputThemesDetails
 			}
 			If($HTML)
 			{
-				$ThemeName = $Theme.Name.Replace("<","").Replace(">","")
 				$rowdata = @()
 				$columnHeaders = @("Show Parallels Client download URL",($Script:htmlsb),$ThemeShowDownloadURL,$htmlwhite)
 				$rowdata += @(,("Override download URL for branded Parallels Client (Windows)",($Script:htmlsb),$ThemeOverrideDownloadURL,$htmlwhite))
@@ -40045,7 +39582,7 @@ Function OutputCertificatesDetails
 			{
 				$rowdata = @()
 				$columnHeaders = @("Name",($Script:htmlsb),$Cert.Name.Replace("<","").Replace(">",""),$htmlwhite)
-				$rowdata += @(,("Description",($Script:htmlsb),$Cert.Description,$htmlwhite))
+				$rowdata += @(,("Description",($Script:htmlsb),$Cert.Description.Replace("<","").Replace(">",""),$htmlwhite))
 				$rowdata += @(,("Usage",($Script:htmlsb),$Cert.Usage,$htmlwhite))
 				$rowdata += @(,("Type",($Script:htmlsb),$CertType,$htmlwhite))
 				$rowdata += @(,("Status",($Script:htmlsb),$Cert.Status.ToString(),$htmlwhite))
@@ -40097,7 +39634,7 @@ Function OutputApplicationPackagesDetails
 		WriteHTMLLine 2 0 "Application Packages"
 	}
 	
-	$AppPackages = Get-RASAppPackage -SiteId $Site.Id -ea 0 4>$Null
+	$AppPackages = Get-RASAppPackage -SiteId $Site.Id -EA 0 4> $Null
 	
 	If(!($?))
 	{
@@ -40151,7 +39688,7 @@ Function OutputApplicationPackagesDetails
 	}
 	Else
 	{
-		$Result = Get-RASAppPackageSettings -SiteId $Site.Id -ea 0 4>$Null
+		$Result = Get-RASAppPackageSettings -SiteId $Site.Id -EA 0 4> $Null
 		
 		If($? -and $Null -ne $Result)
 		{
@@ -40303,7 +39840,7 @@ Function OutputApplicationPackagesDetails
 				$rowdata = @()
 				$columnHeaders = @("Package",($Script:htmlsb),$AppPackage.PackageName,$htmlwhite)
 				$rowdata += @(,("Enabled",($Script:htmlsb),$AppPackage.Enabled.ToString(),$htmlwhite))
-				$rowdata += @(,("Display name",($Script:htmlsb),$AppPackage.DisplayName,$htmlwhite))
+				$rowdata += @(,("Display name",($Script:htmlsb),$AppPackage.DisplayName.Replace("<","").Replace(">",""),$htmlwhite))
 				$rowdata += @(,("Version",($Script:htmlsb),$AppPackage.Version,$htmlwhite))
 				
 				$cnt = -1
@@ -40314,11 +39851,11 @@ Function OutputApplicationPackagesDetails
 					
 					If($cnt -eq 0)
 					{
-						$rowdata += @(,("Version tag",($Script:htmlsb),$AppTag.Name,$htmlwhite))
+						$rowdata += @(,("Version tag",($Script:htmlsb),$AppTag.Name.Replace("<","").Replace(">",""),$htmlwhite))
 					}
 					Else
 					{
-						$rowdata += @(,("",($Script:htmlsb),$AppTag.Name,$htmlwhite))
+						$rowdata += @(,("",($Script:htmlsb),$AppTag.Name.Replace("<","").Replace(">",""),$htmlwhite))
 					}
 				}
 
@@ -40335,11 +39872,11 @@ Function OutputApplicationPackagesDetails
 					
 					If($cnt -eq 0)
 					{
-						$rowdata += @(,("Applications",($Script:htmlsb),$App.Name,$htmlwhite))
+						$rowdata += @(,("Applications",($Script:htmlsb),$App.Name.Replace("<","").Replace(">",""),$htmlwhite))
 					}
 					Else
 					{
-						$rowdata += @(,("",($Script:htmlsb),$App.Name,$htmlwhite))
+						$rowdata += @(,("",($Script:htmlsb),$App.Name.Replace("<","").Replace(">",""),$htmlwhite))
 					}
 				}
 
@@ -40478,7 +40015,7 @@ Function OutputApplicationPackagesDetails
 				$rowdata = @()
 				$columnHeaders = @("Enable application package in site",($Script:htmlsb),$AppPackage.Enabled.ToString(),$htmlwhite)
 				$rowdata += @(,("Package",($Script:htmlsb),$AppPackage.PackageName,$htmlwhite))
-				$rowdata += @(,("Display name",($Script:htmlsb),$AppPackage.DisplayName,$htmlwhite))
+				$rowdata += @(,("Display name",($Script:htmlsb),$AppPackage.DisplayName.Replace("<","").Replace(">",""),$htmlwhite))
 				$rowdata += @(,("Version",($Script:htmlsb),$AppPackage.Version,$htmlwhite))
 				$rowdata += @(,("Publisher",($Script:htmlsb),$AppPackage.Publisher,$htmlwhite))
 				$rowdata += @(,("MSIX image path",($Script:htmlsb),$AppPackage.MSIXImagePath,$htmlwhite))
@@ -40491,11 +40028,11 @@ Function OutputApplicationPackagesDetails
 					
 					If($cnt -eq 0)
 					{
-						$rowdata += @(,("Version tag",($Script:htmlsb),$AppTag.Name,$htmlwhite))
+						$rowdata += @(,("Version tag",($Script:htmlsb),$AppTag.Name.Replace("<","").Replace(">",""),$htmlwhite))
 					}
 					Else
 					{
-						$rowdata += @(,("",($Script:htmlsb),$AppTag.Name,$htmlwhite))
+						$rowdata += @(,("",($Script:htmlsb),$AppTag.Name.Replace("<","").Replace(">",""),$htmlwhite))
 					}
 				}
 
@@ -40506,11 +40043,11 @@ Function OutputApplicationPackagesDetails
 					
 					If($cnt -eq 0)
 					{
-						$rowdata += @(,("Applications",($Script:htmlsb),$App.Name,$htmlwhite))
+						$rowdata += @(,("Applications",($Script:htmlsb),$App.Name.Replace("<","").Replace(">",""),$htmlwhite))
 					}
 					Else
 					{
-						$rowdata += @(,("",($Script:htmlsb),$App.Name,$htmlwhite))
+						$rowdata += @(,("",($Script:htmlsb),$App.Name.Replace("<","").Replace(">",""),$htmlwhite))
 					}
 				}
 
@@ -40523,27 +40060,6 @@ Function OutputApplicationPackagesDetails
 			}
 			
 			#Certificate
-			<#
-				PS C:\Parallels-RAS-V19.x-Doc-Script-4.00> $apppackage.Certificate | fl
-
-
-				Status         : Expired
-				PublicKey      : -----BEGIN CERTIFICATE-----
-								 MIIGYjCCBUqgAwIBAgIQDBzT7qR+3aegMlc7AU0K/TANBgkqhkiG9w0BAQsFADBy
-								 -----END CERTIFICATE-----
-
-				ExpirationDate : 6/20/2024 1:59:59 AM
-				KeySize        : KeySize4096
-				CommonName     : DigiCert SHA2 Assured ID Code Signing CA
-
-				KeySize1024		1024
-				KeySize2048		2048
-				KeySize4096		4096
-				KeySize3072		3072
-				KeySize521		521
-				KeySizeUnknown	Unknown
-			#>
-
 			If($MSWord -or $PDF)
 			{
 				WriteWordLine 4 0 "Certificate"
@@ -40637,7 +40153,7 @@ Function OutputSiteSettingsDetails
 	}
 
 	Write-Verbose "$(Get-Date -Format G): Output Settings"
-	$FarmSettings = Get-RASFarmSettings -SiteId $Site.Id -ea 0 4>$Null
+	$FarmSettings = Get-RASFarmSettings -SiteId $Site.Id -EA 0 4> $Null
 	
 	If(!($?))
 	{
@@ -40697,17 +40213,6 @@ Function OutputSiteSettingsDetails
 
 	#Global logging - not in PoSH
 
-	<#RASFarmSettings	
-		Dropped Properties	ExcludeDirectRDP
-							ExcludeDirectRDPForVDI
-							SendHDIcons
-							ReplicateSendHDIcons
-							EnableOverlayIcons
-							ShowPasswordExpiry
-							ReplicateURLRedirection
-							URLBlackList
-							TokenValidationTime
-	#>
 	Write-Verbose "$(Get-Date -Format G): `tOutput URL redirection"
 	
 	$URLRedirectionSettings = Get-RASURLRedirectionSettings -Siteid $Site.Id -EA 0 4> $Null
@@ -40767,7 +40272,7 @@ Function OutputSiteSettingsDetails
 		OutputRASURLRedirection $URLRedirectionSettings
 	}
 
-	$RASNotificationHandlers = Get-RASNotification -SiteId $Site.Id -EA 0 4>$Null
+	$RASNotificationHandlers = Get-RASNotification -SiteId $Site.Id -EA 0 4> $Null
 	
 	If(!($?))
 	{
@@ -40823,7 +40328,7 @@ Function OutputSiteSettingsDetails
 		OutputRASNotificationHandlers $RASNotificationHandlers
 	}
 	
-	$RASNotificationScripts = Get-RASNotificationScript -SiteId $Site.Id -EA 0 4>$Null
+	$RASNotificationScripts = Get-RASNotificationScript -SiteId $Site.Id -EA 0 4> $Null
 	
 	If(!($?))
 	{
@@ -40879,7 +40384,7 @@ Function OutputSiteSettingsDetails
 		OutputRASNotificationScripts $RASNotificationScripts
 	}
 	
-	$RASClientSettings = Get-RASClientSettings -SiteId $Site.Id -EA 0 4>$Null
+	$RASClientSettings = Get-RASClientSettings -SiteId $Site.Id -EA 0 4> $Null
 	
 	If(!($?))
 	{
@@ -40909,7 +40414,7 @@ Function OutputSiteSettingsDetails
 	ElseIf($? -and $null -eq $RASClientSettings)
 	{
 		Write-Host "
-		No Client Settings information was found
+	No Client Settings information was found
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
@@ -40935,7 +40440,7 @@ Function OutputSiteSettingsDetails
 		OutputRASClientSettings $RASClientSettings
 	}
 
-	$TemplateVersions = Get-RASTemplateVersionSettings -SiteID $Site.Id-EA 0 4>$Null
+	$TemplateVersions = Get-RASTemplateVersionSettings -SiteID $Site.Id-EA 0 4> $Null
 
 	If(!($?))
 	{
@@ -40965,7 +40470,7 @@ Function OutputSiteSettingsDetails
 	ElseIf($? -and $null -eq $TemplateVersions)
 	{
 		Write-Host "
-		No Template Versions information was found
+	No Template Versions information was found
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
@@ -40991,7 +40496,7 @@ Function OutputSiteSettingsDetails
 		OutputRASTemplateVersionSettings $TemplateVersions
 	}
 	
-	$FSLogixDeploymentSettings = Get-RASFSLogixSettings -SiteID $Site.Id -EA 0 4>$Null
+	$FSLogixDeploymentSettings = Get-RASFSLogixSettings -SiteID $Site.Id -EA 0 4> $Null
 	
 	If(!($?))
 	{
@@ -41021,7 +40526,7 @@ Function OutputSiteSettingsDetails
 	ElseIf($? -and $null -eq $FSLogixDeploymentSettings)
 	{
 		Write-Host "
-		No FSLogix Settings information was found
+	No FSLogix Settings information was found
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
@@ -41047,7 +40552,7 @@ Function OutputSiteSettingsDetails
 		OutputRASSiteFeatures $FSLogixDeploymentSettings
 	}
 	
-	$AppPackageSettings = Get-RASAppPackageSettings -SiteID $Site.Id-EA 0 4>$Null
+	$AppPackageSettings = Get-RASAppPackageSettings -SiteID $Site.Id-EA 0 4> $Null
 	
 	If(!($?))
 	{
@@ -41077,7 +40582,7 @@ Function OutputSiteSettingsDetails
 	ElseIf($? -and $null -eq $AppPackageSettings)
 	{
 		Write-Host "
-		No Application Packages Settings information was found
+	No Application Packages Settings information was found
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
@@ -41453,7 +40958,7 @@ Function OutputRASNotificationHandlers
 				
 				If($RASNotificationHandler.ExecuteScript)
 				{
-					$results = Get-RASNotificationScript -id $RASNotificationHandler.ScriptId -EA 0 4>$Null
+					$results = Get-RASNotificationScript -id $RASNotificationHandler.ScriptId -EA 0 4> $Null
 					
 					If(!($?))
 					{
@@ -41533,7 +41038,7 @@ Function OutputRASNotificationHandlers
 				
 				If($RASNotificationHandler.ExecuteScript)
 				{
-					$results = Get-RASNotificationScript -id $RASNotificationHandler.ScriptId -EA 0 4>$Null
+					$results = Get-RASNotificationScript -id $RASNotificationHandler.ScriptId -EA 0 4> $Null
 					
 					If(!($?))
 					{
@@ -41597,7 +41102,7 @@ Function OutputRASNotificationHandlers
 				
 				If($RASNotificationHandler.ExecuteScript)
 				{
-					$results = Get-RASNotificationScript -id $RASNotificationHandler.ScriptId -EA 0 4>$Null
+					$results = Get-RASNotificationScript -id $RASNotificationHandler.ScriptId -EA 0 4> $Null
 					
 					If(!($?))
 					{
@@ -41691,7 +41196,7 @@ Function OutputRASNotificationScripts
 		If($HTML)
 		{
 			$rowdata = @()
-			$columnHeaders = @("Script name",($Script:htmlsb),$RASNotificationScript.Name,$htmlwhite)
+			$columnHeaders = @("Script name",($Script:htmlsb),$RASNotificationScript.Name.Replace("<","").Replace(">",""),$htmlwhite)
 			$rowdata += @(,("Command",($Script:htmlsb),$RASNotificationScript.Command,$htmlwhite))
 			$rowdata += @(,("Arguments",($Script:htmlsb),$RASNotificationScript.Arguments,$htmlwhite))
 			$rowdata += @(,("Initial directory",($Script:htmlsb),$RASNotificationScript.InitialDirectory,$htmlwhite))
@@ -41711,18 +41216,6 @@ Function OutputRASClientSettings
 
 	Write-Verbose "$(Get-Date -Format G): `t`tOutput Client Settings"
 	
-	<#
-		ExcludeDirectRDP         :
-		ExcludeDirectRDPForVDI   :
-		SendHDIcons              : True
-		ReplicateSendHDIcons     : True
-		EnableOverlayIcons       : True
-		OverlayIcon              : ParallelsRemoteApplication
-		ShowPasswordExpiry       : False
-		ForceSessionsReset       : False
-		TokenValidationExpireMin : 60
-	#>
-
 	Switch($RASClientSettings.OverlayIcon)
 	{
 		"None"							{$Overlay = "None"; Break}
@@ -41868,7 +41361,7 @@ Function OutputRASTemplateVersionSettings
 			{
 				$rowdata += @(,(
 					$Tag.Id,$htmlwhite,
-					$Tag.Name,$htmlwhite)
+					$Tag.Name.Replace("<","").Replace(">",""),$htmlwhite)
 				)
 			}
 		}
@@ -41935,7 +41428,7 @@ Function OutputRASSiteFeatures
 	$FSLogixDeploymentSettingsInstallerFileName = $FSLogixDeploymentSettings.InstallerFileName
 	$FSLogixDeploymentSettingsReplicate         = $FSLogixDeploymentSettings.Replicate.ToString()
 	
-	$AVDSettings = Get-RASAVDSettings -SiteID $Site.Id-EA 0 4>$Null
+	$AVDSettings = Get-RASAVDSettings -SiteID $Site.Id-EA 0 4> $Null
 	
 	If(!($?) -or $Null -eq $AVDSettings)
 	{
@@ -42071,15 +41564,6 @@ Function OutputRASAppPackageSettings
 
 	Write-Verbose "$(Get-Date -Format G): `t`tOutput Application Packages"
 
-	<#
-		PS C:\Users\carl.webster> Get-RASAppPackageSettings | fl
-
-		SiteId                                    : 1
-		Enabled                                   : True
-		Tags                                      : {Production, Pre-production, Custom}
-		ProvisionPackageCertificatesAutomatically : True
-	#>
-	
 	If($MSWord -or $PDF)
 	{
 		WriteWordLine 3 0 "Application Packages"
@@ -42154,7 +41638,7 @@ Function OutputRASAppPackageSettings
 			{
 				$rowdata += @(,(
 					$Tag.Id,$htmlwhite,
-					$Tag.Name,$htmlwhite)
+					$Tag.Name.Replace("<","").Replace(">",""),$htmlwhite)
 				)
 			}
 		}
@@ -42211,7 +41695,7 @@ Function ProcessLoadBalancing
 	
 	OutputLoadBalancingSectionPage
 	
-	$results = Get-RASLBSettings -SiteId $Site.Id -EA 0 4>$Null
+	$results = Get-RASLBSettings -SiteId $Site.Id -EA 0 4> $Null
 	
 	If(!($?))
 	{
@@ -42241,7 +41725,7 @@ Function ProcessLoadBalancing
 	ElseIf($? -and $null -eq $results)
 	{
 		Write-Host "
-		No Load Balancing information was found
+	No Load Balancing information was found
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
@@ -42267,7 +41751,7 @@ Function ProcessLoadBalancing
 		OutputRASLBSettings $results
 	}
 	
-	$results = Get-RASCPUOptimizationSettings -SiteId $Site.Id -EA 0 4>$Null
+	$results = Get-RASCPUOptimizationSettings -SiteId $Site.Id -EA 0 4> $Null
 	
 	If(!($?))
 	{
@@ -42297,7 +41781,7 @@ Function ProcessLoadBalancing
 	ElseIf($? -and $null -eq $results)
 	{
 		Write-Host "
-		No CPU Optimization information was found
+	No CPU Optimization information was found
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
@@ -42635,7 +42119,7 @@ Function ProcessPublishing
 	
 	OutputPublishingSectionPage $Site.Name
 			
-	$results = Get-RASPubItem -SiteId $Site.Id -EA 0 4>$Null
+	$results = Get-RASPubItem -SiteId $Site.Id -EA 0 4> $Null
 		
 	If(!($?))
 	{
@@ -42665,7 +42149,7 @@ Function ProcessPublishing
 	ElseIf($? -and $null -eq $results)
 	{
 		Write-Host "
-		No Publishing information was found for Site $($Site.Name)
+	No Publishing information was found for Site $($Site.Name)
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
@@ -42745,31 +42229,13 @@ Function OutputPublishingSettings
 	
 	#Get the published items default settings
 	Write-Verbose "$(Get-Date -Format G): `t`tRetrieve Publishing Default Site Settings for Site $xSiteName"
-	$results = Get-RASPubDefaultSettings -SiteId $SiteId -EA 0 4>$Null
+	$results = Get-RASPubDefaultSettings -SiteId $SiteId -EA 0 4> $Null
 	
 	If(!($?))
 	{
 		Write-Host "
-		Unable to retrieve Publishing Default Site Settings for Site $xSiteName, using built-in defaults
+	Unable to retrieve Publishing Default Site Settings for Site $xSiteName, using built-in defaults
 		" -ForegroundColor White
-		<#
-			StartPath                      : RAS Remote Desktops & Applications\%Groups%
-			InheritShortcutDefaultSettings : True
-			CreateShortcutOnDesktop        : False
-			CreateShortcutInStartFolder    : True
-			CreateShortcutInStartUpFolder  : False
-			ReplicateShortcutSettings      : False
-			ReplicateDisplaySettings       : False
-			WaitForPrinters                : False
-			StartMaximized                 : True
-			WaitForPrintersTimeout         : 20
-			ColorDepth                     : ClientSpecified
-			DisableSessionSharing          : False
-			OneInstancePerUser             : False
-			ConCurrentLicenses             : 0
-			LicenseLimitNotify             : WarnUserAndNoStart
-			ReplicateLicenseSettings       : False
-		#>
 		
 		#Shortcuts tab
 		$DefaultCreateShortcutOnDesktop       = "False"
@@ -42929,7 +42395,7 @@ Function OutputPublishingSettings
 								}
 								Else
 								{
-									$ParentIdEnabledMode = (Get-RASPubItem -Id $Pubitem.ParentId).EnabledMode 4>$Null
+									$ParentIdEnabledMode = (Get-RASPubItem -Id $Pubitem.ParentId).EnabledMode 4> $Null
 									
 									If($? -and $Null -ne $ParentIdEnabledMode)
 									{
@@ -43022,7 +42488,7 @@ Function OutputPublishingSettings
 				ForEach($Site in $PubItem.PublishToSite)
 				{
 					$cnt++
-					$SiteName = @(Get-RASSite -Id $Site -EA 0 4>$Null).Name
+					$SiteName = @(Get-RASSite -Id $Site -EA 0 4> $Null).Name
 					
 					If($cnt -eq 0)
 					{
@@ -43100,7 +42566,7 @@ Function OutputPublishingSettings
 						$cnt =-1
 						ForEach($PrefRoute in $Results)
 						{
-							$CustomRoute = Get-RASCustomRoute -Id $PrefRoute.Id -EA 0 4>$Null
+							$CustomRoute = Get-RASCustomRoute -Id $PrefRoute.Id -EA 0 4> $Null
 							
 							If($? -and $Null -ne $CustomRoute)
 							{
@@ -43169,7 +42635,7 @@ Function OutputPublishingSettings
 				ForEach($Site in $PubItem.PublishToSite)
 				{
 					$cnt++
-					$SiteName = @(Get-RASSite -Id $Site -EA 0 4>$Null).Name
+					$SiteName = @(Get-RASSite -Id $Site -EA 0 4> $Null).Name
 					
 					If($cnt -eq 0)
 					{
@@ -43212,7 +42678,7 @@ Function OutputPublishingSettings
 						$cnt =-1
 						ForEach($PrefRoute in $Results)
 						{
-							$CustomRoute = Get-RASCustomRoute -Id $PrefRoute.Id -EA 0 4>$Null
+							$CustomRoute = Get-RASCustomRoute -Id $PrefRoute.Id -EA 0 4> $Null
 							
 							If($? -and $Null -ne $CustomRoute)
 							{
@@ -43247,7 +42713,7 @@ Function OutputPublishingSettings
 				$columnHeaders = @("Folder",($Script:htmlsb),"#$($PubItem.Id): $($PubItem.Name)",$htmlwhite)
 				If(![String]::IsNullOrEmpty($PubItem.Description))
 				{
-					$rowdata += @(,("Description",($Script:htmlsb),$PubItem.Description,$htmlwhite))
+					$rowdata += @(,("Description",($Script:htmlsb),$PubItem.Description.Replace("<","").Replace(">",""),$htmlwhite))
 				}
 				$rowdata += @(,("Last modification by",($Script:htmlsb),$PubItem.AdminLastMod,$htmlwhite))
 				$rowdata += @(,("Modified on",($Script:htmlsb),(Get-Date -UFormat "%c" $PubItem.TimeLastMod),$htmlwhite))
@@ -43267,7 +42733,7 @@ Function OutputPublishingSettings
 				ForEach($Site in $PubItem.PublishToSite)
 				{
 					$cnt++
-					$SiteName = @(Get-RASSite -Id $Site -EA 0 4>$Null).Name
+					$SiteName = @(Get-RASSite -Id $Site -EA 0 4> $Null).Name
 					
 					If($cnt -eq 0)
 					{
@@ -43297,7 +42763,7 @@ Function OutputPublishingSettings
 				$rowdata = @()
 
 				$columnHeaders = @("Folder",($Script:htmlsb),"#$($PubItem.Id): $($PubItem.Name)",$htmlwhite)
-				$rowdata += @(,("Description",($Script:htmlsb),$PubItem.Description,$htmlwhite))
+				$rowdata += @(,("Description",($Script:htmlsb),$PubItem.Description.Replace("<","").Replace(">",""),$htmlwhite))
 				$rowdata += @(,("Status",($Script:htmlsb),$PubItemStatus,$htmlwhite))
 				$rowdata += @(,("Use for administrative purposes",($Script:htmlsb),$PubItem.AdminOnly.ToString(),$htmlwhite))
 
@@ -43321,7 +42787,7 @@ Function OutputPublishingSettings
 						$cnt =-1
 						ForEach($PrefRoute in $Results)
 						{
-							$CustomRoute = Get-RASCustomRoute -Id $PrefRoute.Id -EA 0 4>$Null
+							$CustomRoute = Get-RASCustomRoute -Id $PrefRoute.Id -EA 0 4> $Null
 							
 							If($? -and $Null -ne $CustomRoute)
 							{
@@ -43415,7 +42881,7 @@ Function OutputPublishingSettings
 				ForEach($Site in $PubItem.PublishToSite)
 				{
 					$cnt++
-					$SiteName = @(Get-RASSite -Id $Site -EA 0 4>$Null).Name
+					$SiteName = @(Get-RASSite -Id $Site -EA 0 4> $Null).Name
 					
 					If($cnt -eq 0)
 					{
@@ -43465,7 +42931,7 @@ Function OutputPublishingSettings
 						{
 							$cnt++
 							
-							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
+							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4> $Null).Server
 							
 							If($cnt -eq 0)
 							{
@@ -43484,7 +42950,7 @@ Function OutputPublishingSettings
 						{
 							$cnt++
 							
-							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
+							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4> $Null).Name
 							
 							If($cnt -eq 0)
 							{
@@ -43569,7 +43035,7 @@ Function OutputPublishingSettings
 						$cnt =-1
 						ForEach($PrefRoute in $Results)
 						{
-							$CustomRoute = Get-RASCustomRoute -Id $PrefRoute.Id -EA 0 4>$Null
+							$CustomRoute = Get-RASCustomRoute -Id $PrefRoute.Id -EA 0 4> $Null
 							
 							If($? -and $Null -ne $CustomRoute)
 							{
@@ -43681,7 +43147,7 @@ Function OutputPublishingSettings
 				ForEach($Site in $PubItem.PublishToSite)
 				{
 					$cnt++
-					$SiteName = @(Get-RASSite -Id $Site -EA 0 4>$Null).Name
+					$SiteName = @(Get-RASSite -Id $Site -EA 0 4> $Null).Name
 					
 					If($cnt -eq 0)
 					{
@@ -43711,7 +43177,7 @@ Function OutputPublishingSettings
 					{
 						ForEach($Item in $PubItem.PublishFromServer)
 						{
-							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
+							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4> $Null).Server
 							Line 6 $ItemName
 						}
 					}
@@ -43719,7 +43185,7 @@ Function OutputPublishingSettings
 					{
 						ForEach($Item in $PubItem.PublishFromHostPool)
 						{
-							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
+							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4> $Null).Name
 							Line 5 $ItemName
 						}
 					}
@@ -43757,7 +43223,7 @@ Function OutputPublishingSettings
 						$cnt =-1
 						ForEach($PrefRoute in $Results)
 						{
-							$CustomRoute = Get-RASCustomRoute -Id $PrefRoute.Id -EA 0 4>$Null
+							$CustomRoute = Get-RASCustomRoute -Id $PrefRoute.Id -EA 0 4> $Null
 							
 							If($? -and $Null -ne $CustomRoute)
 							{
@@ -43800,7 +43266,7 @@ Function OutputPublishingSettings
 				$columnHeaders = @("Remote PC Application",($Script:htmlsb),"#$($PubItem.Id): $($PubItem.Name)",$htmlwhite)
 				If(![String]::IsNullOrEmpty($PubItem.Description))
 				{
-					$rowdata += @(,("Description",($Script:htmlsb),$PubItem.Description,$htmlwhite))
+					$rowdata += @(,("Description",($Script:htmlsb),$PubItem.Description.Replace("<","").Replace(">",""),$htmlwhite))
 				}
 				$rowdata += @(,("Last modification by",($Script:htmlsb), $PubItem.AdminLastMod,$htmlwhite))
 				$rowdata += @(,("Modified on",($Script:htmlsb), (Get-Date -UFormat "%c" $PubItem.TimeLastMod),$htmlwhite))
@@ -43853,7 +43319,7 @@ Function OutputPublishingSettings
 				ForEach($Site in $PubItem.PublishToSite)
 				{
 					$cnt++
-					$SiteName = @(Get-RASSite -Id $Site -EA 0 4>$Null).Name
+					$SiteName = @(Get-RASSite -Id $Site -EA 0 4> $Null).Name
 					
 					If($cnt -eq 0)
 					{
@@ -43889,7 +43355,7 @@ Function OutputPublishingSettings
 						ForEach($Item in $PubItem.PublishFromServer)
 						{
 							$cnt++
-							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
+							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4> $Null).Server
 							
 							If($cnt -eq 0)
 							{
@@ -43907,7 +43373,7 @@ Function OutputPublishingSettings
 						ForEach($Item in $PubItem.PublishFromHostPool)
 						{
 							$cnt++
-							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
+							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4> $Null).Name
 							
 							If($cnt -eq 0)
 							{
@@ -43937,8 +43403,8 @@ Function OutputPublishingSettings
 				WriteHTMLLine 3 0 "Application"
 				$rowdata = @()
 
-				$columnHeaders = @("Name",($Script:htmlsb),$PubItem.Name,$htmlwhite)
-				$rowdata += @(,("Description",($Script:htmlsb),$PubItem.Description,$htmlwhite))
+				$columnHeaders = @("Name",($Script:htmlsb),$PubItem.Name.Replace("<","").Replace(">",""),$htmlwhite)
+				$rowdata += @(,("Description",($Script:htmlsb),$PubItem.Description.Replace("<","").Replace(">",""),$htmlwhite))
 				$rowdata += @(,("Status",($Script:htmlsb),$PubItemStatus,$htmlwhite))
 				$rowdata += @(,("Run",($Script:htmlsb),$WinType,$htmlwhite))
 				$rowdata += @(,("Target",($Script:htmlsb),$PubItem.Target,$htmlwhite))
@@ -43967,7 +43433,7 @@ Function OutputPublishingSettings
 						$cnt =-1
 						ForEach($PrefRoute in $Results)
 						{
-							$CustomRoute = Get-RASCustomRoute -Id $PrefRoute.Id -EA 0 4>$Null
+							$CustomRoute = Get-RASCustomRoute -Id $PrefRoute.Id -EA 0 4> $Null
 							
 							If($? -and $Null -ne $CustomRoute)
 							{
@@ -44085,7 +43551,7 @@ Function OutputPublishingSettings
 				ForEach($Site in $PubItem.PublishToSite)
 				{
 					$cnt++
-					$SiteName = @(Get-RASSite -Id $Site -EA 0 4>$Null).Name
+					$SiteName = @(Get-RASSite -Id $Site -EA 0 4> $Null).Name
 					
 					If($cnt -eq 0)
 					{
@@ -44135,15 +43601,15 @@ Function OutputPublishingSettings
 						{
 							$cnt++
 							
-							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
+							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4> $Null).Server
 							
 							If($cnt -eq 0)
 							{
-								$ScriptInformation.Add(@{Data = "$PublishedFrom"; Value = $ItemName.Replace("<","").Replace(">",""); }) > $Null
+								$ScriptInformation.Add(@{Data = "$PublishedFrom"; Value = $ItemName; }) > $Null
 							}
 							Else
 							{
-								$ScriptInformation.Add(@{Data = ""; Value = $ItemName.Replace("<","").Replace(">",""); }) > $Null
+								$ScriptInformation.Add(@{Data = ""; Value = $ItemName; }) > $Null
 							}
 						}
 					}
@@ -44154,15 +43620,15 @@ Function OutputPublishingSettings
 						{
 							$cnt++
 							
-							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
+							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4> $Null).Name
 							
 							If($cnt -eq 0)
 							{
-								$ScriptInformation.Add(@{Data = "$PublishedFrom"; Value = $ItemName.Replace("<","").Replace(">",""); }) > $Null
+								$ScriptInformation.Add(@{Data = "$PublishedFrom"; Value = $ItemName; }) > $Null
 							}
 							Else
 							{
-								$ScriptInformation.Add(@{Data = ""; Value = $ItemName.Replace("<","").Replace(">",""); }) > $Null
+								$ScriptInformation.Add(@{Data = ""; Value = $ItemName; }) > $Null
 							}
 						}
 					}
@@ -44258,7 +43724,7 @@ Function OutputPublishingSettings
 						$cnt =-1
 						ForEach($PrefRoute in $Results)
 						{
-							$CustomRoute = Get-RASCustomRoute -Id $PrefRoute.Id -EA 0 4>$Null
+							$CustomRoute = Get-RASCustomRoute -Id $PrefRoute.Id -EA 0 4> $Null
 							
 							If($? -and $Null -ne $CustomRoute)
 							{
@@ -44364,7 +43830,7 @@ Function OutputPublishingSettings
 				ForEach($Site in $PubItem.PublishToSite)
 				{
 					$cnt++
-					$SiteName = @(Get-RASSite -Id $Site -EA 0 4>$Null).Name
+					$SiteName = @(Get-RASSite -Id $Site -EA 0 4> $Null).Name
 					
 					If($cnt -eq 0)
 					{
@@ -44410,7 +43876,7 @@ Function OutputPublishingSettings
 					{
 						ForEach($Item in $PubItem.PublishFromServer)
 						{
-							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
+							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4> $Null).Server
 							Line 6 $ItemName
 						}
 					}
@@ -44418,7 +43884,7 @@ Function OutputPublishingSettings
 					{
 						ForEach($Item in $PubItem.PublishFromHostPool)
 						{
-							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
+							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4> $Null).Name
 							Line 5 $ItemName
 						}
 					}
@@ -44441,7 +43907,7 @@ Function OutputPublishingSettings
 						$cnt =-1
 						ForEach($PrefRoute in $Results)
 						{
-							$CustomRoute = Get-RASCustomRoute -Id $PrefRoute.Id -EA 0 4>$Null
+							$CustomRoute = Get-RASCustomRoute -Id $PrefRoute.Id -EA 0 4> $Null
 							
 							If($? -and $Null -ne $CustomRoute)
 							{
@@ -44484,7 +43950,7 @@ Function OutputPublishingSettings
 				$columnHeaders = @("Remote PC Desktop",($Script:htmlsb),"#$($PubItem.Id): $($PubItem.Name)",$htmlwhite)
 				If(![String]::IsNullOrEmpty($PubItem.Description))
 				{
-					$rowdata += @(,("Description",($Script:htmlsb),$PubItem.Description,$htmlwhite))
+					$rowdata += @(,("Description",($Script:htmlsb),$PubItem.Description.Replace("<","").Replace(">",""),$htmlwhite))
 				}
 				$rowdata += @(,("Last modification by",($Script:htmlsb), $PubItem.AdminLastMod,$htmlwhite))
 				$rowdata += @(,("Modified on",($Script:htmlsb), (Get-Date -UFormat "%c" $PubItem.TimeLastMod),$htmlwhite))
@@ -44531,7 +43997,7 @@ Function OutputPublishingSettings
 				ForEach($Site in $PubItem.PublishToSite)
 				{
 					$cnt++
-					$SiteName = @(Get-RASSite -Id $Site -EA 0 4>$Null).Name
+					$SiteName = @(Get-RASSite -Id $Site -EA 0 4> $Null).Name
 					
 					If($cnt -eq 0)
 					{
@@ -44567,7 +44033,7 @@ Function OutputPublishingSettings
 						ForEach($Item in $PubItem.PublishFromServer)
 						{
 							$cnt++
-							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
+							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4> $Null).Server
 							
 							If($cnt -eq 0)
 							{
@@ -44585,7 +44051,7 @@ Function OutputPublishingSettings
 						ForEach($Item in $PubItem.PublishFromHostPool)
 						{
 							$cnt++
-							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
+							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4> $Null).Name
 							
 							If($cnt -eq 0)
 							{
@@ -44615,8 +44081,8 @@ Function OutputPublishingSettings
 				WriteHTMLLine 3 0 "Desktop"
 				WriteHTMLLine 4 0 "Desktop"
 				$rowdata = @()
-				$columnHeaders = @("Name",($Script:htmlsb),$PubItem.Name,$htmlwhite)
-				$rowdata += @(,("Description",($Script:htmlsb),$PubItem.Description,$htmlwhite))
+				$columnHeaders = @("Name",($Script:htmlsb),$PubItem.Name.Replace("<","").Replace(">",""),$htmlwhite)
+				$rowdata += @(,("Description",($Script:htmlsb),$PubItem.Description.Replace("<","").Replace(">",""),$htmlwhite))
 				$rowdata += @(,("Status",($Script:htmlsb),$PubItemStatus,$htmlwhite))
 				$rowdata += @(,("Start automatically when user logs on",($Script:htmlsb),$PubItem.StartOnLogon.ToString(),$htmlwhite))
 				$rowdata += @(,("Exclude from session prelaunch",($Script:htmlsb),$PubItem.ExcludePrelaunch.ToString(),$htmlwhite))
@@ -44652,7 +44118,7 @@ Function OutputPublishingSettings
 						$cnt =-1
 						ForEach($PrefRoute in $Results)
 						{
-							$CustomRoute = Get-RASCustomRoute -Id $PrefRoute.Id -EA 0 4>$Null
+							$CustomRoute = Get-RASCustomRoute -Id $PrefRoute.Id -EA 0 4> $Null
 							
 							If($? -and $Null -ne $CustomRoute)
 							{
@@ -44797,7 +44263,7 @@ Function OutputPublishingSettings
 						ForEach($Item in $PubItem.PublishFromServer)
 						{
 							$cnt++
-							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
+							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4> $Null).Server
 							
 							If($cnt -eq 0)
 							{
@@ -44815,7 +44281,7 @@ Function OutputPublishingSettings
 						ForEach($Item in $PubItem.PublishFromHostPool)
 						{
 							$cnt++
-							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
+							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4> $Null).Name
 							If($cnt -eq 0)
 							{
 								$ScriptInformation.Add(@{Data = "Published from"; Value = $ItemName; }) > $Null
@@ -44873,7 +44339,7 @@ Function OutputPublishingSettings
 				ForEach($Site in $PubItem.PublishToSite)
 				{
 					$cnt++
-					$SiteName = @(Get-RASSite -Id $Site -EA 0 4>$Null).Name
+					$SiteName = @(Get-RASSite -Id $Site -EA 0 4> $Null).Name
 					
 					If($cnt -eq 0)
 					{
@@ -44923,7 +44389,7 @@ Function OutputPublishingSettings
 						{
 							$cnt++
 							
-							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
+							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4> $Null).Server
 							
 							If($cnt -eq 0)
 							{
@@ -44942,7 +44408,7 @@ Function OutputPublishingSettings
 						{
 							$cnt++
 							
-							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
+							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4> $Null).Name
 							
 							If($cnt -eq 0)
 							{
@@ -45029,7 +44495,7 @@ Function OutputPublishingSettings
 						$cnt =-1
 						ForEach($PrefRoute in $Results)
 						{
-							$CustomRoute = Get-RASCustomRoute -Id $PrefRoute.Id -EA 0 4>$Null
+							$CustomRoute = Get-RASCustomRoute -Id $PrefRoute.Id -EA 0 4> $Null
 							
 							If($? -and $Null -ne $CustomRoute)
 							{
@@ -45286,7 +44752,7 @@ Function OutputPublishingSettings
 						ForEach($Item in $PubItem.PublishFromServer)
 						{
 							$cnt++
-							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
+							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4> $Null).Server
 							If($cnt -eq 0)
 							{
 								Line 3 "Published from`t`t`t`t`t`t: " ItemName
@@ -45303,7 +44769,7 @@ Function OutputPublishingSettings
 						ForEach($Item in $PubItem.PublishFromHostPool)
 						{
 							$cnt++
-							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
+							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4> $Null).Name
 							If($cnt -eq 0)
 							{
 								Line 3 "Published from`t`t`t`t`t`t: " ItemName
@@ -45361,7 +44827,7 @@ Function OutputPublishingSettings
 				ForEach($Site in $PubItem.PublishToSite)
 				{
 					$cnt++
-					$SiteName = @(Get-RASSite -Id $Site -EA 0 4>$Null).Name
+					$SiteName = @(Get-RASSite -Id $Site -EA 0 4> $Null).Name
 					
 					If($cnt -eq 0)
 					{
@@ -45391,7 +44857,7 @@ Function OutputPublishingSettings
 					{
 						ForEach($Item in $PubItem.PublishFromServer)
 						{
-							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
+							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4> $Null).Server
 							Line 6 $ItemName
 						}
 					}
@@ -45399,7 +44865,7 @@ Function OutputPublishingSettings
 					{
 						ForEach($Item in $PubItem.PublishFromHostPool)
 						{
-							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
+							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4> $Null).Name
 							Line 5 $ItemName
 						}
 					}
@@ -45439,7 +44905,7 @@ Function OutputPublishingSettings
 						$cnt =-1
 						ForEach($PrefRoute in $Results)
 						{
-							$CustomRoute = Get-RASCustomRoute -Id $PrefRoute.Id -EA 0 4>$Null
+							$CustomRoute = Get-RASCustomRoute -Id $PrefRoute.Id -EA 0 4> $Null
 							
 							If($? -and $Null -ne $CustomRoute)
 							{
@@ -45557,7 +45023,7 @@ Function OutputPublishingSettings
 				$columnHeaders = @("Application",($Script:htmlsb),"#$($PubItem.Id): $($PubItem.Name)",$htmlwhite)
 				If(![String]::IsNullOrEmpty($PubItem.Description))
 				{
-					$rowdata += @(,("Description",($Script:htmlsb),$PubItem.Description,$htmlwhite))
+					$rowdata += @(,("Description",($Script:htmlsb),$PubItem.Description.Replace("<","").Replace(">",""),$htmlwhite))
 				}
 				$rowdata += @(,("Last modification by",($Script:htmlsb), $PubItem.AdminLastMod,$htmlwhite))
 				$rowdata += @(,("Modified on",($Script:htmlsb), (Get-Date -UFormat "%c" $PubItem.TimeLastMod),$htmlwhite))
@@ -45603,7 +45069,7 @@ Function OutputPublishingSettings
 						ForEach($Item in $PubItem.PublishFromServer)
 						{
 							$cnt++
-							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
+							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4> $Null).Server
 							If($cnt -eq 0)
 							{
 								$rowdata += @(,("Published from",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite))
@@ -45620,7 +45086,7 @@ Function OutputPublishingSettings
 						ForEach($Item in $PubItem.PublishFromHostPool)
 						{
 							$cnt++
-							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
+							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4> $Null).Name
 							If($cnt -eq 0)
 							{
 								$rowdata += @(,("Published from",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite))
@@ -45678,7 +45144,7 @@ Function OutputPublishingSettings
 				ForEach($Site in $PubItem.PublishToSite)
 				{
 					$cnt++
-					$SiteName = @(Get-RASSite -Id $Site -EA 0 4>$Null).Name
+					$SiteName = @(Get-RASSite -Id $Site -EA 0 4> $Null).Name
 					
 					If($cnt -eq 0)
 					{
@@ -45714,7 +45180,7 @@ Function OutputPublishingSettings
 						ForEach($Item in $PubItem.PublishFromServer)
 						{
 							$cnt++
-							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
+							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4> $Null).Server
 							
 							If($cnt -eq 0)
 							{
@@ -45732,7 +45198,7 @@ Function OutputPublishingSettings
 						ForEach($Item in $PubItem.PublishFromHostPool)
 						{
 							$cnt++
-							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
+							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4> $Null).Name
 							
 							If($cnt -eq 0)
 							{
@@ -45763,8 +45229,8 @@ Function OutputPublishingSettings
 				$rowdata = @()
 
 				$columnHeaders = @("Application",($Script:htmlsb),"",$htmlwhite)
-				$rowdata += @(,("     Name",($Script:htmlsb),$PubItem.Name,$htmlwhite))
-				$rowdata += @(,("     Description",($Script:htmlsb),$PubItem.Description,$htmlwhite))
+				$rowdata += @(,("     Name",($Script:htmlsb),$PubItem.Name.Replace("<","").Replace(">",""),$htmlwhite))
+				$rowdata += @(,("     Description",($Script:htmlsb),$PubItem.Description.Replace("<","").Replace(">",""),$htmlwhite))
 				$rowdata += @(,("     Run",($Script:htmlsb),$WinType,$htmlwhite))
 				$rowdata += @(,("     Status",($Script:htmlsb),$PubItemStatus,$htmlwhite))
 				$rowdata += @(,("     Start automatically when user logs on",($Script:htmlsb),$PubItem.StartOnLogon.ToString(),$htmlwhite))
@@ -45795,7 +45261,7 @@ Function OutputPublishingSettings
 						$cnt =-1
 						ForEach($PrefRoute in $Results)
 						{
-							$CustomRoute = Get-RASCustomRoute -Id $PrefRoute.Id -EA 0 4>$Null
+							$CustomRoute = Get-RASCustomRoute -Id $PrefRoute.Id -EA 0 4> $Null
 							
 							If($? -and $Null -ne $CustomRoute)
 							{
@@ -46013,7 +45479,7 @@ Function OutputPublishingSettings
 						ForEach($Item in $PubItem.PublishFromServer)
 						{
 							$cnt++
-							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
+							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4> $Null).Server
 							
 							If($cnt -eq 0)
 							{
@@ -46031,7 +45497,7 @@ Function OutputPublishingSettings
 						ForEach($Item in $PubItem.PublishFromHostPool)
 						{
 							$cnt++
-							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
+							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4> $Null).Name
 							If($cnt -eq 0)
 							{
 								$ScriptInformation.Add(@{Data = "Published from"; Value = $ItemName; }) > $Null
@@ -46089,7 +45555,7 @@ Function OutputPublishingSettings
 				ForEach($Site in $PubItem.PublishToSite)
 				{
 					$cnt++
-					$SiteName = @(Get-RASSite -Id $Site -EA 0 4>$Null).Name
+					$SiteName = @(Get-RASSite -Id $Site -EA 0 4> $Null).Name
 					
 					If($cnt -eq 0)
 					{
@@ -46139,7 +45605,7 @@ Function OutputPublishingSettings
 						{
 							$cnt++
 							
-							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
+							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4> $Null).Server
 							
 							If($cnt -eq 0)
 							{
@@ -46158,7 +45624,7 @@ Function OutputPublishingSettings
 						{
 							$cnt++
 							
-							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
+							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4> $Null).Name
 							
 							If($cnt -eq 0)
 							{
@@ -46247,7 +45713,7 @@ Function OutputPublishingSettings
 						$cnt =-1
 						ForEach($PrefRoute in $Results)
 						{
-							$CustomRoute = Get-RASCustomRoute -Id $PrefRoute.Id -EA 0 4>$Null
+							$CustomRoute = Get-RASCustomRoute -Id $PrefRoute.Id -EA 0 4> $Null
 							
 							If($? -and $Null -ne $CustomRoute)
 							{
@@ -46327,7 +45793,7 @@ Function OutputPublishingSettings
 						ForEach($Item in $PubItem.PublishFromServer)
 						{
 							$cnt++
-							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
+							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4> $Null).Server
 							If($cnt -eq 0)
 							{
 								Line 3 "Published from`t`t`t`t`t`t: " ItemName
@@ -46344,7 +45810,7 @@ Function OutputPublishingSettings
 						ForEach($Item in $PubItem.PublishFromHostPool)
 						{
 							$cnt++
-							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
+							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4> $Null).Name
 							If($cnt -eq 0)
 							{
 								Line 3 "Published from`t`t`t`t`t`t: " ItemName
@@ -46402,7 +45868,7 @@ Function OutputPublishingSettings
 				ForEach($Site in $PubItem.PublishToSite)
 				{
 					$cnt++
-					$SiteName = @(Get-RASSite -Id $Site -EA 0 4>$Null).Name
+					$SiteName = @(Get-RASSite -Id $Site -EA 0 4> $Null).Name
 					
 					If($cnt -eq 0)
 					{
@@ -46432,7 +45898,7 @@ Function OutputPublishingSettings
 					{
 						ForEach($Item in $PubItem.PublishFromServer)
 						{
-							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
+							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4> $Null).Server
 							Line 6 $ItemName
 						}
 					}
@@ -46440,7 +45906,7 @@ Function OutputPublishingSettings
 					{
 						ForEach($Item in $PubItem.PublishFromHostPool)
 						{
-							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
+							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4> $Null).Name
 							Line 5 $ItemName
 						}
 					}
@@ -46481,7 +45947,7 @@ Function OutputPublishingSettings
 						$cnt =-1
 						ForEach($PrefRoute in $Results)
 						{
-							$CustomRoute = Get-RASCustomRoute -Id $PrefRoute.Id -EA 0 4>$Null
+							$CustomRoute = Get-RASCustomRoute -Id $PrefRoute.Id -EA 0 4> $Null
 							
 							If($? -and $Null -ne $CustomRoute)
 							{
@@ -46523,7 +45989,7 @@ Function OutputPublishingSettings
 				$columnHeaders = @("RD Session Host Desktop",($Script:htmlsb),"#$($PubItem.Id): $($PubItem.Name)",$htmlwhite)
 				If(![String]::IsNullOrEmpty($PubItem.Description))
 				{
-					$rowdata += @(,("Description",($Script:htmlsb),$PubItem.Description,$htmlwhite))
+					$rowdata += @(,("Description",($Script:htmlsb),$PubItem.Description.Replace("<","").Replace(">",""),$htmlwhite))
 				}
 				$rowdata += @(,("Last modification by",($Script:htmlsb), $PubItem.AdminLastMod,$htmlwhite))
 				$rowdata += @(,("Modified on",($Script:htmlsb), (Get-Date -UFormat "%c" $PubItem.TimeLastMod),$htmlwhite))
@@ -46545,7 +46011,7 @@ Function OutputPublishingSettings
 						ForEach($Item in $PubItem.PublishFromServer)
 						{
 							$cnt++
-							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
+							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4> $Null).Server
 							If($cnt -eq 0)
 							{
 								$rowdata += @(,("Published from",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite))
@@ -46562,7 +46028,7 @@ Function OutputPublishingSettings
 						ForEach($Item in $PubItem.PublishFromHostPool)
 						{
 							$cnt++
-							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
+							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4> $Null).Name
 							If($cnt -eq 0)
 							{
 								$rowdata += @(,("Published from",($Script:htmlsb),$ItemName.Replace("<","").Replace(">",""),$htmlwhite))
@@ -46620,7 +46086,7 @@ Function OutputPublishingSettings
 				ForEach($Site in $PubItem.PublishToSite)
 				{
 					$cnt++
-					$SiteName = @(Get-RASSite -Id $Site -EA 0 4>$Null).Name
+					$SiteName = @(Get-RASSite -Id $Site -EA 0 4> $Null).Name
 					
 					If($cnt -eq 0)
 					{
@@ -46656,7 +46122,7 @@ Function OutputPublishingSettings
 						ForEach($Item in $PubItem.PublishFromServer)
 						{
 							$cnt++
-							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
+							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4> $Null).Server
 							
 							If($cnt -eq 0)
 							{
@@ -46674,7 +46140,7 @@ Function OutputPublishingSettings
 						ForEach($Item in $PubItem.PublishFromHostPool)
 						{
 							$cnt++
-							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
+							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4> $Null).Name
 							
 							If($cnt -eq 0)
 							{
@@ -46705,8 +46171,8 @@ Function OutputPublishingSettings
 				$rowdata = @()
 
 				$columnHeaders = @("Desktop",($Script:htmlsb),"",$htmlwhite)
-				$rowdata += @(,("     Name",($Script:htmlsb),$PubItem.Name,$htmlwhite))
-				$rowdata += @(,("     Description",($Script:htmlsb),$PubItem.Description,$htmlwhite))
+				$rowdata += @(,("     Name",($Script:htmlsb),$PubItem.Name.Replace("<","").Replace(">",""),$htmlwhite))
+				$rowdata += @(,("     Description",($Script:htmlsb),$PubItem.Description.Replace("<","").Replace(">",""),$htmlwhite))
 				$rowdata += @(,("     Status",($Script:htmlsb),$PubItemStatus,$htmlwhite))
 				If(validObject $PubItem ConnectToConsole)
 				{
@@ -46738,7 +46204,7 @@ Function OutputPublishingSettings
 						$cnt =-1
 						ForEach($PrefRoute in $Results)
 						{
-							$CustomRoute = Get-RASCustomRoute -Id $PrefRoute.Id -EA 0 4>$Null
+							$CustomRoute = Get-RASCustomRoute -Id $PrefRoute.Id -EA 0 4> $Null
 							
 							If($? -and $Null -ne $CustomRoute)
 							{
@@ -46786,7 +46252,7 @@ Function OutputPublishingSettings
 				Default					{$ConnectTo = "Unable to determine Connect To: $($PubItem.ConnectTo)"; Break}
 			}
 			
-			$results = Get-RASVDIHostPool -Id $PubItem.VDIHostPoolId -EA 0 4>$Null
+			$results = Get-RASVDIHostPool -Id $PubItem.VDIHostPoolId -EA 0 4> $Null
 			
 			If($? -and $Null -ne $results)
 			{
@@ -46866,7 +46332,7 @@ Function OutputPublishingSettings
 				ForEach($Site in $PubItem.PublishToSite)
 				{
 					$cnt++
-					$SiteName = @(Get-RASSite -Id $Site -EA 0 4>$Null).Name
+					$SiteName = @(Get-RASSite -Id $Site -EA 0 4> $Null).Name
 					
 					If($cnt -eq 0)
 					{
@@ -46916,7 +46382,7 @@ Function OutputPublishingSettings
 						{
 							$cnt++
 							
-							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
+							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4> $Null).Server
 							
 							If($cnt -eq 0)
 							{
@@ -46935,7 +46401,7 @@ Function OutputPublishingSettings
 						{
 							$cnt++
 							
-							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
+							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4> $Null).Name
 							
 							If($cnt -eq 0)
 							{
@@ -47042,7 +46508,7 @@ Function OutputPublishingSettings
 						$cnt =-1
 						ForEach($PrefRoute in $Results)
 						{
-							$CustomRoute = Get-RASCustomRoute -Id $PrefRoute.Id -EA 0 4>$Null
+							$CustomRoute = Get-RASCustomRoute -Id $PrefRoute.Id -EA 0 4> $Null
 							
 							If($? -and $Null -ne $CustomRoute)
 							{
@@ -47158,7 +46624,7 @@ Function OutputPublishingSettings
 				ForEach($Site in $PubItem.PublishToSite)
 				{
 					$cnt++
-					$SiteName = @(Get-RASSite -Id $Site -EA 0 4>$Null).Name
+					$SiteName = @(Get-RASSite -Id $Site -EA 0 4> $Null).Name
 					
 					If($cnt -eq 0)
 					{
@@ -47190,7 +46656,7 @@ Function OutputPublishingSettings
 						{
 							$cnt++
 							
-							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
+							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4> $Null).Server
 							
 							If($cnt -eq 0)
 							{
@@ -47209,7 +46675,7 @@ Function OutputPublishingSettings
 						{
 							$cnt++
 							
-							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
+							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4> $Null).Name
 							
 							If($cnt -eq 0)
 							{
@@ -47260,7 +46726,7 @@ Function OutputPublishingSettings
 						$cnt =-1
 						ForEach($PrefRoute in $Results)
 						{
-							$CustomRoute = Get-RASCustomRoute -Id $PrefRoute.Id -EA 0 4>$Null
+							$CustomRoute = Get-RASCustomRoute -Id $PrefRoute.Id -EA 0 4> $Null
 							
 							If($? -and $Null -ne $CustomRoute)
 							{
@@ -47303,7 +46769,7 @@ Function OutputPublishingSettings
 				$columnHeaders = @("Virtual Desktop Application",($Script:htmlsb),"#$($PubItem.Id): $($PubItem.Name)",$htmlwhite)
 				If(![String]::IsNullOrEmpty($PubItem.Description))
 				{
-					$rowdata += @(,("Description",($Script:htmlsb),$PubItem.Description,$htmlwhite))
+					$rowdata += @(,("Description",($Script:htmlsb),$PubItem.Description.Replace("<","").Replace(">",""),$htmlwhite))
 				}
 				$rowdata += @(,("Last modification by",($Script:htmlsb), $PubItem.AdminLastMod,$htmlwhite))
 				$rowdata += @(,("Modified on",($Script:htmlsb), (Get-Date -UFormat "%c" $PubItem.TimeLastMod),$htmlwhite))
@@ -47361,7 +46827,7 @@ Function OutputPublishingSettings
 				ForEach($Site in $PubItem.PublishToSite)
 				{
 					$cnt++
-					$SiteName = @(Get-RASSite -Id $Site -EA 0 4>$Null).Name
+					$SiteName = @(Get-RASSite -Id $Site -EA 0 4> $Null).Name
 					
 					If($cnt -eq 0)
 					{
@@ -47397,7 +46863,7 @@ Function OutputPublishingSettings
 						ForEach($Item in $PubItem.PublishFromServer)
 						{
 							$cnt++
-							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4>$Null).Server
+							$ItemName = @(Get-RASRDSHost -Id $Item -EA 0 4> $Null).Server
 							
 							If($cnt -eq 0)
 							{
@@ -47415,7 +46881,7 @@ Function OutputPublishingSettings
 						ForEach($Item in $PubItem.PublishFromHostPool)
 						{
 							$cnt++
-							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4>$Null).Name
+							$ItemName = @(Get-RASRDSHostPool -Id $Item -EA 0 4> $Null).Name
 							
 							If($cnt -eq 0)
 							{
@@ -47445,8 +46911,8 @@ Function OutputPublishingSettings
 				WriteHTMLLine 3 0 "Application"
 				$rowdata = @()
 
-				$columnHeaders = @("Name",($Script:htmlsb),$PubItem.Name,$htmlwhite)
-				$rowdata += @(,("Description",($Script:htmlsb),$PubItem.Description,$htmlwhite))
+				$columnHeaders = @("Name",($Script:htmlsb),$PubItem.Name.Replace("<","").Replace(">",""),$htmlwhite)
+				$rowdata += @(,("Description",($Script:htmlsb),$PubItem.Description.Replace("<","").Replace(">",""),$htmlwhite))
 				$rowdata += @(,("Run",($Script:htmlsb),$WinType,$htmlwhite))
 				$rowdata += @(,("Target",($Script:htmlsb),$PubItem.Target,$htmlwhite))
 				$rowdata += @(,("Start In",($Script:htmlsb),$PubItem.StartIn,$htmlwhite))
@@ -47484,7 +46950,7 @@ Function OutputPublishingSettings
 						$cnt =-1
 						ForEach($PrefRoute in $Results)
 						{
-							$CustomRoute = Get-RASCustomRoute -Id $PrefRoute.Id -EA 0 4>$Null
+							$CustomRoute = Get-RASCustomRoute -Id $PrefRoute.Id -EA 0 4> $Null
 							
 							If($? -and $Null -ne $CustomRoute)
 							{
@@ -47558,7 +47024,7 @@ Function OutputPublishingSettings
 			$VDIHostPool = "Unable to determine"
 			If($PubItem.VDIHostPoolId -ne 0)
 			{
-				$VDIHostPool = Get-RASVDIHostPool -Id $PubItem.VDIHostPoolId -EA 0 4>$Null
+				$VDIHostPool = Get-RASVDIHostPool -Id $PubItem.VDIHostPoolId -EA 0 4> $Null
 				
 				If($Null -ne $VDIHostPool)
 				{
@@ -47629,7 +47095,7 @@ Function OutputPublishingSettings
 				ForEach($Site in $PubItem.PublishToSite)
 				{
 					$cnt++
-					$SiteName = @(Get-RASSite -Id $Site -EA 0 4>$Null).Name
+					$SiteName = @(Get-RASSite -Id $Site -EA 0 4> $Null).Name
 					
 					If($cnt -eq 0)
 					{
@@ -47737,7 +47203,7 @@ Function OutputPublishingSettings
 						$cnt =-1
 						ForEach($PrefRoute in $Results)
 						{
-							$CustomRoute = Get-RASCustomRoute -Id $PrefRoute.Id -EA 0 4>$Null
+							$CustomRoute = Get-RASCustomRoute -Id $PrefRoute.Id -EA 0 4> $Null
 							
 							If($? -and $Null -ne $CustomRoute)
 							{
@@ -47850,7 +47316,7 @@ Function OutputPublishingSettings
 				ForEach($Site in $PubItem.PublishToSite)
 				{
 					$cnt++
-					$SiteName = @(Get-RASSite -Id $Site -EA 0 4>$Null).Name
+					$SiteName = @(Get-RASSite -Id $Site -EA 0 4> $Null).Name
 					
 					If($cnt -eq 0)
 					{
@@ -47903,7 +47369,7 @@ Function OutputPublishingSettings
 						$cnt =-1
 						ForEach($PrefRoute in $Results)
 						{
-							$CustomRoute = Get-RASCustomRoute -Id $PrefRoute.Id -EA 0 4>$Null
+							$CustomRoute = Get-RASCustomRoute -Id $PrefRoute.Id -EA 0 4> $Null
 							
 							If($? -and $Null -ne $CustomRoute)
 							{
@@ -47946,7 +47412,7 @@ Function OutputPublishingSettings
 				$columnHeaders = @("Virtual Desktop",($Script:htmlsb),"#$($PubItem.Id): $($PubItem.Name)",$htmlwhite)
 				If(![String]::IsNullOrEmpty($PubItem.Description))
 				{
-					$rowdata += @(,("Description",($Script:htmlsb),$PubItem.Description,$htmlwhite))
+					$rowdata += @(,("Description",($Script:htmlsb),$PubItem.Description.Replace("<","").Replace(">",""),$htmlwhite))
 				}
 				$rowdata += @(,("Last modification by",($Script:htmlsb), $PubItem.AdminLastMod,$htmlwhite))
 				$rowdata += @(,("Modified on",($Script:htmlsb), (Get-Date -UFormat "%c" $PubItem.TimeLastMod),$htmlwhite))
@@ -48001,7 +47467,7 @@ Function OutputPublishingSettings
 				ForEach($Site in $PubItem.PublishToSite)
 				{
 					$cnt++
-					$SiteName = @(Get-RASSite -Id $Site -EA 0 4>$Null).Name
+					$SiteName = @(Get-RASSite -Id $Site -EA 0 4> $Null).Name
 					
 					If($cnt -eq 0)
 					{
@@ -48041,11 +47507,11 @@ Function OutputPublishingSettings
 				$rowdata = @()
 
 				$columnHeaders = @("Desktop",($Script:htmlsb),"",$htmlwhite)
-				$rowdata += @(,("     Name",($Script:htmlsb),$PubItem.Name,$htmlwhite))
-				$rowdata += @(,("     Description",($Script:htmlsb),$PubItem.Description,$htmlwhite))
+				$rowdata += @(,("     Name",($Script:htmlsb),$PubItem.Name.Replace("<","").Replace(">",""),$htmlwhite))
+				$rowdata += @(,("     Description",($Script:htmlsb),$PubItem.Description.Replace("<","").Replace(">",""),$htmlwhite))
 				$rowdata += @(,("     Start automatically when user logs on",($Script:htmlsb),$PubItem.StartOnLogon.ToString(),$htmlwhite))
 				$rowdata += @(,("     Exclude from session prelaunch",($Script:htmlsb),$PubItem.ExcludePrelaunch.ToString(),$htmlwhite))
-				$rowdata += @(,("Properties",($Script:htmlsb),$PubItem.Name,$htmlwhite))
+				$rowdata += @(,("Properties",($Script:htmlsb),"",$htmlwhite))
 				$rowdata += @(,("     Desktop size",($Script:htmlsb),$DesktopSize,$htmlwhite))
 				$rowdata += @(,("     Multi-Monitor",($Script:htmlsb),$AllowMultiMonitor,$htmlwhite))
 				$rowdata += @(,("     Enable static assignment to host",($Script:htmlsb),$PubItem.Persistent.ToString(),$htmlwhite))
@@ -48070,7 +47536,7 @@ Function OutputPublishingSettings
 						$cnt =-1
 						ForEach($PrefRoute in $Results)
 						{
-							$CustomRoute = Get-RASCustomRoute -Id $PrefRoute.Id -EA 0 4>$Null
+							$CustomRoute = Get-RASCustomRoute -Id $PrefRoute.Id -EA 0 4> $Null
 							
 							If($? -and $Null -ne $CustomRoute)
 							{
@@ -48127,7 +47593,7 @@ Function OutputPublishingSettings
 			$AVDHostPool = "Unable to determine"
 			If($PubItem.AVDHostPoolId -ne 0)
 			{
-				$AVDHostPool = Get-RASAVDHostPool -Id $PubItem.AVDHostPoolId -EA 0 4>$Null
+				$AVDHostPool = Get-RASAVDHostPool -Id $PubItem.AVDHostPoolId -EA 0 4> $Null
 				
 				If($Null -ne $AVDHostPool)
 				{
@@ -48213,7 +47679,7 @@ Function OutputPublishingSettings
 				ForEach($Site in $PubItem.PublishToSite)
 				{
 					$cnt++
-					$SiteName = @(Get-RASSite -Id $Site -EA 0 4>$Null).Name
+					$SiteName = @(Get-RASSite -Id $Site -EA 0 4> $Null).Name
 					
 					If($cnt -eq 0)
 					{
@@ -48246,7 +47712,7 @@ Function OutputPublishingSettings
 				WriteWordLine 3 0 "Publish from"
 				$ScriptInformation = New-Object System.Collections.ArrayList
 
-				$AVDHostPools = Get-RASAVDHostPool -EA 0 4>$Null | Where-Object {$_.LinkedRemoteApplicationGroup -ne ""}
+				$AVDHostPools = Get-RASAVDHostPool -EA 0 4> $Null | Where-Object {$_.LinkedRemoteApplicationGroup -ne ""}
 				
 				If($Null -eq $AVDHostPools)
 				{
@@ -48539,7 +48005,7 @@ Function OutputPublishingSettings
 				ForEach($Site in $PubItem.PublishToSite)
 				{
 					$cnt++
-					$SiteName = @(Get-RASSite -Id $Site -EA 0 4>$Null).Name
+					$SiteName = @(Get-RASSite -Id $Site -EA 0 4> $Null).Name
 					
 					If($cnt -eq 0)
 					{
@@ -48553,7 +48019,7 @@ Function OutputPublishingSettings
 				Line 0 ""
 
 				Line 2 "Publish from"
-				$AVDHostPools = Get-RASAVDHostPool -EA 0 4>$Null | Where-Object {$_.LinkedRemoteApplicationGroup -ne ""}
+				$AVDHostPools = Get-RASAVDHostPool -EA 0 4> $Null | Where-Object {$_.LinkedRemoteApplicationGroup -ne ""}
 				
 				If($Null -eq $AVDHostPools)
 				{
@@ -48687,7 +48153,7 @@ Function OutputPublishingSettings
 				$columnHeaders = @("Azure Virtual Desktop",($Script:htmlsb),"#$($PubItem.Id): $($PubItem.Name)",$htmlwhite)
 				If(![String]::IsNullOrEmpty($PubItem.Description))
 				{
-					$rowdata += @(,("Description",($Script:htmlsb),$PubItem.Description,$htmlwhite))
+					$rowdata += @(,("Description",($Script:htmlsb),$PubItem.Description.Replace("<","").Replace(">",""),$htmlwhite))
 				}
 				$rowdata += @(,("Last modification by",($Script:htmlsb), $PubItem.AdminLastMod,$htmlwhite))
 				$rowdata += @(,("Modified on",($Script:htmlsb), (Get-Date -UFormat "%c" $PubItem.TimeLastMod),$htmlwhite))
@@ -48736,7 +48202,7 @@ Function OutputPublishingSettings
 				ForEach($Site in $PubItem.PublishToSite)
 				{
 					$cnt++
-					$SiteName = @(Get-RASSite -Id $Site -EA 0 4>$Null).Name
+					$SiteName = @(Get-RASSite -Id $Site -EA 0 4> $Null).Name
 					
 					If($cnt -eq 0)
 					{
@@ -48756,7 +48222,7 @@ Function OutputPublishingSettings
 				WriteHTMLLine 3 0 "Publish from"
 				$rowdata = @()
 
-				$AVDHostPools = Get-RASAVDHostPool -EA 0 4>$Null | Where-Object {$_.LinkedRemoteApplicationGroup -ne ""}
+				$AVDHostPools = Get-RASAVDHostPool -EA 0 4> $Null | Where-Object {$_.LinkedRemoteApplicationGroup -ne ""}
 				
 				If($Null -eq $AVDHostPools)
 				{
@@ -48792,8 +48258,8 @@ Function OutputPublishingSettings
 								$rowdata += @(,("Enabled",($Script:htmlsb),"False",$htmlwhite))
 							}
 						}
-						$rowdata += @(,("Host pools",($Script:htmlsb),$AVDHostPool.Name,$htmlwhite))
-						$rowdata += @(,("Description",($Script:htmlsb),$AVDHostPool.Description,$htmlwhite))
+						$rowdata += @(,("Host pools",($Script:htmlsb),$AVDHostPool.Name.Replace("<","").Replace(">",""),$htmlwhite))
+						$rowdata += @(,("Description",($Script:htmlsb),$AVDHostPool.Description.Replace("<","").Replace(">",""),$htmlwhite))
 						$rowdata += @(,("Location",($Script:htmlsb),$Location,$htmlwhite))
 						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 					}
@@ -48808,8 +48274,8 @@ Function OutputPublishingSettings
 				$rowdata = @()
 
 				$columnHeaders = @("Application",($Script:htmlsb),"",$htmlwhite)
-				$rowdata += @(,("     Name",($Script:htmlsb),$PubItem.Name,$htmlwhite))
-				$rowdata += @(,("     Description",($Script:htmlsb),$PubItem.Description,$htmlwhite))
+				$rowdata += @(,("     Name",($Script:htmlsb),$PubItem.Name.Replace("<","").Replace(">",""),$htmlwhite))
+				$rowdata += @(,("     Description",($Script:htmlsb),$PubItem.Description.Replace("<","").Replace(">",""),$htmlwhite))
 				$rowdata += @(,("     Status",($Script:htmlsb),$PubItemStatus,$htmlwhite))
 				$rowdata += @(,("     Run",($Script:htmlsb),$WinType,$htmlwhite))
 				$rowdata += @(,("     Target",($Script:htmlsb),$PubItem.Target,$htmlwhite))
@@ -48959,7 +48425,7 @@ Function OutputPublishingSettings
 			$AVDHostPool = "Unable to determine"
 			If($PubItem.AVDHostPoolId -ne 0)
 			{
-				$AVDHostPool = Get-RASAVDHostPool -Id $PubItem.AVDHostPoolId -EA 0 4>$Null
+				$AVDHostPool = Get-RASAVDHostPool -Id $PubItem.AVDHostPoolId -EA 0 4> $Null
 				
 				If($Null -ne $AVDHostPool)
 				{
@@ -49032,7 +48498,7 @@ Function OutputPublishingSettings
 				ForEach($Site in $PubItem.PublishToSite)
 				{
 					$cnt++
-					$SiteName = @(Get-RASSite -Id $Site -EA 0 4>$Null).Name
+					$SiteName = @(Get-RASSite -Id $Site -EA 0 4> $Null).Name
 					
 					If($cnt -eq 0)
 					{
@@ -49064,7 +48530,7 @@ Function OutputPublishingSettings
 				WriteWordLine 3 0 "Publish from"
 				$ScriptInformation = New-Object System.Collections.ArrayList
 				
-				$AVDHostPools = Get-RASAVDHostPool -EA 0 4>$Null | Where-Object {$_.LinkedDesktopApplicationGroup -ne ""}
+				$AVDHostPools = Get-RASAVDHostPool -EA 0 4> $Null | Where-Object {$_.LinkedDesktopApplicationGroup -ne ""}
 				
 				If($Null -eq $AVDHostPools)
 				{
@@ -49200,7 +48666,7 @@ Function OutputPublishingSettings
 				OutputPubItemFilterSummary $PubItem "Text"
 
 				Line 2 "Publish from"
-				$AVDHostPools = Get-RASAVDHostPool -EA 0 4>$Null | Where-Object {$_.LinkedDesktopApplicationGroup -ne ""}
+				$AVDHostPools = Get-RASAVDHostPool -EA 0 4> $Null | Where-Object {$_.LinkedDesktopApplicationGroup -ne ""}
 				
 				If($Null -eq $AVDHostPools)
 				{
@@ -49257,7 +48723,7 @@ Function OutputPublishingSettings
 				$columnHeaders = @("Azure Virtual Desktop",($Script:htmlsb),"#$($PubItem.Id): $($PubItem.Name)",$htmlwhite)
 				If(![String]::IsNullOrEmpty($PubItem.Description))
 				{
-					$rowdata += @(,("Description",($Script:htmlsb),$PubItem.Description,$htmlwhite))
+					$rowdata += @(,("Description",($Script:htmlsb),$PubItem.Description.Replace("<","").Replace(">",""),$htmlwhite))
 				}
 				$rowdata += @(,("Last modification by",($Script:htmlsb), $PubItem.AdminLastMod,$htmlwhite))
 				$rowdata += @(,("Modified on",($Script:htmlsb), (Get-Date -UFormat "%c" $PubItem.TimeLastMod),$htmlwhite))
@@ -49305,7 +48771,7 @@ Function OutputPublishingSettings
 				ForEach($Site in $PubItem.PublishToSite)
 				{
 					$cnt++
-					$SiteName = @(Get-RASSite -Id $Site -EA 0 4>$Null).Name
+					$SiteName = @(Get-RASSite -Id $Site -EA 0 4> $Null).Name
 					
 					If($cnt -eq 0)
 					{
@@ -49324,7 +48790,7 @@ Function OutputPublishingSettings
 
 				WriteHTMLLine 3 0 "Publish from"
 				$rowdata = @()
-				$AVDHostPools = Get-RASAVDHostPool -EA 0 4>$Null | Where-Object {$_.LinkedDesktopApplicationGroup -ne ""}
+				$AVDHostPools = Get-RASAVDHostPool -EA 0 4> $Null | Where-Object {$_.LinkedDesktopApplicationGroup -ne ""}
 				
 				If($Null -eq $AVDHostPools)
 				{
@@ -49360,7 +48826,7 @@ Function OutputPublishingSettings
 								$rowdata += @(,("Enabled",($Script:htmlsb),"False",$htmlwhite))
 							}
 						}
-						$rowdata += @(,("Name",($Script:htmlsb),$AVDHostPool.Name,$htmlwhite))
+						$rowdata += @(,("Name",($Script:htmlsb),$AVDHostPool.Name.Replace("<","").Replace(">",""),$htmlwhite))
 						$rowdata += @(,("Location",($Script:htmlsb),$Location,$htmlwhite))
 						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 					}
@@ -49375,8 +48841,8 @@ Function OutputPublishingSettings
 				$rowdata = @()
 
 				$columnHeaders = @("Desktop",($Script:htmlsb),"",$htmlwhite)
-				$rowdata += @(,("     Name",($Script:htmlsb),$PubItem.Name,$htmlwhite))
-				$rowdata += @(,("     Description",($Script:htmlsb),$PubItem.Description,$htmlwhite))
+				$rowdata += @(,("     Name",($Script:htmlsb),$PubItem.Name.Replace("<","").Replace(">",""),$htmlwhite))
+				$rowdata += @(,("     Description",($Script:htmlsb),$PubItem.Description.Replace("<","").Replace(">",""),$htmlwhite))
 				$rowdata += @(,("     Status",($Script:htmlsb),$PubItemStatus,$htmlwhite))
 				$rowdata += @(,("     Start automatically when user logs on",($Script:htmlsb),$PubItem.StartOnLogon.ToString(),$htmlwhite))
 				$rowdata += @(,("     Exclude from session prelaunch",($Script:htmlsb),$PubItem.ExcludePrelaunch.ToString(),$htmlwhite))
@@ -49403,88 +48869,6 @@ Function OutputPublishingSettings
 		}
 		ElseIf($PubItem.Type -eq "LocalApp")
 		{
-			<#
-				Name                           Value
-				----                           -----
-				AdminCreate                    carl.webster@nothing
-				AdminLastMod                   carl.webster@nothing
-				Android                        RASAdminEngine.Core.OutputModels.Publishing.PubLocalApp.Android
-				CreateShortcutInStartFolder    True
-				CreateShortcutInStartUpFolder  False
-				CreateShortcutOnDesktop        False
-				Description                    Test for the V4 RAS doc script for a local app
-				Enabled                        True
-				EnabledMode                    Enabled
-				Filter                         RASAdminEngine.Core.OutputModels.Assignment.PubItemFilter
-				Id                             384
-				InheritShortcutDefaultSettings True
-				iOS                            RASAdminEngine.Core.OutputModels.Publishing.PubLocalApp.iOS
-				Linux                          RASAdminEngine.Core.OutputModels.Publishing.PubLocalApp.Linux
-				Mac                            RASAdminEngine.Core.OutputModels.Publishing.PubLocalApp.Mac
-				Name                           Webster Test
-				ParentId                       386
-				PreviousId                     0
-				PublishToSite                  {1}
-				ReplicateLocalAppSettings      False
-				ReplicateShortcutSettings      False
-				StartOnLogon                   True
-				StartPath                      RAS Remote Desktops & Applications\%Groups%
-				TimeCreate                     8/13/2025 8:08:31 PM
-				TimeLastMod                    8/22/2025 5:05:24 PM
-				Type                           LocalApp
-				URL                            c:\npp.7.8.1.bin
-				UserPortal                     RASAdminEngine.Core.OutputModels.Publishing.PubLocalApp.UserPortal
-				Windows                        RASAdminEngine.Core.OutputModels.Publishing.PubLocalApp.Windows
-				
-				PS C:\Users\carl.webster> $localapp.android | % {$_.psobject.properties | select name, value | sort name}
-
-				Name    Value
-				----    -----
-				Enabled False
-
-				PS C:\Users\carl.webster> $localapp.filter | % {$_.psobject.properties | select name, value | sort name}
-
-				Name    Value
-				----    -----
-				Default Allow
-				Rules      {}
-				
-				PS C:\Users\carl.webster> $localapp.ios | % {$_.psobject.properties | select name, value | sort name}
-
-				Name    Value
-				----    -----
-				Enabled False				
-				
-				PS C:\Users\carl.webster> $localapp.linux | % {$_.psobject.properties | select name, value | sort name}
-
-				Name    Value
-				----    -----
-				Enabled False
-
-				PS C:\Users\carl.webster> $localapp.mac | % {$_.psobject.properties | select name, value | sort name}
-
-				Name    Value
-				----    -----
-				Enabled False
-
-				PS C:\Users\carl.webster> $localapp.userportal | % {$_.psobject.properties | select name, value | sort name}
-
-				Name    Value
-				----    -----
-				Enabled False
-
-				PS C:\Users\carl.webster> $localapp.windows | % {$_.psobject.properties | select name, value | sort name}
-
-				Name                                    Value
-				----                                    -----
-				Enabled                                  True
-				Parameters
-				StartIn                      C:\npp.7.8.1.bin
-				Target         C:\npp.7.8.1.bin\notepad++.exe
-				UseIfAvailable                           True
-				WinType                                Normal
-			#>
-			
 			Switch ($PubItem.Windows.WinType)
 			{
 				"Normal"	{$WinType = "Normal Window"; Break}
@@ -49613,7 +48997,7 @@ Function OutputPublishingSettings
 				ForEach($Site in $PubItem.PublishToSite)
 				{
 					$cnt++
-					$SiteName = @(Get-RASSite -Id $Site -EA 0 4>$Null).Name
+					$SiteName = @(Get-RASSite -Id $Site -EA 0 4> $Null).Name
 					
 					If($cnt -eq 0)
 					{
@@ -49866,7 +49250,7 @@ Function OutputPublishingSettings
 				ForEach($Site in $PubItem.PublishToSite)
 				{
 					$cnt++
-					$SiteName = @(Get-RASSite -Id $Site -EA 0 4>$Null).Name
+					$SiteName = @(Get-RASSite -Id $Site -EA 0 4> $Null).Name
 					
 					If($cnt -eq 0)
 					{
@@ -49972,7 +49356,7 @@ Function OutputPublishingSettings
 				$columnHeaders = @("Local Device Application",($Script:htmlsb),"#$($PubItem.Id): $($PubItem.Name)",$htmlwhite)
 				If(![String]::IsNullOrEmpty($PubItem.Description))
 				{
-					$rowdata += @(,("Description",($Script:htmlsb),$PubItem.Description,$htmlwhite))
+					$rowdata += @(,("Description",($Script:htmlsb),$PubItem.Description.Replace("<","").Replace(">",""),$htmlwhite))
 				}
 				$rowdata += @(,("Last modification by",($Script:htmlsb),$PubItem.AdminLastMod,$htmlwhite))
 				$rowdata += @(,("Modified on",($Script:htmlsb),(Get-Date -UFormat "%c" $PubItem.TimeLastMod),$htmlwhite))
@@ -50085,7 +49469,7 @@ Function OutputPublishingSettings
 				ForEach($Site in $PubItem.PublishToSite)
 				{
 					$cnt++
-					$SiteName = @(Get-RASSite -Id $Site -EA 0 4>$Null).Name
+					$SiteName = @(Get-RASSite -Id $Site -EA 0 4> $Null).Name
 					
 					If($cnt -eq 0)
 					{
@@ -50105,8 +49489,8 @@ Function OutputPublishingSettings
 				WriteHTMLLine 3 0 "Application"
 				$rowdata = @()
 				$columnHeaders = @("Application",($Script:htmlsb),"",$htmlwhite)
-				$rowdata += @(,("     Name",($Script:htmlsb),$PubItem.Name,$htmlwhite))
-				$rowdata += @(,("     Description",($Script:htmlsb),$PubItem.Description,$htmlwhite))
+				$rowdata += @(,("     Name",($Script:htmlsb),$PubItem.Name.Replace("<","").Replace(">",""),$htmlwhite))
+				$rowdata += @(,("     Description",($Script:htmlsb),$PubItem.Description.Replace("<","").Replace(">",""),$htmlwhite))
 				$rowdata += @(,("     Status",($Script:htmlsb),$PubItemStatus,$htmlwhite))
 				$rowdata += @(,("     Start automatically when user logs on",($Script:htmlsb),$PubItem.StartOnLogon.ToString(),$htmlwhite))
 				$rowdata += @(,("Local device settings",($Script:htmlsb),"",$htmlwhite))
@@ -50458,34 +49842,17 @@ Function OutputPubItemFilterSummary
 			#IPs
 			If( $FilterItem.Criteria.IPs.Enabled)
 			{
-				$cnt = -1
-				
 				If($FilterItem.Criteria.IPs.AllowedIPs.IPv4s.Count -gt 0)
 				{
 					ForEach($item in $FilterItem.Criteria.IPs.AllowedIPs.IPv4s)
 					{
-						$cnt++
-						If($cnt -eq 0)
+						If(($item.From -eq $item.To) -or ($item.To -eq ""))
 						{
-							If(($item.From -eq $item.To) -or ($item.To -eq ""))
-							{
-								$ScriptInformation.Add(@{Data = "     IP is"; Value = $item.From; }) > $Null
-							}
-							Else
-							{
-								$ScriptInformation.Add(@{Data = "     IP is"; Value = "$($item.From) - $($item.To)"; }) > $Null
-							}
+							$ScriptInformation.Add(@{Data = ""; Value = "IPv4 is: $($item.From)"; }) > $Null
 						}
 						Else
 						{
-							If(($item.From -eq $item.To) -or ($item.To -eq ""))
-							{
-								$ScriptInformation.Add(@{Data = ""; Value = $item.From; }) > $Null
-							}
-							Else
-							{
-								$ScriptInformation.Add(@{Data = ""; Value = "$($item.From) - $($item.To)"; }) > $Null
-							}
+							$ScriptInformation.Add(@{Data = ""; Value = "IPv4 from $($item.From) to $($item.To)"; }) > $Null
 						}
 					}
 				}
@@ -50494,28 +49861,13 @@ Function OutputPubItemFilterSummary
 				{
 					ForEach($item in $FilterItem.Criteria.IPs.AllowedIPs.IPv6s)
 					{
-						$cnt++
-						If($cnt -eq 0)
+						If(($item.From -eq $item.To) -or ($item.To -eq ""))
 						{
-							If(($item.From -eq $item.To) -or ($item.To -eq ""))
-							{
-								$ScriptInformation.Add(@{Data = "     IP is"; Value = $item.From; }) > $Null
-							}
-							Else
-							{
-								$ScriptInformation.Add(@{Data = "    IP is"; Value = "$($item.From) - $($item.To)"; }) > $Null
-							}
+							$ScriptInformation.Add(@{Data = ""; Value = "IPv6 is: $($item.From)"; }) > $Null
 						}
 						Else
 						{
-							If(($item.From -eq $item.To) -or ($item.To -eq ""))
-							{
-								$ScriptInformation.Add(@{Data = ""; Value = $item.From; }) > $Null
-							}
-							Else
-							{
-								$ScriptInformation.Add(@{Data = ""; Value = "$($item.From) - $($item.To)"; }) > $Null
-							}
+							$ScriptInformation.Add(@{Data = ""; Value = "IPv6 from $($item.From) to $($item.To)"; }) > $Null
 						}
 					}
 				}
@@ -50816,28 +50168,13 @@ Function OutputPubItemFilterSummary
 				{
 					ForEach($item in $FilterItem.Criteria.IPs.AllowedIPs.IPv4s)
 					{
-						$cnt++
-						If($cnt -eq 0)
+						If(($item.From -eq $item.To) -or ($item.To -eq ""))
 						{
-							If(($item.From -eq $item.To) -or ($item.To -eq ""))
-							{
-								Line 4 "IP is: " $item.From
-							}
-							Else
-							{
-								Line 4 "IP is: " "$($item.From) - $($item.To)"
-							}
+							Line 4 "IPv4 is: " $item.From
 						}
 						Else
 						{
-							If(($item.From -eq $item.To) -or ($item.To -eq ""))
-							{
-								Line 4 "       " $item.From
-							}
-							Else
-							{
-								Line 4 "       $($item.From) - $($item.To)"
-							}
+							Line 4 "IPv4 from $($item.From) to $($item.To)"
 						}
 					}
 				}
@@ -50846,28 +50183,13 @@ Function OutputPubItemFilterSummary
 				{
 					ForEach($item in $FilterItem.Criteria.IPs.AllowedIPs.IPv6s)
 					{
-						$cnt++
-						If($cnt -eq 0)
+						If(($item.From -eq $item.To) -or ($item.To -eq ""))
 						{
-							If(($item.From -eq $item.To) -or ($item.To -eq ""))
-							{
-								Line 4 "IP is: " $item.From
-							}
-							Else
-							{
-								Line 4 "IP is: " "$($item.From) - $($item.To)"
-							}
+							Line 4 "IPv6 is: " $item.From
 						}
 						Else
 						{
-							If(($item.From -eq $item.To) -or ($item.To -eq ""))
-							{
-								Line 4 "       " $item.From
-							}
-							Else
-							{
-								Line 4 "       $($item.From) - $($item.To)"
-							}
+							Line 4 "IPv6 from $($item.From) to $($item.To)"
 						}
 					}
 				}
@@ -51005,7 +50327,7 @@ Function OutputPubItemFilterSummary
 							Else
 							{
 								#remove the < and > 
-								$FilterTheme = $xTheme.Name.Trim("<",">")
+								$FilterTheme = $xTheme.Name.Replace("<","").Replace(">","")
 							}
 							$cnt++
 							If($cnt -eq 0)
@@ -51174,28 +50496,13 @@ Function OutputPubItemFilterSummary
 				{
 					ForEach($item in $FilterItem.Criteria.IPs.AllowedIPs.IPv4s)
 					{
-						$cnt++
-						If($cnt -eq 0)
+						If(($item.From -eq $item.To) -or ($item.To -eq ""))
 						{
-							If(($item.From -eq $item.To) -or ($item.To -eq ""))
-							{
-								$rowdata.value += @(,("     IP is",($Script:htmlsb), $item.From,$htmlwhite))
-							}
-							Else
-							{
-								$rowdata.value += @(,("     IP is",($Script:htmlsb), "$($item.From) - $($item.To)",$htmlwhite))
-							}
+							$rowdata.value += @(,("",($Script:htmlsb), "IPv4 is: $($item.From)",$htmlwhite))
 						}
 						Else
 						{
-							If(($item.From -eq $item.To) -or ($item.To -eq ""))
-							{
-								$rowdata.value += @(,("",($Script:htmlsb), $item.From,$htmlwhite))
-							}
-							Else
-							{
-								$rowdata.value += @(,("",($Script:htmlsb), "$($item.From) - $($item.To)",$htmlwhite))
-							}
+							$rowdata.value += @(,("",($Script:htmlsb), "IPv4 from $($item.From) to $($item.To)",$htmlwhite))
 						}
 					}
 				}
@@ -51204,28 +50511,13 @@ Function OutputPubItemFilterSummary
 				{
 					ForEach($item in $FilterItem.Criteria.IPs.AllowedIPs.IPv6s)
 					{
-						$cnt++
-						If($cnt -eq 0)
+						If(($item.From -eq $item.To) -or ($item.To -eq ""))
 						{
-							If(($item.From -eq $item.To) -or ($item.To -eq ""))
-							{
-								$rowdata.value += @(,("     IP is",($Script:htmlsb), $item.From,$htmlwhite))
-							}
-							Else
-							{
-								$rowdata.value += @(,("    IP is",($Script:htmlsb), "$($item.From) - $($item.To)",$htmlwhite))
-							}
+							$rowdata.value += @(,("",($Script:htmlsb), "IPv6 is $($item.From)",$htmlwhite))
 						}
 						Else
 						{
-							If(($item.From -eq $item.To) -or ($item.To -eq ""))
-							{
-								$rowdata.value += @(,("",($Script:htmlsb), $item.From,$htmlwhite))
-							}
-							Else
-							{
-								$rowdata.value += @(,("",($Script:htmlsb), "$($item.From) - $($item.To)",$htmlwhite))
-							}
+							$rowdata.value += @(,("",($Script:htmlsb), "IPv6 from $($item.From) to $($item.To)",$htmlwhite))
 						}
 					}
 				}
@@ -51887,8 +51179,8 @@ Function OutputPubItemFilters
 			$cnt++
 			$columnHeaders = @("Enable rule",($Script:htmlsb),$FilterItem.Enabled.ToString(),$htmlwhite)
 			$rowdata += @(,("General",($Script:htmlsb),"",$htmlwhite))
-			$rowdata += @(,("     Name",($Script:htmlsb),$FilterItem.Name,$htmlwhite))
-			$rowdata += @(,("     Description",($Script:htmlsb),$FilterItem.Description,$htmlwhite))
+			$rowdata += @(,("     Name",($Script:htmlsb),$FilterItem.Name.Replace("<","").Replace(">",""),$htmlwhite))
+			$rowdata += @(,("     Description",($Script:htmlsb),$FilterItem.Description.Replace("<","").Replace(">",""),$htmlwhite))
 			If($FilterItem.Criteria.Access.ToString() -eq "AllowCriteriaWhen")
 			{
 				$rowdata += @(,("     Allow if",($Script:htmlsb),"",$htmlwhite))
@@ -51982,7 +51274,7 @@ Function OutputPubItemFilters
 						}
 						Else
 						{
-							$FilterTheme = $xTheme.Name.Trim("<",">")
+							$FilterTheme = $xTheme.Name.Replace("<","").Replace(">","")
 						}
 
 						$rowdata += @(,("",($Script:htmlsb),"     $($FilterTheme)",$htmlwhite))
@@ -52337,7 +51629,7 @@ Function ProcessUniversalPrinting
 	
 	OutputUniversalPrintingSectionPage
 	
-	$RASPrinterSettings = Get-RASPrintingSettings -SiteId $Site.Id -EA 0 4>$Null
+	$RASPrinterSettings = Get-RASPrintingSettings -SiteId $Site.Id -EA 0 4> $Null
 	
 	If(!($?))
 	{
@@ -52367,7 +51659,7 @@ Function ProcessUniversalPrinting
 	ElseIf($? -and $null -eq $RASPrinterSettings)
 	{
 		Write-Host "
-		No Universal Printing information was found
+	No Universal Printing information was found
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
@@ -52398,7 +51690,7 @@ Function ProcessUniversalPrinting
 			ReplicateSettings  = $RASPrinterSettings.ReplicatePrinterPattern
 		}
 		
-		$results = Get-RASRDSHost -SiteId $Site.Id -EA 0 4>$Null
+		$results = Get-RASRDSHost -SiteId $Site.Id -EA 0 4> $Null
 		
 		If(!($?))
 		{
@@ -52415,7 +51707,7 @@ Function ProcessUniversalPrinting
 		ElseIf($? -and $null -eq $results)
 		{
 		Write-Host "
-		No RDS Printing information was found
+	No RDS Printing information was found
 		" -ForegroundColor White
 			#$RDSobjects = [PSCustomObject] @{
 			#	Server        = "None found"
@@ -52446,7 +51738,7 @@ Function ProcessUniversalPrinting
 		}
 		}
 		
-		$results = Get-RASProvider -SiteId $Site.Id -EA 0 4>$Null
+		$results = Get-RASProvider -SiteId $Site.Id -EA 0 4> $Null
 		
 		If(!($?))
 		{
@@ -53167,7 +52459,7 @@ Function ProcessUniversalScanning
 	
 	OutputUniversalScanningSectionPage
 	
-	$results = Get-RASScanningSettings -SiteId $Site.Id -EA 0 4>$Null
+	$results = Get-RASScanningSettings -SiteId $Site.Id -EA 0 4> $Null
 	
 	If(!($?))
 	{
@@ -53197,7 +52489,7 @@ Function ProcessUniversalScanning
 	ElseIf($? -and $null -eq $results)
 	{
 		Write-Host "
-		No Universal Scanning information was found
+	No Universal Scanning information was found
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
@@ -53233,7 +52525,7 @@ Function ProcessUniversalScanning
 			ReplicateSettings = $Results.ReplicateTWAINPattern
 		}
 		
-		$results = Get-RASRDSHost -SiteId $Site.Id -EA 0 4>$Null
+		$results = Get-RASRDSHost -SiteId $Site.Id -EA 0 4> $Null
 		
 		If(!($?))
 		{
@@ -53252,7 +52544,7 @@ Function ProcessUniversalScanning
 		ElseIf($? -and $null -eq $results)
 		{
 		Write-Host "
-		No RDS Scanning information was found
+	No RDS Scanning information was found
 		" -ForegroundColor White
 			$RDSobj = [PSCustomObject] @{
 				Server = $Null
@@ -53308,7 +52600,7 @@ Function ProcessUniversalScanning
 			}
 		}
 		
-		$results = Get-RASProvider -SiteId $Site.Id -EA 0 4>$Null
+		$results = Get-RASProvider -SiteId $Site.Id -EA 0 4> $Null
 		
 		If(!($?))
 		{
@@ -53845,7 +53137,7 @@ Function ProcessConnection
 	
 	Write-Verbose "$(Get-Date -Format G): `tProcessing Authentication"
 	
-	$results = Get-RASAuthSettings -SiteId $Site.Id -EA 0 4>$Null
+	$results = Get-RASAuthSettings -SiteId $Site.Id -EA 0 4> $Null
 	
 	If(!($?))
 	{
@@ -53875,7 +53167,7 @@ Function ProcessConnection
 	ElseIf($? -and $null -eq $results)
 	{
 		Write-Host "
-		No authentication information was found
+	No authentication information was found
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
@@ -53903,7 +53195,7 @@ Function ProcessConnection
 
 	Write-Verbose "$(Get-Date -Format G): `tProcessing Settings"
 	
-	$results = Get-RASSessionSetting -SiteId $Site.Id -EA 0 4>$Null
+	$results = Get-RASSessionSetting -SiteId $Site.Id -EA 0 4> $Null
 	
 	If(!($?))
 	{
@@ -53931,7 +53223,7 @@ Function ProcessConnection
 	ElseIf($? -and $null -eq $results)
 	{
 		Write-Host "
-		No RAS Session settings information was found
+	No RAS Session settings information was found
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
@@ -53959,7 +53251,7 @@ Function ProcessConnection
 
 	Write-Verbose "$(Get-Date -Format G): `tProcessing Logon hours"
 	
-	$results = Get-RASLogonHours -SiteId $Site.Id -EA 0 4>$Null
+	$results = Get-RASLogonHours -SiteId $Site.Id -EA 0 4> $Null
 	
 	If(!($?))
 	{
@@ -54017,7 +53309,7 @@ Function ProcessConnection
 
 	Write-Verbose "$(Get-Date -Format G): `tProcessing Multi-Factor authentication"
 	
-	$MFA = Get-RASMFA -SiteId $Site.Id -EA 0 4>$Null
+	$MFA = Get-RASMFA -SiteId $Site.Id -EA 0 4> $Null
 	
 	If(!($?))
 	{
@@ -54047,7 +53339,7 @@ Function ProcessConnection
 	ElseIf($? -and $null -eq $MFA)
 	{
 		Write-Host "
-		No Multi-Factor authentication information was found
+	No Multi-Factor authentication information was found
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
@@ -54075,7 +53367,7 @@ Function ProcessConnection
 	
 	Write-Verbose "$(Get-Date -Format G): `tProcessing SAML"
 	
-	$SAML = Get-RASSAMLIDP -SiteId $Site.Id -EA 0 4>$Null
+	$SAML = Get-RASSAMLIDP -SiteId $Site.Id -EA 0 4> $Null
 	
 	If(!($?))
 	{
@@ -54105,7 +53397,7 @@ Function ProcessConnection
 	ElseIf($? -and $null -eq $SAML)
 	{
 		Write-Host "
-		No SAML information was found
+	No SAML information was found
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
@@ -54133,7 +53425,7 @@ Function ProcessConnection
 	
 	Write-Verbose "$(Get-Date -Format G): `tProcessing Allowed devices"
 	
-	$results = Get-RASAllowedDevicesSetting -SiteId $Site.Id -EA 0 4>$Null
+	$results = Get-RASAllowedDevicesSetting -SiteId $Site.Id -EA 0 4> $Null
 	
 	If(!($?))
 	{
@@ -54163,7 +53455,7 @@ Function ProcessConnection
 	ElseIf($? -and $null -eq $results)
 	{
 		Write-Host "
-		No Allowed devices information was found
+	No Allowed devices information was found
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
@@ -54532,8 +53824,8 @@ Function OutputLogonHours
 			WriteHTMLLine 3 0 "$($LogonHour.Name)"
 			$rowdata = @()
 			$columnHeaders = @("Enabled",($Script:htmlsb),$LogonHour.Enabled.ToString(),$htmlwhite)
-			$rowdata += @(,("Name",($Script:htmlsb),$LogonHour.Name,$htmlwhite))
-			$rowdata += @(,("Description",($Script:htmlsb),$LogonHour.Description,$htmlwhite))
+			$rowdata += @(,("Name",($Script:htmlsb),$LogonHour.Name.Replace("<","").Replace(">",""),$htmlwhite))
+			$rowdata += @(,("Description",($Script:htmlsb),$LogonHour.Description.Replace("<","").Replace(">",""),$htmlwhite))
 			$rowdata += @(,("Last modification by",($Script:htmlsb), $LogonHour.AdminLastMod,$htmlwhite))
 			$rowdata += @(,("Modified on",($Script:htmlsb), (Get-Date -UFormat "%c" $LogonHour.TimeLastMod),$htmlwhite))
 			$rowdata += @(,("Created by",($Script:htmlsb), $LogonHour.AdminCreate,$htmlwhite))
@@ -55312,8 +54604,8 @@ Function OutputLogonHours
 			$columnHeaders = @("Enable logon hours restriction",($Script:htmlsb),$LogonHour.Enabled.ToString(),$htmlwhite)
 			$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 			$rowdata += @(,("General",($Script:htmlsb),"",$htmlwhite))
-			$rowdata += @(,("     Name",($Script:htmlsb),$LogonHour.Name,$htmlwhite))
-			$rowdata += @(,("     Description",($Script:htmlsb),$LogonHour.Description,$htmlwhite))
+			$rowdata += @(,("     Name",($Script:htmlsb),$LogonHour.Name.Replace("<","").Replace(">",""),$htmlwhite))
+			$rowdata += @(,("     Description",($Script:htmlsb),$LogonHour.Description.Replace("<","").Replace(">",""),$htmlwhite))
 			$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 			$rowdata += @(,("Criteria",($Script:htmlsb),"",$htmlwhite))
 
@@ -55375,7 +54667,7 @@ Function OutputLogonHours
 							Else
 							{
 								#remove the < and > 
-								$FilterTheme = $xTheme.Name.Trim("<",">")
+								$FilterTheme = $xTheme.Name.Replace("<","").Replace(">","")
 							}
 							$cnt++
 							If($cnt -eq 0)
@@ -60390,7 +59682,7 @@ Function OutputMFASetting
 					{
 						ForEach($MFATheme in $MFAThemes)
 						{
-							$ThemeMFAName = (Get-RASMFA -Id $MFATheme.MFAId -ea 0).Name 4>$Null
+							$ThemeMFAName = (Get-RASMFA -Id $MFATheme.MFAId -EA 0).Name 4> $Null
 							
 							If(!($?) -or $Null -eq $ThemeMFAName)
 							{
@@ -60761,7 +60053,7 @@ Function OutputMFASetting
 					{
 						ForEach($MFATheme in $MFAThemes)
 						{
-							$ThemeMFAName = (Get-RASMFA -Id $MFATheme.MFAId -ea 0).Name 4>$Null
+							$ThemeMFAName = (Get-RASMFA -Id $MFATheme.MFAId -EA 0).Name 4> $Null
 							
 							If(!($?) -or $Null -eq $ThemeMFAName)
 							{
@@ -61132,7 +60424,7 @@ Function OutputMFASetting
 					{
 						ForEach($MFATheme in $MFAThemes)
 						{
-							$ThemeMFAName = (Get-RASMFA -Id $MFATheme.MFAId -ea 0).Name 4>$Null
+							$ThemeMFAName = (Get-RASMFA -Id $MFATheme.MFAId -EA 0).Name 4> $Null
 							
 							If(!($?) -or $Null -eq $ThemeMFAName)
 							{
@@ -61503,7 +60795,7 @@ Function OutputMFASetting
 					{
 						ForEach($MFATheme in $MFAThemes)
 						{
-							$ThemeMFAName = (Get-RASMFA -Id $MFATheme.MFAId -ea 0).Name 4>$Null
+							$ThemeMFAName = (Get-RASMFA -Id $MFATheme.MFAId -EA 0).Name 4> $Null
 							
 							If(!($?) -or $Null -eq $ThemeMFAName)
 							{
@@ -61874,7 +61166,7 @@ Function OutputMFASetting
 					{
 						ForEach($MFATheme in $MFAThemes)
 						{
-							$ThemeMFAName = (Get-RASMFA -Id $MFATheme.MFAId -ea 0).Name 4>$Null
+							$ThemeMFAName = (Get-RASMFA -Id $MFATheme.MFAId -EA 0).Name 4> $Null
 							
 							If(!($?) -or $Null -eq $ThemeMFAName)
 							{
@@ -62271,7 +61563,7 @@ Function OutputMFASetting
 					{
 						ForEach($MFATheme in $MFAThemes)
 						{
-							$ThemeMFAName = (Get-RASMFA -Id $MFATheme.MFAId -ea 0).Name 4>$Null
+							$ThemeMFAName = (Get-RASMFA -Id $MFATheme.MFAId -EA 0).Name 4> $Null
 							
 							If(!($?) -or $Null -eq $ThemeMFAName)
 							{
@@ -62621,7 +61913,7 @@ Function OutputMFASetting
 					{
 						ForEach($MFATheme in $MFAThemes)
 						{
-							$ThemeMFAName = (Get-RASMFA -Id $MFATheme.MFAId -ea 0).Name 4>$Null
+							$ThemeMFAName = (Get-RASMFA -Id $MFATheme.MFAId -EA 0).Name 4> $Null
 							
 							If(!($?) -or $Null -eq $ThemeMFAName)
 							{
@@ -62971,7 +62263,7 @@ Function OutputMFASetting
 					{
 						ForEach($MFATheme in $MFAThemes)
 						{
-							$ThemeMFAName = (Get-RASMFA -Id $MFATheme.MFAId -ea 0).Name 4>$Null
+							$ThemeMFAName = (Get-RASMFA -Id $MFATheme.MFAId -EA 0).Name 4> $Null
 							
 							If(!($?) -or $Null -eq $ThemeMFAName)
 							{
@@ -63321,7 +62613,7 @@ Function OutputMFASetting
 					{
 						ForEach($MFATheme in $MFAThemes)
 						{
-							$ThemeMFAName = (Get-RASMFA -Id $MFATheme.MFAId -ea 0).Name 4>$Null
+							$ThemeMFAName = (Get-RASMFA -Id $MFATheme.MFAId -EA 0).Name 4> $Null
 							
 							If(!($?) -or $Null -eq $ThemeMFAName)
 							{
@@ -63714,7 +63006,7 @@ Function OutputMFASetting
 					{
 						ForEach($MFATheme in $MFAThemes)
 						{
-							$ThemeMFAName = (Get-RASMFA -Id $MFATheme.MFAId -ea 0).Name 4>$Null
+							$ThemeMFAName = (Get-RASMFA -Id $MFATheme.MFAId -EA 0).Name 4> $Null
 							
 							If(!($?) -or $Null -eq $ThemeMFAName)
 							{
@@ -64080,7 +63372,7 @@ Function OutputMFASetting
 					{
 						ForEach($MFATheme in $MFAThemes)
 						{
-							$ThemeMFAName = (Get-RASMFA -Id $MFATheme.MFAId -ea 0).Name 4>$Null
+							$ThemeMFAName = (Get-RASMFA -Id $MFATheme.MFAId -EA 0).Name 4> $Null
 							
 							If(!($?) -or $Null -eq $ThemeMFAName)
 							{
@@ -64445,7 +63737,7 @@ Function OutputMFASetting
 					{
 						ForEach($MFATheme in $MFAThemes)
 						{
-							$ThemeMFAName = (Get-RASMFA -Id $MFATheme.MFAId -ea 0).Name 4>$Null
+							$ThemeMFAName = (Get-RASMFA -Id $MFATheme.MFAId -EA 0).Name 4> $Null
 							
 							If(!($?) -or $Null -eq $ThemeMFAName)
 							{
@@ -64810,7 +64102,7 @@ Function OutputMFASetting
 					{
 						ForEach($MFATheme in $MFAThemes)
 						{
-							$ThemeMFAName = (Get-RASMFA -Id $MFATheme.MFAId -ea 0).Name 4>$Null
+							$ThemeMFAName = (Get-RASMFA -Id $MFATheme.MFAId -EA 0).Name 4> $Null
 							
 							If(!($?) -or $Null -eq $ThemeMFAName)
 							{
@@ -65175,7 +64467,7 @@ Function OutputMFASetting
 					{
 						ForEach($MFATheme in $MFAThemes)
 						{
-							$ThemeMFAName = (Get-RASMFA -Id $MFATheme.MFAId -ea 0).Name 4>$Null
+							$ThemeMFAName = (Get-RASMFA -Id $MFATheme.MFAId -EA 0).Name 4> $Null
 							
 							If(!($?) -or $Null -eq $ThemeMFAName)
 							{
@@ -65567,7 +64859,7 @@ Function OutputMFASetting
 					{
 						ForEach($MFATheme in $MFAThemes)
 						{
-							$ThemeMFAName = (Get-RASMFA -Id $MFATheme.MFAId -ea 0).Name 4>$Null
+							$ThemeMFAName = (Get-RASMFA -Id $MFATheme.MFAId -EA 0).Name 4> $Null
 							
 							If(!($?) -or $Null -eq $ThemeMFAName)
 							{
@@ -65919,7 +65211,7 @@ Function OutputMFASetting
 					{
 						ForEach($MFATheme in $MFAThemes)
 						{
-							$ThemeMFAName = (Get-RASMFA -Id $MFATheme.MFAId -ea 0).Name 4>$Null
+							$ThemeMFAName = (Get-RASMFA -Id $MFATheme.MFAId -EA 0).Name 4> $Null
 							
 							If(!($?) -or $Null -eq $ThemeMFAName)
 							{
@@ -66271,7 +65563,7 @@ Function OutputMFASetting
 					{
 						ForEach($MFATheme in $MFAThemes)
 						{
-							$ThemeMFAName = (Get-RASMFA -Id $MFATheme.MFAId -ea 0).Name 4>$Null
+							$ThemeMFAName = (Get-RASMFA -Id $MFATheme.MFAId -EA 0).Name 4> $Null
 							
 							If(!($?) -or $Null -eq $ThemeMFAName)
 							{
@@ -66621,10 +65913,10 @@ Function OutputMFASetting
 			{
 				If($RASMFASetting.Type -eq "AzureRadius")
 				{
-					$rowdata += @(,("Name",($Script:htmlsb),$RASMFASetting.Name,$htmlwhite))
+					$rowdata += @(,("Name",($Script:htmlsb),$RASMFASetting.Name.Replace("<","").Replace(">",""),$htmlwhite))
 					$rowdata += @(,("Enabled",($Script:htmlsb),$RASMFASetting.Enabled.ToString(),$htmlwhite))
-					$rowdata += @(,("Description",($Script:htmlsb),$RASMFASetting.Description,$htmlwhite))
-					$rowdata += @(,("Display name",($Script:htmlsb),$RASMFASetting.DisplayName,$htmlwhite))
+					$rowdata += @(,("Description",($Script:htmlsb),$RASMFASetting.Description.Replace("<","").Replace(">",""),$htmlwhite))
+					$rowdata += @(,("Display name",($Script:htmlsb),$RASMFASetting.DisplayName.Replace("<","").Replace(">",""),$htmlwhite))
 					$rowdata += @(,("Type",($Script:htmlsb),$RASMFASettingProvider,$htmlwhite))
 					$rowdata += @(,("Last modification by",($Script:htmlsb),$RASMFASetting.AdminLastMod,$htmlwhite))
 					$rowdata += @(,("Modified on",($Script:htmlsb),(Get-Date -UFormat "%c" $RASMFASetting.TimeLastMod),$htmlwhite))
@@ -66633,15 +65925,15 @@ Function OutputMFASetting
 					$rowdata += @(,("ID",($Script:htmlsb),$RASMFASetting.ID.ToString(),$htmlwhite))
 					$rowdata += @(,("     General",($Script:htmlsb),"",$htmlwhite))
 					$rowdata += @(,("          Enable MFA provider in site",($Script:htmlsb),$RASMFASetting.Enabled.ToString(),$htmlwhite))
-					$rowdata += @(,("          Name",($Script:htmlsb),$RASMFASetting.Name,$htmlwhite))
-					$rowdata += @(,("          Description",($Script:htmlsb),$RASMFASetting.Description,$htmlwhite))
-					$rowdata += @(,("          Type",($Script:htmlsb),$RASMFASetting.DisplayName,$htmlwhite))
+					$rowdata += @(,("          Name",($Script:htmlsb),$RASMFASetting.Name.Replace("<","").Replace(">",""),$htmlwhite))
+					$rowdata += @(,("          Description",($Script:htmlsb),$RASMFASetting.Description.Replace("<","").Replace(">",""),$htmlwhite))
+					$rowdata += @(,("          Type",($Script:htmlsb),$RASMFASetting.DisplayName.Replace("<","").Replace(">",""),$htmlwhite))
 					$rowdata += @(,("          Themes",($Script:htmlsb),"",$htmlwhite))
 					If($Null -ne $MFAThemes)
 					{
 						ForEach($MFATheme in $MFAThemes)
 						{
-							$ThemeMFAName = (Get-RASMFA -Id $MFATheme.MFAId -ea 0).Name 4>$Null
+							$ThemeMFAName = (Get-RASMFA -Id $MFATheme.MFAId -EA 0).Name 4> $Null
 							
 							If(!($?) -or $Null -eq $ThemeMFAName)
 							{
@@ -66650,6 +65942,7 @@ Function OutputMFASetting
 							Else
 							{
 								$ThemeMFAName = $ThemeMFAName.Replace("<","").Replace(">","")
+								$ThemeMFAName = $ThemeMFAName
 							}
 							
 							$MFAThemeName        = $MFATheme.Name.Replace("<","").Replace(">","")
@@ -66664,7 +65957,7 @@ Function OutputMFASetting
 						$rowdata += @(,("",($Script:htmlsb),"No theme is selected",$htmlwhite))
 					}
 					$rowdata += @(,("     Connection",($Script:htmlsb),"",$htmlwhite))
-					$rowdata += @(,("          Display Name",($Script:htmlsb),$RASMFASetting.DisplayName,$htmlwhite))
+					$rowdata += @(,("          Display Name",($Script:htmlsb),$RASMFASetting.DisplayName.Replace("<","").Replace(">",""),$htmlwhite))
 					$rowdata += @(,("          Primary Server",($Script:htmlsb),$RASMFASetting.Server,$htmlwhite))
 					$rowdata += @(,("          Secondary server",($Script:htmlsb), $RASMFASetting.BackupServer,$htmlwhite))
 					If($RASMFASetting.HAMode -eq "Parallel")
@@ -66999,10 +66292,10 @@ Function OutputMFASetting
 				}
 				ElseIf($RASMFASetting.Type -eq "DuoRadius")
 				{
-					$rowdata += @(,("Name",($Script:htmlsb),$RASMFASetting.Name,$htmlwhite))
+					$rowdata += @(,("Name",($Script:htmlsb),$RASMFASetting.Name.Replace("<","").Replace(">",""),$htmlwhite))
 					$rowdata += @(,("Enabled",($Script:htmlsb),$RASMFASetting.Enabled.ToString(),$htmlwhite))
-					$rowdata += @(,("Description",($Script:htmlsb),$RASMFASetting.Description,$htmlwhite))
-					$rowdata += @(,("Display name",($Script:htmlsb),$RASMFASetting.DisplayName,$htmlwhite))
+					$rowdata += @(,("Description",($Script:htmlsb),$RASMFASetting.Description.Replace("<","").Replace(">",""),$htmlwhite))
+					$rowdata += @(,("Display name",($Script:htmlsb),$RASMFASetting.DisplayName.Replace("<","").Replace(">",""),$htmlwhite))
 					$rowdata += @(,("Type",($Script:htmlsb),$RASMFASettingProvider,$htmlwhite))
 					$rowdata += @(,("Last modification by",($Script:htmlsb),$RASMFASetting.AdminLastMod,$htmlwhite))
 					$rowdata += @(,("Modified on",($Script:htmlsb),(Get-Date -UFormat "%c" $RASMFASetting.TimeLastMod),$htmlwhite))
@@ -67011,15 +66304,15 @@ Function OutputMFASetting
 					$rowdata += @(,("ID",($Script:htmlsb),$RASMFASetting.ID.ToString(),$htmlwhite))
 					$rowdata += @(,("     General",($Script:htmlsb),"",$htmlwhite))
 					$rowdata += @(,("          Enable MFA provider in site",($Script:htmlsb),$RASMFASetting.Enabled.ToString(),$htmlwhite))
-					$rowdata += @(,("          Name",($Script:htmlsb),$RASMFASetting.Name,$htmlwhite))
-					$rowdata += @(,("          Description",($Script:htmlsb),$RASMFASetting.Description,$htmlwhite))
-					$rowdata += @(,("          Type",($Script:htmlsb),$RASMFASetting.DisplayName,$htmlwhite))
+					$rowdata += @(,("          Name",($Script:htmlsb),$RASMFASetting.Name.Replace("<","").Replace(">",""),$htmlwhite))
+					$rowdata += @(,("          Description",($Script:htmlsb),$RASMFASetting.Description.Replace("<","").Replace(">",""),$htmlwhite))
+					$rowdata += @(,("          Type",($Script:htmlsb),$RASMFASetting.DisplayName.Replace("<","").Replace(">",""),$htmlwhite))
 					$rowdata += @(,("          Themes",($Script:htmlsb),"",$htmlwhite))
 					If($Null -ne $MFAThemes)
 					{
 						ForEach($MFATheme in $MFAThemes)
 						{
-							$ThemeMFAName = (Get-RASMFA -Id $MFATheme.MFAId -ea 0).Name 4>$Null
+							$ThemeMFAName = (Get-RASMFA -Id $MFATheme.MFAId -EA 0).Name 4> $Null
 							
 							If(!($?) -or $Null -eq $ThemeMFAName)
 							{
@@ -67042,7 +66335,7 @@ Function OutputMFASetting
 						$rowdata += @(,("",($Script:htmlsb),"No theme is selected",$htmlwhite))
 					}
 					$rowdata += @(,("     Connection",($Script:htmlsb),"",$htmlwhite))
-					$rowdata += @(,("          Display Name",($Script:htmlsb),$RASMFASetting.DisplayName,$htmlwhite))
+					$rowdata += @(,("          Display Name",($Script:htmlsb),$RASMFASetting.DisplayName.Replace("<","").Replace(">",""),$htmlwhite))
 					$rowdata += @(,("          Primary Server",($Script:htmlsb),$RASMFASetting.Server,$htmlwhite))
 					$rowdata += @(,("          Secondary server",($Script:htmlsb), $RASMFASetting.BackupServer,$htmlwhite))
 					If($RASMFASetting.HAMode -eq "Parallel")
@@ -67377,10 +66670,10 @@ Function OutputMFASetting
 				}
 				ElseIf($RASMFASetting.Type -eq "FortiRadius")
 				{
-					$rowdata += @(,("Name",($Script:htmlsb),$RASMFASetting.Name,$htmlwhite))
+					$rowdata += @(,("Name",($Script:htmlsb),$RASMFASetting.Name.Replace("<","").Replace(">",""),$htmlwhite))
 					$rowdata += @(,("Enabled",($Script:htmlsb),$RASMFASetting.Enabled.ToString(),$htmlwhite))
-					$rowdata += @(,("Description",($Script:htmlsb),$RASMFASetting.Description,$htmlwhite))
-					$rowdata += @(,("Display name",($Script:htmlsb),$RASMFASetting.DisplayName,$htmlwhite))
+					$rowdata += @(,("Description",($Script:htmlsb),$RASMFASetting.Description.Replace("<","").Replace(">",""),$htmlwhite))
+					$rowdata += @(,("Display name",($Script:htmlsb),$RASMFASetting.DisplayName.Replace("<","").Replace(">",""),$htmlwhite))
 					$rowdata += @(,("Type",($Script:htmlsb),$RASMFASettingProvider,$htmlwhite))
 					$rowdata += @(,("Last modification by",($Script:htmlsb),$RASMFASetting.AdminLastMod,$htmlwhite))
 					$rowdata += @(,("Modified on",($Script:htmlsb),(Get-Date -UFormat "%c" $RASMFASetting.TimeLastMod),$htmlwhite))
@@ -67389,15 +66682,15 @@ Function OutputMFASetting
 					$rowdata += @(,("ID",($Script:htmlsb),$RASMFASetting.ID.ToString(),$htmlwhite))
 					$rowdata += @(,("     General",($Script:htmlsb),"",$htmlwhite))
 					$rowdata += @(,("          Enable MFA provider in site",($Script:htmlsb),$RASMFASetting.Enabled.ToString(),$htmlwhite))
-					$rowdata += @(,("          Name",($Script:htmlsb),$RASMFASetting.Name,$htmlwhite))
-					$rowdata += @(,("          Description",($Script:htmlsb),$RASMFASetting.Description,$htmlwhite))
-					$rowdata += @(,("          Type",($Script:htmlsb),$RASMFASetting.DisplayName,$htmlwhite))
+					$rowdata += @(,("          Name",($Script:htmlsb),$RASMFASetting.Name.Replace("<","").Replace(">",""),$htmlwhite))
+					$rowdata += @(,("          Description",($Script:htmlsb),$RASMFASetting.Description.Replace("<","").Replace(">",""),$htmlwhite))
+					$rowdata += @(,("          Type",($Script:htmlsb),$RASMFASetting.DisplayName.Replace("<","").Replace(">",""),$htmlwhite))
 					$rowdata += @(,("          Themes",($Script:htmlsb),"",$htmlwhite))
 					If($Null -ne $MFAThemes)
 					{
 						ForEach($MFATheme in $MFAThemes)
 						{
-							$ThemeMFAName = (Get-RASMFA -Id $MFATheme.MFAId -ea 0).Name 4>$Null
+							$ThemeMFAName = (Get-RASMFA -Id $MFATheme.MFAId -EA 0).Name 4> $Null
 							
 							If(!($?) -or $Null -eq $ThemeMFAName)
 							{
@@ -67420,7 +66713,7 @@ Function OutputMFASetting
 						$rowdata += @(,("",($Script:htmlsb),"No theme is selected",$htmlwhite))
 					}
 					$rowdata += @(,("     Connection",($Script:htmlsb),"",$htmlwhite))
-					$rowdata += @(,("          Display Name",($Script:htmlsb),$RASMFASetting.DisplayName,$htmlwhite))
+					$rowdata += @(,("          Display Name",($Script:htmlsb),$RASMFASetting.DisplayName.Replace("<","").Replace(">",""),$htmlwhite))
 					$rowdata += @(,("          Primary Server",($Script:htmlsb),$RASMFASetting.Server,$htmlwhite))
 					$rowdata += @(,("          Secondary server",($Script:htmlsb), $RASMFASetting.BackupServer,$htmlwhite))
 					If($RASMFASetting.HAMode -eq "Parallel")
@@ -67755,10 +67048,10 @@ Function OutputMFASetting
 				}
 				ElseIf($RASMFASetting.Type -eq "TekRadius")
 				{
-					$rowdata += @(,("Name",($Script:htmlsb),$RASMFASetting.Name,$htmlwhite))
+					$rowdata += @(,("Name",($Script:htmlsb),$RASMFASetting.Name.Replace("<","").Replace(">",""),$htmlwhite))
 					$rowdata += @(,("Enabled",($Script:htmlsb),$RASMFASetting.Enabled.ToString(),$htmlwhite))
-					$rowdata += @(,("Description",($Script:htmlsb),$RASMFASetting.Description,$htmlwhite))
-					$rowdata += @(,("Display name",($Script:htmlsb),$RASMFASetting.DisplayName,$htmlwhite))
+					$rowdata += @(,("Description",($Script:htmlsb),$RASMFASetting.Description.Replace("<","").Replace(">",""),$htmlwhite))
+					$rowdata += @(,("Display name",($Script:htmlsb),$RASMFASetting.DisplayName.Replace("<","").Replace(">",""),$htmlwhite))
 					$rowdata += @(,("Type",($Script:htmlsb),$RASMFASettingProvider,$htmlwhite))
 					$rowdata += @(,("Last modification by",($Script:htmlsb),$RASMFASetting.AdminLastMod,$htmlwhite))
 					$rowdata += @(,("Modified on",($Script:htmlsb),(Get-Date -UFormat "%c" $RASMFASetting.TimeLastMod),$htmlwhite))
@@ -67767,15 +67060,15 @@ Function OutputMFASetting
 					$rowdata += @(,("ID",($Script:htmlsb),$RASMFASetting.ID.ToString(),$htmlwhite))
 					$rowdata += @(,("     General",($Script:htmlsb),"",$htmlwhite))
 					$rowdata += @(,("          Enable MFA provider in site",($Script:htmlsb),$RASMFASetting.Enabled.ToString(),$htmlwhite))
-					$rowdata += @(,("          Name",($Script:htmlsb),$RASMFASetting.Name,$htmlwhite))
-					$rowdata += @(,("          Description",($Script:htmlsb),$RASMFASetting.Description,$htmlwhite))
-					$rowdata += @(,("          Type",($Script:htmlsb),$RASMFASetting.DisplayName,$htmlwhite))
+					$rowdata += @(,("          Name",($Script:htmlsb),$RASMFASetting.Name.Replace("<","").Replace(">",""),$htmlwhite))
+					$rowdata += @(,("          Description",($Script:htmlsb),$RASMFASetting.Description.Replace("<","").Replace(">",""),$htmlwhite))
+					$rowdata += @(,("          Type",($Script:htmlsb),$RASMFASetting.DisplayName.Replace("<","").Replace(">",""),$htmlwhite))
 					$rowdata += @(,("          Themes",($Script:htmlsb),"",$htmlwhite))
 					If($Null -ne $MFAThemes)
 					{
 						ForEach($MFATheme in $MFAThemes)
 						{
-							$ThemeMFAName = (Get-RASMFA -Id $MFATheme.MFAId -ea 0).Name 4>$Null
+							$ThemeMFAName = (Get-RASMFA -Id $MFATheme.MFAId -EA 0).Name 4> $Null
 							
 							If(!($?) -or $Null -eq $ThemeMFAName)
 							{
@@ -67798,7 +67091,7 @@ Function OutputMFASetting
 						$rowdata += @(,("",($Script:htmlsb),"No theme is selected",$htmlwhite))
 					}
 					$rowdata += @(,("     Connection",($Script:htmlsb),"",$htmlwhite))
-					$rowdata += @(,("          Display Name",($Script:htmlsb),$RASMFASetting.DisplayName,$htmlwhite))
+					$rowdata += @(,("          Display Name",($Script:htmlsb),$RASMFASetting.DisplayName.Replace("<","").Replace(">",""),$htmlwhite))
 					$rowdata += @(,("          Primary Server",($Script:htmlsb),$RASMFASetting.Server,$htmlwhite))
 					$rowdata += @(,("          Secondary server",($Script:htmlsb), $RASMFASetting.BackupServer,$htmlwhite))
 					If($RASMFASetting.HAMode -eq "Parallel")
@@ -68133,10 +67426,10 @@ Function OutputMFASetting
 				}
 				ElseIf($RASMFASetting.Type -eq "Radius")
 				{
-					$rowdata += @(,("Name",($Script:htmlsb),$RASMFASetting.Name,$htmlwhite))
+					$rowdata += @(,("Name",($Script:htmlsb),$RASMFASetting.Name.Replace("<","").Replace(">",""),$htmlwhite))
 					$rowdata += @(,("Enabled",($Script:htmlsb),$RASMFASetting.Enabled.ToString(),$htmlwhite))
-					$rowdata += @(,("Description",($Script:htmlsb),$RASMFASetting.Description,$htmlwhite))
-					$rowdata += @(,("Display name",($Script:htmlsb),$RASMFASetting.DisplayName,$htmlwhite))
+					$rowdata += @(,("Description",($Script:htmlsb),$RASMFASetting.Description.Replace("<","").Replace(">",""),$htmlwhite))
+					$rowdata += @(,("Display name",($Script:htmlsb),$RASMFASetting.DisplayName.Replace("<","").Replace(">",""),$htmlwhite))
 					$rowdata += @(,("Type",($Script:htmlsb),$RASMFASettingProvider,$htmlwhite))
 					$rowdata += @(,("Last modification by",($Script:htmlsb),$RASMFASetting.AdminLastMod,$htmlwhite))
 					$rowdata += @(,("Modified on",($Script:htmlsb),(Get-Date -UFormat "%c" $RASMFASetting.TimeLastMod),$htmlwhite))
@@ -68145,15 +67438,15 @@ Function OutputMFASetting
 					$rowdata += @(,("ID",($Script:htmlsb),$RASMFASetting.ID.ToString(),$htmlwhite))
 					$rowdata += @(,("     General",($Script:htmlsb),"",$htmlwhite))
 					$rowdata += @(,("          Enable MFA provider in site",($Script:htmlsb),$RASMFASetting.Enabled.ToString(),$htmlwhite))
-					$rowdata += @(,("          Name",($Script:htmlsb),$RASMFASetting.Name,$htmlwhite))
-					$rowdata += @(,("          Description",($Script:htmlsb),$RASMFASetting.Description,$htmlwhite))
-					$rowdata += @(,("          Type",($Script:htmlsb),$RASMFASetting.DisplayName,$htmlwhite))
+					$rowdata += @(,("          Name",($Script:htmlsb),$RASMFASetting.Name.Replace("<","").Replace(">",""),$htmlwhite))
+					$rowdata += @(,("          Description",($Script:htmlsb),$RASMFASetting.Description.Replace("<","").Replace(">",""),$htmlwhite))
+					$rowdata += @(,("          Type",($Script:htmlsb),$RASMFASetting.DisplayName.Replace("<","").Replace(">",""),$htmlwhite))
 					$rowdata += @(,("          Themes",($Script:htmlsb),"",$htmlwhite))
 					If($Null -ne $MFAThemes)
 					{
 						ForEach($MFATheme in $MFAThemes)
 						{
-							$ThemeMFAName = (Get-RASMFA -Id $MFATheme.MFAId -ea 0).Name 4>$Null
+							$ThemeMFAName = (Get-RASMFA -Id $MFATheme.MFAId -EA 0).Name 4> $Null
 							
 							If(!($?) -or $Null -eq $ThemeMFAName)
 							{
@@ -68176,7 +67469,7 @@ Function OutputMFASetting
 						$rowdata += @(,("",($Script:htmlsb),"No theme is selected",$htmlwhite))
 					}
 					$rowdata += @(,("     Connection",($Script:htmlsb),"",$htmlwhite))
-					$rowdata += @(,("          Display Name",($Script:htmlsb),$RASMFASetting.DisplayName,$htmlwhite))
+					$rowdata += @(,("          Display Name",($Script:htmlsb),$RASMFASetting.DisplayName.Replace("<","").Replace(">",""),$htmlwhite))
 					$rowdata += @(,("          Primary Server",($Script:htmlsb),$RASMFASetting.Server,$htmlwhite))
 					$rowdata += @(,("          Secondary server",($Script:htmlsb), $RASMFASetting.BackupServer,$htmlwhite))
 					If($RASMFASetting.HAMode -eq "Parallel")
@@ -68537,10 +67830,10 @@ Function OutputMFASetting
 						Default					{$ShowInformationForUnenrolledUsers = "Show information for unenrolled users not found: $($RASMFASetting.ShowInformationForUnenrolledUsers)"; Break}
 					}
 					
-					$rowdata += @(,("Name",($Script:htmlsb),$RASMFASetting.Name,$htmlwhite))
+					$rowdata += @(,("Name",($Script:htmlsb),$RASMFASetting.Name.Replace("<","").Replace(">",""),$htmlwhite))
 					$rowdata += @(,("Enabled",($Script:htmlsb),$RASMFASetting.Enabled.ToString(),$htmlwhite))
-					$rowdata += @(,("Description",($Script:htmlsb),$RASMFASetting.Description,$htmlwhite))
-					$rowdata += @(,("Display name",($Script:htmlsb),$RASMFASetting.DisplayName,$htmlwhite))
+					$rowdata += @(,("Description",($Script:htmlsb),$RASMFASetting.Description.Replace("<","").Replace(">",""),$htmlwhite))
+					$rowdata += @(,("Display name",($Script:htmlsb),$RASMFASetting.DisplayName.Replace("<","").Replace(">",""),$htmlwhite))
 					$rowdata += @(,("Type",($Script:htmlsb),$RASMFASettingProvider,$htmlwhite))
 					$rowdata += @(,("Last modification by",($Script:htmlsb),$RASMFASetting.AdminLastMod,$htmlwhite))
 					$rowdata += @(,("Modified on",($Script:htmlsb),(Get-Date -UFormat "%c" $RASMFASetting.TimeLastMod),$htmlwhite))
@@ -68549,15 +67842,15 @@ Function OutputMFASetting
 					$rowdata += @(,("ID",($Script:htmlsb),$RASMFASetting.ID.ToString(),$htmlwhite))
 					$rowdata += @(,("     General",($Script:htmlsb),"",$htmlwhite))
 					$rowdata += @(,("          Enable MFA provider in site",($Script:htmlsb),$RASMFASetting.Enabled.ToString(),$htmlwhite))
-					$rowdata += @(,("          Name",($Script:htmlsb),$RASMFASetting.Name,$htmlwhite))
-					$rowdata += @(,("          Description",($Script:htmlsb),$RASMFASetting.Description,$htmlwhite))
+					$rowdata += @(,("          Name",($Script:htmlsb),$RASMFASetting.Name.Replace("<","").Replace(">",""),$htmlwhite))
+					$rowdata += @(,("          Description",($Script:htmlsb),$RASMFASetting.Description.Replace("<","").Replace(">",""),$htmlwhite))
 					$rowdata += @(,("          Type",($Script:htmlsb),$RASMFASettingProvider,$htmlwhite))
 					$rowdata += @(,("          Themes",($Script:htmlsb),"",$htmlwhite))
 					If($Null -ne $MFAThemes)
 					{
 						ForEach($MFATheme in $MFAThemes)
 						{
-							$ThemeMFAName = (Get-RASMFA -Id $MFATheme.MFAId -ea 0).Name 4>$Null
+							$ThemeMFAName = (Get-RASMFA -Id $MFATheme.MFAId -EA 0).Name 4> $Null
 							
 							If(!($?) -or $Null -eq $ThemeMFAName)
 							{
@@ -68573,7 +67866,7 @@ Function OutputMFASetting
 						$rowdata += @(,("",($Script:htmlsb),"No theme is selected",$htmlwhite))
 					}
 					$rowdata += @(,("     Settings",($Script:htmlsb),"",$htmlwhite))
-					$rowdata += @(,("          Display name",($Script:htmlsb),$RASMFASetting.DisplayName,$htmlwhite))
+					$rowdata += @(,("          Display name",($Script:htmlsb),$RASMFASetting.DisplayName.Replace("<","").Replace(">",""),$htmlwhite))
 					$rowdata += @(,("          User Prompt",($Script:htmlsb),$RASMFASetting.UserMessagePrompt,$htmlwhite))
 					$rowdata += @(,("          Authentication",($Script:htmlsb),"",$htmlwhite))
 					$rowdata += @(,("               TOTP tolerence",($Script:htmlsb),$TOTPTolerance,$htmlwhite))
@@ -68887,10 +68180,10 @@ Function OutputMFASetting
 						Default					{$ShowInformationForUnenrolledUsers = "Show information for unenrolled users not found: $($RASMFASetting.ShowInformationForUnenrolledUsers)"; Break}
 					}
 					
-					$rowdata += @(,("Name",($Script:htmlsb),$RASMFASetting.Name,$htmlwhite))
+					$rowdata += @(,("Name",($Script:htmlsb),$RASMFASetting.Name.Replace("<","").Replace(">",""),$htmlwhite))
 					$rowdata += @(,("Enabled",($Script:htmlsb),$RASMFASetting.Enabled.ToString(),$htmlwhite))
-					$rowdata += @(,("Description",($Script:htmlsb),$RASMFASetting.Description,$htmlwhite))
-					$rowdata += @(,("Display name",($Script:htmlsb),$RASMFASetting.DisplayName,$htmlwhite))
+					$rowdata += @(,("Description",($Script:htmlsb),$RASMFASetting.Description.Replace("<","").Replace(">",""),$htmlwhite))
+					$rowdata += @(,("Display name",($Script:htmlsb),$RASMFASetting.DisplayName.Replace("<","").Replace(">",""),$htmlwhite))
 					$rowdata += @(,("Type",($Script:htmlsb),$RASMFASettingProvider,$htmlwhite))
 					$rowdata += @(,("Last modification by",($Script:htmlsb),$RASMFASetting.AdminLastMod,$htmlwhite))
 					$rowdata += @(,("Modified on",($Script:htmlsb),(Get-Date -UFormat "%c" $RASMFASetting.TimeLastMod),$htmlwhite))
@@ -68899,15 +68192,15 @@ Function OutputMFASetting
 					$rowdata += @(,("ID",($Script:htmlsb),$RASMFASetting.ID.ToString(),$htmlwhite))
 					$rowdata += @(,("     General",($Script:htmlsb),"",$htmlwhite))
 					$rowdata += @(,("          Enable MFA provider in site",($Script:htmlsb),$RASMFASetting.Enabled.ToString(),$htmlwhite))
-					$rowdata += @(,("          Name",($Script:htmlsb),$RASMFASetting.Name,$htmlwhite))
-					$rowdata += @(,("          Description",($Script:htmlsb),$RASMFASetting.Description,$htmlwhite))
+					$rowdata += @(,("          Name",($Script:htmlsb),$RASMFASetting.Name.Replace("<","").Replace(">",""),$htmlwhite))
+					$rowdata += @(,("          Description",($Script:htmlsb),$RASMFASetting.Description.Replace("<","").Replace(">",""),$htmlwhite))
 					$rowdata += @(,("          Type",($Script:htmlsb),$RASMFASettingProvider,$htmlwhite))
 					$rowdata += @(,("          Themes",($Script:htmlsb),"",$htmlwhite))
 					If($Null -ne $MFAThemes)
 					{
 						ForEach($MFATheme in $MFAThemes)
 						{
-							$ThemeMFAName = (Get-RASMFA -Id $MFATheme.MFAId -ea 0).Name 4>$Null
+							$ThemeMFAName = (Get-RASMFA -Id $MFATheme.MFAId -EA 0).Name 4> $Null
 							
 							If(!($?) -or $Null -eq $ThemeMFAName)
 							{
@@ -68923,7 +68216,7 @@ Function OutputMFASetting
 						$rowdata += @(,("",($Script:htmlsb),"No theme is selected",$htmlwhite))
 					}
 					$rowdata += @(,("     Settings",($Script:htmlsb),"",$htmlwhite))
-					$rowdata += @(,("          Display name",($Script:htmlsb),$RASMFASetting.DisplayName,$htmlwhite))
+					$rowdata += @(,("          Display name",($Script:htmlsb),$RASMFASetting.DisplayName.Replace("<","").Replace(">",""),$htmlwhite))
 					$rowdata += @(,("          User Prompt",($Script:htmlsb),$RASMFASetting.UserMessagePrompt,$htmlwhite))
 					$rowdata += @(,("          Authentication",($Script:htmlsb),"",$htmlwhite))
 					$rowdata += @(,("               TOTP tolerence",($Script:htmlsb),$TOTPTolerance,$htmlwhite))
@@ -69237,10 +68530,10 @@ Function OutputMFASetting
 						Default					{$ShowInformationForUnenrolledUsers = "Show information for unenrolled users not found: $($RASMFASetting.ShowInformationForUnenrolledUsers)"; Break}
 					}
 					
-					$rowdata += @(,("Name",($Script:htmlsb),$RASMFASetting.Name,$htmlwhite))
+					$rowdata += @(,("Name",($Script:htmlsb),$RASMFASetting.Name.Replace("<","").Replace(">",""),$htmlwhite))
 					$rowdata += @(,("Enabled",($Script:htmlsb),$RASMFASetting.Enabled.ToString(),$htmlwhite))
-					$rowdata += @(,("Description",($Script:htmlsb),$RASMFASetting.Description,$htmlwhite))
-					$rowdata += @(,("Display name",($Script:htmlsb),$RASMFASetting.DisplayName,$htmlwhite))
+					$rowdata += @(,("Description",($Script:htmlsb),$RASMFASetting.Description.Replace("<","").Replace(">",""),$htmlwhite))
+					$rowdata += @(,("Display name",($Script:htmlsb),$RASMFASetting.DisplayName.Replace("<","").Replace(">",""),$htmlwhite))
 					$rowdata += @(,("Type",($Script:htmlsb),$RASMFASettingProvider,$htmlwhite))
 					$rowdata += @(,("Last modification by",($Script:htmlsb),$RASMFASetting.AdminLastMod,$htmlwhite))
 					$rowdata += @(,("Modified on",($Script:htmlsb),(Get-Date -UFormat "%c" $RASMFASetting.TimeLastMod),$htmlwhite))
@@ -69249,15 +68542,15 @@ Function OutputMFASetting
 					$rowdata += @(,("ID",($Script:htmlsb),$RASMFASetting.ID.ToString(),$htmlwhite))
 					$rowdata += @(,("     General",($Script:htmlsb),"",$htmlwhite))
 					$rowdata += @(,("          Enable MFA provider in site",($Script:htmlsb),$RASMFASetting.Enabled.ToString(),$htmlwhite))
-					$rowdata += @(,("          Name",($Script:htmlsb),$RASMFASetting.Name,$htmlwhite))
-					$rowdata += @(,("          Description",($Script:htmlsb),$RASMFASetting.Description,$htmlwhite))
+					$rowdata += @(,("          Name",($Script:htmlsb),$RASMFASetting.Name.Replace("<","").Replace(">",""),$htmlwhite))
+					$rowdata += @(,("          Description",($Script:htmlsb),$RASMFASetting.Description.Replace("<","").Replace(">",""),$htmlwhite))
 					$rowdata += @(,("          Type",($Script:htmlsb),$RASMFASettingProvider,$htmlwhite))
 					$rowdata += @(,("          Themes",($Script:htmlsb),"",$htmlwhite))
 					If($Null -ne $MFAThemes)
 					{
 						ForEach($MFATheme in $MFAThemes)
 						{
-							$ThemeMFAName = (Get-RASMFA -Id $MFATheme.MFAId -ea 0).Name 4>$Null
+							$ThemeMFAName = (Get-RASMFA -Id $MFATheme.MFAId -EA 0).Name 4> $Null
 							
 							If(!($?) -or $Null -eq $ThemeMFAName)
 							{
@@ -69273,7 +68566,7 @@ Function OutputMFASetting
 						$rowdata += @(,("",($Script:htmlsb),"No theme is selected",$htmlwhite))
 					}
 					$rowdata += @(,("     Settings",($Script:htmlsb),"",$htmlwhite))
-					$rowdata += @(,("          Display name",($Script:htmlsb),$RASMFASetting.DisplayName,$htmlwhite))
+					$rowdata += @(,("          Display name",($Script:htmlsb),$RASMFASetting.DisplayName.Replace("<","").Replace(">",""),$htmlwhite))
 					$rowdata += @(,("          User Prompt",($Script:htmlsb),$RASMFASetting.UserMessagePrompt,$htmlwhite))
 					$rowdata += @(,("          Authentication",($Script:htmlsb),"",$htmlwhite))
 					$rowdata += @(,("               TOTP tolerence",($Script:htmlsb),$TOTPTolerance,$htmlwhite))
@@ -69692,11 +68985,11 @@ Function OutputSAMLSetting
 		If($HTML)
 		{
 			#first remove the < and > from the theme name
-			$SAMLTheme = $SAMLTheme.Trim("<",">")
+			$SAMLTheme = $SAMLTheme.Replace("<","").Replace(">","")
 			$rowdata = @()
 			$columnHeaders = @("Enabled",($Script:htmlsb),$SAMLSetting.Enabled.ToString(),$htmlwhite)
-			$rowdata += @(,("Name",($Script:htmlsb),$SAMLSetting.Name,$htmlwhite))
-			$rowdata += @(,("Description",($Script:htmlsb),$SAMLSetting.Description,$htmlwhite))
+			$rowdata += @(,("Name",($Script:htmlsb),$SAMLSetting.Name.Replace("<","").Replace(">",""),$htmlwhite))
+			$rowdata += @(,("Description",($Script:htmlsb),$SAMLSetting.Description.Replace("<","").Replace(">",""),$htmlwhite))
 			$rowdata += @(,("Theme",($Script:htmlsb),$SAMLTheme,$htmlwhite))
 			$rowdata += @(,("Last modification by",($Script:htmlsb), $SAMLSetting.AdminLastMod,$htmlwhite))
 			$rowdata += @(,("Modified on",($Script:htmlsb), (Get-Date -UFormat "%c" $SAMLSetting.TimeLastMod),$htmlwhite))
@@ -69762,8 +69055,8 @@ Function OutputSAMLSetting
 		{
 			$rowdata = @()
 			$columnHeaders = @("Enable identity provider",($Script:htmlsb),$SAMLSetting.Enabled.ToString(),$htmlwhite)
-			$rowdata += @(,("Name",($Script:htmlsb),$SAMLSetting.Name,$htmlwhite))
-			$rowdata += @(,("Description",($Script:htmlsb),$SAMLSetting.Description,$htmlwhite))
+			$rowdata += @(,("Name",($Script:htmlsb),$SAMLSetting.Name.Replace("<","").Replace(">",""),$htmlwhite))
+			$rowdata += @(,("Description",($Script:htmlsb),$SAMLSetting.Description.Replace("<","").Replace(">",""),$htmlwhite))
 			$rowdata += @(,("Use with theme",($Script:htmlsb),$SAMLTheme,$htmlwhite))
 
 			$msg = "General"
@@ -70283,7 +69576,7 @@ Function ProcessDeviceManager
 	
 	Write-Verbose "$(Get-Date -Format G): `tProcessing Device Manager"
 	
-	$devices = Get-RASDevicesInfo -SiteId $Site.Id -EA 0 4>$Null
+	$devices = Get-RASDevicesInfo -SiteId $Site.Id -EA 0 4> $Null
 	
 	If(!($?))
 	{
@@ -70313,7 +69606,7 @@ Function ProcessDeviceManager
 	ElseIf($? -and $null -eq $devices)
 	{
 		Write-Host "
-		No device manager information was found
+	No device manager information was found
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
@@ -70341,7 +69634,7 @@ Function ProcessDeviceManager
 
 	Write-Verbose "$(Get-Date -Format G): `tProcessing Settings"
 	
-	$DeviceGroups = Get-RASWinDeviceGroup -EA 0 4>$Null
+	$DeviceGroups = Get-RASWinDeviceGroup -EA 0 4> $Null
 	
 	If(!($?))
 	{
@@ -70369,7 +69662,7 @@ Function ProcessDeviceManager
 	ElseIf($? -and $null -eq $DeviceGroups)
 	{
 		Write-Host "
-		No Windows device groups information was found
+	No Windows device groups information was found
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
@@ -70493,11 +69786,11 @@ Function OutputDeviceManager
 			
 			If($cnt -eq 0)
 			{
-				$columnHeaders = @("Name",($Script:htmlsb),$Device.Name,$htmlwhite)
+				$columnHeaders = @("Name",($Script:htmlsb),$Device.Name.Replace("<","").Replace(">",""),$htmlwhite)
 			}
 			Else
 			{
-				$rowdata += @(,("Name",($Script:htmlsb),$Device.Name,$htmlwhite))
+				$rowdata += @(,("Name",($Script:htmlsb),$Device.Name.Replace("<","").Replace(">",""),$htmlwhite))
 			}
 			$rowdata += @(,("IP Address",($Script:htmlsb),$Device.IP,$htmlwhite))
 			$rowdata += @(,("State",($Script:htmlsb),$DeviceState,$htmlwhite))
@@ -70619,7 +69912,7 @@ Function OutputWindowsDeviceGroups
 			{
 				$rowdata += @(,("Name",($Script:htmlsb),$DeviceGroup.Name.Replace("<","").Replace(">",""),$htmlwhite))
 			}
-			$rowdata += @(,("Description",($Script:htmlsb),$DeviceGroup.Description,$htmlwhite))
+			$rowdata += @(,("Description",($Script:htmlsb),$DeviceGroup.Description.Replace("<","").Replace(">",""),$htmlwhite))
 			$rowdata += @(,("Last modification by",($Script:htmlsb),$DeviceGroup.AdminLastMod,$htmlwhite))
 			$rowdata += @(,("Modified on",($Script:htmlsb),(Get-Date -UFormat "%c" $DeviceGroup.TimeLastMod),$htmlwhite))
 			$rowdata += @(,("Created by",($Script:htmlsb),$DeviceGroup.AdminCreate,$htmlwhite))
@@ -70681,7 +69974,7 @@ Function OutputWindowsDeviceGroups
 		{
 			$rowdata = @()
 			$columnHeaders = @("Name",($Script:htmlsb),$DeviceGroup.Name.Replace("<","").Replace(">",""),$htmlwhite)
-			$rowdata += @(,("Description",($Script:htmlsb),$DeviceGroup.Description,$htmlwhite))
+			$rowdata += @(,("Description",($Script:htmlsb),$DeviceGroup.Description.Replace("<","").Replace(">",""),$htmlwhite))
 
 			$msg = "Main"
 			$columnWidths = @("150","250")
@@ -70905,7 +70198,7 @@ Function ProcessPolicies
 	
 	Write-Verbose "$(Get-Date -Format G): `tProcessing Policies Summary"
 	
-	$Policies = Get-RASClientPolicy -EA 0 4>$Null
+	$Policies = Get-RASClientPolicy -EA 0 4> $Null
 	
 	If(!($?))
 	{
@@ -71022,31 +70315,6 @@ Function OutputPoliciesSummary
 		}
 		
 		If( 
-
-		<#
-			[DBG]: PS C:\Webster>> $ClientOptions
-
-
-			Enabled      : True
-			Appearance   : RASAdminEngine.Core.OutputModels.ClientRulesPolicy.ClientOptions.Appearance
-			Connection   : RASAdminEngine.Core.OutputModels.ClientRulesPolicy.ClientOptions.Connection
-			Logging      : RASAdminEngine.Core.OutputModels.ClientRulesPolicy.ClientOptions.Advanced.Logging
-			PCKeyboard   : RASAdminEngine.Core.OutputModels.ClientRulesPolicy.ClientOptions.PCKeyboard
-			Update       : RASAdminEngine.Core.OutputModels.ClientRulesPolicy.ClientOptions.Update
-			SingleSignOn : RASAdminEngine.Core.OutputModels.ClientRulesPolicy.ClientOptions.SingleSignOn
-			Advanced     : RASAdminEngine.Core.OutputModels.ClientRulesPolicy.ClientOptions.Advanced.ClientOptionsAdvancedSettings
-
-			[DBG]: PS C:\Webster>> $ClientOptions.Advanced
-
-
-			Enabled                   : True
-			Global                    : RASAdminEngine.Core.OutputModels.ClientRulesPolicy.ClientOptions.Advanced.GlobalPolicy
-			Language                  : RASAdminEngine.Core.OutputModels.ClientRulesPolicy.ClientOptions.Advanced.Languages
-			Printing                  : RASAdminEngine.Core.OutputModels.ClientRulesPolicy.ClientOptions.Advanced.ClientOptionsPrinting
-			WindowsClient             : RASAdminEngine.Core.OutputModels.ClientRulesPolicy.ClientOptions.Advanced.WindowsClient
-			RemoteFxUsbRedirection    : RASAdminEngine.Core.OutputModels.ClientRulesPolicy.ClientOptions.Advanced.RemoteFxUsbRedirection
-			CustomerExperienceProgram : RASAdminEngine.Core.OutputModels.ClientRulesPolicy.ClientOptions.Advanced.CustomerExperienceProgram
-		#>
 			$ClientOptions.Appearance.Enabled -or 
 			$ClientOptions.Connection.Enabled -or 
 			$ClientOptions.Logging.Enabled -or 
@@ -71059,43 +70327,6 @@ Function OutputPoliciesSummary
 		}
 		
 		If( 
-			<#
-				[DBG]: PS C:\Webster>> $Session
-
-
-				PrimaryConnection          : RASAdminEngine.Core.OutputModels.ClientRulesPolicy.Session.PrimaryConnection
-				SecondaryConnections       : RASAdminEngine.Core.OutputModels.ClientRulesPolicy.Session.SecondaryConnections
-				Reconnection               : RASAdminEngine.Core.OutputModels.ClientRulesPolicy.Session.Reconnection
-				ComputerName               : RASAdminEngine.Core.OutputModels.ClientRulesPolicy.Session.ComputerName
-				ConnectionAdvancedSettings : RASAdminEngine.Core.OutputModels.ClientRulesPolicy.Session.ConnectionAdvancedSettings
-				WebAuthentication          : RASAdminEngine.Core.OutputModels.ClientRulesPolicy.Session.WebAuthentication
-				MultiFactorAuthentication  : RASAdminEngine.Core.OutputModels.ClientRulesPolicy.Session.MultiFactorAuthentication
-				SessionPreLaunch           : RASAdminEngine.Core.OutputModels.ClientRulesPolicy.Session.SessionPrelaunch
-				LocalProxyAddress          : RASAdminEngine.Core.OutputModels.ClientRulesPolicy.Session.LocalProxyAddress
-				Settings                   : RASAdminEngine.Core.OutputModels.ClientRulesPolicy.Session.Display.Settings
-				MultiMonitor               : RASAdminEngine.Core.OutputModels.ClientRulesPolicy.Session.Display.MultiMonitor
-				PublishedApplications      : RASAdminEngine.Core.OutputModels.ClientRulesPolicy.Session.Display.PublishedApplications
-				DesktopOptions             : RASAdminEngine.Core.OutputModels.ClientRulesPolicy.Session.Display.DesktopOptions
-				Browser                    : RASAdminEngine.Core.OutputModels.ClientRulesPolicy.Session.Display.Browser
-				Printing                   : RASAdminEngine.Core.OutputModels.ClientRulesPolicy.Session.SessionsPrinting
-				Scanning                   : RASAdminEngine.Core.OutputModels.ClientRulesPolicy.Session.Scanning
-				Audio                      : RASAdminEngine.Core.OutputModels.ClientRulesPolicy.Session.Audio
-				Keyboard                   : RASAdminEngine.Core.OutputModels.ClientRulesPolicy.Session.Keyboard
-				Clipboard                  : RASAdminEngine.Core.OutputModels.ClientRulesPolicy.LocalDevicesAndResources.Clipboard
-				DiskDrives                 : RASAdminEngine.Core.OutputModels.ClientRulesPolicy.LocalDevicesAndResources.DiskDrives
-				Devices                    : RASAdminEngine.Core.OutputModels.ClientRulesPolicy.LocalDevicesAndResources.Devices
-				Ports                      : RASAdminEngine.Core.OutputModels.ClientRulesPolicy.LocalDevicesAndResources.Ports
-				SmartCards                 : RASAdminEngine.Core.OutputModels.ClientRulesPolicy.LocalDevicesAndResources.SmartCards
-				WindowsTouchInput          : RASAdminEngine.Core.OutputModels.ClientRulesPolicy.LocalDevicesAndResources.WindowsTouchInput
-				VideoCaptureDevices        : RASAdminEngine.Core.OutputModels.ClientRulesPolicy.Session.LocalDevicesAndResources.VideoCaptureDevices
-				AVDMultimediaRedirection   : RASAdminEngine.Core.OutputModels.ClientRulesPolicy.LocalDevicesAndResources.AVDMultimediaRedirection
-				FileTransfer               : RASAdminEngine.Core.OutputModels.ClientRulesPolicy.LocalDevicesAndResources.FileTransfer
-				Performance                : RASAdminEngine.Core.OutputModels.ClientRulesPolicy.Experience.Performance
-				Compression                : RASAdminEngine.Core.OutputModels.ClientRulesPolicy.Experience.Compression
-				Network                    : RASAdminEngine.Core.OutputModels.ClientRulesPolicy.Network
-				AdvancedSettings           : RASAdminEngine.Core.OutputModels.ClientRulesPolicy.Session.AdvancedSettings
-				ServerAuthentication       : RASAdminEngine.Core.OutputModels.ClientRulesPolicy.Session.ServerAuthentication
-			#>
 			$Session.PrimaryConnection.Enabled -or 		
 			$Session.SecondaryConnections.Enabled -or 
 			$Session.Reconnection.Enabled -or 
@@ -71184,7 +70415,7 @@ Function OutputPoliciesSummary
 			SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 			$Table.Columns.Item(1).Width = 125;
-			$Table.Columns.Item(2).Width = 175;
+			$Table.Columns.Item(2).Width = 250;
 
 			$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -71236,7 +70467,7 @@ Function OutputPoliciesSummary
 		If($HTML)
 		{
 			$rowdata = @()
-			$columnHeaders = @("Name",($Script:htmlsb),$Policy.Name,$htmlwhite)
+			$columnHeaders = @("Name",($Script:htmlsb),$Policy.Name.Replace("<","").Replace(">",""),$htmlwhite)
 			$rowdata += @(,("Enabled",($Script:htmlsb),$Policy.Enabled,$htmlwhite))
 			$rowdata += @(,("Version",($Script:htmlsb),$Policy.Version,$htmlwhite))
 			
@@ -71267,7 +70498,7 @@ Function OutputPoliciesSummary
 				}
 			}
 			
-			$rowdata += @(,("Description",($Script:htmlsb),$Policy.Description,$htmlwhite))
+			$rowdata += @(,("Description",($Script:htmlsb),$Policy.Description.Replace("<","").Replace(">",""),$htmlwhite))
 			$rowdata += @(,("Last modification by",($Script:htmlsb), $Policy.AdminLastMod,$htmlwhite))
 			$rowdata += @(,("Modified on",($Script:htmlsb), (Get-Date -UFormat "%c" $Policy.TimeLastMod),$htmlwhite))
 			$rowdata += @(,("Created by",($Script:htmlsb), $Policy.AdminCreate,$htmlwhite))
@@ -71304,22 +70535,175 @@ Function OutputPoliciesDetails
 	ForEach($Policy in $Policies)
 	{
 		Write-Verbose "$(Get-Date -Format G): `t`t`tProcessing Policy $($Policy.Name)"
-		
-		<#
-			$Session         = $Policy.ClientPolicy.Session
-			$ClientOptions   = $Policy.ClientPolicy.ClientOptions
-			$ControlSettings = $Policy.ClientPolicy.ControlSettings
-			$Redirection     = $Policy.ClientPolicy.Redirection
-		#>
-
 		Write-Verbose "$(Get-Date -Format G): `t`t`t`tPolicy"
+
 		If($MSWord -or $PDF)
 		{
-			WriteWordLine 3 0 "Policy $($Policy.Name)"
+			WriteWordLine 3 0 "Policy: $($Policy.Name)"
 			WriteWordLine 4 0 "Policy"
 			$ScriptInformation = New-Object System.Collections.ArrayList
 			$ScriptInformation.Add(@{Data = "Name"; Value = $Policy.Name; }) > $Null
 			$ScriptInformation.Add(@{Data = "Description"; Value = $Policy.Description; }) > $Null
+
+			ForEach($PolicyRule in $Policy.Assignment.Rules)
+			{
+				$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+				$ScriptInformation.Add(@{Data = "Apply policy to:"; Value = "$($PolicyRule.Name)"; }) > $Null
+				$ScriptInformation.Add(@{Data = "Enable rule"; Value = $PolicyRule.Enabled.ToString(); }) > $Null
+				$ScriptInformation.Add(@{Data = "General"; Value = ""; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Name"; Value = $PolicyRule.Name; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Description"; Value = $PolicyRule.Description; }) > $Null
+				$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+				$ScriptInformation.Add(@{Data = "     Criteria"; Value = ""; }) > $Null
+				
+				If($PolicyRule.criteria.SecurityPrincipals.Enabled)
+				{
+					If($PolicyRule.criteria.SecurityPrincipals.MatchingMode -eq "IsOneOfTheFollowing")
+					{
+						$ScriptInformation.Add(@{Data = "          Apply policy if User, group, or computer is one of the following"; Value = ""; }) > $Null
+					}
+					Else
+					{
+						$ScriptInformation.Add(@{Data = "          Apply policy if User, group, or computer is not one of the following"; Value = ""; }) > $Null
+					}
+					
+					ForEach($Item in $PolicyRule.criteria.SecurityPrincipals.Members)
+					{
+						$ScriptInformation.Add(@{Data = ""; Value = "Name: $($Item.Account)"; }) > $Null
+						$ScriptInformation.Add(@{Data = ""; Value = "Type: $($Item.Type)"; }) > $Null
+						$ScriptInformation.Add(@{Data = ""; Value = "SID: $($Item.Sid)"; }) > $Null
+						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+					}
+				}
+				
+				If($PolicyRule.criteria.Gateways.Enabled)
+				{
+					If($PolicyRule.criteria.Gateways.MatchingMode -eq "IsOneOfTheFollowing")
+					{
+						$ScriptInformation.Add(@{Data = "          Apply policy if Gateway is one of the following"; Value = ""; }) > $Null
+					}
+					Else
+					{
+						$ScriptInformation.Add(@{Data = "          Apply policy if Gateway is not one of the following"; Value = ""; }) > $Null
+					}
+					
+					ForEach($Item in $PolicyRule.criteria.Gateways.Members)
+					{
+						$ScriptInformation.Add(@{Data = ""; Value = "Gateway IP: $($Item.GatewayIP)"; }) > $Null
+					}
+					$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+				}
+				
+				If($PolicyRule.criteria.OSs.Enabled)
+				{
+					If($PolicyRule.criteria.OSs.MatchingMode -eq "IsOneOfTheFollowing")
+					{
+						$ScriptInformation.Add(@{Data = "          Apply policy if Operating system is one of the following:"; Value = ""; }) > $Null
+					}
+					Else
+					{
+						$ScriptInformation.Add(@{Data = "          Apply policy if Operating system is not one of the following:"; Value = ""; }) > $Null
+					}
+					
+					If($PolicyRule.criteria.OSs.AllowedOSes.Windows)
+					{
+						$ScriptInformation.Add(@{Data = ""; Value = "Windows"; }) > $Null
+					}
+
+					If($PolicyRule.criteria.OSs.AllowedOSes.WebClient)
+					{
+						$ScriptInformation.Add(@{Data = ""; Value = "User Portal (Web Client)"; }) > $Null
+					}
+
+					If($PolicyRule.criteria.OSs.AllowedOSes.Mac)
+					{
+						$ScriptInformation.Add(@{Data = ""; Value = "macOS"; }) > $Null
+					}
+
+					If($PolicyRule.criteria.OSs.AllowedOSes.Linux)
+					{
+						$ScriptInformation.Add(@{Data = ""; Value = "Linux"; }) > $Null
+					}
+
+					If($PolicyRule.criteria.OSs.AllowedOSes.iOS)
+					{
+						$ScriptInformation.Add(@{Data = ""; Value = "iOS/iPadOS"; }) > $Null
+					}
+
+					If($PolicyRule.criteria.OSs.AllowedOSes.Android)
+					{
+						$ScriptInformation.Add(@{Data = ""; Value = "Android"; }) > $Null
+					}
+
+					If($PolicyRule.criteria.OSs.AllowedOSes.Chrome)
+					{
+						$ScriptInformation.Add(@{Data = ""; Value = "Chrome OS"; }) > $Null
+					}
+					$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+				}
+				
+				If($PolicyRule.criteria.IPs.Enabled)
+				{
+					$cnt = -1
+					If($PolicyRule.criteria.IPs.MatchingMode -eq "IsOneOfTheFollowing")
+					{
+						$ScriptInformation.Add(@{Data = "          Apply policy if IP is one of the following"; Value = ""; }) > $Null
+					}
+					Else
+					{
+						$ScriptInformation.Add(@{Data = "          Apply policy if IP is not one of the following"; Value = ""; }) > $Null
+					}
+					
+					If($PolicyRule.criteria.IPs.AllowedIPs.IPv4s.Count -ne 0)
+					{
+						ForEach($Item in $PolicyRule.criteria.IPs.AllowedIPs.IPv4s)
+						{
+							If(($item.From -eq $item.To) -or ($item.To -eq ""))
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "IPv4 is: $($item.From)"; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "IPv4 from $($item.From) to $($item.To)"; }) > $Null
+							}
+						}
+						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+					}
+
+					If($PolicyRule.criteria.IPs.AllowedIPs.IPv6s.Count -ne 0)
+					{
+						ForEach($Item in $PolicyRule.criteria.IPs.AllowedIPs.IPv6s)
+						{
+							If(($item.From -eq $item.To) -or ($item.To -eq ""))
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "IPv6 is: $($item.From)"; }) > $Null
+							}
+							Else
+							{
+								$ScriptInformation.Add(@{Data = ""; Value = "IPv6 from $($item.From) to $($item.To)"; }) > $Null
+							}
+						}
+						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
+					}
+				}
+				
+				If($PolicyRule.criteria.HardwareIDs.Enabled)
+				{
+					If($PolicyRule.criteria.HardwareIDs.MatchingMode -eq "IsOneOfTheFollowing")
+					{
+						$ScriptInformation.Add(@{Data = "          Apply policy if Hardware ID is one of the following:"; Value = ""; }) > $Null
+					}
+					Else
+					{
+						$ScriptInformation.Add(@{Data = "          Apply policy if Hardware ID is not one of the following:"; Value = ""; }) > $Null
+					}
+					
+					ForEach($Item in $PolicyRule.criteria.HardwareIDs.Members)
+					{
+						$ScriptInformation.Add(@{Data = ""; Value = "$($Item.HardwareID)"; }) > $Null
+					}
+				}
+			}
 
 			$Table = AddWordTable -Hashtable $ScriptInformation `
 			-Columns Data,Value `
@@ -71327,394 +70711,46 @@ Function OutputPoliciesDetails
 			-Format $wdTableGrid `
 			-AutoFit $wdAutoFitFixed;
 
-			SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+			SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 			SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-			$Table.Columns.Item(1).Width = 125;
-			$Table.Columns.Item(2).Width = 175;
+			$Table.Columns.Item(1).Width = 350;
+			$Table.Columns.Item(2).Width = 350;
 
 			$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
 			FindWordDocumentEnd
 			$Table = $Null
 			WriteWordLine 0 0 ""
-
-			WriteWordLine 4 0 "Apply policy to:"
-			ForEach($PolicyRule in $Policy.Assignment.Rules)
-			{
-				WriteWordLine 5 0 "$($PolicyRule.Name) Properties"
-				$ScriptInformation = New-Object System.Collections.ArrayList
-				$ScriptInformation.Add(@{Data = "Enable rule"; Value = $PolicyRule.Enabled.ToString(); }) > $Null
-				$ScriptInformation.Add(@{Data = "General"; Value = ""; }) > $Null
-				$ScriptInformation.Add(@{Data = "     Name"; Value = $PolicyRule.Name; }) > $Null
-				$ScriptInformation.Add(@{Data = "     Description"; Value = $PolicyRule.Description; }) > $Null
-
-				$Table = AddWordTable -Hashtable $ScriptInformation `
-				-Columns Data,Value `
-				-List `
-				-Format $wdTableGrid `
-				-AutoFit $wdAutoFitFixed;
-
-				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
-				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
-				$Table.Columns.Item(1).Width = 125;
-				$Table.Columns.Item(2).Width = 175;
-
-				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-				FindWordDocumentEnd
-				$Table = $Null
-				
-				WriteWordLine 4 0 "Criteria"
-				WriteWordLine 5 0 "Apply policy if User, group, or computer"
-				WriteWordLine 0 0 "Enable criteria: " $PolicyRule.criteria.SecurityPrincipals.Enabled.ToString()
-				If($PolicyRule.criteria.SecurityPrincipals.Enabled)
-				{
-					If($PolicyRule.criteria.SecurityPrincipals.MatchingMode -eq "IsOneOfTheFollowing")
-					{
-						WriteWordLine 0 0 "is one of the following"
-					}
-					Else
-					{
-						WriteWordLine 0 0 "is not one of the following"
-					}
-					
-					[System.Collections.Hashtable[]] $NameWordTable = @();
-					
-					ForEach($Item in $PolicyRule.criteria.SecurityPrincipals.Members)
-					{
-						$NameTableRowHash = @{
-						Name = $Item.Account;
-						Type = $Item.Type;
-						SID  = $Item.Sid;
-						}
-						$NameWordTable += $NameTableRowHash;
-					}
-
-					If($NameWordTable.Count -gt 0)
-					{
-						$Table = AddWordTable -Hashtable $NameWordTable `
-						-Columns Name,Type,SID `
-						-Headers "Name","Type","SID"`
-						-Format $wdTableGrid `
-						-AutoFit $wdAutoFitFixed;
-
-						SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
-						SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
-						$Table.Columns.Item(1).Width = 200;
-						$Table.Columns.Item(2).Width = 150;
-						$Table.Columns.Item(3).Width = 250;
-
-						$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-						FindWordDocumentEnd
-						$Table = $Null
-						WriteWordLine 0 0 ""
-					}
-				}
-
-				WriteWordLine 5 0 "Apply policy if Gateway"
-				WriteWordLine 0 0 "Enable criteria: " $PolicyRule.criteria.Gateways.Enabled.ToString()
-				If($PolicyRule.criteria.Gateways.Enabled)
-				{
-					If($PolicyRule.criteria.Gateways.MatchingMode -eq "IsOneOfTheFollowing")
-					{
-						WriteWordLine 0 0 "is one of the following"
-					}
-					Else
-					{
-						WriteWordLine 0 0 "is not one of the following"
-					}
-					
-					[System.Collections.Hashtable[]] $NameWordTable = @();
-					
-					ForEach($Item in $PolicyRule.criteria.Gateways.Members)
-					{
-						$NameTableRowHash = @{
-						GatewayIP = $Item.GatewayIP;
-						}
-						$NameWordTable += $NameTableRowHash;
-					}
-
-					If($NameWordTable.Count -gt 0)
-					{
-						$Table = AddWordTable -Hashtable $NameWordTable `
-						-Columns GatewayIP `
-						-Headers "Secure Gateways"`
-						-Format $wdTableGrid `
-						-AutoFit $wdAutoFitFixed;
-
-						SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
-						SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
-						$Table.Columns.Item(1).Width = 200;
-
-						$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-						FindWordDocumentEnd
-						$Table = $Null
-						WriteWordLine 0 0 ""
-					}
-				}
-
-				WriteWordLine 5 0 "Apply policy if Operating system"
-				WriteWordLine 0 0 "Enable criteria: " $PolicyRule.criteria.OSs.Enabled.ToString()
-				If($PolicyRule.criteria.OSs.Enabled)
-				{
-					If($PolicyRule.criteria.OSs.MatchingMode -eq "IsOneOfTheFollowing")
-					{
-						WriteWordLine 0 0 "is one of the following"
-					}
-					Else
-					{
-						WriteWordLine 0 0 "is not one of the following"
-					}
-					
-					[System.Collections.Hashtable[]] $NameWordTable = @();
-					
-					If($PolicyRule.criteria.OSs.AllowedOSes.Windows)
-					{
-						$NameTableRowHash = @{
-						OS = "Windows";
-						}
-						$NameWordTable += $NameTableRowHash;
-					}
-
-					If($PolicyRule.criteria.OSs.AllowedOSes.WebClient)
-					{
-						$NameTableRowHash = @{
-						OS = 'User Portal (Web Client)';
-						}
-						$NameWordTable += $NameTableRowHash;
-					}
-
-					If($PolicyRule.criteria.OSs.AllowedOSes.Mac)
-					{
-						$NameTableRowHash = @{
-						OS = "macOS";
-						}
-						$NameWordTable += $NameTableRowHash;
-					}
-
-					If($PolicyRule.criteria.OSs.AllowedOSes.Linux)
-					{
-						$NameTableRowHash = @{
-						OS = "Linux";
-						}
-						$NameWordTable += $NameTableRowHash;
-					}
-
-					If($PolicyRule.criteria.OSs.AllowedOSes.iOS)
-					{
-						$NameTableRowHash = @{
-						OS = 'iOS/iPadOS';
-						}
-						$NameWordTable += $NameTableRowHash;
-					}
-
-					If($PolicyRule.criteria.OSs.AllowedOSes.Android)
-					{
-						$NameTableRowHash = @{
-						OS = "Android";
-						}
-						$NameWordTable += $NameTableRowHash;
-					}
-
-					If($PolicyRule.criteria.OSs.AllowedOSes.Chrome)
-					{
-						$NameTableRowHash = @{
-						OS = "Chrome OS";
-						}
-						$NameWordTable += $NameTableRowHash;
-					}
-
-					If($NameWordTable.Count -gt 0)
-					{
-						$Table = AddWordTable -Hashtable $NameWordTable `
-						-Columns OS `
-						-Headers "Operating system" `
-						-Format $wdTableGrid `
-						-AutoFit $wdAutoFitFixed;
-
-						SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
-						SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
-						$Table.Columns.Item(1).Width = 200;
-
-						$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-						FindWordDocumentEnd
-						$Table = $Null
-						WriteWordLine 0 0 ""
-					}
-				}
-
-				WriteWordLine 5 0 "Apply policy if IP"
-				WriteWordLine 0 0 "Enable criteria: " $PolicyRule.criteria.IPs.Enabled.ToString()
-				If($PolicyRule.criteria.IPs.Enabled)
-				{
-					If($PolicyRule.criteria.IPs.MatchingMode -eq "IsOneOfTheFollowing")
-					{
-						WriteWordLine 0 0 "is one of the following"
-					}
-					Else
-					{
-						WriteWordLine 0 0 "is not one of the following"
-					}
-					
-					If($PolicyRule.criteria.IPs.AllowedIPs.IPv4s.Count -ne 0)
-					{
-						[System.Collections.Hashtable[]] $NameWordTable = @();
-						
-						ForEach($Item in $PolicyRule.criteria.IPs.AllowedIPs.IPv4s)
-						{
-							$NameTableRowHash = @{
-							From = $Item.From;
-							To   = $Item.To;
-							}
-							$NameWordTable += $NameTableRowHash;
-						}
-
-						If($NameWordTable.Count -gt 0)
-						{
-							$Table = AddWordTable -Hashtable $NameWordTable `
-							-Columns From, To `
-							-Headers "IPv4 Address From", "IPv4 Address To" `
-							-Format $wdTableGrid `
-							-AutoFit $wdAutoFitFixed;
-
-							SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
-							SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
-							$Table.Columns.Item(1).Width = 200;
-							$Table.Columns.Item(2).Width = 200;
-
-							$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-							FindWordDocumentEnd
-							$Table = $Null
-							WriteWordLine 0 0 ""
-						}
-					}
-
-					If($PolicyRule.criteria.IPs.AllowedIPs.IPv6s.Count -ne 0)
-					{
-						[System.Collections.Hashtable[]] $NameWordTable = @();
-						
-						ForEach($Item in $PolicyRule.criteria.IPs.AllowedIPs.IPv6s)
-						{
-							$NameTableRowHash = @{
-							From = $Item.From;
-							To   = $Item.To;
-							}
-							$NameWordTable += $NameTableRowHash;
-						}
-
-						If($NameWordTable.Count -gt 0)
-						{
-							$Table = AddWordTable -Hashtable $NameWordTable `
-							-Columns From, To `
-							-Headers "IPv6 Address From", "IPv6 Address To" `
-							-Format $wdTableGrid `
-							-AutoFit $wdAutoFitFixed;
-
-							SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
-							SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
-							$Table.Columns.Item(1).Width = 200;
-							$Table.Columns.Item(2).Width = 200;
-
-							$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-							FindWordDocumentEnd
-							$Table = $Null
-							WriteWordLine 0 0 ""
-						}
-					}
-				}
-
-				WriteWordLine 5 0 "Apply policy if Hardware ID"
-				WriteWordLine 0 0 "Enable criteria: " $PolicyRule.criteria.HardwareIDs.Enabled.ToString()
-				If($PolicyRule.criteria.HardwareIDs.Enabled)
-				{
-					If($PolicyRule.criteria.HardwareIDs.MatchingMode -eq "IsOneOfTheFollowing")
-					{
-						WriteWordLine 0 0 "is one of the following"
-					}
-					Else
-					{
-						WriteWordLine 0 0 "is not one of the following"
-					}
-					
-					[System.Collections.Hashtable[]] $NameWordTable = @();
-					
-					ForEach($Item in $PolicyRule.criteria.HardwareIDs.Members)
-					{
-						$NameTableRowHash = @{
-						HardwareID = $Item.HardwareID;
-						}
-						$NameWordTable += $NameTableRowHash;
-					}
-
-					If($NameWordTable.Count -gt 0)
-					{
-						$Table = AddWordTable -Hashtable $NameWordTable `
-						-Columns HardwareID `
-						-Headers "Device Hardware ID"`
-						-Format $wdTableGrid `
-						-AutoFit $wdAutoFitFixed;
-
-						SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
-						SetWordCellFormat -Collection $Table.Rows.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
-
-						$Table.Columns.Item(1).Width = 200;
-
-						$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
-
-						FindWordDocumentEnd
-						$Table = $Null
-						WriteWordLine 0 0 ""
-					}
-				}
-			}
 		}
 		If($Text)
 		{
-			Line 2 "Policy $($Policy.Name)"
+			Line 2 "Policy: $($Policy.Name)"
 			Line 0 ""
 			Line 2 "Policy"
 			Line 3 "Name`t   : " $Policy.Name
 			Line 3 "Description: " $Policy.Description
-			Line 0 ""
-
-			Line 2 "Apply policy to"
 			ForEach($PolicyRule in $Policy.Assignment.Rules)
 			{
-				Line 2 "$($PolicyRule.Name) Properties"
 				Line 0 ""
-				
-				Line 2 "Enable rule: " $PolicyRule.Enabled.ToString()
+				Line 2 "Apply policy to : $($PolicyRule.Name)"
+				Line 2 "Enable rule`t: " $PolicyRule.Enabled.ToString()
 				Line 2 "General"
-				Line 3 "Name: " $PolicyRule.Name
+				Line 3 "Name`t   : " $PolicyRule.Name
 				Line 3 "Description: " $PolicyRule.Description
 				Line 0 ""
-				
 				Line 2 "Criteria"
-				Line 2 "Apply policy if User, group, or computer"
-				Line 2 "Enable criteria: " $PolicyRule.criteria.SecurityPrincipals.Enabled.ToString()
+
 				If($PolicyRule.criteria.SecurityPrincipals.Enabled)
 				{
 					If($PolicyRule.criteria.SecurityPrincipals.MatchingMode -eq "IsOneOfTheFollowing")
 					{
-						Line 2 "is one of the following"
+						Line 2 "Apply policy if User, group, or computer is one of the following"
 					}
 					Else
 					{
-						Line 2 "is not one of the following"
+						Line 2 "Apply policy if User, group, or computer is not one of the following"
 					}
-					Line 0 ""
 					Line 3 "Name                                      Type                            SID                                               "
 					Line 3 "============================================================================================================================"
 					#       1234567890123456789012345678901234567890SS123456789012345678901234567890SS12345678901234567890123456789012345678901234567890
@@ -71728,19 +70764,16 @@ Function OutputPoliciesDetails
 					Line 0 ""
 				}
 
-				Line 2 "Apply policy if Gateway"
-				Line 2 "Enable criteria: " $PolicyRule.criteria.Gateways.Enabled.ToString()
 				If($PolicyRule.criteria.Gateways.Enabled)
 				{
 					If($PolicyRule.criteria.Gateways.MatchingMode -eq "IsOneOfTheFollowing")
 					{
-						Line 2 "is one of the following"
+						Line 2 "Apply policy if Gateway is one of the following"
 					}
 					Else
 					{
-						Line 2 "is not one of the following"
+						Line 2 "Apply policy if Gateway is not one of the following"
 					}
-					Line 0 ""
 					Line 3 "Secure Gateways     "
 					Line 3 "===================="
 					#       12345678901234567890
@@ -71752,19 +70785,16 @@ Function OutputPoliciesDetails
 					Line 0 ""
 				}
 
-				Line 2 "Apply policy if Operating system"
-				Line 2 "Enable criteria: " $PolicyRule.criteria.OSs.Enabled.ToString()
 				If($PolicyRule.criteria.OSs.Enabled)
 				{
 					If($PolicyRule.criteria.OSs.MatchingMode -eq "IsOneOfTheFollowing")
 					{
-						Line 2 "is one of the following"
+						Line 2 "Apply policy if Operating system is one of the following"
 					}
 					Else
 					{
-						Line 2 "is not one of the following"
+						Line 2 "Apply policy if Operating system is not one of the following"
 					}
-					Line 0 ""
 					Line 3 "Operating system         "
 					Line 3 "========================="
 					#       1234567890123456789012345
@@ -71806,19 +70836,16 @@ Function OutputPoliciesDetails
 					Line 0 ""
 				}
 
-				Line 2 "Apply policy if IP"
-				Line 2 "Enable criteria: " $PolicyRule.criteria.IPs.Enabled.ToString()
 				If($PolicyRule.criteria.IPs.Enabled)
 				{
 					If($PolicyRule.criteria.IPs.MatchingMode -eq "IsOneOfTheFollowing")
 					{
-						Line 2 "is one of the following"
+						Line 2 "Apply policy if IP is one of the following"
 					}
 					Else
 					{
-						Line 2 "is not one of the following"
+						Line 2 "Apply policy if IP is not one of the following"
 					}
-					Line 0 ""
 
 					If($PolicyRule.criteria.IPs.AllowedIPs.IPv4s.Count -ne 0)
 					{
@@ -71849,19 +70876,16 @@ Function OutputPoliciesDetails
 					}
 				}
 
-				Line 2 "Apply policy if Hardware ID"
-				Line 2 "Enable criteria: " $PolicyRule.criteria.HardwareIDs.Enabled.ToString()
 				If($PolicyRule.criteria.HardwareIDs.Enabled)
 				{
 					If($PolicyRule.criteria.HardwareIDs.MatchingMode -eq "IsOneOfTheFollowing")
 					{
-						Line 2 "is one of the following"
+						Line 2 "Apply policy if Hardware ID is one of the following"
 					}
 					Else
 					{
-						Line 2 "is not one of the following"
+						Line 2 "Apply policy if Hardware ID is not one of the following"
 					}
-					Line 0 ""
 					Line 3 "Device Hardware ID  "
 					Line 3 "===================="
 					#       12345678901234567890
@@ -71876,243 +70900,189 @@ Function OutputPoliciesDetails
 		}
 		If($HTML)
 		{
-			WriteHTMLLine 3 0 "Policy $($Policy.Name)"
+			WriteHTMLLine 3 0 "Policy: $($Policy.Name)"
+			WriteHTMLLine 4 0 "Policy"
 			$rowdata = @()
-			$columnHeaders = @("Name",($Script:htmlsb),$Policy.Name,$htmlwhite)
-			$rowdata += @(,("Description",($Script:htmlsb),$Policy.Description,$htmlwhite))
+			$columnHeaders = @("Name",($Script:htmlsb),$Policy.Name.Replace("<","").Replace(">",""),$htmlwhite)
+			$rowdata += @(,("Description",($Script:htmlsb),$Policy.Description.Replace("<","").Replace(">",""),$htmlwhite))
 
-			$msg = ""
-			$columnWidths = @("150","200")
-			FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-			WriteHTMLLine 0 0 ""
-
-			WriteHTMLLine 4 0 "Apply policy to:"
 			ForEach($PolicyRule in $Policy.Assignment.Rules)
 			{
 				
-				WriteHTMLLine 5 0 "$($PolicyRule.Name) Properties"
-				$rowdata = @()
-				$columnHeaders = @("Enable rule",($Script:htmlsb),$PolicyRule.Enabled.ToString(),$htmlwhite)
+				$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+				$rowdata += @(,("Apply policy to:",($Script:htmlsb),"$($PolicyRule.Name)",$htmlwhite))
+				$rowdata += @(,("Enable rule",($Script:htmlsb),$PolicyRule.Enabled.ToString(),$htmlwhite))
 				$rowdata += @(,("General",($Script:htmlsb),"",$htmlwhite))
-				$rowdata += @(,("     Name",($Script:htmlsb),$PolicyRule.Name,$htmlwhite))
-				$rowdata += @(,("     Description",($Script:htmlsb),$PolicyRule.Description,$htmlwhite))
+				$rowdata += @(,("     Name",($Script:htmlsb),$PolicyRule.Name.Replace("<","").Replace(">",""),$htmlwhite))
+				$rowdata += @(,("     Description",($Script:htmlsb),$PolicyRule.Description.Replace("<","").Replace(">",""),$htmlwhite))
+				$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
+				$rowdata += @(,("     Criteria",($Script:htmlsb),"",$htmlwhite))
 
-				$msg = ""
-				$columnWidths = @("150","200")
-				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-				WriteHTMLLine 0 0 ""
-
-				WriteHTMLLine 4 0 "Criteria"
-				
-				WriteHTMLLine 5 0 "Apply policy if User, group, or computer"
-				WriteHTMLLine 0 0 "Enable criteria: " $PolicyRule.criteria.SecurityPrincipals.Enabled.ToString()
 				If($PolicyRule.criteria.SecurityPrincipals.Enabled)
 				{
 					If($PolicyRule.criteria.SecurityPrincipals.MatchingMode -eq "IsOneOfTheFollowing")
 					{
-						WriteHTMLLine 0 0 "is one of the following"
+						$rowdata += @(,("          Apply policy if User, group, or computer is one of the following",($Script:htmlsb),"",$htmlwhite))
 					}
 					Else
 					{
-						WriteHTMLLine 0 0 "is not one of the following"
+						$rowdata += @(,("          Apply policy if User, group, or computer is not one of the following",($Script:htmlsb),"",$htmlwhite))
 					}
-
-					$rowdata = @()
 
 					ForEach($Item in $PolicyRule.criteria.SecurityPrincipals.Members)
 					{
-						$rowdata += @(,(
-						$Item.Account,$htmlwhite,
-						$Item.Type,$htmlwhite,
-						$Item.Sid,$htmlwhite))
+						$rowdata += @(,("",($Script:htmlsb),"Name: $($Item.Account)",$htmlwhite))
+						$rowdata += @(,("",($Script:htmlsb),"Type: $($Item.Type)",$htmlwhite))
+						$rowdata += @(,("",($Script:htmlsb),"SID: $($Item.Sid)",$htmlwhite))
+						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 					}
-
-					$columnHeaders = @(
-					"Name",($Script:htmlsb),
-					"Type",($Script:htmlsb),
-					"SID",($Script:htmlsb))
-
-					$msg = ""
-					$columnWidths = @("200","50","300")
-					FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-					WriteHTMLLine 0 0 ""
 				}
 				
-				WriteHTMLLine 5 0 "Apply policy if Gateway"
-				WriteHTMLLine 0 0 "Enable criteria: " $PolicyRule.criteria.Gateways.Enabled.ToString()
 				If($PolicyRule.criteria.Gateways.Enabled)
 				{
 					If($PolicyRule.criteria.Gateways.MatchingMode -eq "IsOneOfTheFollowing")
 					{
-						WriteHTMLLine 0 0 "is one of the following"
+						$rowdata += @(,("          Apply policy if Gateway is one of the following",($Script:htmlsb),"",$htmlwhite))
 					}
 					Else
 					{
-						WriteHTMLLine 0 0 "is not one of the following"
+						$rowdata += @(,("          Apply policy if Gateway is not one of the following",($Script:htmlsb),"",$htmlwhite))
 					}
-
-					$rowdata = @()
 
 					ForEach($Item in $PolicyRule.criteria.Gateways.Members)
 					{
-						$rowdata += @(,($Item.GatewayIP,$htmlwhite))
+						$rowdata += @(,("",($Script:htmlsb),"Gateway IP: $($Item.GatewayIP)",$htmlwhite))
 					}
-
-					$columnHeaders = @("Secure Gateways",($Script:htmlsb))
-
-					$msg = ""
-					$columnWidths = @("200")
-					FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-					WriteHTMLLine 0 0 ""
+					$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 				}
 				
-				WriteHTMLLine 5 0 "Apply policy if Operating system"
-				WriteHTMLLine 0 0 "Enable criteria: " $PolicyRule.criteria.OSs.Enabled.ToString()
 				If($PolicyRule.criteria.OSs.Enabled)
 				{
 					If($PolicyRule.criteria.OSs.MatchingMode -eq "IsOneOfTheFollowing")
 					{
-						WriteHTMLLine 0 0 "is one of the following"
+						$rowdata += @(,("          Apply policy if Operating system is one of the following:",($Script:htmlsb),"",$htmlwhite))
 					}
 					Else
 					{
-						WriteHTMLLine 0 0 "is not one of the following"
+						$rowdata += @(,("          Apply policy if Operating system is not one of the following:",($Script:htmlsb),"",$htmlwhite))
 					}
-
-					$rowdata = @()
 
 					If($PolicyRule.criteria.OSs.AllowedOSes.Windows)
 					{
-						$rowdata += @(,("Windows",$htmlwhite))
+						$rowdata += @(,("",($Script:htmlsb),"Windows",$htmlwhite))
 					}
 
 					If($PolicyRule.criteria.OSs.AllowedOSes.WebClient)
 					{
-						$rowdata += @(,('User Portal (Web Client)',$htmlwhite))
+						$rowdata += @(,("",($Script:htmlsb),'User Portal (Web Client)',$htmlwhite))
 					}
 
 					If($PolicyRule.criteria.OSs.AllowedOSes.Mac)
 					{
-						$rowdata += @(,("macOS",$htmlwhite))
+						$rowdata += @(,("",($Script:htmlsb),"macOS",$htmlwhite))
 					}
 
 					If($PolicyRule.criteria.OSs.AllowedOSes.Linux)
 					{
-						$rowdata += @(,("Linux",$htmlwhite))
+						$rowdata += @(,("",($Script:htmlsb),"Linux",$htmlwhite))
 					}
 
 					If($PolicyRule.criteria.OSs.AllowedOSes.iOS)
 					{
-						$rowdata += @(,('iOS/iPadOS',$htmlwhite))
+						$rowdata += @(,("",($Script:htmlsb),'iOS/iPadOS',$htmlwhite))
 					}
 
 					If($PolicyRule.criteria.OSs.AllowedOSes.Android)
 					{
-						$rowdata += @(,("Android",$htmlwhite))
+						$rowdata += @(,("",($Script:htmlsb),"Android",$htmlwhite))
 					}
 
 					If($PolicyRule.criteria.OSs.AllowedOSes.Chrome)
 					{
-						$rowdata += @(,("Chrome OS",$htmlwhite))
+						$rowdata += @(,("",($Script:htmlsb),"Chrome OS",$htmlwhite))
 					}
-
-					$columnHeaders = @("Operating system",($Script:htmlsb))
-
-					$msg = ""
-					$columnWidths = @("200")
-					FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-					WriteHTMLLine 0 0 ""
+					$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 				}
 				
-				WriteHTMLLine 5 0 "Apply policy if IP"
-				WriteHTMLLine 0 0 "Enable criteria: " $PolicyRule.criteria.IPs.Enabled.ToString()
 				If($PolicyRule.criteria.IPs.Enabled)
 				{
 					If($PolicyRule.criteria.IPs.MatchingMode -eq "IsOneOfTheFollowing")
 					{
-						WriteHTMLLine 0 0 "is one of the following"
+						$rowdata += @(,("          Apply policy if IP is one of the following",($Script:htmlsb),"",$htmlwhite))
 					}
 					Else
 					{
-						WriteHTMLLine 0 0 "is not one of the following"
+						$rowdata += @(,("          Apply policy if IP is not one of the following",($Script:htmlsb),"",$htmlwhite))
 					}
 
 					If($PolicyRule.criteria.IPs.AllowedIPs.IPv4s.Count -ne 0)
 					{
-						$rowdata = @()
-
 						ForEach($Item in $PolicyRule.criteria.IPs.AllowedIPs.IPv4s)
 						{
-							$rowdata += @(,(
-							$Item.From,$htmlwhite,
-							$Item.To,$htmlwhite))
+							If(($item.From -eq $item.To) -or ($item.To -eq ""))
+							{
+								$rowdata += @(,("",($Script:htmlsb),"IPv4 is: $($item.From)",$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb),"IPv4 from $($item.From) to $($item.To)",$htmlwhite))
+							}
 						}
-
-						$columnHeaders = @(
-						"IPv4 Address From",($Script:htmlsb),
-						"IPv4 Address To",($Script:htmlsb))
-
-						$msg = ""
-						$columnWidths = @("200","200")
-						FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-						WriteHTMLLine 0 0 ""
+						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 					}
-					
+
 					If($PolicyRule.criteria.IPs.AllowedIPs.IPv6s.Count -ne 0)
 					{
-						$rowdata = @()
-
 						ForEach($Item in $PolicyRule.criteria.IPs.AllowedIPs.IPv6s)
 						{
-							$rowdata += @(,(
-							$Item.From,$htmlwhite,
-							$Item.To,$htmlwhite))
+							If(($item.From -eq $item.To) -or ($item.To -eq ""))
+							{
+								$rowdata += @(,("",($Script:htmlsb),"IPv6 is: $($item.From)",$htmlwhite))
+							}
+							Else
+							{
+								$rowdata += @(,("",($Script:htmlsb),"IPv6 from $($item.From) to $($item.To)",$htmlwhite))
+							}
 						}
-
-						$columnHeaders = @(
-						"IPv6 Address From",($Script:htmlsb),
-						"IPv6 Address To",($Script:htmlsb))
-
-						$msg = ""
-						$columnWidths = @("200","200")
-						FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-						WriteHTMLLine 0 0 ""
+						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 					}
 				}
 				
-				WriteHTMLLine 5 0 "Apply policy if Hardware ID"
-				WriteHTMLLine 0 0 "Enable criteria: " $PolicyRule.criteria.HardwareIDs.Enabled.ToString()
 				If($PolicyRule.criteria.HardwareIDs.Enabled)
 				{
 					If($PolicyRule.criteria.HardwareIDs.MatchingMode -eq "IsOneOfTheFollowing")
 					{
-						WriteHTMLLine 0 0 "is one of the following"
+						$rowdata += @(,("          Apply policy if Hardware ID is one of the following:",($Script:htmlsb),"",$htmlwhite))
 					}
 					Else
 					{
-						WriteHTMLLine 0 0 "is not one of the following"
+						$rowdata += @(,("          Apply policy if Hardware ID is not one of the following:",($Script:htmlsb),"",$htmlwhite))
 					}
-
-					$rowdata = @()
 
 					ForEach($Item in $PolicyRule.criteria.HardwareIDs.Members)
 					{
-						$rowdata += @(,($Item.HardwareID,$htmlwhite))
+						$rowdata += @(,("",($Script:htmlsb),"$($Item.HardwareID)",$htmlwhite))
 					}
-
-					$columnHeaders = @("Device Hardware ID",($Script:htmlsb))
-
-					$msg = ""
-					$columnWidths = @("200")
-					FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
-					WriteHTMLLine 0 0 ""
 				}
 			}
+			
+			$msg = ""
+			$columnWidths = @("400","350")
+			FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
+			WriteHTMLLine 0 0 ""
+			
 		}
 
 		If($MSWord -or $PDF)
 		{
 			[System.Collections.Hashtable[]] $SettingsWordTable = @();
+		}
+		If($Text)
+		{
+			Line 2 ""
+			Line 2 "Setting Key                                                                                                                                             Value                                                  "
+			Line 2 "==============================================================================================================================================================================================================="
+			#		Client options/Advanced/RemoteFX USB redirection/RemoteFX USB redirection/Allow RDP redirection of other supported RemoteFX USB devices to all users:   https://download.parallels.com/ras/WVDClientSupport.xml
 		}
 		If($HTML)
 		{
@@ -72136,7 +71106,7 @@ Function OutputPoliciesDetails
 			{
 				$rowdata += @(,(
 				$txt,$htmlbold,
-				$Policy.ClientPolicy.Session.PrimaryConnection.Name,$htmlwhite))
+				$Policy.ClientPolicy.Session.PrimaryConnection.Name.Replace("<","").Replace(">",""),$htmlwhite))
 			}
 			If($Text)
 			{
@@ -72311,7 +71281,7 @@ Function OutputPoliciesDetails
 					}
 					If($Text)
 					{
-						OutputPolicySetting "`t`t`t`t`t`t`t      " "Connection: $($Item.Server)   Mode: $GatewayMode   Port: $($Item.ServerPort.ToString())"
+						OutputPolicySetting "" "Connection: $($Item.Server)   Mode: $GatewayMode   Port: $($Item.ServerPort.ToString())"
 					}
 				}
 			}
@@ -72635,7 +71605,7 @@ Function OutputPoliciesDetails
 					}
 					If($Text)
 					{
-						OutputPolicySetting "`t`t`t`t`t`t`t`t`t`t " "Day: $Day   Month: $Month"
+						OutputPolicySetting "" "Day: $Day   Month: $Month"
 					}
 				}
 			}
@@ -73035,7 +72005,7 @@ Function OutputPoliciesDetails
 						}
 						If($Text)
 						{
-							OutputPolicySetting "`t`t`t`t`t`t`t " "Name: $($Item)"
+							OutputPolicySetting "" "Name: $($Item)"
 						}
 					}
 				}
@@ -73119,7 +72089,7 @@ Function OutputPoliciesDetails
 						}
 						If($Text)
 						{
-							OutputPolicySetting "`t`t`t`t`t`t`t " "Name: $($Item)"
+							OutputPolicySetting "" "Name: $($Item)"
 						}
 					}
 				}
@@ -73299,7 +72269,7 @@ Function OutputPoliciesDetails
 						}
 						If($Text)
 						{
-							OutputPolicySetting "`t`t`t`t`t`t`t " "Name: $($Item)"
+							OutputPolicySetting "" "Name: $($Item)"
 						}
 					}
 				}
@@ -73928,7 +72898,7 @@ Function OutputPoliciesDetails
 				}
 				If($Text)
 				{
-					OutputPolicySetting "`t`t`t`t`t`t`t`t`t`t`t`t`t`t`t`t " "Drives A through Z"
+					OutputPolicySetting "" "Drives A through Z"
 				}
 			}
 			Else
@@ -73950,7 +72920,7 @@ Function OutputPoliciesDetails
 					}
 					If($Text)
 					{
-						OutputPolicySetting "`t`t`t`t`t`t`t`t`t`t`t  " $Item
+						OutputPolicySetting "" $Item
 					}
 				}
 			}
@@ -74056,21 +73026,6 @@ Function OutputPoliciesDetails
 		}
 		
 		Write-Verbose "$(Get-Date -Format G): `t`t`t`tSession/Local devices and resources/Video capture devices"
-		<#
-			$policy.ClientPolicy.Session.VideoCaptureDevices
-			Enabled                   : True
-			EnableCameras             : True
-			DynamicCameras            : True
-			VideoCaptureUseAllDevices : True
-			CamerasIDs                : {*}
-			
-			Type	        Name	                        Description
-			List<String>	CamerasIDs		                Redirect to all available devices
-			Boolean	        DynamicCameras		            If box is checked allow the use of other devices that are plugged in later
-			Boolean	        EnableCameras		            If box is checked allow devices redirection
-			Boolean	        Enabled		                    Whether Devices policy is enabled or not
-			Boolean	        VideoCaptureUseAllDevices		Use all devices that are available
-		#>
 		If($Policy.ClientPolicy.Session.VideoCaptureDevices.Enabled)
 		{
 			$txt = "Session/Local devices and resources/Video capture devices/Video capture devices/Allow devices redirection"
@@ -75550,22 +74505,6 @@ Function OutputPoliciesDetails
 		Write-Verbose "$(Get-Date -Format G): `t`t`t`tClient options/Advanced/Global"
 		If($Policy.ClientPolicy.ClientOptions.Advanced.Global.Enabled)
 		{
-			<#
-				PS C:\Webster> $ClientOptions.Advanced.Global
-				Enabled                  : True
-				ShowFolders              : True
-				MinimizeToTrayOnClose    : True
-				GraphicsAccel            : False
-				ClientWorkAreaBackground : True
-				SSLNoWarning             : True
-				SwapMouse                : False
-				DPIAware                 : True
-				AutoAddFarm              : False
-				DontPromptAutoAddFarm    : False
-				SuppErrMsgs              : False
-				ClearCookies             : True
-				TurnOffUDPOnClient       : False
-			#>
 			$txt = "Client options/Advanced/Global/Advanced client options - Global settings/Show connections tree (Clasic interface only)"
 			If($MSWord -or $PDF)
 			{
@@ -76345,7 +75284,7 @@ Function OutputPoliciesDetails
 				'Value',($script:htmlsb))
 
 				$msg = "Properties"
-				$columnWidths = @("600","300")
+				$columnWidths = @("850","300")
 				FormatHTMLTable $msg "auto" -rowArray $rowdata -columnArray $columnHeaders -fixedWidth $columnWidths
 				WriteHTMLLine 0 0 ""
 			}
@@ -76367,7 +75306,14 @@ Function OutputPolicySetting
 			$outputText += ": "
 		}
 	}
-	Line 2 $outputText $outputData
+	#	Setting Key																																		        Value                                                  
+	#   ===============================================================================================================================================================================================================
+	#	Client options/Advanced/RemoteFX USB redirection/RemoteFX USB redirection/Allow RDP redirection of other supported RemoteFX USB devices to all users:   https://download.parallels.com/ras/WVDClientSupport.xml
+	#	123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890
+	#	length is 150
+	#Line 2 $outputText $outputData
+	Line 2 ( "{0,-150}  {1,-50}" -f $outputText, $outputData)
+
 }
 #endregion
 
@@ -76380,7 +75326,7 @@ Function ProcessAdministration
 	
 	Write-Verbose "$(Get-Date -Format G): `tProcessing Accounts"
 	
-	$results = Get-RASAdminAccount -EA 0 4>$Null
+	$results = Get-RASAdminAccount -EA 0 4> $Null
 	
 	If(!($?))
 	{
@@ -76410,7 +75356,7 @@ Function ProcessAdministration
 	ElseIf($? -and $null -eq $results)
 	{
 		Write-Host "
-		No administration information was found
+	No administration information was found
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
@@ -76440,7 +75386,7 @@ Function ProcessAdministration
 
 	Write-Verbose "$(Get-Date -Format G): `tProcessing Features/Helpdesk"
 	
-	$RASHelpdesk = Get-RASHelpdeskEmailSettings -EA 0 4>$Null
+	$RASHelpdesk = Get-RASHelpdeskEmailSettings -EA 0 4> $Null
 	
 	If(!($?))
 	{
@@ -76471,7 +75417,7 @@ Function ProcessAdministration
 	ElseIf($? -and $null -eq $RASHelpdesk)
 	{
 		Write-Host "
-		No Helpdesk information was found
+	No Helpdesk information was found
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
@@ -76495,7 +75441,7 @@ Function ProcessAdministration
 
 	Write-Verbose "$(Get-Date -Format G): `tProcessing Features/Support"
 	
-	$RASSupport = Get-RASOverwriteSupportActions -EA 0 4>$Null
+	$RASSupport = Get-RASOverwriteSupportActions -EA 0 4> $Null
 	
 	If(!($?))
 	{
@@ -76526,7 +75472,7 @@ Function ProcessAdministration
 	ElseIf($? -and $null -eq $RASSupport)
 	{
 		Write-Host "
-		No Support information was found
+	No Support information was found
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
@@ -76552,7 +75498,7 @@ Function ProcessAdministration
 
 	Write-Verbose "$(Get-Date -Format G): `tProcessing Settings"
 	
-	$RASSettings = Get-RASSystemSettings -EA 0 4>$Null
+	$RASSettings = Get-RASSystemSettings -EA 0 4> $Null
 	
 	If(!($?))
 	{
@@ -76582,7 +75528,7 @@ Function ProcessAdministration
 	ElseIf($? -and $null -eq $RASsettings)
 	{
 		Write-Host "
-		No settings information was found
+	No settings information was found
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
@@ -76605,7 +75551,7 @@ Function ProcessAdministration
 	}
 	Else
 	{
-		$RASProxySettings = Get-RASProxySettings -EA 0 4>$Null
+		$RASProxySettings = Get-RASProxySettings -EA 0 4> $Null
 		
 		If(!($?))
 		{
@@ -76635,7 +75581,7 @@ Function ProcessAdministration
 		ElseIf($? -and $null -eq $RASProxySettings)
 		{
 			Write-Host "
-			No Proxy settings information was found
+	No Proxy settings information was found
 			" -ForegroundColor White
 			If($MSWord -or $PDF)
 			{
@@ -76659,7 +75605,7 @@ Function ProcessAdministration
 		OutputRASSettings $RASSettings $RASProxySettings
 	}
 
-	$RASMailboxSettings = Get-RASMailboxSettings -EA 0 4>$Null
+	$RASMailboxSettings = Get-RASMailboxSettings -EA 0 4> $Null
 	
 	If(!($?))
 	{
@@ -76689,7 +75635,7 @@ Function ProcessAdministration
 	ElseIf($? -and $null -eq $RASMailboxSettings)
 	{
 		Write-Host "
-		No mailbox settings information was found
+	No mailbox settings information was found
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
@@ -76715,7 +75661,7 @@ Function ProcessAdministration
 		OutputRASMailboxSettings $RASMailboxSettings
 	}
 	
-	$RASReportingSettings = Get-RASReportingSettings -EA 0 4>$Null
+	$RASReportingSettings = Get-RASReportingSettings -EA 0 4> $Null
 	
 	If(!($?))
 	{
@@ -76745,7 +75691,7 @@ Function ProcessAdministration
 	ElseIf($? -and $null -eq $RASReportingSettings)
 	{
 		Write-Host "
-		No Reporting settings information was found
+	No Reporting settings information was found
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
@@ -76771,7 +75717,7 @@ Function ProcessAdministration
 		OutputRASReportingSettings $RASReportingSettings
 	}
 	
-	$RASPerformanceMonitorSettings = Get-RASPerformanceMonitorSettings -EA 0 4>$Null
+	$RASPerformanceMonitorSettings = Get-RASPerformanceMonitorSettings -EA 0 4> $Null
 	
 	If(!($?))
 	{
@@ -76801,7 +75747,7 @@ Function ProcessAdministration
 	ElseIf($? -and $null -eq $RASPerformanceMonitorSettings)
 	{
 		Write-Host "
-		No Performance Monitor settings information was found
+	No Performance Monitor settings information was found
 		" -ForegroundColor White
 		If($MSWord -or $PDF)
 		{
@@ -76947,7 +75893,7 @@ Function OutputRASAccounts
 			WriteHTMLLine 3 0 "Account: $($RASAccount.Name)"
 			$rowdata = @()
 			$columnHeaders = @("Enabled",($Script:htmlsb),$RASAccount.Enabled.ToString(),$htmlwhite)
-			$rowdata += @(,("Name",($Script:htmlsb),$RASAccount.Name,$htmlwhite))
+			$rowdata += @(,("Name",($Script:htmlsb),$RASAccount.Name.Replace("<","").Replace(">",""),$htmlwhite))
 			$rowdata += @(,("Type",($Script:htmlsb),$RASAccountType,$htmlwhite))
 			$rowdata += @(,("Permissions",($Script:htmlsb),$RASAccountPermissions,$htmlwhite))
 			$rowdata += @(,("Email",($Script:htmlsb),$RASAccount.Email,$htmlwhite))
@@ -77022,7 +75968,7 @@ Function OutputRASAccounts
 		{
 			$rowdata = @()
 			$columnHeaders = @("Enabled",($Script:htmlsb),$RASAccount.Enabled.ToString(),$htmlwhite)
-			$rowdata += @(,("Name",($Script:htmlsb),$RASAccount.Name,$htmlwhite))
+			$rowdata += @(,("Name",($Script:htmlsb),$RASAccount.Name.Replace("<","").Replace(">",""),$htmlwhite))
 			$rowdata += @(,("Email",($Script:htmlsb),$RASAccount.Email,$htmlwhite))
 			$rowdata += @(,("Mobile",($Script:htmlsb),$RASAccount.Mobile,$htmlwhite))
 			$rowdata += @(,("Group",($Script:htmlsb),$RASAccount.GroupName,$htmlwhite))
@@ -77851,7 +76797,7 @@ Function ProcessLicensing
 {
 	Write-Verbose "$(Get-Date -Format G): Processing Licensing"
 
-	$results = Get-RASLicenseDetails -EA 0 4>$Null
+	$results = Get-RASLicenseDetails -EA 0 4> $Null
 	
 	If(!($?))
 	{
@@ -78246,8 +77192,8 @@ ProcessScriptEnd
 # SIG # Begin signature block
 # MIIthQYJKoZIhvcNAQcCoIItdjCCLXICAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUew54Y8S320pNzsaGK52Rzor0
-# T5CggibfMIIFjTCCBHWgAwIBAgIQDpsYjvnQLefv21DiCEAYWjANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUoG7vi4xYVGtKwZZUt85qU7c0
+# wKyggibfMIIFjTCCBHWgAwIBAgIQDpsYjvnQLefv21DiCEAYWjANBgkqhkiG9w0B
 # AQwFADBlMQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYD
 # VQQLExB3d3cuZGlnaWNlcnQuY29tMSQwIgYDVQQDExtEaWdpQ2VydCBBc3N1cmVk
 # IElEIFJvb3QgQ0EwHhcNMjIwODAxMDAwMDAwWhcNMzExMTA5MjM1OTU5WjBiMQsw
@@ -78458,33 +77404,33 @@ ProcessScriptEnd
 # UzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/BgNVBAMTOERpZ2lDZXJ0IFRy
 # dXN0ZWQgRzQgQ29kZSBTaWduaW5nIFJTQTQwOTYgU0hBMzg0IDIwMjEgQ0ExAhAL
 # bN+2Z4EOKufLWhG6HUlwMAkGBSsOAwIaBQCgQDAZBgkqhkiG9w0BCQMxDAYKKwYB
-# BAGCNwIBBDAjBgkqhkiG9w0BCQQxFgQU7Eg6nkVWKBfl0qdyg041RjJGL1UwDQYJ
-# KoZIhvcNAQEBBQAEggIAKZz0KRe1N7JXcV1e6RQoi9/uF7AqVy2eOfWhMyQ8toul
-# 2Pw+jurWFhdqihSK1DedHXZQOUmHLP1am1TbDScTMlAmQwVenoe2AaSMTzV01tiy
-# WjQ2qNvkji7Vig0wGo5Ux2eAwCVJiE1nxPRWXL6PFc3PYEFIX8b7eQ3iDzkC0plw
-# +adJABTdgJl/MGMBUsk44BoqKhpqA1zPsGoBohSRu//5Fp1zLFe+PCXL9LHX6WAI
-# 0U57CZkqsLMVN9yMZqLq6ZKimGs+gyUaQylWjVu2j8xMOebcO76LvZRERpU9erVv
-# ED7xMHpilgdXQQQyuc5idbHwpBtK5N9wAP9f1/d8UISZdur5mxlmwkyhzy1znuLG
-# nzmJcfig0KbE45MR/fi91J/ONbMltHI0mST0M5NrgQEx2+vJSeCnBf9AL9izd7qv
-# 43XdGs+fHxvjQqcioL1suUJ4gbWoogKvihHaAgAE7DDl4joYEZkIJv0NweQkNuCt
-# Nvu4o9OekGdKw0Grd7rC3oDjA/wJcb42s2NHCzcCdIZSlx+l7WHXPJ1U1FyZZqdu
-# D4yJ8Gdnws9ry5c04XyEUqpdAyavqclAADiYuk0CSFYWUYotY8Snl1PZPYN3Inh5
-# kWLm7H0E6oDG1+5ZhlJfQFTd2Tku56INOGvpzIvQ+ryptXQbmY/AJ5QDPebIe9Sh
+# BAGCNwIBBDAjBgkqhkiG9w0BCQQxFgQUJXRi30BfVusQ+bOs1rxCMXrbFTMwDQYJ
+# KoZIhvcNAQEBBQAEggIANXJhSS/u+bRwkdz3WKKTcmcyYC0QsusoMPc7mzq/rTJI
+# MdUFlawcuASjAIHmhqv2/OttZz7Q6JdYM0ho3OZY5jupBXZeTRholwDzCBqfzpeq
+# mZTxgr2pFcXyuejxqnsRJ1J8OHh6va44hmAArYS1eSP+sqlff8VULL3W+20Bw78q
+# ujvk7g+ViIMk0mEMeOncfazOzn3wvPIRD0mnHLpxysphTBy/zLqw9CxYgZIbxGhi
+# CNMWZycRB592WY9v2/Fpg9+gSEYvIFAsgbet6agh46SMSHFsxBp5aQBQ8slXRLMF
+# q0HM8VSTYxuCRFr2kXnu5Cyr+fJ5s96Y5BX4xrrXZjvKQnV4jAtd2dEe7URTGIpJ
+# NhgwMeInaeA6GK/ywV4TVmMQE67pKxUU4pe6FKqg/7EQsc0jeiXFYycD2zwzR86k
+# lNYBhk+XUvoXHvG0Ha4lq3tIeH/P4q1wg1R5vTOVR6a5uyUiRPfwBYrNMpTZUKie
+# e6SQkBvhieZdlkxtCe1onGJgvigvmEprhuF0NIAFULp6Cuj01wRX2IZKT8SMm71u
+# bEENVXuQUfoFN6a6rd54XUeX9T9hAp99oUk8KCG2LsiiJQrBNXJTrzJ3hzw95p7o
+# 3VSkZpAtE13F2CqD8NjQ0b9uyvaSzQH/SArhxHuPSW+7EojyZ45i8PMsSD7yAk+h
 # ggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8CAQEwfTBpMQswCQYDVQQGEwJVUzEX
 # MBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/BgNVBAMTOERpZ2lDZXJ0IFRydXN0
 # ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYgU0hBMjU2IDIwMjUgQ0ExAhAKgO8Y
 # S43xBYLRxHanlXRoMA0GCWCGSAFlAwQCAQUAoGkwGAYJKoZIhvcNAQkDMQsGCSqG
-# SIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjYwMjAzMTkxMTAzWjAvBgkqhkiG9w0B
-# CQQxIgQgfvQDhLwwuFJ8jxrallqKlD9dKgCT4h9QkahP5VQFYMswDQYJKoZIhvcN
-# AQEBBQAEggIAjA3zD88KXsYpaDGyoYcWS+SLLHKGADUUMQMDTRPLN+J21yKNttSB
-# QBmXi1o42kxW5q2sv2pJK9V2vQK1qUPUfLdJ9z6RkbNjliySp8B/h+giNXhugnOk
-# csRkdyEBzsI6ymj6Ke2pIoiUNppzDp0jNBucRWZMyyWNMxA2D+j2DS8LiHgDd2OF
-# hMQ6hyGsh1DSkmzVbHJs3vL4HneFpqrTa4fx96L4C2gG11udkdbHmp9mlMQFM7Jn
-# nnrHL5ofJQmYKS0khhVHSpjU1pVCoh/Hs7PDc5p4ghccDDl85YG9prd3T+ihxcPC
-# UDaF3p777eweXlswj0SXv5JVpOUv23Jo9zXxX1pRlpY0U5RMGEs5Z3lAcZbH1G4N
-# WGiqa1/+XUWfjexqKEVuJinoX5rsZlOr8fZs2QdEof6QOMZyQ/Y4nCAo6hEMlc0w
-# v25LYJdo8je9JldGSYUR4Lk+kLLx9PiOaC2HBQJGsNs9cI+ALhZW1ECfHcexbdSm
-# Mx5ciU6PqfYn9T1jP0s+AB6r2tGSkupawZgANCKPCzmNTJcNWUMcnifZD1EeS4Gr
-# Q9qmUVbLJdXleAsSB2xf1aIlzsLuOCBDZzTy33JEZhKgvgu3bLmSpgbCKxfnl+f/
-# tRhBfb3OV0sidnjg7myxZ8zCu6/0BwOV0uj9JJ2zWKuVB5kqCEFmdH0=
+# SIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjYwMjA1MjAyNTIxWjAvBgkqhkiG9w0B
+# CQQxIgQgplGh4q+6Hs5s4tfN3ZxscBcGgcQ3PxeSYaBH5KM/OpQwDQYJKoZIhvcN
+# AQEBBQAEggIAVVniHDb1DoE4zCQAtQRsbik/cxjXYbNIFCbxxtBuBzEd3ybDnaZi
+# u2fhA5NlFVHbPTfpTBfiPoXpsx0SmLtf0J3Tt9lDQJ216wMN4YKgSCY/uGzMCJMR
+# 7wfWwV3tFJ6abNxjFogqzV9PnCwwwG3LK6hwefrB2QQcgc21ksknrRCo34OzY/FX
+# PwGoUBiRlZcndFuSKRRWViWktM6jmVA7QbDQSFKL/DICgxOTnaFp6EoLZ6VgRsZ+
+# qW030eawU/KyzMi7ZcYtduJd7T5SPniB+h3lEHdQ23s1zBPQb+1x0M21J3+/aMTn
+# bTdlB+pfY/tDp4BZux3ni/q/mP7TFYWzkwFZ8PZpmFhPVHX2f7caLV5hhS+WWuiP
+# 2AhZNKC5o3P2vV7KMWgSxsDmqISvKdtXzLlA6wDi7PkUOJDoe8cWRUzvoy6/bW7M
+# O3yxQ6tlkftIDjvSxQknOlE9pIoekJjcuVprhvSCcV0/RuucrAq7lTyRzh8/ajTk
+# mqpUeuulxK4XrkH1kd5dugK7kccxq/vWn+EIW64IAvEHvtKczlpxAJGQGBrn9zwJ
+# 1tcptoFinQuVvWFewv/damFfee22P25R+FtWrAR3+35C20B6N8K1MNAOcqjWiKvd
+# tvKstq2tAm8nKlZx8vYJW4yP4JqTvtMNXczhbCs72RWe2KT7O4HZqV8=
 # SIG # End signature block
