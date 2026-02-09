@@ -12,7 +12,7 @@
 	Creates an output file named Parallels_RAS.<fileextension>.
 	
 	You do NOT have to run this script on a server running RAS. This script was developed 
-	and run from Windows 11, WIndows Server 2022, and WIndows Server 2025 VMs.
+	and run from Windows 11, Windows Server 2022, and Windows Server 2025 VMs.
 
 	Word and PDF documents include a Cover Page, Table of Contents, and Footer.
 	Includes support for the following language versions of Microsoft Word:
