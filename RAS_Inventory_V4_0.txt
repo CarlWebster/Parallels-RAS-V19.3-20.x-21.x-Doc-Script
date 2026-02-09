@@ -451,9 +451,9 @@
 	text document.
 .NOTES
 	NAME: RAS_Inventory_V4_0.ps1
-	VERSION: 4.00 RC3
+	VERSION: 4.00 RC4
 	AUTHOR: Carl Webster
-	LASTEDIT: February 5, 2026
+	LASTEDIT: February 9, 2026
 #>
 
 
@@ -1041,7 +1041,7 @@ $ErrorActionPreference    = 'SilentlyContinue'
 $Error.Clear()
 
 $Script:emailCredentials  = $Null
-$script:MyVersion         = '4.00 RC3'
+$script:MyVersion         = '4.00 RC4'
 $Script:ScriptName        = "RAS_Inventory_V4_0.ps1"
 $tmpdate                  = [datetime] "02/05/2026"
 $Script:ReleaseDate       = $tmpdate.ToUniversalTime().ToShortDateString()
@@ -8254,7 +8254,6 @@ Function OutputRDSessionHostsDetails
 
 				If(validObject $AppPackagesAssigned ApplicationPackagesAssigned)
 				{
-					$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
 					ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
 					{
 						$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4> $Null
@@ -8265,12 +8264,12 @@ Function OutputRDSessionHostsDetails
 							$ScriptInformation.Add(@{Data = "Status"; Value = ""; }) > $Null
 							$ScriptInformation.Add(@{Data = "Version"; Value = $Result.Version; }) > $Null
 							$ScriptInformation.Add(@{Data = "Display name"; Value = $Result.DisplayName; }) > $Null
-							$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
 						}
 						Else
 						{
 							$ScriptInformation.Add(@{Data = "Unable to retrieve data for"; Value = $Result.PackageName; }) > $Null
 						}
+						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
 					}
 				}
 
@@ -8298,7 +8297,6 @@ Function OutputRDSessionHostsDetails
 
 				If(validObject $AppPackagesAssigned ApplicationPackagesAssigned)
 				{
-					Line 5 ""
 					ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
 					{
 						$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4> $Null
@@ -8309,12 +8307,12 @@ Function OutputRDSessionHostsDetails
 							Line 4 "Status`t`t: "
 							Line 4 "Version`t`t: " $Result.Version
 							Line 4 "Display name`t: " $Result.DisplayName
-							Line 4 ""
 						}
 						Else
 						{
 							Line 4 "Unable to retrieve data for: " $Result.PackageName
 						}
+						Line 4 ""
 					}
 				}
 			}
@@ -8325,7 +8323,6 @@ Function OutputRDSessionHostsDetails
 
 				If(validObject $AppPackagesAssigned ApplicationPackagesAssigned)
 				{
-					$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 					ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
 					{
 						$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4> $Null
@@ -8336,12 +8333,12 @@ Function OutputRDSessionHostsDetails
 							$rowdata += @(,("Status",($Script:htmlsb),"",$htmlwhite))
 							$rowdata += @(,("Version",($Script:htmlsb),$Result.Version,$htmlwhite))
 							$rowdata += @(,("Display name",($Script:htmlsb),$Result.DisplayName.Replace("<","").Replace(">",""),$htmlwhite))
-							$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 						}
 						Else
 						{
 							$rowdata += @(,("Unable to retrieve data for",($Script:htmlsb),$Result.PackageName,$htmlwhite))
 						}
+						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 					}
 				}
 
@@ -13453,7 +13450,6 @@ Function OutputRDSessionHostsDetails
 
 				If(validObject $AppPackagesAssigned ApplicationPackagesAssigned)
 				{
-					$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
 					ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
 					{
 						$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4> $Null
@@ -13464,12 +13460,12 @@ Function OutputRDSessionHostsDetails
 							$ScriptInformation.Add(@{Data = "Status"; Value = ""; }) > $Null
 							$ScriptInformation.Add(@{Data = "Version"; Value = $Result.Version; }) > $Null
 							$ScriptInformation.Add(@{Data = "Display name"; Value = $Result.DisplayName; }) > $Null
-							$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
 						}
 						Else
 						{
 							$ScriptInformation.Add(@{Data = "Unable to retrieve data for"; Value = $Result.PackageName; }) > $Null
 						}
+						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
 					}
 				}
 
@@ -13497,7 +13493,6 @@ Function OutputRDSessionHostsDetails
 
 				If(validObject $AppPackagesAssigned ApplicationPackagesAssigned)
 				{
-					Line 5 ""
 					ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
 					{
 						$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4> $Null
@@ -13508,12 +13503,12 @@ Function OutputRDSessionHostsDetails
 							Line 5 "Status`t`t: "
 							Line 5 "Version`t`t: " $Result.Version
 							Line 5 "Display name`t: " $Result.DisplayName
-							Line 5 ""
 						}
 						Else
 						{
 							Line 5 "Unable to retrieve data for: " $Result.PackageName
 						}
+						Line 5 ""
 					}
 				}
 			}
@@ -13524,7 +13519,6 @@ Function OutputRDSessionHostsDetails
 
 				If(validObject $AppPackagesAssigned ApplicationPackagesAssigned)
 				{
-					$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 					ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
 					{
 						$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4> $Null
@@ -13535,12 +13529,12 @@ Function OutputRDSessionHostsDetails
 							$rowdata += @(,("Status",($Script:htmlsb),"",$htmlwhite))
 							$rowdata += @(,("Version",($Script:htmlsb),$Result.Version,$htmlwhite))
 							$rowdata += @(,("Display name",($Script:htmlsb),$Result.DisplayName.Replace("<","").Replace(">",""),$htmlwhite))
-							$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 						}
 						Else
 						{
 							$rowdata += @(,("Unable to retrieve data for",($Script:htmlsb),$Result.PackageName,$htmlwhite))
 						}
+						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 					}
 				}
 
@@ -19632,7 +19626,6 @@ Function OutputVDIDetails
 
 					If(validObject $AppPackagesAssigned ApplicationPackagesAssigned)
 					{
-						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
 						ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
 						{
 							$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4> $Null
@@ -19643,12 +19636,12 @@ Function OutputVDIDetails
 								$ScriptInformation.Add(@{Data = "Status"; Value = ""; }) > $Null
 								$ScriptInformation.Add(@{Data = "Version"; Value = $Result.Version; }) > $Null
 								$ScriptInformation.Add(@{Data = "Display name"; Value = $Result.DisplayName; }) > $Null
-								$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
 							}
 							Else
 							{
 								$ScriptInformation.Add(@{Data = "Unable to retrieve data for"; Value = $Result.PackageName; }) > $Null
 							}
+							$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
 						}
 					}
 
@@ -19676,7 +19669,6 @@ Function OutputVDIDetails
 
 					If(validObject $AppPackagesAssigned ApplicationPackagesAssigned)
 					{
-						Line 4 ""
 						ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
 						{
 							$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4> $Null
@@ -19687,12 +19679,12 @@ Function OutputVDIDetails
 								Line 4 "Status`t`t: "
 								Line 4 "Version`t`t: " $Result.Version
 								Line 4 "Display name`t: " $Result.DisplayName
-								Line 4 ""
 							}
 							Else
 							{
 								Line 4 "Unable to retrieve data for: " $Result.PackageName
 							}
+							Line 4 ""
 						}
 					}
 				}
@@ -19703,7 +19695,6 @@ Function OutputVDIDetails
 
 					If(validObject $AppPackagesAssigned ApplicationPackagesAssigned)
 					{
-						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 						ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
 						{
 							$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4> $Null
@@ -19714,12 +19705,12 @@ Function OutputVDIDetails
 								$rowdata += @(,("Status",($Script:htmlsb),"",$htmlwhite))
 								$rowdata += @(,("Version",($Script:htmlsb),$Result.Version,$htmlwhite))
 								$rowdata += @(,("Display name",($Script:htmlsb),$Result.DisplayName.Replace("<","").Replace(">",""),$htmlwhite))
-								$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 							}
 							Else
 							{
 								$rowdata += @(,("Unable to retrieve data for",($Script:htmlsb),$Result.PackageName,$htmlwhite))
 							}
+							$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 						}
 					}
 
@@ -28567,7 +28558,6 @@ Function OutputAVDDetails
 
 				If(validObject $AppPackagesAssigned ApplicationPackagesAssigned)
 				{
-					$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
 					ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
 					{
 						$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4> $Null
@@ -28578,12 +28568,12 @@ Function OutputAVDDetails
 							$ScriptInformation.Add(@{Data = "Status"; Value = ""; }) > $Null
 							$ScriptInformation.Add(@{Data = "Version"; Value = $Result.Version; }) > $Null
 							$ScriptInformation.Add(@{Data = "Display name"; Value = $Result.DisplayName; }) > $Null
-							$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
 						}
 						Else
 						{
 							$ScriptInformation.Add(@{Data = "Unable to retrieve data for"; Value = $Result.PackageName; }) > $Null
 						}
+						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
 					}
 				}
 
@@ -28611,7 +28601,6 @@ Function OutputAVDDetails
 
 				If(validObject $AppPackagesAssigned ApplicationPackagesAssigned)
 				{
-					Line 5 ""
 					ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
 					{
 						$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4> $Null
@@ -28622,12 +28611,12 @@ Function OutputAVDDetails
 							Line 6 "Status`t`t: "
 							Line 6 "Version`t`t: " $Result.Version
 							Line 6 "Display name`t: " $Result.DisplayName
-							Line 6 ""
 						}
 						Else
 						{
 							Line 6 "Unable to retrieve data for: " $Result.PackageName
 						}
+						Line 6 ""
 					}
 				}
 			}
@@ -28638,7 +28627,6 @@ Function OutputAVDDetails
 
 				If(validObject $AppPackagesAssigned ApplicationPackagesAssigned)
 				{
-					$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 					ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
 					{
 						$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4> $Null
@@ -28649,12 +28637,12 @@ Function OutputAVDDetails
 							$rowdata += @(,("Status",($Script:htmlsb),"",$htmlwhite))
 							$rowdata += @(,("Version",($Script:htmlsb),$Result.Version,$htmlwhite))
 							$rowdata += @(,("Display name",($Script:htmlsb),$Result.DisplayName.Replace("<","").Replace(">",""),$htmlwhite))
-							$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 						}
 						Else
 						{
 							$rowdata += @(,("Unable to retrieve data for",($Script:htmlsb),$Result.PackageName,$htmlwhite))
 						}
+						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 					}
 				}
 
@@ -34784,8 +34772,8 @@ Function OutputSecureGatewaysDetails
 				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 250;
-				$Table.Columns.Item(2).Width = 250;
+				$Table.Columns.Item(1).Width = 200;
+				$Table.Columns.Item(2).Width = 300;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -37677,7 +37665,7 @@ Function OutputThemesDetails
 				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 200;
+				$Table.Columns.Item(1).Width = 150;
 				$Table.Columns.Item(2).Width = 250;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
@@ -37756,7 +37744,7 @@ Function OutputThemesDetails
 				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 250;
+				$Table.Columns.Item(1).Width = 150;
 				$Table.Columns.Item(2).Width = 250;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
@@ -39401,7 +39389,7 @@ Function OutputCertificatesDetails
 				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 200;
+				$Table.Columns.Item(1).Width = 150;
 				$Table.Columns.Item(2).Width = 250;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
@@ -39541,7 +39529,7 @@ Function OutputCertificatesDetails
 				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 200;
+				$Table.Columns.Item(1).Width = 150;
 				$Table.Columns.Item(2).Width = 250;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
@@ -41833,7 +41821,6 @@ Function OutputRASLBSettings
 	
 	If($MSWord -or $PDF)
 	{
-		$Script:Selection.InsertNewPage()
 		WriteWordLine 2 0 "Load Balancing"
 	}
 	If($Text)
@@ -52324,7 +52311,7 @@ Function OutputUniversalPrinterFontsSettings
 		SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 		SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-		$Table.Columns.Item(1).Width = 220;
+		$Table.Columns.Item(1).Width = 275;
 		$Table.Columns.Item(2).Width = 200;
 
 		$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
@@ -53564,11 +53551,11 @@ Function OutputRASAuthSettings
 		-Format $wdTableGrid `
 		-AutoFit $wdAutoFitFixed;
 
-		SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+		SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 		SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-		$Table.Columns.Item(1).Width = 290;
-		$Table.Columns.Item(2).Width = 240;
+		$Table.Columns.Item(1).Width = 300;
+		$Table.Columns.Item(2).Width = 200;
 
 		$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -62968,8 +62955,8 @@ Function OutputMFASetting
 				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 325;
-				$Table.Columns.Item(2).Width = 175;
+				$Table.Columns.Item(1).Width = 300;
+				$Table.Columns.Item(2).Width = 200;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -69819,8 +69806,8 @@ Function OutputDeviceManager
 		SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 		SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-		$Table.Columns.Item(1).Width = 150;
-		$Table.Columns.Item(2).Width = 250;
+		$Table.Columns.Item(1).Width = 100;
+		$Table.Columns.Item(2).Width = 200;
 
 		$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -69881,7 +69868,7 @@ Function OutputWindowsDeviceGroups
 			SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 			$Table.Columns.Item(1).Width = 150;
-			$Table.Columns.Item(2).Width = 250;
+			$Table.Columns.Item(2).Width = 200;
 
 			$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -69955,8 +69942,8 @@ Function OutputWindowsDeviceGroups
 			SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 			SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-			$Table.Columns.Item(1).Width = 250;
-			$Table.Columns.Item(2).Width = 250;
+			$Table.Columns.Item(1).Width = 150;
+			$Table.Columns.Item(2).Width = 200;
 
 			$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -70015,8 +70002,8 @@ Function OutputWindowsDeviceGroups
 			SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 			SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-			$Table.Columns.Item(1).Width = 250;
-			$Table.Columns.Item(2).Width = 250;
+			$Table.Columns.Item(1).Width = 150;
+			$Table.Columns.Item(2).Width = 200;
 
 			$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -70087,8 +70074,8 @@ Function OutputWindowsDeviceGroups
 			SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 			SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-			$Table.Columns.Item(1).Width = 250;
-			$Table.Columns.Item(2).Width = 250;
+			$Table.Columns.Item(1).Width = 150;
+			$Table.Columns.Item(2).Width = 200;
 
 			$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -70159,8 +70146,8 @@ Function OutputWindowsDeviceGroups
 			SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 			SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-			$Table.Columns.Item(1).Width = 250;
-			$Table.Columns.Item(2).Width = 250;
+			$Table.Columns.Item(1).Width = 150;
+			$Table.Columns.Item(2).Width = 200;
 
 			$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -70714,8 +70701,8 @@ Function OutputPoliciesDetails
 			SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 			SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-			$Table.Columns.Item(1).Width = 350;
-			$Table.Columns.Item(2).Width = 350;
+			$Table.Columns.Item(1).Width = 300;
+			$Table.Columns.Item(2).Width = 200;
 
 			$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -75862,7 +75849,7 @@ Function OutputRASAccounts
 			SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 			SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-			$Table.Columns.Item(1).Width = 250;
+			$Table.Columns.Item(1).Width = 150;
 			$Table.Columns.Item(2).Width = 250;
 
 			$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
@@ -75944,7 +75931,7 @@ Function OutputRASAccounts
 			SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 			SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-			$Table.Columns.Item(1).Width = 250;
+			$Table.Columns.Item(1).Width = 150;
 			$Table.Columns.Item(2).Width = 250;
 
 			$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
@@ -76949,8 +76936,8 @@ Function OutputRASLicense
 		SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 		SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-		$Table.Columns.Item(1).Width = 200;
-		$Table.Columns.Item(2).Width = 200;
+		$Table.Columns.Item(1).Width = 150;
+		$Table.Columns.Item(2).Width = 250;
 
 		$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 

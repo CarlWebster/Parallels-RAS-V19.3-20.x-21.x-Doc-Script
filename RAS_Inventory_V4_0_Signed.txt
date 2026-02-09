@@ -451,9 +451,9 @@
 	text document.
 .NOTES
 	NAME: RAS_Inventory_V4_0.ps1
-	VERSION: 4.00 RC3
+	VERSION: 4.00 RC4
 	AUTHOR: Carl Webster
-	LASTEDIT: February 5, 2026
+	LASTEDIT: February 9, 2026
 #>
 
 
@@ -1041,7 +1041,7 @@ $ErrorActionPreference    = 'SilentlyContinue'
 $Error.Clear()
 
 $Script:emailCredentials  = $Null
-$script:MyVersion         = '4.00 RC3'
+$script:MyVersion         = '4.00 RC4'
 $Script:ScriptName        = "RAS_Inventory_V4_0.ps1"
 $tmpdate                  = [datetime] "02/05/2026"
 $Script:ReleaseDate       = $tmpdate.ToUniversalTime().ToShortDateString()
@@ -8254,7 +8254,6 @@ Function OutputRDSessionHostsDetails
 
 				If(validObject $AppPackagesAssigned ApplicationPackagesAssigned)
 				{
-					$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
 					ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
 					{
 						$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4> $Null
@@ -8265,12 +8264,12 @@ Function OutputRDSessionHostsDetails
 							$ScriptInformation.Add(@{Data = "Status"; Value = ""; }) > $Null
 							$ScriptInformation.Add(@{Data = "Version"; Value = $Result.Version; }) > $Null
 							$ScriptInformation.Add(@{Data = "Display name"; Value = $Result.DisplayName; }) > $Null
-							$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
 						}
 						Else
 						{
 							$ScriptInformation.Add(@{Data = "Unable to retrieve data for"; Value = $Result.PackageName; }) > $Null
 						}
+						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
 					}
 				}
 
@@ -8298,7 +8297,6 @@ Function OutputRDSessionHostsDetails
 
 				If(validObject $AppPackagesAssigned ApplicationPackagesAssigned)
 				{
-					Line 5 ""
 					ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
 					{
 						$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4> $Null
@@ -8309,12 +8307,12 @@ Function OutputRDSessionHostsDetails
 							Line 4 "Status`t`t: "
 							Line 4 "Version`t`t: " $Result.Version
 							Line 4 "Display name`t: " $Result.DisplayName
-							Line 4 ""
 						}
 						Else
 						{
 							Line 4 "Unable to retrieve data for: " $Result.PackageName
 						}
+						Line 4 ""
 					}
 				}
 			}
@@ -8325,7 +8323,6 @@ Function OutputRDSessionHostsDetails
 
 				If(validObject $AppPackagesAssigned ApplicationPackagesAssigned)
 				{
-					$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 					ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
 					{
 						$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4> $Null
@@ -8336,12 +8333,12 @@ Function OutputRDSessionHostsDetails
 							$rowdata += @(,("Status",($Script:htmlsb),"",$htmlwhite))
 							$rowdata += @(,("Version",($Script:htmlsb),$Result.Version,$htmlwhite))
 							$rowdata += @(,("Display name",($Script:htmlsb),$Result.DisplayName.Replace("<","").Replace(">",""),$htmlwhite))
-							$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 						}
 						Else
 						{
 							$rowdata += @(,("Unable to retrieve data for",($Script:htmlsb),$Result.PackageName,$htmlwhite))
 						}
+						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 					}
 				}
 
@@ -13453,7 +13450,6 @@ Function OutputRDSessionHostsDetails
 
 				If(validObject $AppPackagesAssigned ApplicationPackagesAssigned)
 				{
-					$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
 					ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
 					{
 						$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4> $Null
@@ -13464,12 +13460,12 @@ Function OutputRDSessionHostsDetails
 							$ScriptInformation.Add(@{Data = "Status"; Value = ""; }) > $Null
 							$ScriptInformation.Add(@{Data = "Version"; Value = $Result.Version; }) > $Null
 							$ScriptInformation.Add(@{Data = "Display name"; Value = $Result.DisplayName; }) > $Null
-							$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
 						}
 						Else
 						{
 							$ScriptInformation.Add(@{Data = "Unable to retrieve data for"; Value = $Result.PackageName; }) > $Null
 						}
+						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
 					}
 				}
 
@@ -13497,7 +13493,6 @@ Function OutputRDSessionHostsDetails
 
 				If(validObject $AppPackagesAssigned ApplicationPackagesAssigned)
 				{
-					Line 5 ""
 					ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
 					{
 						$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4> $Null
@@ -13508,12 +13503,12 @@ Function OutputRDSessionHostsDetails
 							Line 5 "Status`t`t: "
 							Line 5 "Version`t`t: " $Result.Version
 							Line 5 "Display name`t: " $Result.DisplayName
-							Line 5 ""
 						}
 						Else
 						{
 							Line 5 "Unable to retrieve data for: " $Result.PackageName
 						}
+						Line 5 ""
 					}
 				}
 			}
@@ -13524,7 +13519,6 @@ Function OutputRDSessionHostsDetails
 
 				If(validObject $AppPackagesAssigned ApplicationPackagesAssigned)
 				{
-					$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 					ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
 					{
 						$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4> $Null
@@ -13535,12 +13529,12 @@ Function OutputRDSessionHostsDetails
 							$rowdata += @(,("Status",($Script:htmlsb),"",$htmlwhite))
 							$rowdata += @(,("Version",($Script:htmlsb),$Result.Version,$htmlwhite))
 							$rowdata += @(,("Display name",($Script:htmlsb),$Result.DisplayName.Replace("<","").Replace(">",""),$htmlwhite))
-							$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 						}
 						Else
 						{
 							$rowdata += @(,("Unable to retrieve data for",($Script:htmlsb),$Result.PackageName,$htmlwhite))
 						}
+						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 					}
 				}
 
@@ -19632,7 +19626,6 @@ Function OutputVDIDetails
 
 					If(validObject $AppPackagesAssigned ApplicationPackagesAssigned)
 					{
-						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
 						ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
 						{
 							$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4> $Null
@@ -19643,12 +19636,12 @@ Function OutputVDIDetails
 								$ScriptInformation.Add(@{Data = "Status"; Value = ""; }) > $Null
 								$ScriptInformation.Add(@{Data = "Version"; Value = $Result.Version; }) > $Null
 								$ScriptInformation.Add(@{Data = "Display name"; Value = $Result.DisplayName; }) > $Null
-								$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
 							}
 							Else
 							{
 								$ScriptInformation.Add(@{Data = "Unable to retrieve data for"; Value = $Result.PackageName; }) > $Null
 							}
+							$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
 						}
 					}
 
@@ -19676,7 +19669,6 @@ Function OutputVDIDetails
 
 					If(validObject $AppPackagesAssigned ApplicationPackagesAssigned)
 					{
-						Line 4 ""
 						ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
 						{
 							$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4> $Null
@@ -19687,12 +19679,12 @@ Function OutputVDIDetails
 								Line 4 "Status`t`t: "
 								Line 4 "Version`t`t: " $Result.Version
 								Line 4 "Display name`t: " $Result.DisplayName
-								Line 4 ""
 							}
 							Else
 							{
 								Line 4 "Unable to retrieve data for: " $Result.PackageName
 							}
+							Line 4 ""
 						}
 					}
 				}
@@ -19703,7 +19695,6 @@ Function OutputVDIDetails
 
 					If(validObject $AppPackagesAssigned ApplicationPackagesAssigned)
 					{
-						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 						ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
 						{
 							$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4> $Null
@@ -19714,12 +19705,12 @@ Function OutputVDIDetails
 								$rowdata += @(,("Status",($Script:htmlsb),"",$htmlwhite))
 								$rowdata += @(,("Version",($Script:htmlsb),$Result.Version,$htmlwhite))
 								$rowdata += @(,("Display name",($Script:htmlsb),$Result.DisplayName.Replace("<","").Replace(">",""),$htmlwhite))
-								$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 							}
 							Else
 							{
 								$rowdata += @(,("Unable to retrieve data for",($Script:htmlsb),$Result.PackageName,$htmlwhite))
 							}
+							$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 						}
 					}
 
@@ -28567,7 +28558,6 @@ Function OutputAVDDetails
 
 				If(validObject $AppPackagesAssigned ApplicationPackagesAssigned)
 				{
-					$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
 					ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
 					{
 						$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4> $Null
@@ -28578,12 +28568,12 @@ Function OutputAVDDetails
 							$ScriptInformation.Add(@{Data = "Status"; Value = ""; }) > $Null
 							$ScriptInformation.Add(@{Data = "Version"; Value = $Result.Version; }) > $Null
 							$ScriptInformation.Add(@{Data = "Display name"; Value = $Result.DisplayName; }) > $Null
-							$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
 						}
 						Else
 						{
 							$ScriptInformation.Add(@{Data = "Unable to retrieve data for"; Value = $Result.PackageName; }) > $Null
 						}
+						$ScriptInformation.Add(@{Data = ""; Value = ""; }) > $Null
 					}
 				}
 
@@ -28611,7 +28601,6 @@ Function OutputAVDDetails
 
 				If(validObject $AppPackagesAssigned ApplicationPackagesAssigned)
 				{
-					Line 5 ""
 					ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
 					{
 						$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4> $Null
@@ -28622,12 +28611,12 @@ Function OutputAVDDetails
 							Line 6 "Status`t`t: "
 							Line 6 "Version`t`t: " $Result.Version
 							Line 6 "Display name`t: " $Result.DisplayName
-							Line 6 ""
 						}
 						Else
 						{
 							Line 6 "Unable to retrieve data for: " $Result.PackageName
 						}
+						Line 6 ""
 					}
 				}
 			}
@@ -28638,7 +28627,6 @@ Function OutputAVDDetails
 
 				If(validObject $AppPackagesAssigned ApplicationPackagesAssigned)
 				{
-					$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 					ForEach($Item in $AppPackagesAssigned.ApplicationPackagesAssigned)
 					{
 						$Result = Get-RASAppPackage -Name $Item.PackageName -EA 0 4> $Null
@@ -28649,12 +28637,12 @@ Function OutputAVDDetails
 							$rowdata += @(,("Status",($Script:htmlsb),"",$htmlwhite))
 							$rowdata += @(,("Version",($Script:htmlsb),$Result.Version,$htmlwhite))
 							$rowdata += @(,("Display name",($Script:htmlsb),$Result.DisplayName.Replace("<","").Replace(">",""),$htmlwhite))
-							$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 						}
 						Else
 						{
 							$rowdata += @(,("Unable to retrieve data for",($Script:htmlsb),$Result.PackageName,$htmlwhite))
 						}
+						$rowdata += @(,("",($Script:htmlsb),"",$htmlwhite))
 					}
 				}
 
@@ -34784,8 +34772,8 @@ Function OutputSecureGatewaysDetails
 				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 250;
-				$Table.Columns.Item(2).Width = 250;
+				$Table.Columns.Item(1).Width = 200;
+				$Table.Columns.Item(2).Width = 300;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -37677,7 +37665,7 @@ Function OutputThemesDetails
 				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 200;
+				$Table.Columns.Item(1).Width = 150;
 				$Table.Columns.Item(2).Width = 250;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
@@ -37756,7 +37744,7 @@ Function OutputThemesDetails
 				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 250;
+				$Table.Columns.Item(1).Width = 150;
 				$Table.Columns.Item(2).Width = 250;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
@@ -39401,7 +39389,7 @@ Function OutputCertificatesDetails
 				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 200;
+				$Table.Columns.Item(1).Width = 150;
 				$Table.Columns.Item(2).Width = 250;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
@@ -39541,7 +39529,7 @@ Function OutputCertificatesDetails
 				SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 200;
+				$Table.Columns.Item(1).Width = 150;
 				$Table.Columns.Item(2).Width = 250;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
@@ -41833,7 +41821,6 @@ Function OutputRASLBSettings
 	
 	If($MSWord -or $PDF)
 	{
-		$Script:Selection.InsertNewPage()
 		WriteWordLine 2 0 "Load Balancing"
 	}
 	If($Text)
@@ -52324,7 +52311,7 @@ Function OutputUniversalPrinterFontsSettings
 		SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 		SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-		$Table.Columns.Item(1).Width = 220;
+		$Table.Columns.Item(1).Width = 275;
 		$Table.Columns.Item(2).Width = 200;
 
 		$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
@@ -53564,11 +53551,11 @@ Function OutputRASAuthSettings
 		-Format $wdTableGrid `
 		-AutoFit $wdAutoFitFixed;
 
-		SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
+		SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 		SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-		$Table.Columns.Item(1).Width = 290;
-		$Table.Columns.Item(2).Width = 240;
+		$Table.Columns.Item(1).Width = 300;
+		$Table.Columns.Item(2).Width = 200;
 
 		$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -62968,8 +62955,8 @@ Function OutputMFASetting
 				SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 				SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-				$Table.Columns.Item(1).Width = 325;
-				$Table.Columns.Item(2).Width = 175;
+				$Table.Columns.Item(1).Width = 300;
+				$Table.Columns.Item(2).Width = 200;
 
 				$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -69819,8 +69806,8 @@ Function OutputDeviceManager
 		SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 		SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-		$Table.Columns.Item(1).Width = 150;
-		$Table.Columns.Item(2).Width = 250;
+		$Table.Columns.Item(1).Width = 100;
+		$Table.Columns.Item(2).Width = 200;
 
 		$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -69881,7 +69868,7 @@ Function OutputWindowsDeviceGroups
 			SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
 			$Table.Columns.Item(1).Width = 150;
-			$Table.Columns.Item(2).Width = 250;
+			$Table.Columns.Item(2).Width = 200;
 
 			$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -69955,8 +69942,8 @@ Function OutputWindowsDeviceGroups
 			SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 			SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-			$Table.Columns.Item(1).Width = 250;
-			$Table.Columns.Item(2).Width = 250;
+			$Table.Columns.Item(1).Width = 150;
+			$Table.Columns.Item(2).Width = 200;
 
 			$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -70015,8 +70002,8 @@ Function OutputWindowsDeviceGroups
 			SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 			SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-			$Table.Columns.Item(1).Width = 250;
-			$Table.Columns.Item(2).Width = 250;
+			$Table.Columns.Item(1).Width = 150;
+			$Table.Columns.Item(2).Width = 200;
 
 			$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -70087,8 +70074,8 @@ Function OutputWindowsDeviceGroups
 			SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 			SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-			$Table.Columns.Item(1).Width = 250;
-			$Table.Columns.Item(2).Width = 250;
+			$Table.Columns.Item(1).Width = 150;
+			$Table.Columns.Item(2).Width = 200;
 
 			$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -70159,8 +70146,8 @@ Function OutputWindowsDeviceGroups
 			SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 			SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-			$Table.Columns.Item(1).Width = 250;
-			$Table.Columns.Item(2).Width = 250;
+			$Table.Columns.Item(1).Width = 150;
+			$Table.Columns.Item(2).Width = 200;
 
 			$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -70714,8 +70701,8 @@ Function OutputPoliciesDetails
 			SetWordCellFormat -Collection $Table -Size 9 -BackgroundColor $wdColorWhite
 			SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-			$Table.Columns.Item(1).Width = 350;
-			$Table.Columns.Item(2).Width = 350;
+			$Table.Columns.Item(1).Width = 300;
+			$Table.Columns.Item(2).Width = 200;
 
 			$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -75862,7 +75849,7 @@ Function OutputRASAccounts
 			SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 			SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-			$Table.Columns.Item(1).Width = 250;
+			$Table.Columns.Item(1).Width = 150;
 			$Table.Columns.Item(2).Width = 250;
 
 			$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
@@ -75944,7 +75931,7 @@ Function OutputRASAccounts
 			SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 			SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-			$Table.Columns.Item(1).Width = 250;
+			$Table.Columns.Item(1).Width = 150;
 			$Table.Columns.Item(2).Width = 250;
 
 			$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
@@ -76949,8 +76936,8 @@ Function OutputRASLicense
 		SetWordCellFormat -Collection $Table -Size 10 -BackgroundColor $wdColorWhite
 		SetWordCellFormat -Collection $Table.Columns.Item(1).Cells -Bold -BackgroundColor $wdColorGray15;
 
-		$Table.Columns.Item(1).Width = 200;
-		$Table.Columns.Item(2).Width = 200;
+		$Table.Columns.Item(1).Width = 150;
+		$Table.Columns.Item(2).Width = 250;
 
 		$Table.Rows.SetLeftIndent($Indent0TabStops,$wdAdjustProportional)
 
@@ -77192,8 +77179,8 @@ ProcessScriptEnd
 # SIG # Begin signature block
 # MIIthQYJKoZIhvcNAQcCoIItdjCCLXICAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUoG7vi4xYVGtKwZZUt85qU7c0
-# wKyggibfMIIFjTCCBHWgAwIBAgIQDpsYjvnQLefv21DiCEAYWjANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUoexPY1SQcYvZfhDTRidR3yZM
+# jraggibfMIIFjTCCBHWgAwIBAgIQDpsYjvnQLefv21DiCEAYWjANBgkqhkiG9w0B
 # AQwFADBlMQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYD
 # VQQLExB3d3cuZGlnaWNlcnQuY29tMSQwIgYDVQQDExtEaWdpQ2VydCBBc3N1cmVk
 # IElEIFJvb3QgQ0EwHhcNMjIwODAxMDAwMDAwWhcNMzExMTA5MjM1OTU5WjBiMQsw
@@ -77404,33 +77391,33 @@ ProcessScriptEnd
 # UzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/BgNVBAMTOERpZ2lDZXJ0IFRy
 # dXN0ZWQgRzQgQ29kZSBTaWduaW5nIFJTQTQwOTYgU0hBMzg0IDIwMjEgQ0ExAhAL
 # bN+2Z4EOKufLWhG6HUlwMAkGBSsOAwIaBQCgQDAZBgkqhkiG9w0BCQMxDAYKKwYB
-# BAGCNwIBBDAjBgkqhkiG9w0BCQQxFgQUJXRi30BfVusQ+bOs1rxCMXrbFTMwDQYJ
-# KoZIhvcNAQEBBQAEggIANXJhSS/u+bRwkdz3WKKTcmcyYC0QsusoMPc7mzq/rTJI
-# MdUFlawcuASjAIHmhqv2/OttZz7Q6JdYM0ho3OZY5jupBXZeTRholwDzCBqfzpeq
-# mZTxgr2pFcXyuejxqnsRJ1J8OHh6va44hmAArYS1eSP+sqlff8VULL3W+20Bw78q
-# ujvk7g+ViIMk0mEMeOncfazOzn3wvPIRD0mnHLpxysphTBy/zLqw9CxYgZIbxGhi
-# CNMWZycRB592WY9v2/Fpg9+gSEYvIFAsgbet6agh46SMSHFsxBp5aQBQ8slXRLMF
-# q0HM8VSTYxuCRFr2kXnu5Cyr+fJ5s96Y5BX4xrrXZjvKQnV4jAtd2dEe7URTGIpJ
-# NhgwMeInaeA6GK/ywV4TVmMQE67pKxUU4pe6FKqg/7EQsc0jeiXFYycD2zwzR86k
-# lNYBhk+XUvoXHvG0Ha4lq3tIeH/P4q1wg1R5vTOVR6a5uyUiRPfwBYrNMpTZUKie
-# e6SQkBvhieZdlkxtCe1onGJgvigvmEprhuF0NIAFULp6Cuj01wRX2IZKT8SMm71u
-# bEENVXuQUfoFN6a6rd54XUeX9T9hAp99oUk8KCG2LsiiJQrBNXJTrzJ3hzw95p7o
-# 3VSkZpAtE13F2CqD8NjQ0b9uyvaSzQH/SArhxHuPSW+7EojyZ45i8PMsSD7yAk+h
+# BAGCNwIBBDAjBgkqhkiG9w0BCQQxFgQUxGsw/RfRDsOWVLSTXaWc5WcjZngwDQYJ
+# KoZIhvcNAQEBBQAEggIAsvcBpiVAyeWLlFyiLRhMI6PjNx+6Osy9VmBnV7MPNFiK
+# YICbYorVJF/pYnzizvWrjYuZhf6K/6+z371lHQ1MuZ8B06JE5b9o/STt3OpqQNEB
+# FWCV/t+vIWs/v5PalA4gCsMq8lgV6HsHn8ZmsyerTFJydpeQxsZCqPiMYd+3rBp+
+# jAkBFl71OJ0kA0AB5q2XZnxSHVhRXLkWwbjN/0fgRzPNaw4MSicz/8pbJCK1kFsd
+# NrvlS19kAjpm0GYTtBSDheRg0w15dWFCJAWljQqGwEJeBJmzTUr9rKXBBU0mR9ho
+# ZQC8sR5urB41AQrK9fWji5WqZHdAETdTI3HGzaaez/96S0+n1Jg7eOpT15k6hf15
+# 5DdYoSeNsKzDWPeU+6GlcZVL2baWEskURjAlwqk1bnhvyKoH5CdYDsmnYoDkcitl
+# 025fdaTJMjqlp/Uu/jhNUKLCE1IKrnhNnuIw86mak4JHOi5jVrg3tx0cdfBfJdUw
+# bkifv5amba2aUXcIOwEyunYd3TKe79JyvTGUNsnU2AZDQeqGhboEr0Rs95dwDucv
+# a6xM9zFZ3orBb0KuvfBvh9TUWSfIv/mek3M0yiUQxccQvFQ2hfEv/ytlKoz7C4pP
+# aJ35lQ0nY6uujlMWHyleXH7yIDkU+Yg02AU7fGknDbDM+n8sfqJsiVRGmM4kh0yh
 # ggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8CAQEwfTBpMQswCQYDVQQGEwJVUzEX
 # MBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/BgNVBAMTOERpZ2lDZXJ0IFRydXN0
 # ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYgU0hBMjU2IDIwMjUgQ0ExAhAKgO8Y
 # S43xBYLRxHanlXRoMA0GCWCGSAFlAwQCAQUAoGkwGAYJKoZIhvcNAQkDMQsGCSqG
-# SIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjYwMjA1MjAyNTIxWjAvBgkqhkiG9w0B
-# CQQxIgQgplGh4q+6Hs5s4tfN3ZxscBcGgcQ3PxeSYaBH5KM/OpQwDQYJKoZIhvcN
-# AQEBBQAEggIAVVniHDb1DoE4zCQAtQRsbik/cxjXYbNIFCbxxtBuBzEd3ybDnaZi
-# u2fhA5NlFVHbPTfpTBfiPoXpsx0SmLtf0J3Tt9lDQJ216wMN4YKgSCY/uGzMCJMR
-# 7wfWwV3tFJ6abNxjFogqzV9PnCwwwG3LK6hwefrB2QQcgc21ksknrRCo34OzY/FX
-# PwGoUBiRlZcndFuSKRRWViWktM6jmVA7QbDQSFKL/DICgxOTnaFp6EoLZ6VgRsZ+
-# qW030eawU/KyzMi7ZcYtduJd7T5SPniB+h3lEHdQ23s1zBPQb+1x0M21J3+/aMTn
-# bTdlB+pfY/tDp4BZux3ni/q/mP7TFYWzkwFZ8PZpmFhPVHX2f7caLV5hhS+WWuiP
-# 2AhZNKC5o3P2vV7KMWgSxsDmqISvKdtXzLlA6wDi7PkUOJDoe8cWRUzvoy6/bW7M
-# O3yxQ6tlkftIDjvSxQknOlE9pIoekJjcuVprhvSCcV0/RuucrAq7lTyRzh8/ajTk
-# mqpUeuulxK4XrkH1kd5dugK7kccxq/vWn+EIW64IAvEHvtKczlpxAJGQGBrn9zwJ
-# 1tcptoFinQuVvWFewv/damFfee22P25R+FtWrAR3+35C20B6N8K1MNAOcqjWiKvd
-# tvKstq2tAm8nKlZx8vYJW4yP4JqTvtMNXczhbCs72RWe2KT7O4HZqV8=
+# SIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjYwMjA5MTY1NjQ1WjAvBgkqhkiG9w0B
+# CQQxIgQgLNosJZMqTP9VWRjnJeU4FFGXN6iv8LhEKdQh3er7SUQwDQYJKoZIhvcN
+# AQEBBQAEggIANEyEdXsfFRe+nxgcYPwNK0DJuIycM9U9dudJOvSbxeb2aLbf+PMU
+# LRNPIyGxYr9Gb7uoTQfP/JSU7xq6OrkitisXWs4FEwoH+wQ8NpTiPfQ3Ne9FAI2b
+# uBFZRBiAaYXVeQP7XEQHdvh4+qc81Gl2XD+iH3eMpT6FurHf4wA80xUguGq2KN1r
+# Qfuo4olrU34x9hCrgGqtMenQa2YhpZNwJWYv6lZD/UYHQ+R9ZA9AtrmBxiNyYJho
+# LECrIc6JBL4SjZU/9xGSyLmZzKTRycnLcTwj0ZZ9WLsFcdc7v1MQUHro+gJlwtLD
+# MRgxFIHNgjWIDsO4jA1QXBvije823b+kFN+cOz4BIDfc2xSUbv9HBMcyShinILdf
+# 3CPmVv+wfzqzKxxOsRen5CChA0Xzjv5+p9lCmvkQtIu1DuWLMlEZm7uMKdWDqlbG
+# 2aN9atBqJJfxO2FecEqen50OcLN53I3MqxI+Vq8OiwEuOCbxVeqeeKCp3xZlLRFN
+# v4ZnggPKmqHgWxWu0C97ODLoVNTGHUgke2ICRozcP9nT5qB3/27J4tlNiIqfjR/L
+# ffUfbZVVjiC5qeGSsNDvZK5+MGnKjx9zIM2jFg59mB/kx3sFxXcL+5E39+fcpHU+
+# FvTZa4++IkTcH0DSkxU4BkkM6ggXiDT1Ae4HiZ4DR3pPgB6FKrqgB28=
 # SIG # End signature block
