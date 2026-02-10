@@ -18,7 +18,7 @@
 	Creates an output file named Parallels_RAS.<fileextension>.
 	
 	You do NOT have to run this script on a server running RAS. This script was developed 
-	and run from a Windows 11 VM.
+	and run from Windows 11, Windows Server 2022, and Windows Server 2025 VMs.
 
 	Word and PDF documents include a Cover Page, Table of Contents, and Footer.
 	Includes support for the following language versions of Microsoft Word:
@@ -451,9 +451,9 @@
 	text document.
 .NOTES
 	NAME: RAS_Inventory_V4_0.ps1
-	VERSION: 4.00 RC4
+	VERSION: 4.00.00
 	AUTHOR: Carl Webster
-	LASTEDIT: February 9, 2026
+	LASTEDIT: February 10, 2026
 #>
 
 
@@ -572,7 +572,7 @@ Param(
 #Work on 3.0 started on 15-Nov-2022
 #Work on 4.0 started on September 24, 2024
 
-#Version 4.00 
+#Version 4.00.00 Released 10-Feb-2026 
 #
 #	Added new Functions:
 #		OutputSiteSummary
@@ -1041,9 +1041,9 @@ $ErrorActionPreference    = 'SilentlyContinue'
 $Error.Clear()
 
 $Script:emailCredentials  = $Null
-$script:MyVersion         = '4.00 RC4'
+$script:MyVersion         = '4.00.00'
 $Script:ScriptName        = "RAS_Inventory_V4_0.ps1"
-$tmpdate                  = [datetime] "02/05/2026"
+$tmpdate                  = [datetime] "02/10/2026"
 $Script:ReleaseDate       = $tmpdate.ToUniversalTime().ToShortDateString()
 
 If($MSWord -eq $False -and $PDF -eq $False -and $Text -eq $False -and $HTML -eq $False)
@@ -77179,8 +77179,8 @@ ProcessScriptEnd
 # SIG # Begin signature block
 # MIIthQYJKoZIhvcNAQcCoIItdjCCLXICAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUoexPY1SQcYvZfhDTRidR3yZM
-# jraggibfMIIFjTCCBHWgAwIBAgIQDpsYjvnQLefv21DiCEAYWjANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUtYgPtFJNsoFdaAGUb3r0aT1H
+# xB6ggibfMIIFjTCCBHWgAwIBAgIQDpsYjvnQLefv21DiCEAYWjANBgkqhkiG9w0B
 # AQwFADBlMQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYD
 # VQQLExB3d3cuZGlnaWNlcnQuY29tMSQwIgYDVQQDExtEaWdpQ2VydCBBc3N1cmVk
 # IElEIFJvb3QgQ0EwHhcNMjIwODAxMDAwMDAwWhcNMzExMTA5MjM1OTU5WjBiMQsw
@@ -77391,33 +77391,33 @@ ProcessScriptEnd
 # UzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/BgNVBAMTOERpZ2lDZXJ0IFRy
 # dXN0ZWQgRzQgQ29kZSBTaWduaW5nIFJTQTQwOTYgU0hBMzg0IDIwMjEgQ0ExAhAL
 # bN+2Z4EOKufLWhG6HUlwMAkGBSsOAwIaBQCgQDAZBgkqhkiG9w0BCQMxDAYKKwYB
-# BAGCNwIBBDAjBgkqhkiG9w0BCQQxFgQUxGsw/RfRDsOWVLSTXaWc5WcjZngwDQYJ
-# KoZIhvcNAQEBBQAEggIAsvcBpiVAyeWLlFyiLRhMI6PjNx+6Osy9VmBnV7MPNFiK
-# YICbYorVJF/pYnzizvWrjYuZhf6K/6+z371lHQ1MuZ8B06JE5b9o/STt3OpqQNEB
-# FWCV/t+vIWs/v5PalA4gCsMq8lgV6HsHn8ZmsyerTFJydpeQxsZCqPiMYd+3rBp+
-# jAkBFl71OJ0kA0AB5q2XZnxSHVhRXLkWwbjN/0fgRzPNaw4MSicz/8pbJCK1kFsd
-# NrvlS19kAjpm0GYTtBSDheRg0w15dWFCJAWljQqGwEJeBJmzTUr9rKXBBU0mR9ho
-# ZQC8sR5urB41AQrK9fWji5WqZHdAETdTI3HGzaaez/96S0+n1Jg7eOpT15k6hf15
-# 5DdYoSeNsKzDWPeU+6GlcZVL2baWEskURjAlwqk1bnhvyKoH5CdYDsmnYoDkcitl
-# 025fdaTJMjqlp/Uu/jhNUKLCE1IKrnhNnuIw86mak4JHOi5jVrg3tx0cdfBfJdUw
-# bkifv5amba2aUXcIOwEyunYd3TKe79JyvTGUNsnU2AZDQeqGhboEr0Rs95dwDucv
-# a6xM9zFZ3orBb0KuvfBvh9TUWSfIv/mek3M0yiUQxccQvFQ2hfEv/ytlKoz7C4pP
-# aJ35lQ0nY6uujlMWHyleXH7yIDkU+Yg02AU7fGknDbDM+n8sfqJsiVRGmM4kh0yh
+# BAGCNwIBBDAjBgkqhkiG9w0BCQQxFgQUG5ZGAcTsgRXtDx7dzdlOvhAr/s4wDQYJ
+# KoZIhvcNAQEBBQAEggIAnUZ2uutp59yzaUM6yQRHjii4+I/r1VRlkXFVDiNl8mf/
+# wfops57Gw+tq0bCw4fn9xTdIaIuXZYb52FYV3BAY60Jy6NPANq85GX6BCrPebg0b
+# j7qj8r+l0KZR4Kzbdw8lshGSXz6o8mDSOzIU/DhYr8PKNOfvyfUGkrTe8HF93uK9
+# X2hnm4C73kh7WizeUpghCSu0rdJq/fJctgBpswNwh2u3/ByQa8dUrsqxRrkeWjZ2
+# F2R16OKQ2wdioNZns4//KrDZBvgG0jSOMdd4wLHqOFRJ5HWqOzAmT0JK6JWZJOCI
+# Ogxo+Mjwkr03w/t5UMXSe1uWwWwkIkfC/6nrk1xXVtVKPvSypX11Y2LKPL7SjJmf
+# dVisn/xvhfsEW5fbxsWXJ4LbACoLnyh+UquwgsK/MquUWy/fJCr1rS0p+aDNyQ5M
+# 6NR9IPfGZrqgQ22sqq+GB6FcouWIt5rO2g+KSe6vJ3mrIa9aRg6BpBo19Mz/3aiO
+# kyEKgU9FwAQRDyi0ofpd+vXndHyzl/22RkuINFEzuoSFpvUGgq1mr5M0JwFv0Ias
+# hDskVBe3theTUjHBeehcNvomPw2jm1bK6k2M4gLaZB298/cyRFLBOYk6qHKiAVqe
+# xTRoJmqtM3suEbby3Udsk7g2bCRjTtioueLLSa7pDJhsjEQx3KcksSYTfve2MYKh
 # ggMmMIIDIgYJKoZIhvcNAQkGMYIDEzCCAw8CAQEwfTBpMQswCQYDVQQGEwJVUzEX
 # MBUGA1UEChMORGlnaUNlcnQsIEluYy4xQTA/BgNVBAMTOERpZ2lDZXJ0IFRydXN0
 # ZWQgRzQgVGltZVN0YW1waW5nIFJTQTQwOTYgU0hBMjU2IDIwMjUgQ0ExAhAKgO8Y
 # S43xBYLRxHanlXRoMA0GCWCGSAFlAwQCAQUAoGkwGAYJKoZIhvcNAQkDMQsGCSqG
-# SIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjYwMjA5MTY1NjQ1WjAvBgkqhkiG9w0B
-# CQQxIgQgLNosJZMqTP9VWRjnJeU4FFGXN6iv8LhEKdQh3er7SUQwDQYJKoZIhvcN
-# AQEBBQAEggIANEyEdXsfFRe+nxgcYPwNK0DJuIycM9U9dudJOvSbxeb2aLbf+PMU
-# LRNPIyGxYr9Gb7uoTQfP/JSU7xq6OrkitisXWs4FEwoH+wQ8NpTiPfQ3Ne9FAI2b
-# uBFZRBiAaYXVeQP7XEQHdvh4+qc81Gl2XD+iH3eMpT6FurHf4wA80xUguGq2KN1r
-# Qfuo4olrU34x9hCrgGqtMenQa2YhpZNwJWYv6lZD/UYHQ+R9ZA9AtrmBxiNyYJho
-# LECrIc6JBL4SjZU/9xGSyLmZzKTRycnLcTwj0ZZ9WLsFcdc7v1MQUHro+gJlwtLD
-# MRgxFIHNgjWIDsO4jA1QXBvije823b+kFN+cOz4BIDfc2xSUbv9HBMcyShinILdf
-# 3CPmVv+wfzqzKxxOsRen5CChA0Xzjv5+p9lCmvkQtIu1DuWLMlEZm7uMKdWDqlbG
-# 2aN9atBqJJfxO2FecEqen50OcLN53I3MqxI+Vq8OiwEuOCbxVeqeeKCp3xZlLRFN
-# v4ZnggPKmqHgWxWu0C97ODLoVNTGHUgke2ICRozcP9nT5qB3/27J4tlNiIqfjR/L
-# ffUfbZVVjiC5qeGSsNDvZK5+MGnKjx9zIM2jFg59mB/kx3sFxXcL+5E39+fcpHU+
-# FvTZa4++IkTcH0DSkxU4BkkM6ggXiDT1Ae4HiZ4DR3pPgB6FKrqgB28=
+# SIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjYwMjEwMTMwNTE0WjAvBgkqhkiG9w0B
+# CQQxIgQgqZbeqB4tQQNE9qMHVJRTfOPAKjgOFrCrExNdXGGysncwDQYJKoZIhvcN
+# AQEBBQAEggIARv4AWWeg0HvtXkI5hYl3+Y9LibaT6bltkCfR4m+I/RERa/ptOyG/
+# SEcH9fiY+XB674zoGUd7nLPWV0tb8mT1Li6Ruz+cgEl8u/JHGsppUKDkqIZAQCfv
+# BjYfu4f96omT7l4HoyXRhO+n5mRIOC95hUDIk9X1eUo9SClpNf4aEqEEefK46wTc
+# daYChX1tc4dhPLon1TbhOC4bNT+iOae7gD3RTuTfVfbgr6xly/kx/hgQhzoOUM2X
+# CRcFSMFlKASS04QcFI4/myWxYjNxju7hH7vn0G//aSi2IIxl3fygsXhBl3mIrOLe
+# 2VPvrTnrY69QXyASWPj+agV3ibdl2DAY2/0jq9+IaJUXq+3+gOJYqHaEYFw1k6ak
+# sNFVUByBGeuZF9XXi/CJgUAG8Z20TTNylvj/aOMnRIEQVGEm25C+DmHqHWu1SMPr
+# NakvFF3IVFsJxYhHn27tDGg9PRbxutQV1CnyvE2J5IdWL5e3ar7qMgGDzY3YsttO
+# A01lWm0rhRaLofn4B379gJiewDDfEB8eCtZ+BJaI1VTbjmiNc/jbXa2FFh6S49G+
+# okFY39u27GylzGDm+dDa/kpFwpWbsL2Son86ECoGBthaxeaostIeSbZopKZNTPup
+# fRo3XBi6vJK4+Q8+C/12B8V8PHdEJYvRh68R6QLIA4vRe5wxYE+7ayU=
 # SIG # End signature block

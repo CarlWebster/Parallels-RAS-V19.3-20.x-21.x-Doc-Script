@@ -18,7 +18,7 @@
 	Creates an output file named Parallels_RAS.<fileextension>.
 	
 	You do NOT have to run this script on a server running RAS. This script was developed 
-	and run from a Windows 11 VM.
+	and run from Windows 11, Windows Server 2022, and Windows Server 2025 VMs.
 
 	Word and PDF documents include a Cover Page, Table of Contents, and Footer.
 	Includes support for the following language versions of Microsoft Word:
@@ -451,9 +451,9 @@
 	text document.
 .NOTES
 	NAME: RAS_Inventory_V4_0.ps1
-	VERSION: 4.00 RC4
+	VERSION: 4.00.00
 	AUTHOR: Carl Webster
-	LASTEDIT: February 9, 2026
+	LASTEDIT: February 10, 2026
 #>
 
 
@@ -572,7 +572,7 @@ Param(
 #Work on 3.0 started on 15-Nov-2022
 #Work on 4.0 started on September 24, 2024
 
-#Version 4.00 
+#Version 4.00.00 Released 10-Feb-2026 
 #
 #	Added new Functions:
 #		OutputSiteSummary
@@ -1041,9 +1041,9 @@ $ErrorActionPreference    = 'SilentlyContinue'
 $Error.Clear()
 
 $Script:emailCredentials  = $Null
-$script:MyVersion         = '4.00 RC4'
+$script:MyVersion         = '4.00.00'
 $Script:ScriptName        = "RAS_Inventory_V4_0.ps1"
-$tmpdate                  = [datetime] "02/05/2026"
+$tmpdate                  = [datetime] "02/10/2026"
 $Script:ReleaseDate       = $tmpdate.ToUniversalTime().ToShortDateString()
 
 If($MSWord -eq $False -and $PDF -eq $False -and $Text -eq $False -and $HTML -eq $False)
